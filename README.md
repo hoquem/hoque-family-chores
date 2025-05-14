@@ -1,1 +1,0 @@
-# hoque-family-chores
