@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// TODO: Make sure you have created this file and RegistrationScreen widget
+import 'registration_screen.dart'; // Import your registration screen
+
+// If you have a HomeScreen, you might import it here:
+// import 'home_screen.dart'; // Example
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,33 +22,72 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // --- Firebase Email/Password Login Logic (from previous response) ---
+  // This method already implements Firebase email/password login.
   void _tryLogin() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    final isValid = _formKey.currentState?.validate();
+    if (isValid == null || !isValid) {
+      return;
+    }
+    _formKey.currentState!.save();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _email.trim(),
+        password: _password,
+      );
+      print('Successfully logged in: ${userCredential.user?.uid}');
+      // TODO: Navigate to the home screen after successful login
+      // if (mounted) {
+      //   Navigator.of(context).pushReplacement(
+      //     MaterialPageRoute(builder: (context) => HomeScreen()),
+      //   );
+      // }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No user found for that email.';
+          break;
+        case 'wrong-password':
+          message = 'Wrong password provided for that user.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is not valid.';
+          break;
+        case 'user-disabled':
+          message = 'This user account has been disabled.';
+          break;
+        case 'too-many-requests':
+          message = 'Too many login attempts. Please try again later.';
+          break;
+        case 'network-request-failed':
+          message = 'Network error. Please check your connection.';
+          break;
+        default:
+          message = e.message ?? 'An unexpected error occurred.';
+      }
       setState(() {
-        _isLoading = true;
-        _errorMessage = null;
+        _errorMessage = message;
       });
-      try {
-        // TODO: Implement Firebase login logic
-        print('Login with Email: $_email, Password: $_password');
-      } on FirebaseAuthException catch (e) {
-        setState(() {
-          _errorMessage = e.message;
-        });
-        print('Firebase Auth Exception: ${e.message}');
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'An unexpected error occurred';
-        });
-        print('Unexpected Error: $e');
-      } finally {
+      print('Firebase Auth Exception (${e.code}): ${e.message}');
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+      });
+      print('Unexpected Error: $e');
+    } finally {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
     }
   }
+  // --- End of Firebase Email/Password Login Logic ---
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(labelText: 'Email'),
                 validator: (value) {
-                  if (value!.isEmpty || value.isEmpty || !value.contains('@')) {
+                  if (value == null || value.trim().isEmpty || !value.trim().contains('@')) {
                     return 'Please enter a valid email address';
                   }
                   return null;
@@ -92,27 +137,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               SizedBox(height: 20),
-              if (_isLoading) CircularProgressIndicator(),
+              if (_isLoading) Center(child: CircularProgressIndicator()),
               if (!_isLoading)
                 ElevatedButton(onPressed: _tryLogin, child: Text('Login')),
               if (_errorMessage != null && !_isLoading)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
+                  padding: const EdgeInsets.only(top: 12.0),
                   child: Text(
                     _errorMessage!,
-                    style: TextStyle(color: Colors.red),
+                    style: TextStyle(color: Colors.red, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ),
               SizedBox(height: 12),
+              // --- Navigation to Registration Screen Implemented Here ---
               TextButton(
-                onPressed: () {
-                  // TODO: Navigate to RegistrationScreen
-                  // Navigator.of(context).push(MaterialPageRoute(builder: (context) => RegistrationScreen()));
-                  print('Navigate to registration screen');
+                onPressed: _isLoading ? null : () {
+                  // Navigate to RegistrationScreen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => RegistrationScreen()),
+                  );
+                  print('Navigating to registration screen');
                 },
                 child: Text('Don\'t have an account? Register'),
               ),
+              // --- End of Navigation ---
             ],
           ),
         ),
