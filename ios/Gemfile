@@ -1,2 +1,4 @@
+# In ios/Gemfile
 source 'https://rubygems.org'
-gem 'cocoapods', '~> 1.15.0' # Or your desired version
+gem 'cocoapods', '~> 1.11.3' # CocoaPods 1.11.3 was one of the last to support Ruby 2.6
+# bundler gem itself is usually not listed here as it's a prerequisite
