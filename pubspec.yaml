@@ -43,6 +43,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  provider: ^6.1.5 # Check for the latest version on pub.dev
   flutter_launcher_icons: ^0.14.3 # Check pub.dev for the latest version
     
   # The "flutter_lints" package below contains a set of recommended lints to
