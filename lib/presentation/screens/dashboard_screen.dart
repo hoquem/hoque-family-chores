@@ -1,12 +1,18 @@
 // lib/presentation/screens/dashboard_screen.dart
-import 'package:flutter/material.dart'; // <--- THIS IS THE MISSING IMPORT
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// Ensure correct import paths for your project 'hoque_family_chores'
+// App-specific imports - ensure paths are correct
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
+
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
+import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
+
 import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
+import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
+
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
@@ -58,6 +64,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            // Welcome Message
             const Text(
               'Welcome back!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -65,7 +72,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // --- Task Summary Metrics Section (Story 2) ---
+            // --- Task Summary Metrics Section ---
             const Text(
               'Task Summary',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -78,7 +85,26 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            const Divider(height: 32),
+            // --- Leaderboard Section ---
+            const Text(
+              'Family Leaderboard',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ChangeNotifierProvider(
+              create: (context) => LeaderboardProvider(MockLeaderboardService())..fetchLeaderboard(),
+              child: const LeaderboardWidget(),
+            ),
+            const SizedBox(height: 24),
+
+            // --- Placeholders for future stories ---
+            // Card(child: ListTile(title: Text('My Pending Tasks - Coming Soon!'))),
+            // const SizedBox(height: 16),
+            // Card(child: ListTile(title: Text('Pick a Task - Coming Soon!'))),
+            // const SizedBox(height: 16),
+
+            const Divider(height: 32, thickness: 1),
 
             // Navigation Section
             const Text(
