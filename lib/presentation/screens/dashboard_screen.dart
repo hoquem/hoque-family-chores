@@ -2,20 +2,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// App-specific imports - ensure paths are correct
+// App-specific imports - ensure all paths are correct for your project
+// --- Providers ---
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart'; // <-- Import for My Tasks
 
+// --- Widgets ---
+import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart'; // <-- Import for My Tasks
 
+// --- Services ---
+import 'package:hoque_family_chores/services/mock_task_service.dart';
 import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
 import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
-import 'package:hoque_family_chores/services/mock_task_service.dart'; // <-- Import for My Tasks
 
+// --- Screens for Navigation ---
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
@@ -85,6 +91,19 @@ class DashboardScreen extends StatelessWidget {
             ChangeNotifierProvider(
               create: (context) => MyTasksProvider(MockTaskService())..fetchMyPendingTasks(),
               child: const MyTasksWidget(),
+            ),
+            const SizedBox(height: 24),
+            
+            // --- Quick Task Picker Section ---
+            const Text(
+              'Grab an Unassigned Task!',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ChangeNotifierProvider(
+              create: (context) => AvailableTasksProvider(MockTaskService())..fetchAvailableTasks(),
+              child: const QuickTaskPickerWidget(),
             ),
             const SizedBox(height: 24),
 

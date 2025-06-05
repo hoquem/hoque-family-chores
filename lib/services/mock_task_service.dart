@@ -4,8 +4,6 @@ import 'package:hoque_family_chores/services/task_service_interface.dart';
 
 class MockTaskService implements TaskServiceInterface {
   // A list of all mock tasks for the whole family.
-  // We assign some to 'fm_001' (Mahmudul Hoque from MockFamilyService)
-  // and leave others unassigned or for other members.
   final List<Task> _allTasks = [
     Task(id: 'task_01', title: 'Wash the dishes', assigneeId: 'fm_001', dueDate: DateTime.now()),
     Task(id: 'task_02', title: 'Take out the bins', assigneeId: 'fm_002', dueDate: DateTime.now().add(const Duration(days: 1))),
@@ -39,6 +37,45 @@ class MockTaskService implements TaskServiceInterface {
       return b.priority.index.compareTo(a.priority.index);
     });
 
-    return pendingTasks;
+    return pendingTasks; // <-- This return statement was missing.
+  }
+
+  @override
+  Future<List<Task>> getUnassignedTasks() async {
+    // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Filter for tasks that are unassigned and not completed
+    final unassignedTasks = _allTasks
+        .where((task) => task.assigneeId == null && !task.isCompleted)
+        .toList();
+
+    return unassignedTasks;
+  }
+
+  @override
+  Future<void> assignTask({required String taskId, required String userId}) async {
+    // Simulate network delay for the update operation
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Find the task in our mock list
+    final taskIndex = _allTasks.indexWhere((task) => task.id == taskId);
+
+    if (taskIndex != -1) {
+      final task = _allTasks[taskIndex];
+      // Create a new task instance with the updated assigneeId
+      _allTasks[taskIndex] = Task(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        isCompleted: task.isCompleted,
+        assigneeId: userId, // Assign the task
+        dueDate: task.dueDate,
+        priority: task.priority,
+      );
+      print("MockTaskService: Assigned task '$taskId' to user '$userId'.");
+    } else {
+      print("MockTaskService: Error - Task with ID '$taskId' not found.");
+    }
   }
 }
