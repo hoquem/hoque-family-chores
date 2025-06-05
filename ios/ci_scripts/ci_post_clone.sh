@@ -57,7 +57,7 @@ if [ -f "Gemfile" ]; then
   # Extract required Bundler version from Gemfile.lock (e.g., 2.6.7)
   # For simplicity, we'll use the version from your error message.
   # If your Gemfile.lock changes Bundler versions, update this.
-  REQUIRED_BUNDLER_VERSION="2.6.7" # As per your error log
+  REQUIRED_BUNDLER_VERSION="2.2.33" # As per your error log
 
   echo "Attempting to install Bundler version $REQUIRED_BUNDLER_VERSION (if not already an exact match or newer compatible)..."
   # Install the specific version. Use --user-install for CI environments.
