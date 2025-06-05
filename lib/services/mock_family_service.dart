@@ -1,45 +1,57 @@
 // lib/services/mock_family_service.dart
-import '../models/family_member.dart';       // Import your FamilyMember model
-import './family_service_interface.dart'; // Import the interface
+import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/services/family_service_interface.dart';
 
 class MockFamilyService implements FamilyServiceInterface {
-  // A private list of mock family members.
-  // In a real application, this data would be fetched from a database or an API.
+  // --- UPDATED MOCK DATA ---
+  // A private list of mock family members using the names and roles you provided.
+  // Avatars are generated using the fun DiceBear API (https://www.dicebear.com/).
   final List<FamilyMember> _mockMembers = [
     FamilyMember(
       id: 'fm_001',
-      name: 'Eleanor Vance',
+      name: 'Mahmudul Hoque',
       role: 'Parent',
-      avatarUrl: 'https://i.pravatar.cc/150?u=eleanor@example.com', // Pravatar for unique placeholder images
+      avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Mahmudul',
     ),
     FamilyMember(
       id: 'fm_002',
-      name: 'Marcus Holloway',
+      name: 'Alima Begum',
       role: 'Parent',
-      avatarUrl: 'https://i.pravatar.cc/150?u=marcus@example.com',
+      avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Alima',
     ),
     FamilyMember(
       id: 'fm_003',
-      name: 'Lena Oxton',
-      role: 'Child',
-      avatarUrl: 'https://i.pravatar.cc/150?u=lena@example.com',
+      name: 'Roshina Hoque',
+      role: 'Admin',
+      avatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=Roshina', // A cool robot avatar
     ),
     FamilyMember(
       id: 'fm_004',
-      name: 'Arthur Morgan',
-      role: 'Uncle', // Example of a different role
-      // No avatarUrl, will use placeholder in UI
+      name: 'Ubaid Hoque',
+      role: 'Child',
+      avatarUrl: 'https://api.dicebear.com/8.x/pixel-art/svg?seed=Ubaid', // Pixel art style
     ),
     FamilyMember(
       id: 'fm_005',
-      name: 'Biscuit (The Dog)',
-      role: 'Pet',
-      avatarUrl: 'https://i.pravatar.cc/150?u=biscuit_dog@example.com',
+      name: 'Tazim Hoque',
+      role: 'Child',
+      avatarUrl: 'https://api.dicebear.com/8.x/miniavs/svg?seed=Tazim', // Minimalist avatar
+    ),
+    FamilyMember(
+      id: 'fm_006',
+      name: 'Ehsaan Hoque',
+      role: 'Child',
+      avatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=Ehsaan', // Another robot
+    ),
+    FamilyMember(
+      id: 'fm_007',
+      name: 'Yamin Hoque',
+      role: 'Child',
+      avatarUrl: 'https://api.dicebear.com/8.x/pixel-art/svg?seed=Yamin', // Another pixel art
     ),
   ];
 
   // This flag allows us to easily test how the UI handles errors.
-  // Set this to `true` in code to simulate an error condition.
   bool _simulateError = false;
 
   void setSimulateError(bool shouldSimulate) {
@@ -49,29 +61,22 @@ class MockFamilyService implements FamilyServiceInterface {
   @override
   Future<List<FamilyMember>> getFamilyMembers() async {
     // Simulate a network delay, as if fetching from a real server.
-    // This helps ensure loading indicators in the UI are tested.
-    await Future.delayed(const Duration(seconds: 1, milliseconds: 500));
+    await Future.delayed(const Duration(seconds: 1));
 
     if (_simulateError) {
       // Simulate a failure scenario.
       throw Exception("Simulated network error: Could not fetch family members.");
     }
 
-    // Return a *copy* of the list to prevent the original list from being
-    // modified by external code, which is a good practice for state integrity.
+    // Return a copy of the list.
     return List<FamilyMember>.from(_mockMembers);
   }
 
-  // --- Optional: Methods for testing or dynamic mock data manipulation ---
-  // These are not part of the FamilyServiceInterface but can be useful
-  // for more complex testing scenarios if you were directly testing this mock service.
-
-  /// Adds a member to the mock list (for testing purposes).
+  // --- Optional helper methods for testing ---
   void addMockMemberForTesting(FamilyMember member) {
     _mockMembers.add(member);
   }
 
-  /// Clears all mock members (for testing purposes).
   void clearMockMembersForTesting() {
     _mockMembers.clear();
   }
