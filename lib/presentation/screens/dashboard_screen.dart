@@ -1,8 +1,12 @@
 // lib/presentation/screens/dashboard_screen.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // <--- THIS IS THE MISSING IMPORT
 import 'package:provider/provider.dart';
+
 // Ensure correct import paths for your project 'hoque_family_chores'
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
+import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
+import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
@@ -22,9 +26,8 @@ class DashboardScreen extends StatelessWidget {
       icon: Icon(icon),
       label: Text(label),
       style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 50), // Make buttons wider
+        minimumSize: const Size(double.infinity, 50),
         textStyle: const TextStyle(fontSize: 16),
-        // Add more styling if needed
       ),
       onPressed: () {
         Navigator.push(
@@ -37,10 +40,6 @@ class DashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // You can get user info here if needed, e.g., for a welcome message
-    // final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    // Potentially get user's name from a UserProvider or AuthProvider if it stores it
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -54,34 +53,32 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView( // Allows content to scroll if it overflows
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // Make buttons stretch
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            // Welcome Message (Optional - can be enhanced later)
             const Text(
-              'Welcome back!', // TODO: Personalize with user's name if available
+              'Welcome back!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
 
-            // --- Placeholder for "My Pending Tasks" (Story 4) ---
-            // Card(child: ListTile(title: Text('My Pending Tasks - Coming Soon!'))),
-            // const SizedBox(height: 16),
+            // --- Task Summary Metrics Section (Story 2) ---
+            const Text(
+              'Task Summary',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ChangeNotifierProvider(
+              create: (context) => TaskSummaryProvider(MockTaskSummaryService())..fetchTaskSummary(),
+              child: const TaskSummaryWidget(),
+            ),
+            const SizedBox(height: 24),
 
-            // --- Placeholder for "Pick a Task" (Story 5) ---
-            // Card(child: ListTile(title: Text('Pick a Task - Coming Soon!'))),
-            // const SizedBox(height: 16),
-
-            // --- Placeholder for "Task Summary Metrics" (Story 2) ---
-            // Card(child: ListTile(title: Text('Task Metrics - Coming Soon!'))),
-            // const SizedBox(height: 16),
-
-            // --- Placeholder for "Leaderboard" (Story 3) ---
-            // Card(child: ListTile(title: Text('Leaderboard - Coming Soon!'))),
-            // const SizedBox(height: 24), // Extra space before navigation
+            const Divider(height: 32),
 
             // Navigation Section
             const Text(
