@@ -18,7 +18,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.hoque_family_chores"
+    namespace = "com.hoque.familychores"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -33,7 +33,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.hoque_family_chores" // Keep your existing applicationId
+        applicationId = "com.hoque.familychores" // Keep your existing applicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23 // <--- This is the updated line
