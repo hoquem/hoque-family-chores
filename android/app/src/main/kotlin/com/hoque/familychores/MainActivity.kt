@@ -1,4 +1,4 @@
-package com.example.hoque_family_chores
+package com.hoque.familychores
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:232697993893:android:53f6e476701dd9361c4b4c",
+        "mobilesdk_app_id": "1:232697993893:android:6dc56236c63f3ccd1c4b4c",
         "android_client_info": {
-          "package_name": "com.example.hoque_family_chores"
+          "package_name": "com.hoque.familychores"
         }
       },
       "oauth_client": [],
