@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  intl: ^0.20.2 # Check pub.dev for the latest version
   provider: ^6.1.5 # Check for the latest version on pub.dev
   change_app_package_name: ^1.5.0
   flutter_dotenv: ^5.2.1 # Check for latest version
@@ -42,6 +43,7 @@ dependencies:
   firebase_auth: ^5.5.3 # Check pub.dev for the latest version
   cloud_firestore: ^5.6.7 # Check pub.dev for the latest version
   # Add other Firebase packages as needed, e.g., firebase_storage, firebase_messaging
+
 
 dev_dependencies:
   flutter_test:

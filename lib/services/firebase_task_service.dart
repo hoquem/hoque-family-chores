@@ -19,6 +19,37 @@ class FirebaseTaskService implements TaskServiceInterface {
     });
   }
 
+@override
+  Stream<List<Task>> streamMyTasks(String userId) {
+    final snapshots = _tasksCollection
+        .where('assigneeId', isEqualTo: userId)
+        .where('status', isNotEqualTo: TaskStatus.completed.index)
+        .orderBy('status')
+        .orderBy('dueDate')
+        .snapshots();
+    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
+  }
+
+  @override
+  Stream<List<Task>> streamAvailableTasks() {
+    final snapshots = _tasksCollection
+        .where('status', isEqualTo: TaskStatus.available.index)
+        .orderBy('priority', descending: true)
+        .orderBy('dueDate')
+        .snapshots();
+    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
+  }
+
+  @override
+  Stream<List<Task>> streamCompletedTasks() {
+    final snapshots = _tasksCollection
+        .where('status', isEqualTo: TaskStatus.completed.index)
+        .orderBy('createdAt', descending: true)
+        .limit(50) // Limit to last 50 completed tasks for performance
+        .snapshots();
+    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
+  }
+  
   // --- Methods for Dashboard Widgets (Stubbed for now) ---
 
   @override
