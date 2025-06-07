@@ -2,7 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart'; // Kept from HEAD
+
+// Added from origin/main, and needed for MyApp constructor
+import 'package:hoque_family_chores/services/gamification_service.dart'; 
 
 import 'package:hoque_family_chores/main.dart';
 import 'package:hoque_family_chores/services/environment_service.dart';
@@ -14,18 +17,20 @@ import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 void main() {
   late DataService dataService;
   late EnvironmentService environmentService;
+  late GamificationServiceInterface mockGamificationService; // Added for MyApp
 
   setUp(() {
     // Initialize services before each test
     environmentService = EnvironmentService();
     dataService = DataServiceFactory.getDataService();
+    mockGamificationService = MockGamificationService(); // Initialize mock gamification service
   });
 
   tearDown(() {
     // Clean up after each test
     if (dataService is MockDataService) {
       // Sign out to reset state between tests
-      dataService.signOut();
+      (dataService as MockDataService).signOut(); // Explicit cast for clarity
     }
   });
 
@@ -69,7 +74,7 @@ void main() {
       );
       
       expect(userId, isNotNull);
-      expect(dataService.isAuthenticated(), completion(isTrue));
+      expect(await dataService.isAuthenticated(), isTrue); 
       expect(dataService.getCurrentUserId(), isNotNull);
     });
 
@@ -105,11 +110,11 @@ void main() {
         password: 'password123',
       );
       
-      expect(await dataService.isAuthenticated(), isTrue);
+      expect(await dataService.isAuthenticated(), isTrue); 
       
       // Then sign out
       await dataService.signOut();
-      expect(await dataService.isAuthenticated(), isFalse);
+      expect(await dataService.isAuthenticated(), isFalse); 
       expect(dataService.getCurrentUserId(), isNull);
     });
   });
@@ -120,14 +125,19 @@ void main() {
     
     setUp(() async {
       // Sign in before each test in this group
-      userId = (await dataService.signIn(
+      // Ensure signIn is successful and userId is not null
+      final signedInUserId = await dataService.signIn(
         email: 'ahmed@example.com',
         password: 'password123',
-      ))!;
+      );
+      expect(signedInUserId, isNotNull, reason: "Sign-in must succeed for task tests setup");
+      userId = signedInUserId!;
       
       // Get family ID from user profile
       final userProfile = await dataService.getUserProfile(userId: userId);
-      familyId = userProfile!['familyId'];
+      expect(userProfile, isNotNull, reason: "User profile must exist for task tests setup");
+      expect(userProfile!['familyId'], isNotNull, reason: "Family ID must exist in profile for task tests setup");
+      familyId = userProfile['familyId'] as String;
     });
 
     test('Mock service should return tasks for a family', () async {
@@ -187,11 +197,16 @@ void main() {
   });
 
   testWidgets('App initializes with mock data in test environment', (WidgetTester tester) async {
-    // Build our app with the mock data service
-    await tester.pumpWidget(MyApp(dataService: dataService));
+    // Build our app with the mock data service and mock gamification service
+    await tester.pumpWidget(
+      MyApp(
+        dataService: dataService, 
+        gamificationService: mockGamificationService, // Updated constructor
+      )
+    );
     
-    // Verify that the app builds without errors
-    expect(find.text('Login'), findsOneWidget);
+    // Verify that the app builds without errors and shows the login screen
+    expect(find.text('Login'), findsOneWidget); // Assuming LoginScreen is the initial screen for unauthenticated users
     
     // Verify we're using mock data by checking the Provider
     final context = tester.element(find.byType(MaterialApp));
@@ -210,17 +225,19 @@ void main() {
             update: (_, dataService, authProvider) => 
                 authProvider!..updateDataService(dataService),
           ),
+          // GamificationProvider could be added here if needed for the test
+          Provider<GamificationServiceInterface>.value(value: mockGamificationService),
         ],
         child: const MaterialApp(
           home: Scaffold(
-            body: Text('Test'),
+            body: Text('TestWidgetForAuthProvider'), // Unique text to find the context
           ),
         ),
       ),
     );
     
     // Get the AuthProvider
-    final context = tester.element(find.text('Test'));
+    final context = tester.element(find.text('TestWidgetForAuthProvider'));
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     // Test sign in
@@ -229,14 +246,14 @@ void main() {
       password: 'password123',
     );
     
-    expect(success, isTrue);
-    expect(authProvider.isLoggedIn, isTrue);
-    expect(authProvider.userId, isNotNull);
-    expect(authProvider.displayName, isNotNull);
+    expect(success, isTrue, reason: "Sign-in should succeed with mock credentials");
+    expect(authProvider.isLoggedIn, isTrue, reason: "AuthProvider should reflect logged-in state");
+    expect(authProvider.userId, isNotNull, reason: "User ID should be available after sign-in");
+    expect(authProvider.displayName, isNotNull, reason: "Display name should be available after sign-in");
     
     // Test sign out
     await authProvider.signOut();
-    expect(authProvider.isLoggedIn, isFalse);
+    expect(authProvider.isLoggedIn, isFalse, reason: "AuthProvider should reflect logged-out state");
   });
 
   // Test that output files are generated for test results
