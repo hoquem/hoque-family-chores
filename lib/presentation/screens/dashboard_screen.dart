@@ -26,6 +26,8 @@ import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/settings_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -81,6 +83,14 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
+            // --Gamification Section---
+            _buildNavigationButton(
+              context: context,
+              icon: Icons.emoji_events,
+              label: 'Achievements & Rewards',
+              screen: const GamificationScreen(),
+            ),
+            
             // --- My Pending Tasks Section ---
             const Text(
               'My Pending Tasks',
@@ -173,6 +183,7 @@ class DashboardScreen extends StatelessWidget {
               label: 'Settings',
               screen: const SettingsScreen(),
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
