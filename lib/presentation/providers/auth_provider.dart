@@ -3,6 +3,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/services/data_service.dart';
 
+/// Simple User class for compatibility
+class User {
+  final String uid;
+  final String? email;
+  final String? displayName;
+
+  User({
+    required this.uid,
+    this.email,
+    this.displayName,
+  });
+}
+
 /// Authentication states that the UI can react to
 enum AuthStatus {
   /// Initial state, authentication status unknown
@@ -57,6 +70,18 @@ class AuthProvider with ChangeNotifier {
   
   /// Current user photo URL
   String? get photoUrl => _photoUrl;
+
+  /// Current user object (for compatibility with gamification screen)
+  User? get currentUser {
+    if (_userId != null) {
+      return User(
+        uid: _userId!,
+        email: _userEmail,
+        displayName: _displayName,
+      );
+    }
+    return null;
+  }
   
   /// Updates the data service reference
   /// This is called by the ChangeNotifierProxyProvider in main.dart
