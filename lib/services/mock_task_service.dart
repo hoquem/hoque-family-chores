@@ -97,6 +97,30 @@ class MockTaskService implements TaskServiceInterface {
     return Stream.value(_allTasks);
   }
 
+    @override
+  Stream<List<Task>> streamMyTasks(String userId) {
+    final myTasks = _allTasks
+        .where((task) => task.assigneeId == userId && task.status != TaskStatus.completed)
+        .toList();
+    return Stream.value(myTasks);
+  }
+
+  @override
+  Stream<List<Task>> streamAvailableTasks() {
+    final availableTasks = _allTasks
+        .where((task) => task.status == TaskStatus.available)
+        .toList();
+    return Stream.value(availableTasks);
+  }
+
+  @override
+  Stream<List<Task>> streamCompletedTasks() {
+    final completedTasks = _allTasks
+        .where((task) => task.status == TaskStatus.completed)
+        .toList();
+    return Stream.value(completedTasks);
+  }
+
   @override
   Future<List<Task>> getMyPendingTasks(String userId) async {
     await Future.delayed(const Duration(milliseconds: 600));

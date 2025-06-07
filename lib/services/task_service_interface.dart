@@ -2,24 +2,25 @@
 import 'package:hoque_family_chores/models/task.dart';
 
 abstract class TaskServiceInterface {
-  /// Returns a live-updating stream of all tasks.
+  // Keep this for a general 'all tasks' view
   Stream<List<Task>> streamAllTasks();
 
-  /// Fetches a list of pending tasks for a specific user.
-  Future<List<Task>> getMyPendingTasks(String userId);
+  // New method for the "My Tasks" filter
+  Stream<List<Task>> streamMyTasks(String userId);
 
-  /// Fetches a list of available, unassigned tasks.
-  Future<List<Task>> getUnassignedTasks();
+  // New method for the "Available" filter
+  Stream<List<Task>> streamAvailableTasks();
 
-  /// Assigns a specific task to a user.
+  // New method for the "Completed" filter
+  Stream<List<Task>> streamCompletedTasks();
+
+  // ... (the other methods like assignTask, createTask, etc. remain)
   Future<void> assignTask({required String taskId, required String userId});
-
-  /// Creates a new task in the database.
   Future<void> createTask(Task task);
-
-  /// Updates an existing task.
   Future<void> updateTask(Task task);
-
-  /// Deletes a task by its ID.
   Future<void> deleteTask(String taskId);
+
+  // These older Future-based methods can be phased out or kept for non-streaming needs
+  Future<List<Task>> getMyPendingTasks(String userId);
+  Future<List<Task>> getUnassignedTasks();
 }
