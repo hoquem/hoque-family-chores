@@ -719,9 +719,12 @@ class FirebaseDataService implements DataService {
         return 75;
       case TaskDifficulty.challenging:
         return 100;
-      default:
-        return 30;
     }
+    // This line should ideally not be reached if all enum cases are handled.
+    // If TaskDifficulty enum changes, this switch might become non-exhaustive.
+    // Returning a default or throwing an error are options.
+    // For now, let's assume medium points if somehow reached.
+    return 50; 
   }
   
   @override
@@ -1787,9 +1790,7 @@ class FirebaseDataService implements DataService {
           }
         }
         
-        if (currentLevelData == null) {
-          currentLevelData = {'level': currentLevel, 'requirement': 999999, 'reward': 0};
-        }
+        currentLevelData ??= {'level': currentLevel, 'requirement': 999999, 'reward': 0};
         
         int newProgress = progressValue ?? currentProgress + 1;
         int newLevel = currentLevel;
@@ -1888,14 +1889,12 @@ class FirebaseDataService implements DataService {
           }
         }
         
-        if (currentLevelData == null) {
-          currentLevelData = {
+        currentLevelData ??= {
             'level': currentLevel,
             'requirement': 999999,
             'reward': 0,
             'name': 'Level $currentLevel',
           };
-        }
         
         Map<String, dynamic>? nextLevelData;
         if (currentLevel < levels.length) {
@@ -1913,13 +1912,12 @@ class FirebaseDataService implements DataService {
             : 0.0;
         
         // Convert timestamp to ISO string
-        String? lastUpdated;
-        if (userAchievementData['lastUpdated'] != null && 
-            userAchievementData['lastUpdated'] is Timestamp) {
-          lastUpdated = (userAchievementData['lastUpdated'] as Timestamp)
+        String? lastUpdated = (userAchievementData['lastUpdated'] != null && 
+            userAchievementData['lastUpdated'] is Timestamp)
+            ? (userAchievementData['lastUpdated'] as Timestamp)
               .toDate()
-              .toIso8601String();
-        }
+              .toIso8601String()
+            : null;
         
         return {
           'id': doc.id,
@@ -2015,15 +2013,13 @@ class FirebaseDataService implements DataService {
       }
       
       // Convert timestamps to ISO strings
-      String? lastActive;
-      if (userData['lastActive'] != null && userData['lastActive'] is Timestamp) {
-        lastActive = (userData['lastActive'] as Timestamp).toDate().toIso8601String();
-      }
+      String? lastActive = (userData['lastActive'] != null && userData['lastActive'] is Timestamp)
+          ? (userData['lastActive'] as Timestamp).toDate().toIso8601String()
+          : null;
       
-      String? createdAt;
-      if (userData['createdAt'] != null && userData['createdAt'] is Timestamp) {
-        createdAt = (userData['createdAt'] as Timestamp).toDate().toIso8601String();
-      }
+      String? createdAt = (userData['createdAt'] != null && userData['createdAt'] is Timestamp)
+          ? (userData['createdAt'] as Timestamp).toDate().toIso8601String()
+          : null;
       
       // Generate activity summary
       return {

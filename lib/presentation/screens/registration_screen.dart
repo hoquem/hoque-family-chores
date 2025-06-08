@@ -36,7 +36,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     // 2. Handling success (e.g., navigating to dashboard or back to login).
     // 3. Handling errors (e.g., showing a SnackBar).
     await Future.delayed(const Duration(seconds: 2)); // Simulate network call
-    print('Simulating registration for: ${_emailController.text}');
+    // Would log: Simulating registration for: ${_emailController.text}
 
     setState(() {
       _isLoading = false;
