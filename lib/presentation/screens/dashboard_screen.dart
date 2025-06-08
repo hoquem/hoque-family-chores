@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/services/data_service.dart'; // From HEAD
 
 // Imports from origin/main
 import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';

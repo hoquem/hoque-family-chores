@@ -1,6 +1,5 @@
 // lib/services/mock_leaderboard_service.dart
 import 'dart:math';
-import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/leaderboard_entry.dart';
 import 'package:hoque_family_chores/services/family_service_interface.dart';
 import 'package:hoque_family_chores/services/mock_family_service.dart';

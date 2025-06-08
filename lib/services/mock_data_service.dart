@@ -506,9 +506,9 @@ class MockDataService implements DataService {
         return 75;
       case TaskDifficulty.challenging:
         return 100;
-      default:
-        return 30;
     }
+    // This line will only be reached if a new enum value is added in the future
+    return 50; // Default to medium difficulty points
   }
   
   @override

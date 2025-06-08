@@ -1,6 +1,5 @@
 // lib/services/data_service.dart
 
-import 'package:flutter/foundation.dart';
 
 /// Models (these would typically be in separate files)
 /// Basic models are defined here for reference - in a real implementation,
