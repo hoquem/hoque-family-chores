@@ -2,10 +2,12 @@
 # Xcode Cloud Post-Clone Script (ios/ci_scripts/ci_post_clone.sh)
 # Purpose: Set up Flutter, Firebase, and CocoaPods dependencies after cloning.
 
-echo "--- Executing ci_post_clone.sh --- Version: 2.0.1 ---"
+echo "--- Executing ci_post_clone.sh --- Version: 2.0.2 ---"
 echo "Timestamp: $(date)"
 echo "CI Workspace: $CI_WORKSPACE"
 echo "Current Directory: $(pwd)"
+echo "Script Location: $0"
+echo "Script Directory: $(dirname "$0")"
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -52,34 +54,124 @@ echo "Flutter SDK Path: $FLUTTER_SDK_PATH"
 which flutter
 flutter --version
 
-# --- 3. Navigate to Project Root ---
-echo "--- Navigating to Project Root ---"
-# This script is in $CI_WORKSPACE/ios/ci_scripts/
-# Project root is $CI_WORKSPACE
-PROJECT_ROOT="$CI_WORKSPACE"
+# --- 3. Determine Project Root (Robustly) ---
+echo "--- Determining Project Root ---"
+# Debug information about the environment
+echo "Debug - Current directory: $(pwd)"
+echo "Debug - Script location: $0"
+echo "Debug - Script directory: $(dirname "$0")"
+echo "Debug - CI_WORKSPACE: $CI_WORKSPACE"
+echo "Debug - Directory listing of current location:"
+ls -la
+
+# Determine the project root more robustly
+# Method 1: Use CI_WORKSPACE if available
+if [ -n "$CI_WORKSPACE" ] && [ -d "$CI_WORKSPACE" ]; then
+  echo "Using CI_WORKSPACE as project root"
+  PROJECT_ROOT="$CI_WORKSPACE"
+# Method 2: Determine from script location (assuming script is in ios/ci_scripts)
+elif [ -f "$(pwd)/pubspec.yaml" ]; then
+  echo "Found pubspec.yaml in current directory, using as project root"
+  PROJECT_ROOT="$(pwd)"
+elif [ -f "$(pwd)/../pubspec.yaml" ]; then
+  echo "Found pubspec.yaml one level up, using that as project root"
+  PROJECT_ROOT="$(pwd)/.."
+elif [ -f "$(pwd)/../../pubspec.yaml" ]; then
+  echo "Found pubspec.yaml two levels up, using that as project root"
+  PROJECT_ROOT="$(pwd)/../.."
+# Method 3: If we're in ios/ci_scripts, go up two directories
+elif [ "$(basename "$(pwd)")" = "ci_scripts" ] && [ "$(basename "$(dirname "$(pwd)")")" = "ios" ]; then
+  echo "Current directory structure suggests we're in ios/ci_scripts, going up two levels"
+  PROJECT_ROOT="$(pwd)/../.."
+# Method 4: If we're in ios directory, go up one directory
+elif [ "$(basename "$(pwd)")" = "ios" ]; then
+  echo "Current directory is ios, going up one level"
+  PROJECT_ROOT="$(pwd)/.."
+# Method 5: If we're in /Volumes/workspace/repository, use that
+elif [ "$(pwd)" = "/Volumes/workspace/repository" ]; then
+  echo "Current directory is /Volumes/workspace/repository, using that"
+  PROJECT_ROOT="/Volumes/workspace/repository"
+# Method 6: If we're in /Volumes/workspace/repository/ios/ci_scripts, go up two levels
+elif [ "$(pwd)" = "/Volumes/workspace/repository/ios/ci_scripts" ]; then
+  echo "Current directory is /Volumes/workspace/repository/ios/ci_scripts, going up two levels"
+  PROJECT_ROOT="/Volumes/workspace/repository"
+# Fallback: Use the parent directory of the script location
+else
+  echo "Using fallback method to determine project root"
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
+# Verify the project root
+echo "Determined PROJECT_ROOT: $PROJECT_ROOT"
+if [ ! -d "$PROJECT_ROOT" ]; then
+  echo "Error: Determined project root '$PROJECT_ROOT' does not exist!"
+  exit 1
+fi
+
+# Navigate to the project root
 cd "$PROJECT_ROOT"
 echo "Current Directory (Project Root): $(pwd)"
 
-# --- 4. Create .env File from CI Variables ---
-echo "--- Creating .env file at Project Root ---"
-ENV_FILE_PATH="$PROJECT_ROOT/.env"
-echo "Writing to $ENV_FILE_PATH..."
+# Verify we're in the right place by checking for key files
+echo "Verifying project root location..."
+if [ -f "pubspec.yaml" ]; then
+  echo "✓ Found pubspec.yaml in project root"
+elif [ -d "ios" ] && [ -d "android" ]; then
+  echo "✓ Found ios and android directories in project root"
+else
+  echo "Warning: Could not verify project root. Missing pubspec.yaml or ios/android directories."
+  echo "Directory contents of determined project root:"
+  ls -la
+fi
 
-# Check if directory is writable before attempting to write
-if [ ! -w "$(dirname "$ENV_FILE_PATH")" ]; then
-  echo "Error: Directory $(dirname "$ENV_FILE_PATH") is not writable."
-  echo "Current permissions: $(ls -ld "$(dirname "$ENV_FILE_PATH")")"
-  echo "Attempting to create .env file in a different location..."
-  # Try alternative location if project root isn't writable
-  ENV_FILE_PATH="$PROJECT_ROOT/ios/Runner/.env"
-  echo "New .env path: $ENV_FILE_PATH"
+# --- 4. Create .env File from CI Variables ---
+echo "--- Creating .env file ---"
+
+# Define potential .env locations in order of preference
+ENV_FILE_LOCATIONS=(
+  "$PROJECT_ROOT/.env"                    # Project root (preferred)
+  "$PROJECT_ROOT/ios/.env"                # iOS directory
+  "$PROJECT_ROOT/ios/Runner/.env"         # iOS Runner directory
+  "$PROJECT_ROOT/ios/Flutter/.env"        # iOS Flutter directory
+  "$(pwd)/.env"                           # Current directory
+)
+
+# Try each location until we find a writable one
+ENV_FILE_PATH=""
+for location in "${ENV_FILE_LOCATIONS[@]}"; do
+  echo "Trying to use .env location: $location"
+  if [ -w "$(dirname "$location")" ]; then
+    ENV_FILE_PATH="$location"
+    echo "✓ Found writable location for .env: $ENV_FILE_PATH"
+    break
+  else
+    echo "× Directory $(dirname "$location") is not writable."
+    echo "  Permissions: $(ls -ld "$(dirname "$location")" 2>/dev/null || echo "Cannot access directory")"
+  fi
+done
+
+# If no writable location was found, try to create directories
+if [ -z "$ENV_FILE_PATH" ]; then
+  echo "No writable location found for .env file. Attempting to create directories..."
   
-  if [ ! -w "$(dirname "$ENV_FILE_PATH")" ]; then
-    echo "Error: Alternative directory $(dirname "$ENV_FILE_PATH") is also not writable."
-    echo "Current permissions: $(ls -ld "$(dirname "$ENV_FILE_PATH")")"
+  # Try to create a directory in the current working directory
+  FALLBACK_DIR="$(pwd)/flutter_env"
+  mkdir -p "$FALLBACK_DIR" 2>/dev/null || true
+  
+  if [ -d "$FALLBACK_DIR" ] && [ -w "$FALLBACK_DIR" ]; then
+    ENV_FILE_PATH="$FALLBACK_DIR/.env"
+    echo "Created fallback directory for .env: $ENV_FILE_PATH"
+  else
+    echo "FATAL: Could not find or create a writable location for .env file!"
+    echo "Current user: $(whoami)"
+    echo "Current directory: $(pwd)"
+    echo "Directory permissions: $(ls -ld "$(pwd)")"
     exit 1
   fi
 fi
+
+echo "Writing to $ENV_FILE_PATH..."
 
 # Firebase variables (these names should match what your firebase_options.dart expects or how you load them)
 # The firebase.json values are primarily for the flutterfire CLI.
@@ -99,8 +191,18 @@ echo "FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}" >> "$ENV_FILE_PATH"
 echo "SOME_API_KEY=${SOME_API_KEY}" >> "$ENV_FILE_PATH"
 echo "SOME_API_SECRET=${SOME_API_SECRET}" >> "$ENV_FILE_PATH"
 
-echo ".env file content:"
-cat "$ENV_FILE_PATH"
+echo ".env file created successfully at: $ENV_FILE_PATH"
+echo ".env file content (redacted secrets):"
+grep -v "KEY\|SECRET\|TOKEN" "$ENV_FILE_PATH" || echo "No non-secret content to show"
+
+# Create symbolic links to the .env file in common locations for redundancy
+echo "Creating symbolic links to .env file in common locations..."
+if [ "$ENV_FILE_PATH" != "$PROJECT_ROOT/.env" ] && [ -w "$PROJECT_ROOT" ]; then
+  ln -sf "$ENV_FILE_PATH" "$PROJECT_ROOT/.env" 2>/dev/null || echo "Could not create symlink at $PROJECT_ROOT/.env"
+fi
+if [ "$ENV_FILE_PATH" != "$PROJECT_ROOT/ios/Runner/.env" ] && [ -w "$PROJECT_ROOT/ios/Runner" ]; then
+  ln -sf "$ENV_FILE_PATH" "$PROJECT_ROOT/ios/Runner/.env" 2>/dev/null || echo "Could not create symlink at $PROJECT_ROOT/ios/Runner/.env"
+fi
 
 # --- 5. Verify GoogleService-Info.plist ---
 echo "--- Verifying GoogleService-Info.plist ---"
