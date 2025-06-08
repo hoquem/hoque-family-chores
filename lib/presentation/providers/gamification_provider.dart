@@ -1,5 +1,5 @@
 // lib/presentation/providers/gamification_provider.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
@@ -12,32 +12,7 @@ enum GamificationLoadingState {
   error,
 }
 
-enum GamificationEventType {
-  pointsEarned,
-  levelUp,
-  badgeUnlocked,
-  rewardRedeemed,
-  streakIncreased,
-  achievementUnlocked,
-}
-
-class GamificationEvent {
-  final String id;
-  final GamificationEventType type;
-  final String message;
-  final DateTime timestamp;
-  final Map<String, dynamic>? data;
-
-  GamificationEvent({
-    required this.id,
-    required this.type,
-    required this.message,
-    required this.timestamp,
-    this.data,
-  });
-}
-
-class GamificationProvider extends ChangeNotifier {
+class GamificationProvider extends material.ChangeNotifier {
   final GamificationServiceInterface _gamificationService;
   
   UserProfile? _userProfile;
@@ -148,7 +123,7 @@ class GamificationProvider extends ChangeNotifier {
 
     try {
       final allRewards = await _gamificationService.getAllRewards();
-      final userRewards = await _gamificationService.getUserRewards(userId);
+      final userRewards = await _gamificationService.getUserRedeemedRewards(userId);
       
       _allRewards = allRewards;
       _userRewards = userRewards;
@@ -173,20 +148,17 @@ class GamificationProvider extends ChangeNotifier {
       final reward = _allRewards.firstWhere((r) => r.id == rewardId);
       
       // Check if user has enough points
-      if (_userProfile!.totalPoints < reward.pointCost) {
+      if (_userProfile!.totalPoints < reward.pointsCost) {
         return false;
       }
       
       // Redeem the reward
-      final success = await _gamificationService.redeemReward(
-        userId: userId,
-        rewardId: rewardId,
-      );
+      final success = await _gamificationService.redeemReward(userId, rewardId);
       
       if (success) {
         // Update user profile with new points
         _userProfile = _userProfile!.copyWith(
-          totalPoints: _userProfile!.totalPoints - reward.pointCost,
+          totalPoints: _userProfile!.totalPoints - reward.pointsCost,
         );
         
         // Add reward to user rewards
@@ -198,7 +170,7 @@ class GamificationProvider extends ChangeNotifier {
         // Add event
         _addEvent(
           GamificationEventType.rewardRedeemed,
-          'Redeemed "${reward.title}" for ${reward.pointCost} points',
+          'Redeemed "${reward.title}" for ${reward.pointsCost} points',
           {'rewardId': rewardId},
         );
         
@@ -223,10 +195,9 @@ class GamificationProvider extends ChangeNotifier {
     Map<String, dynamic>? data,
   ) {
     final event = GamificationEvent(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
       type: type,
+      userId: _userProfile?.id ?? '',
       message: message,
-      timestamp: DateTime.now(),
       data: data,
     );
     
