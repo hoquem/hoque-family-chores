@@ -1,0 +1,34 @@
+# CODEOWNERS
+# This file designates default reviewers for pull requests.
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners.
+
+# Default owner for all files in the repository.
+# This ensures that any change, regardless of the file,
+# will require a review from @hoquem when a PR targets a protected branch (e.g., main)
+# configured with "Require review from Code Owners".
+* @hoquem
+
+# Critical application core files
+# Changes to these files are fundamental and must be reviewed by @hoquem.
+/lib/main.dart @hoquem
+/lib/presentation/providers/auth_provider.dart @hoquem
+
+# Key service layer files
+# Changes to how data is handled, fetched, or mocked should be reviewed.
+/lib/services/data_service.dart @hoquem
+/lib/services/environment_service.dart @hoquem
+/lib/services/data_service_factory.dart @hoquem
+/lib/services/firebase_data_service.dart @hoquem
+/lib/services/mock_data_service.dart @hoquem
+
+# CI/CD workflow configurations
+# Any changes to the continuous integration or deployment pipelines.
+/.github/workflows/ @hoquem
+/.github/workflows/*.yml @hoquem
+
+# All documentation files
+# This includes all Markdown files (e.g., README.md, *.md in subdirectories)
+# and any files within a /docs/ directory.
+*.md @hoquem
+/docs/ @hoquem
