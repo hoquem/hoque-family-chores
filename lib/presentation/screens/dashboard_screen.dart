@@ -17,9 +17,6 @@ import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dar
 import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
 
 // --- Services --- (from origin/main, used by its providers)
-// Note: These are specific mock services. Our DataService (when MockDataService is active)
-// could potentially provide this data, but for merge conflict resolution,
-// we keep origin/main's provider dependencies as they were.
 import 'package:hoque_family_chores/services/mock_task_service.dart';
 import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
 import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
@@ -38,37 +35,53 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    // final dataService = Provider.of<DataService>(context, listen: false); // Available if needed by HEAD's sections
-    
-    // Get user display name or use "Family Member" as fallback
     final displayName = authProvider.displayName ?? 'Family Member';
+    final photoUrl = authProvider.photoUrl;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Family Chores'), // Title from HEAD
+        title: const Text('Family Chores'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            tooltip: 'Logout',
-            onPressed: () async {
-              await authProvider.signOut();
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UserProfileScreen()),
+                );
+              },
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Theme.of(context).primaryColorLight,
+                child: photoUrl != null && photoUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          photoUrl,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U'),
+                        ),
+                      )
+                    : Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U'),
+              ),
+            ),
           ),
         ],
       ),
-      body: RefreshIndicator( // From HEAD
+      body: RefreshIndicator(
         onRefresh: () async {
-          // Refresh user data when pulled down
           await authProvider.refreshUserProfile();
-          // TODO: Consider refreshing other providers if necessary and feasible
         },
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(), // From HEAD
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, // Alignment from HEAD
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome message (from HEAD)
               Text(
                 'Welcome, $displayName!',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -77,7 +90,6 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               
-              // User info card (from HEAD)
               Card(
                 elevation: 4,
                 child: Padding(
@@ -98,7 +110,7 @@ class DashboardScreen extends StatelessWidget {
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => 
+                                      errorBuilder: (context, error, stackTrace) =>
                                           Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U'),
                                     ),
                                   )
@@ -125,9 +137,7 @@ class DashboardScreen extends StatelessWidget {
                                     style: Theme.of(context).textTheme.bodyMedium,
                                   ),
                                 const SizedBox(height: 4),
-                                // This would be populated with real data in a full implementation
-                                // For now, it's a placeholder. Real data would come from a GamificationProvider or UserProfileProvider
-                                const Text('Level: 3 • Points: 850'), // Placeholder from HEAD
+                                const Text('Level: 3 • Points: 850'),
                               ],
                             ),
                           ),
@@ -139,7 +149,6 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               
-              // Task summary section (preview style from HEAD)
               Text(
                 'My Tasks Summary',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -150,37 +159,20 @@ class DashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // These would be populated with real data in a full implementation
                       _buildTaskSummaryRow(
-                        context, 
-                        'Pending', 
-                        '3', // Placeholder
-                        Icons.pending_actions, 
-                        Colors.orange
-                      ),
+                        context, 'Pending', '3', Icons.pending_actions, Colors.orange),
                       const Divider(),
                       _buildTaskSummaryRow(
-                        context, 
-                        'In Progress', 
-                        '1', // Placeholder
-                        Icons.hourglass_top, 
-                        Colors.blue
-                      ),
+                        context, 'In Progress', '1', Icons.hourglass_top, Colors.blue),
                       const Divider(),
                       _buildTaskSummaryRow(
-                        context, 
-                        'Completed', 
-                        '12', // Placeholder
-                        Icons.task_alt, 
-                        Colors.green
-                      ),
+                        context, 'Completed', '12', Icons.task_alt, Colors.green),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               
-              // Family leaderboard preview (style from HEAD)
               Text(
                 'Family Leaderboard Preview',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -191,26 +183,23 @@ class DashboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      // These would be populated with real data in a full implementation
-                      _buildLeaderboardRow(context, '1', 'Amina', '1100', Colors.amber), // Placeholder, using amber
-                      _buildLeaderboardRow(context, '2', 'Yusuf', '920', Colors.grey.shade400), // Placeholder
-                      _buildLeaderboardRow(context, '3', 'Zahra', '850', Colors.brown), // Placeholder
+                      _buildLeaderboardRow(context, '1', 'Amina', '1100', Colors.amber),
+                      _buildLeaderboardRow(context, '2', 'Yusuf', '920', Colors.grey.shade400),
+                      _buildLeaderboardRow(context, '3', 'Zahra', '850', Colors.brown),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // --Gamification Section--- (from origin/main)
               _buildNavigationButton(
                 context: context,
                 icon: Icons.emoji_events,
                 label: 'Achievements & Rewards',
                 screen: const GamificationScreen(),
               ),
-              const SizedBox(height: 24), // Added spacing
+              const SizedBox(height: 24),
               
-              // --- My Pending Tasks Section --- (from origin/main)
               const Text(
                 'My Pending Tasks',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -223,7 +212,6 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               
-              // --- Quick Task Picker Section --- (from origin/main)
               const Text(
                 'Grab an Unassigned Task!',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -236,9 +224,8 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // --- Task Summary Metrics Section --- (from origin/main)
               const Text(
-                'Detailed Task Summary', // Differentiated title
+                'Detailed Task Summary',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
@@ -249,9 +236,8 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // --- Leaderboard Section --- (from origin/main)
               const Text(
-                'Detailed Family Leaderboard', // Differentiated title
+                'Detailed Family Leaderboard',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
@@ -262,9 +248,8 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              const Divider(height: 32, thickness: 1), // from origin/main
+              const Divider(height: 32, thickness: 1),
 
-              // Navigation Section (from origin/main)
               const Text(
                 'Navigate',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -290,14 +275,6 @@ class DashboardScreen extends StatelessWidget {
 
               _buildNavigationButton(
                 context: context,
-                icon: Icons.person_rounded,
-                label: 'My Profile',
-                screen: const UserProfileScreen(),
-              ),
-              const SizedBox(height: 12),
-
-              _buildNavigationButton(
-                context: context,
                 icon: Icons.settings_rounded,
                 label: 'Settings',
                 screen: const SettingsScreen(),
@@ -307,8 +284,8 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar( // From HEAD
-        currentIndex: 0, // Default to Dashboard tab
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0, 
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
@@ -323,53 +300,32 @@ class DashboardScreen extends StatelessWidget {
             icon: Icon(Icons.people),
             label: 'Family',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
         ],
         onTap: (index) {
-          // This would navigate to different screens in a full implementation
-          // For now, map to existing navigation or show snackbar
           Widget? screenToNavigate;
-          String screenName = '';
-
+          
           switch (index) {
             case 0: // Dashboard
-              // Already on dashboard, do nothing or refresh
               Provider.of<AuthProvider>(context, listen: false).refreshUserProfile();
               return;
             case 1: // Tasks
               screenToNavigate = const TaskListScreen();
-              screenName = 'Tasks';
               break;
             case 2: // Family
               screenToNavigate = const FamilyListScreen();
-              screenName = 'Family';
-              break;
-            case 3: // Profile
-              screenToNavigate = const UserProfileScreen();
-              screenName = 'Profile';
               break;
           }
 
           if (screenToNavigate != null) {
-             Navigator.push(
-               context,
-               MaterialPageRoute(builder: (context) => screenToNavigate!),
-             );
-          } else if (screenName.isNotEmpty) {
-             ScaffoldMessenger.of(context).showSnackBar(
-               SnackBar(
-                 content: Text('Navigation to $screenName coming soon!'),
-               ),
-             );
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => screenToNavigate!),
+              );
           }
         },
       ),
-      floatingActionButton: FloatingActionButton( // From HEAD
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to a create task screen or show a dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Create new task feature coming soon!'),
@@ -382,7 +338,9 @@ class DashboardScreen extends StatelessWidget {
     );
   }
   
-  // Helper method for simple task summary rows (from HEAD)
+  // --- FIXED --- Helper methods are now fully included.
+  
+  // Helper method for simple task summary rows
   Widget _buildTaskSummaryRow(
     BuildContext context, 
     String title, 
@@ -422,13 +380,13 @@ class DashboardScreen extends StatelessWidget {
     );
   }
   
-  // Helper method for simple leaderboard rows (from HEAD)
+  // Helper method for simple leaderboard rows
   Widget _buildLeaderboardRow(
     BuildContext context, 
     String position, 
     String name, 
     String points, 
-    Color color // e.g., Colors.amber for 1st, Colors.grey.shade400 for 2nd
+    Color color
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -468,7 +426,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // Helper method for navigation buttons (from origin/main)
+  // Helper method for navigation buttons
   Widget _buildNavigationButton({
     required BuildContext context,
     required IconData icon,
@@ -487,6 +445,7 @@ class DashboardScreen extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 12),
         textStyle: const TextStyle(fontSize: 16),
+        minimumSize: const Size(double.infinity, 50), // Ensures buttons are same width
       ),
     );
   }
