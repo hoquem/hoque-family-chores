@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/badge.dart' as app_badge;
-import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart';
@@ -12,7 +11,7 @@ import 'package:hoque_family_chores/presentation/widgets/rewards_store_widget.da
 import 'package:hoque_family_chores/services/gamification_service.dart';
 
 class GamificationScreen extends StatefulWidget {
-  const GamificationScreen({Key? key}) : super(key: key);
+  const GamificationScreen({super.key});
 
   @override
   State<GamificationScreen> createState() => _GamificationScreenState();
@@ -129,7 +128,7 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.surfaceVariant.withAlpha(77),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -704,7 +703,7 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
               ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.3),
+                  color: color.withAlpha(77),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
