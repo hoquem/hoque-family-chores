@@ -4,25 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 
-// --- REMOVED --- Unused provider imports
-// import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
-// import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
-// import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
+// --- REMOVED --- All widget-specific providers and widgets are gone from the dashboard body.
+// import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
+// import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 
-// --- REMOVED --- Unused widget imports
-// import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
-// import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-// import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
+// --- REMOVED --- Mock services are no longer needed here.
+// import 'package:hoque_family_chores/services/mock_task_service.dart';
 
-// --- Services ---
-import 'package:hoque_family_chores/services/mock_task_service.dart';
-// --- REMOVED --- Unused service imports
-// import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
-// import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
-
-// --- Screens for Navigation ---
+// --- Screens for Navigation (still needed for BottomNavBar) ---
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
@@ -190,50 +179,10 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // --- REMOVED --- The 'My Pending Tasks' section.
               
-              const Text(
-                'Grab an Unassigned Task!',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ChangeNotifierProvider(
-                create: (context) => AvailableTasksProvider(MockTaskService())..fetchAvailableTasks(),
-                child: const QuickTaskPickerWidget(),
-              ),
-              const SizedBox(height: 24),
-
-              // --- REMOVED --- The 'Detailed Task Summary' section.
-
-              // --- REMOVED --- The 'Detailed Family Leaderboard' section.
-
-              const Divider(height: 32, thickness: 1),
-
-              const Text(
-                'Navigate',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-
-              _buildNavigationButton(
-                context: context,
-                icon: Icons.list_alt_rounded,
-                label: 'Task List',
-                screen: const TaskListScreen(),
-              ),
-              const SizedBox(height: 12),
-
-              _buildNavigationButton(
-                context: context,
-                icon: Icons.family_restroom_rounded,
-                label: 'Family Members',
-                screen: const FamilyListScreen(),
-              ),
-              const SizedBox(height: 12),
+              // --- REMOVED --- 'Grab an Unassigned Task!' section.
+              
+              // --- REMOVED --- The Divider and the entire 'Navigate' section with its buttons.
             ],
           ),
         ),
@@ -260,11 +209,16 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
         onTap: (index) {
+          // Prevent navigation to the current screen
+          if (ModalRoute.of(context)?.settings.name == '/dashboard' && index == 0) return;
+
           Widget? screenToNavigate;
           
           switch (index) {
             case 0:
-              return;
+              // Since we are replacing, we need to handle going back to the dashboard
+              screenToNavigate = const DashboardScreen(); 
+              break;
             case 1:
               screenToNavigate = const TaskListScreen();
               break;
@@ -297,17 +251,8 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-
-  // --- FIXED --- Helper methods are now fully included.
   
-  // Helper method for simple task summary rows
-  Widget _buildTaskSummaryRow(
-    BuildContext context, 
-    String title, 
-    String count, 
-    IconData icon, 
-    Color color
-  ) {
+  Widget _buildTaskSummaryRow(BuildContext context, String title, String count, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -340,14 +285,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
   
-  // Helper method for simple leaderboard rows
-  Widget _buildLeaderboardRow(
-    BuildContext context, 
-    String position, 
-    String name, 
-    String points, 
-    Color color
-  ) {
+  Widget _buildLeaderboardRow(BuildContext context, String position, String name, String points, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -386,27 +324,5 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // Helper method for navigation buttons
-  Widget _buildNavigationButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Widget screen,
-  }) {
-    return ElevatedButton.icon(
-      icon: Icon(icon),
-      label: Text(label),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => screen),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        textStyle: const TextStyle(fontSize: 16),
-        minimumSize: const Size(double.infinity, 50), // Ensures buttons are same width
-      ),
-    );
-  }
+  // --- REMOVED --- The _buildNavigationButton helper method is no longer used.
 }
