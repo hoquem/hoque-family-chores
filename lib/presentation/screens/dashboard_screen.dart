@@ -1,33 +1,31 @@
-
 // lib/presentation/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 
-// Imports from origin/main
-import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
+// --- REMOVED --- Unused provider imports
+// import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
+// import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
+// import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
 
-// --- Widgets --- (from origin/main)
-import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
+// --- REMOVED --- Unused widget imports
+// import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
+// import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
+// import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
 
-// --- Services --- (from origin/main, used by its providers)
+// --- Services ---
 import 'package:hoque_family_chores/services/mock_task_service.dart';
-import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
-import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
+// --- REMOVED --- Unused service imports
+// import 'package:hoque_family_chores/services/mock_task_summary_service.dart';
+// import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
 
-// --- Screens for Navigation --- (from origin/main)
+// --- Screens for Navigation ---
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
-// --- REMOVED --- The settings screen is no longer needed.
-// import 'package:hoque_family_chores/presentation/screens/settings_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart';
 
 
@@ -84,8 +82,6 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ... Welcome message and other widgets ...
-              // (This part of the code remains unchanged)
               Text(
                 'Welcome, $displayName!',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -196,25 +192,7 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              _buildNavigationButton(
-                context: context,
-                icon: Icons.emoji_events,
-                label: 'Achievements & Rewards',
-                screen: const GamificationScreen(),
-              ),
-              const SizedBox(height: 24),
-              
-              const Text(
-                'My Pending Tasks',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ChangeNotifierProvider(
-                create: (context) => MyTasksProvider(MockTaskService())..fetchMyPendingTasks(),
-                child: const MyTasksWidget(),
-              ),
-              const SizedBox(height: 24),
+              // --- REMOVED --- The 'My Pending Tasks' section.
               
               const Text(
                 'Grab an Unassigned Task!',
@@ -228,29 +206,9 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              const Text(
-                'Detailed Task Summary',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ChangeNotifierProvider(
-                create: (context) => TaskSummaryProvider(MockTaskSummaryService())..fetchTaskSummary(),
-                child: const TaskSummaryWidget(),
-              ),
-              const SizedBox(height: 24),
+              // --- REMOVED --- The 'Detailed Task Summary' section.
 
-              const Text(
-                'Detailed Family Leaderboard',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ChangeNotifierProvider(
-                create: (context) => LeaderboardProvider(MockLeaderboardService())..fetchLeaderboard(),
-                child: const LeaderboardWidget(),
-              ),
-              const SizedBox(height: 24),
+              // --- REMOVED --- The 'Detailed Family Leaderboard' section.
 
               const Divider(height: 32, thickness: 1),
 
@@ -276,15 +234,6 @@ class DashboardScreen extends StatelessWidget {
                 screen: const FamilyListScreen(),
               ),
               const SizedBox(height: 12),
-
-              // --- REMOVED --- The Settings button is no longer needed in the main navigation.
-              // _buildNavigationButton(
-              //   context: context,
-              //   icon: Icons.settings_rounded,
-              //   label: 'Settings',
-              //   screen: const SettingsScreen(),
-              // ),
-              // const SizedBox(height: 12),
             ],
           ),
         ),
@@ -305,24 +254,30 @@ class DashboardScreen extends StatelessWidget {
             icon: Icon(Icons.people),
             label: 'Family',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.trending_up),
+            label: 'Progress',
+          ),
         ],
         onTap: (index) {
           Widget? screenToNavigate;
           
           switch (index) {
-            case 0: // Dashboard
-              Provider.of<AuthProvider>(context, listen: false).refreshUserProfile();
+            case 0:
               return;
-            case 1: // Tasks
+            case 1:
               screenToNavigate = const TaskListScreen();
               break;
-            case 2: // Family
+            case 2:
               screenToNavigate = const FamilyListScreen();
+              break;
+            case 3:
+              screenToNavigate = const GamificationScreen();
               break;
           }
 
           if (screenToNavigate != null) {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => screenToNavigate!),
               );
@@ -342,7 +297,7 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   // --- FIXED --- Helper methods are now fully included.
   
   // Helper method for simple task summary rows
