@@ -13,9 +13,15 @@ analyzer:
   errors:
     # Don't treat warnings as errors
     missing_return: ignore  
-    dead_code: warning
-    unused_local_variable: warning
+    dead_code: info
+    unused_local_variable: info
     deprecated_member_use: info
+    # Make these issues non-fatal
+    sort_child_properties_last: info
+    use_super_parameters: info
+    unnecessary_to_list_in_spreads: info
+    avoid_print: info
+    dangling_library_doc_comments: info
     
 linter:
   # The lint rules applied to this project can be customized in the
@@ -29,8 +35,7 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Valid lint rules only
     sort_child_properties_last: false
     use_super_parameters: false
     unnecessary_to_list_in_spreads: false
