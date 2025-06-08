@@ -4,56 +4,108 @@ An app for managing family chores, making it fun and easy to keep track of respo
 
 ## 🚀 Planned Features
 
-* **Cross-Platform Support**:
-    * 📱 iOS
-    * 🤖 Android
-* **User Management**:
-    * 🚪 Login Screen
-    * 📝 User Registration Screen
-* **Chore Management**:
-    * ➕ Create Chores (with details like description, due date, recurrence)
-    * ✏️ Edit Chores
-    * 🗑️ Delete Chores
-    * 🔄 Assign Chores (or allow self-assignment)
-* **Gamification**:
-    * 🏆 Points/Rewards System for completing chores
-    * 🏅 Badges or achievements
-    * 📈 Leaderboard
-* **Chore Workflow**:
-    * 🙋 Family members can pick a chore.
-    * 🤝 Agree on a completion date/time.
-    * ✅ Mark chores as complete (possibly with a review/approval step).
+* **Cross-Platform Support**  
+  * 📱 iOS  
+  * 🤖 Android  
+
+* **User Management**  
+  * 🚪 Login Screen  
+  * 📝 User Registration Screen  
+
+* **Chore Management**  
+  * ➕ Create Chores (with details like description, due date, recurrence)  
+  * ✏️ Edit Chores  
+  * 🗑️ Delete Chores  
+  * 🔄 Assign Chores (or allow self-assignment)  
+
+* **Gamification**  
+  * 🏆 Points/Rewards System for completing chores  
+  * 🏅 Badges or achievements  
+  * 📈 Leaderboard  
+
+* **Chore Workflow**  
+  * 🙋 Family members can pick a chore  
+  * 🤝 Agree on a completion date/time  
+  * ✅ Mark chores as complete (possibly with a review/approval step)  
 
 ## ✨ Suggested Additional Features
 
-* **Notifications & Reminders**:
-    * 🔔 Reminders for upcoming or overdue chores.
-    * 📣 Notifications for new chores assigned or when a chore is marked complete.
-* **Chore Scheduling & Recurrence**:
-    * 🗓️ Set up recurring chores (daily, weekly, monthly).
-    * 🔄 Option for rotating chore assignments among family members.
-* **Parental Controls/Admin Features**:
-    * 🔒 Ability for parents/admins to approve chore completion.
-    * 👀 Overview of all chores and their statuses.
-    * 👪 Manage family members (add/remove).
-* **Wishlist/Rewards Store**:
-    * 🎁 Kids can redeem points earned from chores for rewards (e.g., extra screen time, an outing, a small toy).
-    * 🛒 Parents can define the rewards and their point costs.
-* **Chore History & Reporting**:
-    * 📊 Track who completed which chores and when.
-    * 📝 Simple reports on chore completion rates.
-* **Customization**:
-    * 🎨 Customizable avatars or profiles for family members.
-    * 🌟 Different themes or color schemes.
-* **Family Chat/Communication**:
-    * 💬 A simple in-app chat for discussing chores or other family matters.
-* **Chore Swapping/Negotiation**:
-    * 🤝 Allow family members to request to swap chores with each other (with approval if needed).
-* **Offline Support**:
-    * ✈️ Basic functionality available even when offline, syncing when connectivity is restored.
-* **Calendar View**:
-    * 📅 See chores laid out on a weekly or monthly calendar.
-* **"Quick Add" Chore**:
-    * ⚡️ A fast way to add a simple, one-off chore without going through multiple screens.
-* **Chore Categories/Tags**:
-    * 🏷️ Organize chores by categories (e.g., "Kitchen," "Pets," "Outdoor") for easier filtering.
+* **Notifications & Reminders**  
+  * 🔔 Reminders for upcoming or overdue chores  
+  * 📣 Notifications for new chores assigned or when a chore is marked complete  
+
+* **Chore Scheduling & Recurrence**  
+  * 🗓️ Set up recurring chores (daily, weekly, monthly)  
+  * 🔄 Option for rotating chore assignments among family members  
+
+* **Parental Controls/Admin Features**  
+  * 🔒 Ability for parents/admins to approve chore completion  
+  * 👀 Overview of all chores and their statuses  
+  * 👪 Manage family members (add/remove)  
+
+* **Wishlist/Rewards Store**  
+  * 🎁 Kids can redeem points earned from chores for rewards (e.g., extra screen time, an outing, a small toy)  
+  * 🛒 Parents can define the rewards and their point costs  
+
+* **Chore History & Reporting**  
+  * 📊 Track who completed which chores and when  
+  * 📝 Simple reports on chore completion rates  
+
+* **Customization**  
+  * 🎨 Customizable avatars or profiles for family members  
+  * 🌟 Different themes or color schemes  
+
+* **Family Chat/Communication**  
+  * 💬 A simple in-app chat for discussing chores or other family matters  
+
+* **Chore Swapping/Negotiation**  
+  * 🤝 Allow family members to request to swap chores with each other (with approval if needed)  
+
+* **Offline Support**  
+  * ✈️ Basic functionality available even when offline, syncing when connectivity is restored  
+
+* **Calendar View**  
+  * 📅 See chores laid out on a weekly or monthly calendar  
+
+* **"Quick Add" Chore**  
+  * ⚡️ A fast way to add a simple, one-off chore without going through multiple screens  
+
+* **Chore Categories/Tags**  
+  * 🏷️ Organize chores by categories (e.g., "Kitchen," "Pets," "Outdoor") for easier filtering  
+
+---
+
+## 🛠️ Development Guide
+
+### 1️⃣ Handling `pubspec.lock` Merge Conflicts
+| Topic | Details |
+|-------|---------|
+| **What is it?** | `pubspec.lock` is the lock-file generated by `flutter pub get`. It records the exact versions of every direct and transitive dependency used in the app. |
+| **Why commit it?** | • Guarantees all developers & CI use identical package versions.<br>• Enables reproducible builds.<br>• Recommended for **apps** (but not for reusable packages). |
+| **When does it conflict?** | Two branches modify dependencies independently, producing different lock-file hashes. |
+| **How to resolve?** | 1. Run the helper script: <br>`./scripts/resolve_pubspec_lock.sh ours` or `theirs`.<br>2. The script checks out the chosen side, runs `flutter pub get`, stages the regenerated file, and reminds you to commit.<br>3. Finish the merge or rebase as usual. |
+
+> Tip: Always run `flutter pub get` after editing **`pubspec.yaml`** before committing, to keep the lock-file in sync.
+
+### 2️⃣ CI/CD & Xcode Cloud Setup
+| Area | Key Points |
+|------|------------|
+| **Workflow** | Xcode Cloud clones the repo, runs `ios/ci_scripts/ci_post_clone.sh`, then builds & tests. |
+| **Flutter SDK** | Version pinned via `FLUTTER_VERSION_TAG` env variable (e.g., `3.19.6`). The script installs that version under `$HOME/flutter_sdks/`. |
+| **Environment Variables (Secrets)** | Must be configured in the Xcode Cloud workflow:<br>• `FIREBASE_API_KEY_PROJECT`<br>• `FIREBASE_APP_ID_IOS`<br>• `FIREBASE_MESSAGING_SENDER_ID`<br>• `FIREBASE_PROJECT_ID`<br>• `FIREBASE_STORAGE_BUCKET_IOS`<br>• `FIREBASE_AUTH_DOMAIN`<br>• Any custom keys referenced in code (`SOME_API_KEY`, `SOME_API_SECRET`, …) |
+| **.env Generation** | The CI script writes a runtime `.env` file into the project root (or falls back to `ios/Runner/.env` if permissions require). |
+| **CocoaPods** | Uses Bundler inside the script. Ensure the `Gemfile` reflects compatible pod & bundler versions. |
+| **GoogleService-Info.plist** | Must be present at `ios/Runner/GoogleService-Info.plist` in the repo or generated by a pre-build step. |
+
+### 3️⃣ Common Troubleshooting
+
+| Symptom | Suggested Fix |
+|---------|---------------|
+| **Build fails with “Read-only file system”** | Check that CI script writes `.env` inside `$CI_WORKSPACE`, not to `/`. The current script handles this automatically—verify environment variables are set. |
+| **Flutter package version mismatch locally vs CI** | Delete local `.dart_tool/` and `pubspec.lock`, run `flutter pub get`, and ensure you committed the updated `pubspec.lock`. |
+| **Pod install errors in Xcode Cloud** | Confirm Bundler/CocoaPods versions in `Gemfile`. If Ruby version mismatch, pin an older Bundler (`2.2.x`) which is installed by the script. |
+| **GoogleService-Info.plist missing** | Commit the file or add a secure download step in `ci_pre_xcodebuild.sh`. |
+| **Unit tests using real Firebase** | All tests run with `USE_MOCK_DATA=true` in CI. For local runs, export that env variable or connect to your dev Firebase project. |
+| **New developer setup** | 1. Install Flutter (>= 3.19).<br>2. Clone repo & run `flutter pub get`.<br>3. Copy `.env.example` to `.env` and fill secrets (ask a team lead).<br>4. For iOS: `cd ios && bundle install && bundle exec pod install`.<br>5. Run `flutter run` on target device. |
+
+Happy coding! 🧹✨
