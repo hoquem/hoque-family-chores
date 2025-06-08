@@ -65,6 +65,22 @@ echo "--- Creating .env file at Project Root ---"
 ENV_FILE_PATH="$PROJECT_ROOT/.env"
 echo "Writing to $ENV_FILE_PATH..."
 
+# Check if directory is writable before attempting to write
+if [ ! -w "$(dirname "$ENV_FILE_PATH")" ]; then
+  echo "Error: Directory $(dirname "$ENV_FILE_PATH") is not writable."
+  echo "Current permissions: $(ls -ld "$(dirname "$ENV_FILE_PATH")")"
+  echo "Attempting to create .env file in a different location..."
+  # Try alternative location if project root isn't writable
+  ENV_FILE_PATH="$PROJECT_ROOT/ios/Runner/.env"
+  echo "New .env path: $ENV_FILE_PATH"
+  
+  if [ ! -w "$(dirname "$ENV_FILE_PATH")" ]; then
+    echo "Error: Alternative directory $(dirname "$ENV_FILE_PATH") is also not writable."
+    echo "Current permissions: $(ls -ld "$(dirname "$ENV_FILE_PATH")")"
+    exit 1
+  fi
+fi
+
 # Firebase variables (these names should match what your firebase_options.dart expects or how you load them)
 # The firebase.json values are primarily for the flutterfire CLI.
 # The actual values used at runtime come from firebase_options.dart, which are typically hardcoded
