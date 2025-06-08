@@ -9,15 +9,14 @@ class UserProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the AuthProvider but don't listen for changes, as we only need to call methods.
-    // If you display user info that can change, keep listen: true
     final authProvider = Provider.of<AuthProvider>(context);
     final displayName = authProvider.displayName ?? 'Family Member';
     final email = authProvider.userEmail ?? 'No email';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Profile'),
+        // --- CHANGED --- Title updated to reflect its new purpose.
+        title: const Text('Profile & Settings'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -79,6 +78,9 @@ class UserProfileScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               // TODO: Navigate to notification settings
+               ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Notification Settings coming soon!')),
+              );
             },
           ),
           ListTile(
@@ -87,13 +89,16 @@ class UserProfileScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               // TODO: Navigate to security settings
+               ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Security Settings coming soon!')),
+              );
             },
           ),
           
           const Divider(),
           const SizedBox(height: 16),
 
-          // --- ADDED --- Logout Button Section
+          // Logout Button Section
           Center(
             child: ElevatedButton.icon(
               icon: const Icon(Icons.exit_to_app),
@@ -104,7 +109,6 @@ class UserProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {
-                // Pop all routes until the login screen when logging out
                 await authProvider.signOut();
                 if (context.mounted) {
                    Navigator.of(context).popUntil((route) => route.isFirst);

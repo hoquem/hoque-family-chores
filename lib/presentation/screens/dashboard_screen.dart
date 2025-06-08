@@ -1,3 +1,4 @@
+
 // lib/presentation/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
@@ -25,7 +26,8 @@ import 'package:hoque_family_chores/services/mock_leaderboard_service.dart';
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/settings_screen.dart';
+// --- REMOVED --- The settings screen is no longer needed.
+// import 'package:hoque_family_chores/presentation/screens/settings_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart';
 
 
@@ -82,6 +84,8 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ... Welcome message and other widgets ...
+              // (This part of the code remains unchanged)
               Text(
                 'Welcome, $displayName!',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -273,13 +277,14 @@ class DashboardScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              _buildNavigationButton(
-                context: context,
-                icon: Icons.settings_rounded,
-                label: 'Settings',
-                screen: const SettingsScreen(),
-              ),
-              const SizedBox(height: 12),
+              // --- REMOVED --- The Settings button is no longer needed in the main navigation.
+              // _buildNavigationButton(
+              //   context: context,
+              //   icon: Icons.settings_rounded,
+              //   label: 'Settings',
+              //   screen: const SettingsScreen(),
+              // ),
+              // const SizedBox(height: 12),
             ],
           ),
         ),
