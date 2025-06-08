@@ -10,11 +10,11 @@ class TaskSummaryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TaskSummaryProvider>(
       builder: (context, provider, child) {
-        if (provider.isLoading) {
+        if (provider.state == TaskSummaryState.loading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (provider.hasError) {
+        if (provider.state == TaskSummaryState.error) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -30,10 +30,13 @@ class TaskSummaryWidget extends StatelessWidget {
           );
         }
 
-        final summary = provider.taskSummary;
+        final summary = provider.summary;
         if (summary == null) {
           return const Center(child: Text('No task summary available'));
         }
+
+        // Calculate total tasks as the sum of completed and waiting tasks
+        final totalTasks = summary.totalCompleted + summary.waitingOverall;
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -61,43 +64,43 @@ class TaskSummaryWidget extends StatelessWidget {
                 const Divider(),
                 _buildSummaryItem(
                   context,
-                  'Pending',
-                  summary.pendingTasks,
+                  'Waiting',
+                  summary.waitingOverall,
                   Colors.orange,
                   Icons.pending_actions,
                 ),
                 _buildSummaryItem(
                   context,
-                  'In Progress',
-                  summary.inProgressTasks,
+                  'Assigned',
+                  summary.waitingAssigned,
                   Colors.blue,
                   Icons.hourglass_top,
                 ),
                 _buildSummaryItem(
                   context,
                   'Completed',
-                  summary.completedTasks,
+                  summary.totalCompleted,
                   Colors.green,
                   Icons.task_alt,
                 ),
                 _buildSummaryItem(
                   context,
                   'Total',
-                  summary.totalTasks,
+                  totalTasks,
                   Colors.purple,
                   Icons.assignment,
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
-                  value: summary.totalTasks > 0
-                      ? summary.completedTasks / summary.totalTasks
+                  value: totalTasks > 0
+                      ? summary.totalCompleted / totalTasks
                       : 0.0,
                   backgroundColor: Colors.grey[200],
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Completion Rate: ${summary.totalTasks > 0 ? (summary.completedTasks / summary.totalTasks * 100).toStringAsFixed(1) : 0}%',
+                  'Completion Rate: ${totalTasks > 0 ? (summary.totalCompleted / totalTasks * 100).toStringAsFixed(1) : 0}%',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

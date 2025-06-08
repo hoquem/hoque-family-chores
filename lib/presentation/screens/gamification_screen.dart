@@ -8,7 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/gamification_provider
 import 'package:hoque_family_chores/presentation/widgets/user_level_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/badges_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/rewards_store_widget.dart';
-import 'package:hoque_family_chores/services/gamification_service.dart';
+import 'package:hoque_family_chores/services/gamification_service.dart' as gamification;
 
 class GamificationScreen extends StatefulWidget {
   const GamificationScreen({super.key});
@@ -128,7 +128,7 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  color: Theme.of(context).colorScheme.surfaceVariant.withAlpha(77),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(77),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -213,7 +213,7 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
     );
   }
 
-  Widget _buildRecentEventsSection(List<GamificationEvent> events) {
+  Widget _buildRecentEventsSection(List<gamification.GamificationEvent> events) {
     if (events.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16.0),
@@ -258,32 +258,32 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
     );
   }
 
-  Widget _buildEventCard(GamificationEvent event) {
+  Widget _buildEventCard(gamification.GamificationEvent event) {
     Color cardColor;
     IconData iconData;
     
     switch (event.type) {
-      case GamificationEventType.pointsEarned:
+      case gamification.GamificationEventType.pointsEarned:
         cardColor = Colors.green.shade100;
         iconData = Icons.stars;
         break;
-      case GamificationEventType.levelUp:
+      case gamification.GamificationEventType.levelUp:
         cardColor = Colors.purple.shade100;
         iconData = Icons.trending_up;
         break;
-      case GamificationEventType.badgeUnlocked:
+      case gamification.GamificationEventType.badgeUnlocked:
         cardColor = Colors.blue.shade100;
         iconData = Icons.emoji_events;
         break;
-      case GamificationEventType.rewardRedeemed:
+      case gamification.GamificationEventType.rewardRedeemed:
         cardColor = Colors.orange.shade100;
         iconData = Icons.redeem;
         break;
-      case GamificationEventType.streakIncreased:
+      case gamification.GamificationEventType.streakIncreased:
         cardColor = Colors.amber.shade100;
         iconData = Icons.local_fire_department;
         break;
-      case GamificationEventType.achievementUnlocked:
+      case gamification.GamificationEventType.achievementUnlocked:
         cardColor = Colors.indigo.shade100;
         iconData = Icons.workspace_premium;
         break;
@@ -333,19 +333,19 @@ class _GamificationScreenState extends State<GamificationScreen> with TickerProv
     );
   }
 
-  String _getEventTypeText(GamificationEventType type) {
+  String _getEventTypeText(gamification.GamificationEventType type) {
     switch (type) {
-      case GamificationEventType.pointsEarned:
+      case gamification.GamificationEventType.pointsEarned:
         return 'Points Earned';
-      case GamificationEventType.levelUp:
+      case gamification.GamificationEventType.levelUp:
         return 'Level Up';
-      case GamificationEventType.badgeUnlocked:
+      case gamification.GamificationEventType.badgeUnlocked:
         return 'Badge Unlocked';
-      case GamificationEventType.rewardRedeemed:
+      case gamification.GamificationEventType.rewardRedeemed:
         return 'Reward Redeemed';
-      case GamificationEventType.streakIncreased:
+      case gamification.GamificationEventType.streakIncreased:
         return 'Streak Increased';
-      case GamificationEventType.achievementUnlocked:
+      case gamification.GamificationEventType.achievementUnlocked:
         return 'Achievement Unlocked';
     }
   }
