@@ -14,14 +14,14 @@ class BadgesWidget extends StatefulWidget {
   final app_badge.Badge? newlyUnlockedBadge;
 
   const BadgesWidget({
-    Key? key,
+    super.key,
     required this.userProfile,
     required this.allBadges,
     required this.unlockedBadges,
     this.onBadgeTap,
     this.showUnlockAnimation = false,
     this.newlyUnlockedBadge,
-  }) : super(key: key);
+  });
 
   @override
   State<BadgesWidget> createState() => _BadgesWidgetState();
@@ -159,12 +159,12 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
       return widget.allBadges;
     }
     return widget.allBadges
-        .where((badge) => (badge as app_badge.Badge).category == _selectedCategory)
-        .toList().cast<app_badge.Badge>();
+        .where((badge) => badge.category == _selectedCategory)
+        .toList();
   }
 
   bool _isBadgeUnlocked(app_badge.Badge badge) {
-    return widget.unlockedBadges.any((b) => (b as app_badge.Badge).id == badge.id);
+    return widget.unlockedBadges.any((b) => b.id == badge.id);
   }
 
   // Calculate progress percentage for a badge (0-100)
@@ -208,9 +208,9 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
   // Get badge unlock date if available
   String _getBadgeUnlockDate(app_badge.Badge badge) {
     final unlockedBadge = widget.unlockedBadges.firstWhere(
-      (b) => (b as app_badge.Badge).id == badge.id,
+      (b) => b.id == badge.id,
       orElse: () => badge,
-    ) as app_badge.Badge;
+    );
     
     if (unlockedBadge.unlockedAt != null) {
       return '${unlockedBadge.unlockedAt!.day}/${unlockedBadge.unlockedAt!.month}/${unlockedBadge.unlockedAt!.year}';
@@ -257,7 +257,7 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
                       },
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),
@@ -311,7 +311,7 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
               ),
               itemCount: filteredBadges.length,
               itemBuilder: (context, index) {
-                final badge = filteredBadges[index] as app_badge.Badge;
+                final badge = filteredBadges[index];
                 final isUnlocked = _isBadgeUnlocked(badge);
                 final progress = _getBadgeProgress(badge);
                 final isNewlyUnlocked = widget.newlyUnlockedBadge?.id == badge.id;
@@ -360,9 +360,9 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
-                                            Colors.white.withOpacity(0),
-                                            Colors.white.withOpacity(0.5),
-                                            Colors.white.withOpacity(0),
+                                            Colors.white.withAlpha(0),
+                                            Colors.white.withAlpha(128),
+                                            Colors.white.withAlpha(0),
                                           ],
                                           stops: const [0.0, 0.5, 1.0],
                                         ),
@@ -416,7 +416,7 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
                 ),
                 boxShadow: isUnlocked ? [
                   BoxShadow(
-                    color: borderColor.withOpacity(0.5),
+                    color: borderColor.withAlpha(128),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -458,7 +458,7 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
                   value: progress / 100,
                   backgroundColor: Colors.grey.shade300,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    badge.rarity.color.withOpacity(0.7),
+                    badge.rarity.color.withAlpha(179),
                   ),
                 ),
               ),
@@ -536,7 +536,7 @@ class _BadgesWidgetState extends State<BadgesWidget> with TickerProviderStateMix
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: badge.rarity.color.withOpacity(0.2),
+                                    color: badge.rarity.color.withAlpha(51),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
@@ -718,11 +718,11 @@ class BadgesProviderWidget extends StatelessWidget {
   final app_badge.Badge? newlyUnlockedBadge;
 
   const BadgesProviderWidget({
-    Key? key,
+    super.key,
     required this.userProfile,
     this.showUnlockAnimation = false,
     this.newlyUnlockedBadge,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

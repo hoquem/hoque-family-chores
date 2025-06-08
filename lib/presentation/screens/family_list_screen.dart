@@ -1,7 +1,6 @@
 // lib/presentation/screens/family_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/presentation/providers/family_list_provider.dart';
 import 'package:hoque_family_chores/services/firebase_family_service.dart';
 
@@ -77,7 +76,7 @@ class FamilyListScreen extends StatelessWidget {
                             member.avatarUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-                              print('Error loading image for ${member.name} from ${member.avatarUrl}: $exception');
+                              // Error occurred loading image for member
                               return CircleAvatar( // Fallback CircleAvatar with icon
                                 backgroundColor: Colors.grey[300],
                                 child: Icon(Icons.person_outline, color: Colors.grey[700]),
