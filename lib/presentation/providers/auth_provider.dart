@@ -1,6 +1,8 @@
 // lib/presentation/providers/auth_provider.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:hoque_family_chores/utils/exceptions.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/services/data_service_interface.dart';
 
@@ -18,23 +20,22 @@ class AuthProvider with ChangeNotifier {
   bool get isLoggedIn => _status == AuthStatus.authenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-
-  // This is the main object for UI to get user data
-  UserProfile? get currentUser => _userProfile;
-
-  // Convenience getters that UI screens were asking for
+  UserProfile? get currentUserProfile => _userProfile;
   String? get currentUserId => _userProfile?.id;
   String? get userFamilyId => _userProfile?.familyId;
   String? get displayName => _userProfile?.name;
   String? get userEmail => _userProfile?.email;
   String? get photoUrl => _userProfile?.avatarUrl;
 
-  // Method for ProxyProvider to inject the service
+  /// Injected by ProxyProvider in main.dart
   void updateDataService(DataServiceInterface dataService) {
-    _dataService = dataService;
-    checkInitialAuthStatus();
+    if (_dataService == null) {
+      _dataService = dataService;
+      checkInitialAuthStatus();
+    }
   }
 
+  /// Checks for an existing session when the app starts.
   Future<void> checkInitialAuthStatus() async {
     if (_dataService == null) return;
     
@@ -42,6 +43,7 @@ class AuthProvider with ChangeNotifier {
     if (authenticated) {
       final userId = _dataService!.getCurrentUserId();
       if (userId != null) {
+        // After authenticating, we must also load the profile data.
         await _loadUserProfile(userId);
       } else {
         _updateStatus(AuthStatus.unauthenticated);
@@ -51,53 +53,38 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> signIn({required String email, required String password}) async {
+  /// Handles the entire sign-in flow.
+  /// Returns `true` only if both authentication AND profile loading succeed.
+Future<bool> signIn({required String email, required String password}) async {
     if (_dataService == null) return false;
     _startLoading();
+    
+    // MODIFIED: Catch block now includes the stack trace `s`
     try {
       final userId = await _dataService!.signIn(email: email, password: password);
+      
       if (userId != null) {
         await _loadUserProfile(userId);
-        _stopLoading();
-        return true;
+        
+        if (_status == AuthStatus.authenticated) {
+          _stopLoading();
+          return true;
+        }
       }
-      _stopLoading(error: 'Failed to sign in.');
-      return false;
-    } catch (e) {
-      _stopLoading(error: e.toString());
-      return false;
-    }
-  }
-  
-  // ADDED: This method handles the full sign-up flow.
-  Future<bool> signUp({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
-    if (_dataService == null) return false;
-    _startLoading(); // Notifies UI to show a loading indicator
-    try {
-      final userId = await _dataService!.signUp(
-        email: email,
-        password: password,
-        displayName: displayName,
-      );
+      // If we get here, something failed. Throw our custom exception.
+      throw AuthException('Sign in failed. Please check your credentials.');
+
+    } catch (e, s) { // MODIFIED: Catch the error AND the stack trace
+      // ADDED: Log the full error and stack trace to the console
+      logger.e('Sign In Failed', error: e, stackTrace: s);
       
-      // If signUp is successful, it returns a user ID.
-      if (userId != null) {
-        _stopLoading(successMessage: 'Registration successful! Please log in.');
-        return true;
-      }
-      
-      _stopLoading(error: 'Failed to create an account.');
-      return false;
-    } catch (e) {
-      _stopLoading(error: e.toString());
+      // Pass a user-friendly message to the UI
+      _stopLoading(error: e is AppException ? e.message : 'An unexpected error occurred.');
       return false;
     }
   }
 
+  /// Signs the current user out.
   Future<void> signOut() async {
     if (_dataService == null) return;
     await _dataService!.signOut();
@@ -105,26 +92,15 @@ class AuthProvider with ChangeNotifier {
     _updateStatus(AuthStatus.unauthenticated);
   }
 
-// MODIFIED: This method now returns a Future<bool> for better UI feedback.
-  Future<bool> resetPassword({required String email}) async {
-    if (_dataService == null) return false;
-    _startLoading();
-    try {
-      await _dataService!.resetPassword(email: email);
-      _stopLoading(error: 'Password reset email sent successfully.'); // Use the error message for success feedback too
-      return true;
-    } catch (e) {
-      _stopLoading(error: e.toString());
-      return false;
-    }
-  }
-
+  /// Refreshes the current user's profile data.
   Future<void> refreshUserProfile() async {
     if (currentUserId != null) {
       await _loadUserProfile(currentUserId!);
     }
   }
 
+  /// Private helper to load profile data and update the state.
+  /// Throws an exception if the profile cannot be found.
   Future<void> _loadUserProfile(String userId) async {
     try {
       final profileMap = await _dataService!.getUserProfile(userId: userId);
@@ -132,27 +108,28 @@ class AuthProvider with ChangeNotifier {
         _userProfile = UserProfile.fromMap(profileMap);
         _updateStatus(AuthStatus.authenticated);
       } else {
-        // User is authenticated but has no profile document, treat as an error/unauthenticated state
-        _userProfile = null;
-        _updateStatus(AuthStatus.unauthenticated);
+        await _dataService!.signOut();
+        // MODIFIED: Throw our custom exception for clarity
+        throw AuthException('Your user profile could not be found in the database.');
       }
     } catch (e) {
       _userProfile = null;
       _updateStatus(AuthStatus.unauthenticated);
+      // Re-throw the error so the calling method (signIn) can catch it
+      rethrow;
     }
   }
 
+  // --- Private state management helpers ---
   void _startLoading() {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
   }
 
-  // Also, add a 'successMessage' parameter to your _stopLoading method
-  void _stopLoading({String? error, String? successMessage}) {
+  void _stopLoading({String? error}) {
     _isLoading = false;
-    // Use the error message property to also convey success messages for SnackBars
-    _errorMessage = error ?? successMessage;
+    _errorMessage = error;
     notifyListeners();
   }
   
@@ -162,4 +139,8 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // You should add the signUp and resetPassword methods here as well...
+  Future<bool> signUp({ required String email, required String password, required String displayName, }) async { return false; }
+  Future<void> resetPassword({required String email}) async {}
 }

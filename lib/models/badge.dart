@@ -1,5 +1,7 @@
 // lib/models/badge.dart
 import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/utils/enum_helpers.dart'; // Import the helper
+
 
 class Badge {
   final String id;
@@ -26,6 +28,21 @@ class Badge {
     this.unlockedAt,
   });
 
+  factory Badge.fromMap(Map<String, dynamic> map) {
+    return Badge(
+      id: map['id'] ?? '',
+      title: map['title'] ?? 'Unknown Badge',
+      description: map['description'] ?? '',
+      iconName: map['iconName'] ?? 'star',
+      color: map['color'] as String? ?? '#808080',
+      rarity: enumFromString(map['rarity'], BadgeRarity.values, defaultValue: BadgeRarity.common),
+      requiredPoints: (map['requiredPoints'] as num?)?.toInt() ?? 0,
+      category: enumFromString(map['category'], BadgeCategory.values, defaultValue: BadgeCategory.taskMaster),
+      isUnlocked: map['isUnlocked'] as bool? ?? false,
+      unlockedAt: map['unlockedAt'] != null ? DateTime.tryParse(map['unlockedAt'].toString()) : null,
+    );
+  }
+
   Badge copyWith({bool? isUnlocked, DateTime? unlockedAt}) {
     return Badge(
       id: id,
@@ -38,21 +55,6 @@ class Badge {
       category: category,
       isUnlocked: isUnlocked ?? this.isUnlocked,
       unlockedAt: unlockedAt ?? this.unlockedAt,
-    );
-  }
-
-  factory Badge.fromMap(Map<String, dynamic> map) {
-    return Badge(
-      id: map['id'] ?? '',
-      title: map['title'] ?? 'Unknown Badge',
-      description: map['description'] ?? '',
-      iconName: map['iconName'] ?? 'star',
-      color: map['color'] as String? ?? '#808080',
-      rarity: BadgeRarity.values.byName(map['rarity'] ?? 'common'),
-      requiredPoints: (map['requiredPoints'] as num?)?.toInt() ?? 0,
-      category: BadgeCategory.values.byName(map['category'] ?? 'taskMaster'),
-      isUnlocked: map['isUnlocked'] as bool? ?? false,
-      unlockedAt: map['unlockedAt'] != null ? DateTime.tryParse(map['unlockedAt'].toString()) : null,
     );
   }
 
