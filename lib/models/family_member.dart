@@ -6,7 +6,7 @@ class FamilyMember {
   final String name;
   final String? email;
   final String? avatarUrl;
-  final FamilyRole? role; // MODIFIED: Changed from String? to FamilyRole?
+  final FamilyRole? role;
   final String? familyId;
 
   String get uid => id;

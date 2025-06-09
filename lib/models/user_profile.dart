@@ -96,8 +96,6 @@ class UserProfile extends FamilyMember {
     );
   }
   
-  // REMOVED: The duplicate constructor that was here is now gone.
-
   /// Factory to create a UserProfile from a map (e.g., from Firestore)
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     DateTime? parseDate(dynamic dateData) {
