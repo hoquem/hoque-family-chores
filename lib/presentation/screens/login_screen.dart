@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/screens/registration_screen.dart'; // Ensure this is imported
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,21 +25,27 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Handles the sign-in logic, including form validation and error display.
+  /// Handles the sign-in logic, including form validation and showing feedback.
   Future<void> _signIn() async {
-    // Hide keyboard
     FocusScope.of(context).unfocus();
     
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
-      final bool success = await authProvider.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-      
-      // If sign-in fails, show the error message from the provider.
-      if (!success && mounted) {
+    if (!_formKey.currentState!.validate()) {
+      return; // If form is not valid, do nothing.
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Call the signIn method from the provider
+    final bool success = await authProvider.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+    
+    // After the attempt, if the widget is still on screen, show feedback.
+    if (mounted) {
+      // On SUCCESS, the AuthWrapper will handle navigation automatically.
+      // On FAILURE, we show the error message from the provider.
+      if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.errorMessage ?? 'An unknown error occurred.'),
@@ -46,15 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
+      // Note: We do NOT navigate here on success. The AuthWrapper handles that.
+      // This keeps the logic clean and separates concerns.
     }
-  }
-
-  /// Navigates to the sign-up screen (placeholder).
-  void _navigateToSignUp() {
-    // TODO: Replace with Navigator.push to your SignUpScreen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sign up functionality coming soon!')),
-    );
   }
 
   /// Handles the password reset logic.
@@ -69,23 +70,26 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.resetPassword(email: _emailController.text.trim());
 
-    // Show the result in a SnackBar, whether success or failure.
     if (mounted) {
+      final message = authProvider.errorMessage ?? 'Request sent.';
+      final color = message.contains('success') ? Colors.green : Colors.redAccent;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Request sent.'),
-          backgroundColor: authProvider.errorMessage!.contains('success') 
-              ? Colors.green 
-              : Colors.redAccent,
-        ),
+        SnackBar(content: Text(message), backgroundColor: color),
       );
     }
+  }
+  
+  void _navigateToSignUp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     // Listen to the provider to get the loading state for disabling UI elements.
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
       body: Center(
@@ -124,12 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   autofillHints: const [AutofillHints.email],
                   enabled: !authProvider.isLoading,
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email address';
-                    }
+                    if (value == null || value.trim().isEmpty) return 'Please enter your email';
+                    if (!value.contains('@')) return 'Please enter a valid email address';
                     return null;
                   },
                 ),
@@ -142,25 +142,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                      icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   obscureText: _obscurePassword,
                   enabled: !authProvider.isLoading,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
+                    if (value == null || value.isEmpty) return 'Please enter your password';
                     return null;
                   },
                 ),
@@ -184,15 +173,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
-                      : const Text(
-                          'SIGN IN',
-                          style: TextStyle(fontSize: 16, letterSpacing: 1.2),
-                        ),
+                      : const Text('SIGN IN', style: TextStyle(fontSize: 16, letterSpacing: 1.2)),
                 ),
                 const SizedBox(height: 24),
 

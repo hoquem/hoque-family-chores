@@ -1,4 +1,5 @@
-// lib/models/user_profile.dart
+
+ // lib/models/user_profile.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/badge.dart';
@@ -23,12 +24,13 @@ class UserProfile extends FamilyMember {
   static const int _basePointsForLevel = 100;
   static const double _levelMultiplier = 1.5;
 
+  // This is the single, correct constructor for the class.
   UserProfile({
     required String id,
     required String name,
     String? email,
     String? avatarUrl,
-    FamilyRole? role, // MODIFIED: Accepts the FamilyRole enum
+    FamilyRole? role,
     String? familyId,
     this.totalPoints = 0,
     int? currentLevel,
@@ -59,7 +61,7 @@ class UserProfile extends FamilyMember {
     String? name,
     String? email,
     String? avatarUrl,
-    FamilyRole? role, // MODIFIED: Expects the FamilyRole enum
+    FamilyRole? role,
     String? familyId,
     int? totalPoints,
     int? currentLevel,
@@ -78,7 +80,7 @@ class UserProfile extends FamilyMember {
       name: name ?? this.name,
       email: email ?? this.email,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      role: role ?? this.role, // MODIFIED: No type conflict now
+      role: role ?? this.role,
       familyId: familyId ?? this.familyId,
       totalPoints: totalPoints ?? this.totalPoints,
       currentLevel: currentLevel ?? this.currentLevel,
@@ -93,8 +95,10 @@ class UserProfile extends FamilyMember {
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
+  
+  // REMOVED: The duplicate constructor that was here is now gone.
 
-  /// Factory to create a UserProfile from a map
+  /// Factory to create a UserProfile from a map (e.g., from Firestore)
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     DateTime? parseDate(dynamic dateData) {
       if (dateData == null) return null;
@@ -103,18 +107,26 @@ class UserProfile extends FamilyMember {
       return null;
     }
 
+    FamilyRole? parseRole(String? roleString) {
+      if (roleString == null) return null;
+      try {
+        return FamilyRole.values.byName(roleString.toLowerCase());
+      } catch (e) {
+        return FamilyRole.child; // Safe default
+      }
+    }
+
     return UserProfile(
-      id: map['id'] as String? ?? map['uid'] as String? ?? '',
+      id: map['id'] ?? map['uid'] ?? '',
       name: map['name'] as String? ?? 'No Name',
       email: map['email'] as String?,
       avatarUrl: map['avatarUrl'] as String?,
-      // MODIFIED: Safely parse the role string into a FamilyRole enum
-      role: map['role'] != null ? FamilyRole.values.byName(map['role'] as String) : null,
+      role: parseRole(map['role'] as String?),
       familyId: map['familyId'] as String?,
-      totalPoints: map['totalPoints'] as int? ?? 0,
-      completedTasks: map['completedTasks'] as int? ?? 0,
-      currentStreak: map['currentStreak'] as int? ?? 0,
-      longestStreak: map['longestStreak'] as int? ?? 0,
+      totalPoints: (map['totalPoints'] as num?)?.toInt() ?? 0,
+      completedTasks: (map['completedTasks'] as num?)?.toInt() ?? 0,
+      currentStreak: (map['currentStreak'] as num?)?.toInt() ?? 0,
+      longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
       unlockedBadges: (map['unlockedBadges'] as List<dynamic>?)
               ?.map((data) => Badge.fromMap(data))
               .toList() ??
@@ -140,7 +152,7 @@ class UserProfile extends FamilyMember {
       'name': name,
       'email': email,
       'avatarUrl': avatarUrl,
-      'role': role?.name, // Convert enum back to string for storage
+      'role': role?.name,
       'familyId': familyId,
       'totalPoints': totalPoints,
       'currentLevel': currentLevel,
@@ -156,7 +168,7 @@ class UserProfile extends FamilyMember {
     };
   }
 
-  // --- All of your existing business logic methods ---
+// --- All of your existing business logic methods ---
 
   /// Calculate level based on total points
   static int calculateLevelFromPoints(int points) {

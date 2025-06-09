@@ -1,5 +1,7 @@
 // lib/models/reward.dart
 import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/utils/enum_helpers.dart'; // Import the helper
+
 
 class Reward {
   final String id;
@@ -51,8 +53,8 @@ class Reward {
       description: map['description'] ?? '',
       pointsCost: (map['pointsCost'] as num?)?.toInt() ?? 0,
       iconName: map['iconName'] ?? 'card_giftcard',
-      category: RewardCategory.values.byName(map['category'] ?? 'digital'),
-      rarity: RewardRarity.values.byName(map['rarity'] ?? 'common'),
+      category: enumFromString(map['category'], RewardCategory.values, defaultValue: RewardCategory.digital),
+      rarity: enumFromString(map['rarity'], RewardRarity.values, defaultValue: RewardRarity.common),
       isAvailable: map['isAvailable'] ?? true,
       isRedeemed: map['isRedeemed'] ?? false,
       redeemedAt: map['redeemedAt'] != null ? DateTime.tryParse(map['redeemedAt']) : null,
