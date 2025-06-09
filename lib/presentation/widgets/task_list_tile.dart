@@ -1,68 +1,99 @@
 // lib/presentation/widgets/task_list_tile.dart
+
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // ADDED: Missing import for enums
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart'; // <-- THIS IS THE REQUIRED IMPORT
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; // A great package for date formatting
 
 class TaskListTile extends StatelessWidget {
   final Task task;
+
   const TaskListTile({super.key, required this.task});
+
+  // This helper method determines the correct icon and color based on the task status.
+  // It now handles all cases to fix the 'body_might_complete_normally' error.
+  ({IconData icon, Color color}) _getStatusAppearance(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+      case TaskStatus.available:
+        return (icon: Icons.radio_button_unchecked, color: Colors.grey.shade600);
+      case TaskStatus.assigned:
+      case TaskStatus.inProgress:
+        return (icon: Icons.person, color: Colors.blue.shade700);
+      case TaskStatus.pendingApproval:
+        return (icon: Icons.hourglass_top_rounded, color: Colors.orange.shade700);
+      case TaskStatus.completed:
+      case TaskStatus.verified:
+        return (icon: Icons.check_circle, color: Colors.green.shade700);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final statusIcon = _getStatusIcon(task.status);
-
-    final bool isOverdue = task.dueDate != null &&
-        task.dueDate!.toDate().isBefore(DateTime.now()) &&
-        task.status != TaskStatus.completed;
+    final statusAppearance = _getStatusAppearance(task.status);
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        leading: Icon(statusIcon.icon, color: statusIcon.color, size: 30),
-        title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(task.assigneeName ?? 'Unassigned'),
-        trailing: Column(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        leading: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '${task.points} pts',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+              '${task.points}',
+              style: textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            if (task.dueDate != null)
-              Text(
-                DateFormat.yMd().format(task.dueDate!.toDate()),
-                style: TextStyle(
-                  color: isOverdue ? Colors.red : Colors.grey.shade600,
-                  fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
+            Text(
+              'pts',
+              style: textTheme.bodySmall?.copyWith(color: Theme.of(context).primaryColor),
+            ),
+          ],
+        ),
+        title: Text(
+          task.title,
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(statusAppearance.icon, size: 16, color: statusAppearance.color),
+                const SizedBox(width: 6),
+                Text(
+                  task.assigneeName ?? 'Available',
+                  style: textTheme.bodyMedium?.copyWith(color: Colors.black54),
                 ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Gracefully handle the due date, checking if it exists
+            if (task.dueDate != null)
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                  const SizedBox(width: 6),
+                  // MODIFIED: Use the DateTime object directly without the incorrect .toDate() call
+                  Text(
+                    'Due: ${DateFormat.yMMMd().format(task.dueDate!)}',
+                    style: textTheme.bodySmall,
+                  ),
+                ],
               ),
           ],
         ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TaskDetailsScreen(taskId: task.id),
-            ),
-          );
+          // TODO: Navigate to Task Details Screen
         },
       ),
     );
-  }
-
-  ({IconData icon, Color color}) _getStatusIcon(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.available:
-        return (icon: Icons.person_add_alt_1_outlined, color: Colors.blue);
-      case TaskStatus.assigned:
-        return (icon: Icons.person_outline, color: Colors.orange);
-      case TaskStatus.pendingApproval:
-        return (icon: Icons.hourglass_top_rounded, color: Colors.purple);
-      case TaskStatus.completed:
-        return (icon: Icons.check_circle, color: Colors.green);
-    }
   }
 }

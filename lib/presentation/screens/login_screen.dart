@@ -24,61 +24,59 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _signIn() async {
+  /// Handles the sign-in logic, including form validation and error display.
+  Future<void> _signIn() async {
+    // Hide keyboard
+    FocusScope.of(context).unfocus();
+    
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      final success = await authProvider.signIn(
+      final bool success = await authProvider.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       
-      if (!success && mounted && authProvider.errorMessage != null) {
+      // If sign-in fails, show the error message from the provider.
+      if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage!),
-            backgroundColor: Colors.red,
+            content: Text(authProvider.errorMessage ?? 'An unknown error occurred.'),
+            backgroundColor: Colors.redAccent,
           ),
         );
       }
     }
   }
 
+  /// Navigates to the sign-up screen (placeholder).
   void _navigateToSignUp() {
-    // Navigate to sign up screen
-    // This would typically use Navigator.push to a SignUpScreen
-    // For now, we'll just show a message
+    // TODO: Replace with Navigator.push to your SignUpScreen
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sign up functionality coming soon!'),
-      ),
+      const SnackBar(content: Text('Sign up functionality coming soon!')),
     );
   }
 
-  void _resetPassword() async {
-    if (_emailController.text.isEmpty) {
+  /// Handles the password reset logic.
+  Future<void> _resetPassword() async {
+    if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email address first'),
-        ),
+        const SnackBar(content: Text('Please enter your email to reset password.')),
       );
       return;
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.resetPassword(
-      email: _emailController.text.trim(),
-    );
+    await authProvider.resetPassword(email: _emailController.text.trim());
 
+    // Show the result in a SnackBar, whether success or failure.
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            success
-                ? 'Password reset email sent. Check your inbox.'
-                : authProvider.errorMessage ?? 'Failed to send reset email',
-          ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          content: Text(authProvider.errorMessage ?? 'Request sent.'),
+          backgroundColor: authProvider.errorMessage!.contains('success') 
+              ? Colors.green 
+              : Colors.redAccent,
         ),
       );
     }
@@ -86,55 +84,47 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to the provider to get the loading state for disabling UI elements.
     final authProvider = Provider.of<AuthProvider>(context);
-    final isLoading = authProvider.isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        centerTitle: true,
-      ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // App logo or icon
                 Icon(
-                  Icons.family_restroom,
+                  Icons.home_work_outlined,
                   size: 80,
                   color: Theme.of(context).primaryColor,
                 ),
-                const SizedBox(height: 24),
-                
-                // App title
+                const SizedBox(height: 16),
                 Text(
                   'Family Chores',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).primaryColorDark,
+                      ),
                 ),
                 const SizedBox(height: 48),
 
-                // Email field
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
+                    prefixIcon: Icon(Icons.email_outlined),
                     border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
-                  enabled: !isLoading,
+                  enabled: !authProvider.isLoading,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return 'Please enter your email';
                     }
                     if (!value.contains('@') || !value.contains('.')) {
@@ -145,16 +135,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Password field
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock_outline),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                       ),
                       onPressed: () {
                         setState(() {
@@ -164,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   obscureText: _obscurePassword,
-                  enabled: !isLoading,
+                  enabled: !authProvider.isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
@@ -177,25 +166,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Forgot password link
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: isLoading ? null : _resetPassword,
+                    onPressed: authProvider.isLoading ? null : _resetPassword,
                     child: const Text('Forgot Password?'),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Sign in button
                 ElevatedButton(
-                  onPressed: isLoading ? null : _signIn,
+                  onPressed: authProvider.isLoading ? null : _signIn,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
                   ),
-                  child: isLoading
+                  child: authProvider.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
@@ -205,19 +190,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         )
                       : const Text(
-                          'Sign In',
-                          style: TextStyle(fontSize: 16),
+                          'SIGN IN',
+                          style: TextStyle(fontSize: 16, letterSpacing: 1.2),
                         ),
                 ),
                 const SizedBox(height: 24),
 
-                // Sign up link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text("Don't have an account?"),
                     TextButton(
-                      onPressed: isLoading ? null : _navigateToSignUp,
+                      onPressed: authProvider.isLoading ? null : _navigateToSignUp,
                       child: const Text('Sign Up'),
                     ),
                   ],

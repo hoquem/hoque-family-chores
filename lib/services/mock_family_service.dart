@@ -1,83 +1,65 @@
 // lib/services/mock_family_service.dart
+
+import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/family_service_interface.dart';
 
 class MockFamilyService implements FamilyServiceInterface {
-  // --- UPDATED MOCK DATA ---
-  // A private list of mock family members using the names and roles you provided.
-  // Avatars are generated using the fun DiceBear API (https://www.dicebear.com/).
+  // A predefined list of mock family members for testing.
   final List<FamilyMember> _mockMembers = [
     FamilyMember(
-      id: 'fm_001',
-      name: 'Mahmudul Hoque',
-      role: 'Parent',
-      avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Mahmudul',
+      id: 'user_parent_1',
+      name: 'Ahmed Hoque',
+      email: 'ahmed@example.com',
+      avatarUrl: 'https://example.com/profiles/ahmed.jpg',
+      // MODIFIED: Used the FamilyRole enum instead of a String
+      role: FamilyRole.parent, 
+      familyId: 'family_hoque_1',
     ),
     FamilyMember(
-      id: 'fm_002',
-      name: 'Alima Begum',
-      role: 'Parent',
-      avatarUrl: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Alima',
+      id: 'user_parent_2',
+      name: 'Fatima Hoque',
+      email: 'fatima@example.com',
+      avatarUrl: 'https://example.com/profiles/fatima.jpg',
+      // MODIFIED: Used the FamilyRole enum instead of a String
+      role: FamilyRole.parent,
+      familyId: 'family_hoque_1',
     ),
     FamilyMember(
-      id: 'fm_003',
-      name: 'Roshina Hoque',
-      role: 'Admin',
-      avatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=Roshina', // A cool robot avatar
+      id: 'user_child_1',
+      name: 'Zahra Hoque',
+      email: 'zahra@example.com',
+      avatarUrl: 'https://example.com/profiles/zahra.jpg',
+      // MODIFIED: Used the FamilyRole enum instead of a String
+      role: FamilyRole.child,
+      familyId: 'family_hoque_1',
     ),
     FamilyMember(
-      id: 'fm_004',
-      name: 'Ubaid Hoque',
-      role: 'Child',
-      avatarUrl: 'https://api.dicebear.com/8.x/pixel-art/svg?seed=Ubaid', // Pixel art style
+      id: 'user_child_2',
+      name: 'Yusuf Hoque',
+      email: 'yusuf@example.com',
+      avatarUrl: 'https://example.com/profiles/yusuf.jpg',
+      // MODIFIED: Used the FamilyRole enum instead of a String
+      role: FamilyRole.child,
+      familyId: 'family_hoque_1',
     ),
     FamilyMember(
-      id: 'fm_005',
-      name: 'Tazim Hoque',
-      role: 'Child',
-      avatarUrl: 'https://api.dicebear.com/8.x/miniavs/svg?seed=Tazim', // Minimalist avatar
-    ),
-    FamilyMember(
-      id: 'fm_006',
-      name: 'Ehsaan Hoque',
-      role: 'Child',
-      avatarUrl: 'https://api.dicebear.com/8.x/bottts/svg?seed=Ehsaan', // Another robot
-    ),
-    FamilyMember(
-      id: 'fm_007',
-      name: 'Yamin Hoque',
-      role: 'Child',
-      avatarUrl: 'https://api.dicebear.com/8.x/pixel-art/svg?seed=Yamin', // Another pixel art
+      id: 'user_child_3',
+      name: 'Amina Hoque',
+      email: 'amina@example.com',
+      avatarUrl: 'https://example.com/profiles/amina.jpg',
+      // MODIFIED: Used the FamilyRole enum instead of a String
+      role: FamilyRole.child,
+      familyId: 'family_hoque_1',
     ),
   ];
 
-  // This flag allows us to easily test how the UI handles errors.
-  bool _simulateError = false;
-
-  void setSimulateError(bool shouldSimulate) {
-    _simulateError = shouldSimulate;
-  }
-
   @override
   Future<List<FamilyMember>> getFamilyMembers() async {
-    // Simulate a network delay, as if fetching from a real server.
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (_simulateError) {
-      // Simulate a failure scenario.
-      throw Exception("Simulated network error: Could not fetch family members.");
-    }
-
-    // Return a copy of the list.
-    return List<FamilyMember>.from(_mockMembers);
-  }
-
-  // --- Optional helper methods for testing ---
-  void addMockMemberForTesting(FamilyMember member) {
-    _mockMembers.add(member);
-  }
-
-  void clearMockMembersForTesting() {
-    _mockMembers.clear();
+    // Simulate a network delay
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Return a copy of the list
+    return List.from(_mockMembers);
   }
 }

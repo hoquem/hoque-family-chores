@@ -4,13 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 
-// --- REMOVED --- All widget-specific providers and widgets are gone from the dashboard body.
-// import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
-// import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
-
-// --- REMOVED --- Mock services are no longer needed here.
-// import 'package:hoque_family_chores/services/mock_task_service.dart';
-
 // --- Screens for Navigation (still needed for BottomNavBar) ---
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
@@ -149,13 +142,13 @@ class DashboardScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildTaskSummaryRow(
-                        context, 'Pending', '3', Icons.pending_actions, Colors.orange),
+                          context, 'Pending', '3', Icons.pending_actions, Colors.orange),
                       const Divider(),
                       _buildTaskSummaryRow(
-                        context, 'In Progress', '1', Icons.hourglass_top, Colors.blue),
+                          context, 'In Progress', '1', Icons.hourglass_top, Colors.blue),
                       const Divider(),
                       _buildTaskSummaryRow(
-                        context, 'Completed', '12', Icons.task_alt, Colors.green),
+                          context, 'Completed', '12', Icons.task_alt, Colors.green),
                     ],
                   ),
                 ),
@@ -179,10 +172,6 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
-              // --- REMOVED --- 'Grab an Unassigned Task!' section.
-              
-              // --- REMOVED --- The Divider and the entire 'Navigate' section with its buttons.
             ],
           ),
         ),
@@ -209,14 +198,19 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
         onTap: (index) {
-          // Prevent navigation to the current screen
-          if (ModalRoute.of(context)?.settings.name == '/dashboard' && index == 0) return;
+          // You might want to get the current route name to prevent pushing the same screen
+          final currentRoute = ModalRoute.of(context)?.settings.name;
+
+          // A simple way to check if we're on the dashboard.
+          // For more complex apps, a dedicated navigation service is better.
+          bool onDashboard = currentRoute == null || currentRoute == '/';
+
+          if (onDashboard && index == 0) return;
 
           Widget? screenToNavigate;
           
           switch (index) {
             case 0:
-              // Since we are replacing, we need to handle going back to the dashboard
               screenToNavigate = const DashboardScreen(); 
               break;
             case 1:
@@ -267,7 +261,8 @@ class DashboardScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              // THIS IS THE FIX: The missing comma is now added.
+              color: color.withAlpha((255 * 0.2).round()),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -323,6 +318,4 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-
-  // --- REMOVED --- The _buildNavigationButton helper method is no longer used.
 }
