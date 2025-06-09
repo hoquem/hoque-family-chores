@@ -1,32 +1,38 @@
 // lib/presentation/providers/my_tasks_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 
+// MODIFIED: State enum to match what the widget expects
 enum MyTasksState { initial, loading, loaded, error }
 
 class MyTasksProvider with ChangeNotifier {
-  final TaskServiceInterface _taskService;
+  TaskServiceInterface? _taskService;
+  AuthProvider? _authProvider;
 
-  MyTasksProvider(this._taskService);
-
+  // MODIFIED: Public properties to match what the widget expects
   MyTasksState _state = MyTasksState.initial;
+  String? _errorMessage;
   List<Task> _tasks = [];
-  String _errorMessage = '';
 
   MyTasksState get state => _state;
-  List<Task> get tasks => _tasks;
-  String get errorMessage => _errorMessage;
+  String? get errorMessage => _errorMessage;
+  List<Task> get tasks => _tasks; // The widget expects 'tasks'
 
-  Future<void> fetchMyPendingTasks() async {
+  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
+    _taskService = taskService;
+    _authProvider = authProvider;
+    fetchMyTasks();
+  }
+
+  Future<void> fetchMyTasks() async {
+    if (_taskService == null || _authProvider?.currentUserId == null) return;
     _state = MyTasksState.loading;
     notifyListeners();
 
     try {
-      // FOR NOW: Hardcode the logged-in user's ID for the mock service.
-      // In a real app, this ID would come from your AuthProvider.
-      const mockLoggedInUserId = 'fm_001';
-      _tasks = await _taskService.getMyPendingTasks(mockLoggedInUserId);
+      _tasks = await _taskService!.getMyPendingTasks(userId: _authProvider!.currentUserId!);
       _state = MyTasksState.loaded;
     } catch (e) {
       _errorMessage = e.toString();

@@ -1,95 +1,89 @@
 // lib/services/firebase_task_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // ADDED: Missing import
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 
 class FirebaseTaskService implements TaskServiceInterface {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
   late final CollectionReference<Map<String, dynamic>> _tasksCollection;
 
   FirebaseTaskService() {
-    _tasksCollection = _firestore.collection('tasks');
+    _tasksCollection = _db.collection('tasks');
   }
 
+  // MODIFIED: All method signatures now match the interface with named parameters.
+  
   @override
-  Stream<List<Task>> streamAllTasks() {
-    final snapshots = _tasksCollection.orderBy('createdAt', descending: true).snapshots();
-    return snapshots.map((querySnapshot) {
-      return querySnapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList();
+  Stream<List<Task>> streamAllTasks({required String familyId}) {
+    return _tasksCollection
+        .where('familyId', isEqualTo: familyId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      // MODIFIED: Uses the correct Task.fromMap factory constructor
+      return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
     });
   }
 
-@override
-  Stream<List<Task>> streamMyTasks(String userId) {
-    final snapshots = _tasksCollection
+  @override
+  Stream<List<Task>> streamMyTasks({required String userId}) {
+    return _tasksCollection
         .where('assigneeId', isEqualTo: userId)
-        .where('status', isNotEqualTo: TaskStatus.completed.index)
-        .orderBy('status')
-        .orderBy('dueDate')
-        .snapshots();
-    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
+        .where('status', isNotEqualTo: TaskStatus.completed.name)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
+    });
   }
 
   @override
-  Stream<List<Task>> streamAvailableTasks() {
-    final snapshots = _tasksCollection
-        .where('status', isEqualTo: TaskStatus.available.index)
-        .orderBy('priority', descending: true)
-        .orderBy('dueDate')
-        .snapshots();
-    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
+  Stream<List<Task>> streamAvailableTasks({required String familyId}) {
+    return _tasksCollection
+        .where('familyId', isEqualTo: familyId)
+        .where('assigneeId', isEqualTo: null) // Correct logic for available tasks
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
+    });
   }
 
   @override
-  Stream<List<Task>> streamCompletedTasks() {
-    final snapshots = _tasksCollection
-        .where('status', isEqualTo: TaskStatus.completed.index)
-        .orderBy('createdAt', descending: true)
-        .limit(50) // Limit to last 50 completed tasks for performance
-        .snapshots();
-    return snapshots.map((snapshot) => snapshot.docs.map((doc) => Task.fromSnapshot(doc)).toList());
-  }
-  
-  // --- Methods for Dashboard Widgets (Stubbed for now) ---
-
-  @override
-  Future<List<Task>> getMyPendingTasks(String userId) {
-    // TODO: Implement Firebase logic to fetch tasks assigned to a specific user.
-    // This will involve a `where('assigneeId', isEqualTo: userId)` query.
-    throw UnimplementedError('getMyPendingTasks has not been implemented for Firebase yet.');
+  Stream<List<Task>> streamCompletedTasks({required String familyId}) {
+    return _tasksCollection
+        .where('familyId', isEqualTo: familyId)
+        .where('status', whereIn: [TaskStatus.completed.name, TaskStatus.verified.name])
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
+    });
   }
 
   @override
-  Future<List<Task>> getUnassignedTasks() {
-    // TODO: Implement Firebase logic to fetch tasks where assigneeId is null.
-    // This will involve a `where('assigneeId', isEqualTo: null)` query.
-    throw UnimplementedError('getUnassignedTasks has not been implemented for Firebase yet.');
+  Future<List<Task>> getMyPendingTasks({required String userId}) async {
+    final snapshot = await _tasksCollection
+        .where('assigneeId', isEqualTo: userId)
+        .where('status', isEqualTo: TaskStatus.pending.name)
+        .get();
+        return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
   }
 
   @override
-  Future<void> assignTask({required String taskId, required String userId}) {
-    // TODO: Implement Firebase logic to update a task's assigneeId.
-    // This will use a Firestore Transaction for data integrity.
-    throw UnimplementedError('assignTask has not been implemented for Firebase yet.');
-  }
-
-  // --- Methods for Future Stories ---
-
-  @override
-  Future<void> createTask(Task task) {
-    // TODO: Implement in the "Task Creation" story.
-    throw UnimplementedError('createTask has not been implemented yet.');
+  Future<List<Task>> getUnassignedTasks({required String familyId}) async {
+    final snapshot = await _tasksCollection
+        .where('familyId', isEqualTo: familyId)
+        .where('assigneeId', isEqualTo: null)
+        .get();
+        return snapshot.docs.map((doc) => Task.fromMap({...doc.data(), 'id': doc.id})).toList();
   }
 
   @override
-  Future<void> updateTask(Task task) {
-    // TODO: Implement in stories like "Task Completion" or "Task Editing".
-    throw UnimplementedError('updateTask has not been implemented yet.');
-  }
-
-  @override
-  Future<void> deleteTask(String taskId) {
-    // TODO: Implement in the "Task Editing/Deletion" story.
-    throw UnimplementedError('deleteTask has not been implemented yet.');
+  Future<void> assignTask({required String taskId, required String userId, required String userName}) async {
+    await _tasksCollection.doc(taskId).update({
+      'assigneeId': userId,
+      'assigneeName': userName,
+      'status': TaskStatus.assigned.name,
+    });
   }
 }

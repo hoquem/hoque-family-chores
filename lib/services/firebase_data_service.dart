@@ -5,11 +5,12 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hoque_family_chores/services/data_service.dart';
+import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/services/data_service_interface.dart';
 
 /// A production implementation of the DataService that connects to Firebase
 /// services for authentication, data storage, and retrieval.
-class FirebaseDataService implements DataService {
+class FirebaseDataService implements DataServiceInterface {
   // Singleton pattern
   static final FirebaseDataService _instance = FirebaseDataService._internal();
   factory FirebaseDataService() => _instance;
@@ -720,13 +721,36 @@ class FirebaseDataService implements DataService {
       case TaskDifficulty.challenging:
         return 100;
     }
-    // This line should ideally not be reached if all enum cases are handled.
-    // If TaskDifficulty enum changes, this switch might become non-exhaustive.
-    // Returning a default or throwing an error are options.
-    // For now, let's assume medium points if somehow reached.
-    return 50; 
   }
-  
+
+ @override
+  Stream<List<Map<String, dynamic>>> streamTasksByFamily({
+    required String familyId,
+    TaskStatus? status,
+    String? assigneeId,
+  }) {
+    try {
+      Query query = _tasksCollection.where('familyId', isEqualTo: familyId);
+
+      if (status != null) {
+        query = query.where('status', isEqualTo: status.name);
+      }
+      if (assigneeId != null) {
+        query = query.where('assigneeId', isEqualTo: assigneeId);
+      }
+
+      return query.orderBy('createdAt', descending: true).snapshots().map((snapshot) {
+        return snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+      });
+    } catch (error) {
+      _handleError(error);
+    }
+  }
+
   @override
   Future<Map<String, dynamic>?> getTask({required String taskId}) async {
     try {

@@ -1,137 +1,86 @@
 // lib/presentation/screens/family_list_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/family_list_provider.dart';
-import 'package:hoque_family_chores/services/firebase_family_service.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/services/data_service_interface.dart';
 
-class FamilyListScreen extends StatelessWidget {
+class FamilyListScreen extends StatefulWidget {
   const FamilyListScreen({super.key});
 
   @override
+  State<FamilyListScreen> createState() => _FamilyListScreenState();
+}
+
+class _FamilyListScreenState extends State<FamilyListScreen> {
+  late Future<List<FamilyMember>> _familyMembersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the family members when the screen loads
+    final dataService = Provider.of<DataServiceInterface>(context, listen: false);
+    // Assuming you have a way to get the current familyId, e.g., from an AuthProvider
+    // For now, we'll use a placeholder.
+    const String currentFamilyId = 'family_hoque_1'; 
+    
+    // Convert the List<Map> from the service into a List<FamilyMember>
+    _familyMembersFuture = dataService
+        .getFamilyMembers(familyId: currentFamilyId)
+        .then((memberMaps) => memberMaps.map((map) {
+              // We need a fromMap constructor on FamilyMember for this to be clean
+              // For now, let's create it manually based on the model.
+              return FamilyMember(
+                id: map['id'],
+                name: map['displayName'] ?? 'Unnamed Member',
+                email: map['email'],
+                avatarUrl: map['photoUrl'],
+                familyId: map['familyId'],
+              );
+            }).toList());
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => FamilyListProvider(FirebaseFamilyService())..fetchFamilyMembers(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Family Members (Firebase)'),
-          // You could add a refresh button here if desired:
-          // actions: [
-          //   Consumer<FamilyListProvider>( // To access provider for refresh
-          //     builder: (context, provider, child) {
-          //       // Avoid showing refresh button while already loading
-          //       if (provider.state == FamilyListState.loading) {
-          //         return const SizedBox.shrink(); // Or a disabled button
-          //       }
-          //       return IconButton(
-          //         icon: const Icon(Icons.refresh),
-          //         onPressed: () => provider.fetchFamilyMembers(),
-          //       );
-          //     },
-          //   ),
-          // ],
-        ),
-        body: Consumer<FamilyListProvider>(
-          builder: (context, provider, child) {
-            switch (provider.state) {
-              case FamilyListState.loading:
-                return const Center(child: CircularProgressIndicator());
-              case FamilyListState.error:
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Error: ${provider.errorMessage}',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () => provider.fetchFamilyMembers(),
-                          child: const Text('Retry'),
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              case FamilyListState.loaded:
-                if (provider.members.isEmpty) {
-                  return const Center(
-                    child: Text('No family members found in Firebase.'),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: provider.members.length,
-                  itemBuilder: (context, index) {
-                    final member = provider.members[index];
-                    Widget leadingAvatar;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Family Members'),
+      ),
+      body: FutureBuilder<List<FamilyMember>>(
+        future: _familyMembersFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No family members found.'));
+          }
 
-                    if (member.avatarUrl != null && member.avatarUrl!.isNotEmpty) {
-                      leadingAvatar = SizedBox(
-                        width: 40, // Standard CircleAvatar width
-                        height: 40, // Standard CircleAvatar height
-                        child: ClipOval(
-                          child: Image.network(
-                            member.avatarUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
-                              // Error occurred loading image for member
-                              return CircleAvatar( // Fallback CircleAvatar with icon
-                                backgroundColor: Colors.grey[300],
-                                child: Icon(Icons.person_outline, color: Colors.grey[700]),
-                              );
-                            },
-                            loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                              if (loadingProgress == null) return child; // Image is loaded
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.0,
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    } else {
-                      // Placeholder if avatarUrl is null or empty
-                      leadingAvatar = CircleAvatar(
-                        backgroundColor: Colors.blueGrey[100],
-                        child: Text(
-                          member.name.isNotEmpty ? member.name[0].toUpperCase() : 'N',
-                          style: TextStyle(color: Colors.blueGrey[700]),
-                        ),
-                      );
-                    }
+          final familyMembers = snapshot.data!;
 
-                    return ListTile(
-                      leading: leadingAvatar,
-                      title: Text(member.name),
-                      subtitle: Text(member.role ?? 'N/A'), // Display 'N/A' if role is null
-                      // Example: Add an onTap for future functionality
-                      // onTap: () {
-                      //   print('Tapped on ${member.name}');
-                      //   // Navigate to a detail screen, show a dialog, etc.
-                      // },
-                    );
-                  },
-                );
-              case FamilyListState.initial:
-                // This case might not be hit if fetch is called immediately on create,
-                // but it's good practice to handle all enum states.
-                // Could show a button to initiate loading if fetch wasn't called automatically.
-                return Center(
-                  child: ElevatedButton(
-                    onPressed: () => provider.fetchFamilyMembers(),
-                    child: const Text('Load Members'),
+          return ListView.builder(
+            itemCount: familyMembers.length,
+            itemBuilder: (context, index) {
+              final member = familyMembers[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundImage: member.avatarUrl != null ? NetworkImage(member.avatarUrl!) : null,
+                    child: member.avatarUrl == null ? Text(member.name[0]) : null,
                   ),
-                );
-            }
-          },
-        ),
+                  // THIS IS THE FIX: We can now use member.name directly without any null checks,
+                  // because our model guarantees it will always have a value.
+                  title: Text(member.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(member.email ?? 'No email'),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

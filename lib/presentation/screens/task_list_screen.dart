@@ -1,80 +1,71 @@
 // lib/presentation/screens/task_list_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
-import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
-import 'package:hoque_family_chores/services/firebase_task_service.dart'; // To use the real service
-// import 'package:hoque_family_chores/services/mock_task_service.dart'; // Or use this for testing
+import 'package:provider/provider.dart';
 
-class TaskListScreen extends StatelessWidget {
+class TaskListScreen extends StatefulWidget {
+  // Correct constructor
   const TaskListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => TaskListProvider(
-        FirebaseTaskService(), // <-- Using the REAL Firebase service
-        // MockTaskService(), // <-- SWAP to this for mock data testing
-        'fm_001', // TODO: Replace with actual logged-in user ID from AuthProvider
-      ),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Task List'),
-          // You could add a "Create Task" button for admins here
-        ),
-        body: Column(
-          children: [
-            Consumer<TaskListProvider>(
-              builder: (context, provider, child) {
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SegmentedButton<TaskFilterType>(
-                    segments: const <ButtonSegment<TaskFilterType>>[
-                      ButtonSegment(value: TaskFilterType.all, label: Text('All')),
-                      ButtonSegment(value: TaskFilterType.myTasks, label: Text('My Tasks')),
-                      ButtonSegment(value: TaskFilterType.available, label: Text('Available')),
-                      ButtonSegment(value: TaskFilterType.completed, label: Text('Done')),
-                    ],
-                    selected: <TaskFilterType>{provider.currentFilter},
-                    onSelectionChanged: (Set<TaskFilterType> newSelection) {
-                      provider.setFilter(newSelection.first);
-                    },
-                  ),
-                );
-              },
-            ),
-            Expanded(
-              child: Consumer<TaskListProvider>(
-                builder: (context, provider, child) {
-                  return StreamBuilder<List<Task>>(
-                    stream: provider.tasksStream,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      }
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const Center(child: Text('No tasks found for this filter.'));
-                      }
+  State<TaskListScreen> createState() => _TaskListScreenState();
+}
 
-                      final tasks = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: tasks.length,
-                        itemBuilder: (context, index) {
-                          return TaskListTile(task: tasks[index]);
-                        },
-                      );
-                    },
-                  );
+class _TaskListScreenState extends State<TaskListScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Use addPostFrameCallback to ensure the provider is available
+    // when we call listenToTasks.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialize the stream when the screen loads
+      Provider.of<TaskListProvider>(context, listen: false).setFilter(TaskFilterType.all);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // We use a Consumer here to rebuild when the filter changes
+    return Consumer<TaskListProvider>(
+      builder: (context, taskProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('All Chores'),
+            // TODO: Add a filter button here to call provider.setFilter()
+          ),
+          body: StreamBuilder<List<Task>>(
+            // The stream now comes directly from the provider
+            stream: taskProvider.tasksStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No chores available.'));
+              }
+
+              final tasks = snapshot.data!;
+              return ListView.builder(
+                padding: const EdgeInsets.all(8.0),
+                itemCount: tasks.length,
+                itemBuilder: (context, index) {
+                  final task = tasks[index];
+                  // Assuming you have a TaskListCard widget from before
+                  return ListTile(title: Text(task.title));
                 },
-              ),
-            ),
-          ],
-        ),
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
