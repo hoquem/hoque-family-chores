@@ -1,146 +1,206 @@
-// lib/presentation/providers/auth_provider.dart
-
-import 'package:flutter/foundation.dart';
-import 'package:hoque_family_chores/utils/exceptions.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this import is here
 import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/test_data/mock_data.dart';
 
-enum AuthStatus { unknown, authenticated, unauthenticated }
+// REMOVED: enum AuthStatus { ... } definition from here, it's now ONLY in enums.dart
 
 class AuthProvider with ChangeNotifier {
-  DataServiceInterface? _dataService;
-  AuthStatus _status = AuthStatus.unknown;
-  UserProfile? _userProfile;
-  bool _isLoading = false;
+  final DataServiceInterface? _dataService;
+  final FirebaseAuth _firebaseAuth;
+
+  UserProfile? _currentUserProfile;
+  String? _userFamilyId;
+  AuthStatus _status = AuthStatus.unknown; // Now refers to AuthStatus from enums.dart
   String? _errorMessage;
+  bool _isLoading = false;
 
-  // --- Public Getters for UI ---
-  AuthStatus get status => _status;
+  // --- Public Getters ---
+  UserProfile? get currentUserProfile => _currentUserProfile;
+  String? get currentUserId => _currentUserProfile?.id;
+  String? get userFamilyId => _userFamilyId;
+  String? get displayName => _currentUserProfile?.name;
+  String? get photoUrl => _currentUserProfile?.avatarUrl;
+  String? get userEmail => _currentUserProfile?.email;
   bool get isLoggedIn => _status == AuthStatus.authenticated;
-  bool get isLoading => _isLoading;
+  AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
-  UserProfile? get currentUserProfile => _userProfile;
-  String? get currentUserId => _userProfile?.id;
-  String? get userFamilyId => _userProfile?.familyId;
-  String? get displayName => _userProfile?.name;
-  String? get userEmail => _userProfile?.email;
-  String? get photoUrl => _userProfile?.avatarUrl;
+  bool get isLoading => _isLoading;
 
-  /// Injected by ProxyProvider in main.dart
-  void updateDataService(DataServiceInterface dataService) {
-    if (_dataService == null) {
-      _dataService = dataService;
-      checkInitialAuthStatus();
-    }
+  AuthProvider({FirebaseAuth? firebaseAuth, DataServiceInterface? dataService})
+      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _dataService = dataService {
+    _initAuthStatus();
   }
 
-  /// Checks for an existing session when the app starts.
-  Future<void> checkInitialAuthStatus() async {
-    if (_dataService == null) return;
-    
-    final bool authenticated = await _dataService!.isAuthenticated();
-    if (authenticated) {
-      final userId = _dataService!.getCurrentUserId();
-      if (userId != null) {
-        // After authenticating, we must also load the profile data.
-        await _loadUserProfile(userId);
-      } else {
-        _updateStatus(AuthStatus.unauthenticated);
-      }
-    } else {
-      _updateStatus(AuthStatus.unauthenticated);
-    }
-  }
-
-  /// Handles the entire sign-in flow.
-  /// Returns `true` only if both authentication AND profile loading succeed.
-Future<bool> signIn({required String email, required String password}) async {
-    if (_dataService == null) return false;
-    _startLoading();
-    
-    // MODIFIED: Catch block now includes the stack trace `s`
-    try {
-      final userId = await _dataService!.signIn(email: email, password: password);
-      
-      if (userId != null) {
-        await _loadUserProfile(userId);
-        
-        if (_status == AuthStatus.authenticated) {
-          _stopLoading();
-          return true;
-        }
-      }
-      // If we get here, something failed. Throw our custom exception.
-      throw AuthException('Sign in failed. Please check your credentials.');
-
-    } catch (e, s) { // MODIFIED: Catch the error AND the stack trace
-      // ADDED: Log the full error and stack trace to the console
-      logger.e('Sign In Failed', error: e, stackTrace: s);
-      
-      // Pass a user-friendly message to the UI
-      _stopLoading(error: e is AppException ? e.message : 'An unexpected error occurred.');
-      return false;
-    }
-  }
-
-  /// Signs the current user out.
-  Future<void> signOut() async {
-    if (_dataService == null) return;
-    await _dataService!.signOut();
-    _userProfile = null;
-    _updateStatus(AuthStatus.unauthenticated);
-  }
-
-  /// Refreshes the current user's profile data.
-  Future<void> refreshUserProfile() async {
-    if (currentUserId != null) {
-      await _loadUserProfile(currentUserId!);
-    }
-  }
-
-  /// Private helper to load profile data and update the state.
-  /// Throws an exception if the profile cannot be found.
-  Future<void> _loadUserProfile(String userId) async {
-    try {
-      final profileMap = await _dataService!.getUserProfile(userId: userId);
-      if (profileMap != null) {
-        _userProfile = UserProfile.fromMap(profileMap);
-        _updateStatus(AuthStatus.authenticated);
-      } else {
-        await _dataService!.signOut();
-        // MODIFIED: Throw our custom exception for clarity
-        throw AuthException('Your user profile could not be found in the database.');
-      }
-    } catch (e) {
-      _userProfile = null;
-      _updateStatus(AuthStatus.unauthenticated);
-      // Re-throw the error so the calling method (signIn) can catch it
-      rethrow;
-    }
-  }
-
-  // --- Private state management helpers ---
-  void _startLoading() {
+  Future<void> _initAuthStatus() async {
+    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-  }
 
-  void _stopLoading({String? error}) {
-    _isLoading = false;
-    _errorMessage = error;
-    notifyListeners();
-  }
-  
-  void _updateStatus(AuthStatus newStatus) {
-    if (_status != newStatus) {
-      _status = newStatus;
+    try {
+      _firebaseAuth.authStateChanges().listen((User? firebaseUser) async {
+        if (firebaseUser == null) {
+          logger.i("AuthProvider: Firebase user is null (signed out or no session).");
+          _currentUserProfile = null;
+          _userFamilyId = null;
+          _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+        } else {
+          logger.i("AuthProvider: Firebase user found: ${firebaseUser.uid}. Fetching profile.");
+          if (_dataService != null) {
+            _currentUserProfile = await _dataService.getUserProfile(userId: firebaseUser.uid);
+            _userFamilyId = _currentUserProfile?.familyId;
+
+            if (_currentUserProfile != null) {
+              _setStatus(AuthStatus.authenticated); // Refers to AuthStatus from enums.dart
+              logger.i("AuthProvider: User profile loaded for ${firebaseUser.uid}. Status: authenticated.");
+            } else {
+              logger.w("AuthProvider: Firebase user ${firebaseUser.uid} authenticated, but no UserProfile found in Firestore.");
+              _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+            }
+          } else {
+            logger.w("AuthProvider: DataService is null, cannot fetch user profile for ${firebaseUser.uid}.");
+            _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+          }
+        }
+        _isLoading = false;
+        notifyListeners();
+      });
+    } catch (e, s) {
+      logger.e("AuthProvider: Failed to initialize auth status: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to initialize authentication: $e";
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  // You should add the signUp and resetPassword methods here as well...
-  Future<bool> signUp({ required String email, required String password, required String displayName, }) async { return false; }
-  Future<void> resetPassword({required String email}) async {}
+  // --- Public Methods (removed @override for direct methods not overriding ChangeNotifier) ---
+  Future<void> signIn({required String email, required String password}) async {
+    logger.i("Attempting sign-in for $email.");
+    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      logger.i("Sign-in successful for ${userCredential.user?.uid}.");
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An unknown authentication error occurred.";
+      logger.e("Sign-in failed for $email: ${e.code}", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign-in: $e";
+      logger.e("Sign-in failed for $email: $e", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signOut() async {
+    logger.i("Attempting sign-out.");
+    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _firebaseAuth.signOut();
+      logger.i("Sign-out successful.");
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An error occurred during sign out.";
+      logger.e("Sign-out failed: ${e.code}", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign out: $e";
+      logger.e("Sign-out failed: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    logger.i("Attempting password reset for $email.");
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      logger.i("Password reset email sent to $email.");
+      _errorMessage = "Password reset email sent. Check your inbox.";
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "Password reset failed.";
+      logger.e("Password reset failed for $email: ${e.code}", error: e, stackTrace: s);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during password reset: $e";
+      logger.e("Password reset failed for $email: $e", error: e, stackTrace: s);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshUserProfile() async {
+    if (_firebaseAuth.currentUser?.uid == null || _dataService == null) {
+      logger.w("Cannot refresh user profile: user not logged in or DataService not available.");
+      return;
+    }
+    logger.i("Refreshing user profile for ${_firebaseAuth.currentUser!.uid}.");
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedProfile = await _dataService.getUserProfile(userId: _firebaseAuth.currentUser!.uid);
+      if (updatedProfile != null) {
+        _currentUserProfile = updatedProfile;
+        _userFamilyId = updatedProfile.familyId;
+        logger.d("User profile refreshed successfully.");
+      } else {
+        logger.w("Refreshed user profile not found for ID: ${_firebaseAuth.currentUser!.uid}.");
+      }
+    } catch (e, s) {
+      logger.e("Error refreshing user profile: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to refresh profile: $e";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  UserProfile? getFamilyMember(String userId) {
+    if (_dataService != null) {
+      final userData = MockData.userProfiles.firstWhere(
+        (profile) => profile['id'] == userId,
+        orElse: () => {},
+      );
+
+      if (userData.isNotEmpty) {
+        return UserProfile.fromMap(userData);
+      }
+    }
+    return null;
+  }
+
+  void _setStatus(AuthStatus newStatus) { // Refers to AuthStatus from enums.dart
+    _status = newStatus;
+  }
 }

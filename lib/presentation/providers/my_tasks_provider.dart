@@ -1,43 +1,62 @@
-// lib/presentation/providers/my_tasks_provider.dart
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/utils/exceptions.dart';
 
-// MODIFIED: State enum to match what the widget expects
 enum MyTasksState { initial, loading, loaded, error }
 
 class MyTasksProvider with ChangeNotifier {
   TaskServiceInterface? _taskService;
   AuthProvider? _authProvider;
+  StreamSubscription? _tasksSubscription;
 
-  // MODIFIED: Public properties to match what the widget expects
   MyTasksState _state = MyTasksState.initial;
   String? _errorMessage;
   List<Task> _tasks = [];
 
   MyTasksState get state => _state;
   String? get errorMessage => _errorMessage;
-  List<Task> get tasks => _tasks; // The widget expects 'tasks'
+  List<Task> get tasks => _tasks;
 
   void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    _taskService = taskService;
-    _authProvider = authProvider;
-    fetchMyTasks();
+    if (_taskService != taskService || _authProvider != authProvider) {
+      _taskService = taskService;
+      _authProvider = authProvider;
+      _listenToMyTasks();
+    }
   }
 
-  Future<void> fetchMyTasks() async {
-    if (_taskService == null || _authProvider?.currentUserId == null) return;
+  void _listenToMyTasks() {
+    if (_taskService == null || _authProvider?.currentUserId == null || _authProvider?.userFamilyId == null) return;
+
     _state = MyTasksState.loading;
     notifyListeners();
-
-    try {
-      _tasks = await _taskService!.getMyPendingTasks(userId: _authProvider!.currentUserId!);
+    
+    _tasksSubscription?.cancel();
+    _tasksSubscription = _taskService!
+        // FIX: The streamMyTasks method now requires both userId and familyId.
+        .streamMyTasks(
+          userId: _authProvider!.currentUserId!,
+          familyId: _authProvider!.userFamilyId!,
+        )
+        .listen((tasks) {
+      _tasks = tasks;
       _state = MyTasksState.loaded;
-    } catch (e) {
-      _errorMessage = e.toString();
+      notifyListeners();
+    }, onError: (e, s) {
+      logger.e("Error listening to my tasks", error: e, stackTrace: s);
+      _errorMessage = e is AppException ? e.message : "An unknown error occurred.";
       _state = MyTasksState.error;
-    }
-    notifyListeners();
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tasksSubscription?.cancel();
+    super.dispose();
   }
 }

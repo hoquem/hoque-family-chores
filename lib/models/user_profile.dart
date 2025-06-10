@@ -1,11 +1,9 @@
-
- // lib/models/user_profile.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hoque_family_chores/models/badge.dart';
+import 'package:hoque_family_chores/models/badge.dart'; // This import will now properly refer to your Badge model
 import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/utils/enum_helpers.dart';
 
 /// UserProfile extends FamilyMember with detailed gamification data and business logic.
 class UserProfile extends FamilyMember {
@@ -15,7 +13,7 @@ class UserProfile extends FamilyMember {
   final int completedTasks;
   final int currentStreak;
   final int longestStreak;
-  final List<Badge> unlockedBadges;
+  final List<Badge> unlockedBadges; // This type will now be correctly recognized
   final List<Reward> redeemedRewards;
   final List<String> achievements;
   final DateTime? lastTaskCompletedAt;
@@ -24,7 +22,6 @@ class UserProfile extends FamilyMember {
   static const int _basePointsForLevel = 100;
   static const double _levelMultiplier = 1.5;
 
-  // This is the single, correct constructor for the class.
   UserProfile({
     required String id,
     required String name,
@@ -56,6 +53,7 @@ class UserProfile extends FamilyMember {
         );
 
   /// Create a copy of this profile with given fields replaced with new values
+  @override
   UserProfile copyWith({
     String? id,
     String? name,
@@ -69,7 +67,7 @@ class UserProfile extends FamilyMember {
     int? completedTasks,
     int? currentStreak,
     int? longestStreak,
-    List<Badge>? unlockedBadges,
+    List<Badge>? unlockedBadges, // Correctly typed
     List<Reward>? redeemedRewards,
     List<String>? achievements,
     DateTime? lastTaskCompletedAt,
@@ -95,7 +93,7 @@ class UserProfile extends FamilyMember {
       joinedAt: joinedAt ?? this.joinedAt,
     );
   }
-  
+
   /// Factory to create a UserProfile from a map (e.g., from Firestore)
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     DateTime? parseDate(dynamic dateData) {
@@ -105,28 +103,25 @@ class UserProfile extends FamilyMember {
       return null;
     }
 
-    FamilyRole? parseRole(String? roleString) {
-      if (roleString == null) return null;
-      try {
-        return FamilyRole.values.byName(roleString.toLowerCase());
-      } catch (e) {
-        return FamilyRole.child; // Safe default
-      }
-    }
+    final role = enumFromString(
+      map['role'] as String?,
+      FamilyRole.values,
+      defaultValue: FamilyRole.child,
+    );
 
     return UserProfile(
       id: map['id'] ?? map['uid'] ?? '',
       name: map['name'] as String? ?? 'No Name',
       email: map['email'] as String?,
       avatarUrl: map['avatarUrl'] as String?,
-      role: parseRole(map['role'] as String?),
+      role: role,
       familyId: map['familyId'] as String?,
       totalPoints: (map['totalPoints'] as num?)?.toInt() ?? 0,
       completedTasks: (map['completedTasks'] as num?)?.toInt() ?? 0,
       currentStreak: (map['currentStreak'] as num?)?.toInt() ?? 0,
       longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
       unlockedBadges: (map['unlockedBadges'] as List<dynamic>?)
-              ?.map((data) => Badge.fromMap(data))
+              ?.map((data) => Badge.fromMap(data)) // Badge.fromMap will be correctly resolved
               .toList() ??
           [],
       redeemedRewards: (map['redeemedRewards'] as List<dynamic>?)
@@ -145,42 +140,38 @@ class UserProfile extends FamilyMember {
   }
 
   /// Convert UserProfile to JSON for Firestore
+  @override
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
-      'email': email,
-      'avatarUrl': avatarUrl,
-      'role': role?.name,
-      'familyId': familyId,
+      ...super.toJson(),
       'totalPoints': totalPoints,
       'currentLevel': currentLevel,
       'pointsToNextLevel': pointsToNextLevel,
       'completedTasks': completedTasks,
       'currentStreak': currentStreak,
       'longestStreak': longestStreak,
-      'unlockedBadges': unlockedBadges.map((badge) => badge.toJson()).toList(),
+      'unlockedBadges': unlockedBadges.map((badge) => badge.toJson()).toList(), // toJson can be unconditionally invoked
       'redeemedRewards': redeemedRewards.map((reward) => reward.toJson()).toList(),
       'achievements': achievements,
-      'lastTaskCompletedAt': lastTaskCompletedAt,
-      'joinedAt': joinedAt,
+      'lastTaskCompletedAt': lastTaskCompletedAt != null ? Timestamp.fromDate(lastTaskCompletedAt!) : null,
+      'joinedAt': Timestamp.fromDate(joinedAt),
     };
   }
 
-// --- All of your existing business logic methods ---
+  // --- All of your existing business logic methods ---
 
   /// Calculate level based on total points
   static int calculateLevelFromPoints(int points) {
     if (points < _basePointsForLevel) return 0;
-    
+
     int level = 0;
     double requiredPoints = _basePointsForLevel.toDouble();
-    
-    // This calculation can be adjusted to fit your desired progression curve
+
     while (points >= requiredPoints) {
       level++;
       requiredPoints = _basePointsForLevel * (1 + level * _levelMultiplier);
     }
-    
+
     return level;
   }
 
@@ -198,14 +189,14 @@ class UserProfile extends FamilyMember {
       if (_basePointsForLevel == 0) return 0;
       return ((totalPoints / _basePointsForLevel) * 100).clamp(0, 100).toInt();
     }
-    
+
     int previousLevelPoints = (_basePointsForLevel * (1 + (currentLevel - 1) * _levelMultiplier)).toInt();
     int nextLevelPoints = (_basePointsForLevel * (1 + currentLevel * _levelMultiplier)).toInt();
     int pointsInCurrentLevel = totalPoints - previousLevelPoints;
     int pointsRequiredForCurrentLevel = nextLevelPoints - previousLevelPoints;
-    
+
     if (pointsRequiredForCurrentLevel <= 0) return 100;
-    
+
     return ((pointsInCurrentLevel / pointsRequiredForCurrentLevel) * 100).clamp(0, 100).toInt();
   }
 
@@ -227,7 +218,6 @@ class UserProfile extends FamilyMember {
   /// Returns a new UserProfile with an updated streak based on the last completion date.
   UserProfile updateStreak() {
     if (lastTaskCompletedAt == null) {
-      // First task ever completed
       return copyWith(
         currentStreak: 1,
         longestStreak: 1,
@@ -236,7 +226,6 @@ class UserProfile extends FamilyMember {
     }
 
     final now = DateTime.now();
-    // Normalize dates to ignore time of day
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
     final lastCompletionDate = DateTime(
@@ -244,12 +233,10 @@ class UserProfile extends FamilyMember {
       lastTaskCompletedAt!.month,
       lastTaskCompletedAt!.day,
     );
-    
+
     if (lastCompletionDate.isAtSameMomentAs(today)) {
-      // Already completed a task today, streak is unchanged.
       return this;
     } else if (lastCompletionDate.isAtSameMomentAs(yesterday)) {
-      // Completed a task yesterday, so increment the streak.
       final newStreak = currentStreak + 1;
       return copyWith(
         currentStreak: newStreak,
@@ -257,7 +244,6 @@ class UserProfile extends FamilyMember {
         lastTaskCompletedAt: now,
       );
     } else {
-      // Streak was broken, reset to 1.
       return copyWith(
         currentStreak: 1,
         lastTaskCompletedAt: now,
@@ -276,21 +262,21 @@ class UserProfile extends FamilyMember {
   UserProfile completeTask(int taskPoints) {
     final withPoints = addPoints(taskPoints);
     final withStreak = withPoints.updateStreak();
-    
+
     return withStreak.copyWith(
       completedTasks: completedTasks + 1,
     );
   }
 
   /// Returns a new UserProfile with a newly unlocked badge.
-  UserProfile unlockBadge(Badge badge) {
+  UserProfile unlockBadge(Badge badge) { // Correctly typed
     if (hasBadge(badge.id)) return this;
-    
+
     final unlockedBadge = badge.copyWith(
       isUnlocked: true,
       unlockedAt: DateTime.now(),
     );
-    
+
     return copyWith(
       unlockedBadges: [...unlockedBadges, unlockedBadge],
     );
@@ -301,13 +287,13 @@ class UserProfile extends FamilyMember {
     if (totalPoints < reward.pointsCost) {
       throw Exception('Not enough points to redeem this reward.');
     }
-    
+
     final redeemedReward = reward.copyWith(
       isRedeemed: true,
       redeemedAt: DateTime.now(),
-      redeemedBy: id, // User's own ID
+      redeemedBy: id,
     );
-    
+
     return copyWith(
       totalPoints: totalPoints - reward.pointsCost,
       redeemedRewards: [...redeemedRewards, redeemedReward],
@@ -315,57 +301,60 @@ class UserProfile extends FamilyMember {
   }
 
   /// Checks the user's current stats against a list of available badges and returns any new ones they have earned.
-  List<Badge> checkForNewBadges(List<Badge> availableBadges) {
-    final newBadges = <Badge>[];
-    
+  List<Badge> checkForNewBadges(List<Badge> availableBadges) { // Correctly typed
+    final newBadges = <Badge>[]; // Correctly typed
+
     for (final badge in availableBadges) {
       if (hasBadge(badge.id)) continue;
-      
-      if (totalPoints >= badge.requiredPoints) {
-        bool shouldUnlock = false;
-        switch (badge.category) {
-          case BadgeCategory.taskMaster:
-            shouldUnlock = completedTasks >= _getTaskThresholdForBadge(badge.id);
-            break;
-          case BadgeCategory.streaker:
-            shouldUnlock = currentStreak >= _getStreakThresholdForBadge(badge.id);
-            break;
-          // FIX: Added missing cases to make the switch exhaustive
-          case BadgeCategory.varietyKing:
-          case BadgeCategory.superHelper:
-            shouldUnlock = true; // Placeholder logic, can be customized
-            break;
-        }
-        if (shouldUnlock) {
-          newBadges.add(badge);
-        }
+
+      bool shouldUnlock = false;
+      switch (badge.category) {
+        case BadgeCategory.taskMaster:
+          shouldUnlock = completedTasks >= _getTaskThresholdForBadge(badge.id);
+          break;
+        case BadgeCategory.streaker:
+          shouldUnlock = currentStreak >= _getStreakThresholdForBadge(badge.id);
+          break;
+        case BadgeCategory.varietyKing:
+        case BadgeCategory.superHelper:
+          shouldUnlock = true;
+          break;
+      }
+      if (shouldUnlock) {
+        newBadges.add(badge);
       }
     }
-    
+
     return newBadges;
   }
-  
+
   /// Helper method to get task threshold for task master badges
   int _getTaskThresholdForBadge(String badgeId) {
     switch (badgeId) {
-      case 'task_master_1': return 5;
-      case 'task_master_2': return 15;
-      case 'task_master_3': return 30;
-      case 'task_master_4': return 50;
-      case 'task_master_5': return 100;
+      case 'badge_task_master_1':
+        return 5;
+      case 'badge_task_master_2':
+        return 15;
+      case 'badge_task_master_3':
+        return 30;
+      case 'badge_task_master_4':
+        return 50;
+      case 'badge_task_master_5':
+        return 100;
     }
-    // Return a very high number to prevent accidental unlocking
     return 999999;
   }
-  
+
   /// Helper method to get streak threshold for streaker badges
   int _getStreakThresholdForBadge(String badgeId) {
     switch (badgeId) {
-      case 'streaker_1': return 2;
-      case 'streaker_2': return 7;
-      case 'streaker_3': return 30;
+      case 'badge_consistent_1':
+        return 2;
+      case 'badge_consistent_2':
+        return 7;
+      case 'badge_consistent_3':
+        return 30;
     }
-    // Return a very high number to prevent accidental unlocking
     return 999999;
   }
 

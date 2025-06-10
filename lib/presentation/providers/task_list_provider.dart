@@ -1,72 +1,156 @@
 // lib/presentation/providers/task_list_provider.dart
-
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Import AuthProvider
+import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
-
-enum TaskFilterType { all, myTasks, available, completed }
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
+import 'dart:async';
 
 class TaskListProvider with ChangeNotifier {
-  // Dependencies will be injected by a ProxyProvider
-  TaskServiceInterface? _taskService;
-  AuthProvider? _authProvider;
+  late TaskServiceInterface _taskService;
+  late AuthProvider _authProvider;
 
-  TaskListProvider() {
-    // Initial filter can be set here or when dependencies are first provided.
-    _currentFilter = TaskFilterType.all;
+  List<Task> _tasks = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+  TaskFilterType _currentFilter = TaskFilterType.all;
+
+  List<Task> get tasks {
+    // Apply filter based on TaskFilterType
+    switch (_currentFilter) {
+      case TaskFilterType.myTasks:
+        final currentUserId = _authProvider.currentUserId;
+        if (currentUserId == null) return [];
+        return _tasks.where((task) => task.assigneeId == currentUserId).toList();
+      case TaskFilterType.available:
+        return _tasks.where((task) => task.status == TaskStatus.available).toList();
+      case TaskFilterType.completed:
+        return _tasks.where((task) => task.status == TaskStatus.completed).toList();
+      case TaskFilterType.all:
+        return _tasks;
+      // <--- REMOVE the 'default:' clause if it's still here
+      // The Dart analyzer now knows that all cases of TaskFilterType are covered
+      // by the explicit `case` statements above. Having a `default` here would make it unreachable.
+    }
   }
 
-  TaskFilterType _currentFilter = TaskFilterType.all;
-  Stream<List<Task>> _tasksStream = const Stream.empty();
-
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   TaskFilterType get currentFilter => _currentFilter;
-  Stream<List<Task>> get tasksStream => _tasksStream;
 
-  // Method for ProxyProvider to update dependencies
   void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    _taskService = taskService;
-    _authProvider = authProvider;
-    // When dependencies are first provided, initialize the stream
-    _updateStream();
+    if (!identical(_taskService, taskService) || !identical(_authProvider, authProvider)) {
+      _taskService = taskService;
+      _authProvider = authProvider;
+      logger.d("TaskListProvider dependencies updated. Attempting to fetch tasks...");
+      _fetchTasksDebounced();
+    }
+  }
+
+  Timer? _fetchDebounceTimer;
+  void _fetchTasksDebounced() {
+    _fetchDebounceTimer?.cancel();
+    _fetchDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (_authProvider.currentUserProfile != null && _authProvider.userFamilyId != null) {
+        fetchTasks(
+          familyId: _authProvider.userFamilyId!,
+          userId: _authProvider.currentUserProfile!.id,
+        );
+      } else {
+        logger.w("TaskListProvider: Cannot fetch tasks, user profile or family ID is null.");
+        _tasks = [];
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<void> fetchTasks({required String familyId, required String userId}) async {
+    if (_isLoading && _tasks.isNotEmpty) return;
+
+    _isLoading = true;
+    _errorMessage = null;
+    if (_tasks.isEmpty) {
+       notifyListeners();
+    }
+    logger.i("Fetching tasks for user $userId in family $familyId...");
+
+    try {
+      _taskService.streamMyTasks(familyId: familyId, userId: userId).listen(
+        (taskList) {
+          logger.d("Tasks received: ${taskList.length} tasks.");
+          _tasks = taskList;
+          _isLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+        },
+        onError: (e, s) {
+          _errorMessage = 'Failed to load tasks: $e';
+          _isLoading = false;
+          notifyListeners();
+          logger.e("Error fetching tasks: $e", error: e, stackTrace: s);
+        },
+        onDone: () {
+          logger.i("Task stream completed (should not happen for continuous streams).");
+        },
+      );
+    } catch (e, s) {
+      _errorMessage = 'An unexpected error occurred while setting up task stream: $e';
+      _isLoading = false;
+      notifyListeners();
+      logger.e("Unexpected error setting up task stream: $e", error: e, stackTrace: s);
+    }
+  }
+
+  Future<void> updateTaskStatus({
+    required String familyId,
+    required String taskId,
+    required TaskStatus newStatus,
+  }) async {
+    final originalTasks = List<Task>.from(_tasks);
+    final taskIndex = _tasks.indexWhere((task) => task.id == taskId);
+    if (taskIndex != -1) {
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(status: newStatus);
+      notifyListeners();
+    }
+
+    _isLoading = true;
+    _errorMessage = null;
+    logger.i("Updating status for task $taskId to $newStatus.");
+
+    try {
+      // The method 'updateTaskStatus' IS defined for TaskServiceInterface in DataServiceInterface,
+      // and TaskService implements TaskServiceInterface by delegating to DataServiceInterface.
+      // So, this error means TaskServiceInterface.updateTaskStatus is either:
+      // 1. Not correctly defined in TaskServiceInterface.
+      // 2. Not correctly implemented in TaskService.
+      // 3. Not correctly implemented in MockTaskService (if using mock data).
+      // We will re-verify TaskServiceInterface and TaskService.
+      await _taskService.updateTaskStatus( // This line is causing the error.
+        familyId: familyId,
+        taskId: taskId,
+        newStatus: newStatus,
+      );
+      _isLoading = false;
+      logger.d("Task $taskId status updated successfully.");
+    } catch (e, s) {
+      _errorMessage = 'Failed to update task status: $e';
+      _isLoading = false;
+      if (taskIndex != -1) {
+        _tasks = originalTasks;
+      }
+      notifyListeners();
+      logger.e("Error updating task status $taskId: $e", error: e, stackTrace: s);
+    }
   }
 
   void setFilter(TaskFilterType filter) {
-    _currentFilter = filter;
-    _updateStream();
-    notifyListeners(); // Notify UI to rebuild and use the new stream
-  }
-
-  void _updateStream() {
-    if (_taskService == null || _authProvider == null) {
-      _tasksStream = const Stream.empty();
-      return;
-    }
-
-    // You need a way to get the current user's family ID.
-    // This should come from the AuthProvider after the user profile is loaded.
-    final familyId = _authProvider!.userFamilyId; 
-    final userId = _authProvider!.currentUserId;
-
-    if (familyId == null || userId == null) {
-      _tasksStream = const Stream.empty();
-      return;
-    }
-    
-    switch (_currentFilter) {
-      case TaskFilterType.all:
-        _tasksStream = _taskService!.streamAllTasks(familyId: familyId);
-        break;
-      case TaskFilterType.myTasks:
-        _tasksStream = _taskService!.streamMyTasks(userId: userId);
-        break;
-      case TaskFilterType.available:
-        _tasksStream = _taskService!.streamAvailableTasks(familyId: familyId);
-        break;
-      case TaskFilterType.completed:
-        _tasksStream = _taskService!.streamCompletedTasks(familyId: familyId);
-        break;
+    if (_currentFilter != filter) {
+      _currentFilter = filter;
+      logger.d("Task list filter set to: $filter");
+      notifyListeners();
     }
   }
 }
