@@ -1,68 +1,75 @@
 // lib/presentation/widgets/task_list_tile.dart
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart'; // <-- THIS IS THE REQUIRED IMPORT
-import 'package:intl/intl.dart';
+import 'package:hoque_family_chores/models/user_profile.dart'; // Import UserProfile
+import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 
 class TaskListTile extends StatelessWidget {
   final Task task;
-  const TaskListTile({super.key, required this.task});
+  final UserProfile user; // Change type to UserProfile
+  final ValueChanged<bool?> onToggleStatus;
+
+  const TaskListTile({
+    super.key,
+    required this.task,
+    required this.user,
+    required this.onToggleStatus,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final statusIcon = _getStatusIcon(task.status);
-
-    final bool isOverdue = task.dueDate != null &&
-        task.dueDate!.toDate().isBefore(DateTime.now()) &&
-        task.status != TaskStatus.completed;
+    final bool isCompleted = task.status == TaskStatus.completed;
 
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: Icon(statusIcon.icon, color: statusIcon.color, size: 30),
-        title: Text(task.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(task.assigneeName ?? 'Unassigned'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      elevation: 2.0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
           children: [
-            Text(
-              '${task.points} pts',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
-            ),
-            if (task.dueDate != null)
-              Text(
-                DateFormat.yMd().format(task.dueDate!.toDate()),
-                style: TextStyle(
-                  color: isOverdue ? Colors.red : Colors.grey.shade600,
-                  fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
-                ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      color: isCompleted ? Colors.grey : Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 4.0),
+                  // Access user.name, user.totalPoints, user.currentLevel etc.
+                  // since it's a UserProfile now
+                  Text(
+                    'Assigned to: ${user.name} (Lvl ${user.currentLevel})',
+                    style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    'Points: ${task.points}',
+                    style: TextStyle(fontSize: 14.0, color: Colors.grey[600]),
+                  ),
+                  if (task.description.isNotEmpty) ...[
+                    const SizedBox(height: 4.0),
+                    Text(
+                      task.description,
+                      style: TextStyle(fontSize: 12.0, color: Colors.grey[500]),
+                    ),
+                  ],
+                ],
               ),
+            ),
+            Checkbox(
+              value: isCompleted,
+              onChanged: onToggleStatus,
+              activeColor: Colors.green,
+            ),
           ],
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TaskDetailsScreen(taskId: task.id),
-            ),
-          );
-        },
       ),
     );
-  }
-
-  ({IconData icon, Color color}) _getStatusIcon(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.available:
-        return (icon: Icons.person_add_alt_1_outlined, color: Colors.blue);
-      case TaskStatus.assigned:
-        return (icon: Icons.person_outline, color: Colors.orange);
-      case TaskStatus.pendingApproval:
-        return (icon: Icons.hourglass_top_rounded, color: Colors.purple);
-      case TaskStatus.completed:
-        return (icon: Icons.check_circle, color: Colors.green);
-    }
   }
 }

@@ -187,7 +187,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: levelGradient[1].withOpacity(0.5),
+                                color: Theme.of(context).primaryColor.withAlpha((255 * 0.1).round()),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -294,7 +294,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                       margin: const EdgeInsets.only(top: 12),
                       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       decoration: BoxDecoration(
-                        color: levelGradient[0].withOpacity(0.2),
+                        color: levelGradient[0].withAlpha(51),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: levelGradient[1],
