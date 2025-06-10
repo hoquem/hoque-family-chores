@@ -1,15 +1,15 @@
-// lib/presentation/providers/task_list_provider.dart
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // For TaskFilterType, TaskStatus
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'dart:async';
 
 class TaskListProvider with ChangeNotifier {
-  late TaskServiceInterface _taskService;
-  late AuthProvider _authProvider;
+  // Make these final and required in the constructor
+  final TaskServiceInterface _taskService;
+  final AuthProvider _authProvider;
 
   List<Task> _tasks = [];
   bool _isLoading = false;
@@ -17,7 +17,6 @@ class TaskListProvider with ChangeNotifier {
   TaskFilterType _currentFilter = TaskFilterType.all;
 
   List<Task> get tasks {
-    // Apply filter based on TaskFilterType
     switch (_currentFilter) {
       case TaskFilterType.myTasks:
         final currentUserId = _authProvider.currentUserId;
@@ -29,9 +28,6 @@ class TaskListProvider with ChangeNotifier {
         return _tasks.where((task) => task.status == TaskStatus.completed).toList();
       case TaskFilterType.all:
         return _tasks;
-      // <--- REMOVE the 'default:' clause if it's still here
-      // The Dart analyzer now knows that all cases of TaskFilterType are covered
-      // by the explicit `case` statements above. Having a `default` here would make it unreachable.
     }
   }
 
@@ -39,11 +35,28 @@ class TaskListProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   TaskFilterType get currentFilter => _currentFilter;
 
+  // Constructor now takes required dependencies directly
+  TaskListProvider({
+    required TaskServiceInterface taskService, // <--- Required parameter
+    required AuthProvider authProvider,       // <--- Required parameter
+  })  : _taskService = taskService,
+        _authProvider = authProvider {
+    logger.d("TaskListProvider initialized with dependencies. Performing initial fetch...");
+    _fetchTasksDebounced(); // Initial fetch happens here when created
+  }
+
+  // The `update` method is crucial for ChangeNotifierProxyProvider2
+  // It checks if dependencies change and triggers a data refresh.
   void update(TaskServiceInterface taskService, AuthProvider authProvider) {
+    // Only trigger a re-fetch if the *dependencies themselves* have changed.
+    // If they are the same instances, no need to re-initialize or re-fetch.
     if (!identical(_taskService, taskService) || !identical(_authProvider, authProvider)) {
-      _taskService = taskService;
-      _authProvider = authProvider;
-      logger.d("TaskListProvider dependencies updated. Attempting to fetch tasks...");
+      // (Note: _taskService and _authProvider are now final, so they cannot be reassigned here.
+      // This update method conceptually signals a change, but doesn't reassign fields.
+      // The main purpose of this method is to trigger the _fetchTasksDebounced
+      // when a change in parent providers (like AuthProvider's user) occurs.)
+
+      logger.d("TaskListProvider dependencies observed to change. Triggering re-fetch...");
       _fetchTasksDebounced();
     }
   }
@@ -78,7 +91,7 @@ class TaskListProvider with ChangeNotifier {
     logger.i("Fetching tasks for user $userId in family $familyId...");
 
     try {
-      _taskService.streamMyTasks(familyId: familyId, userId: userId).listen(
+      _taskService.streamTasksByAssignee(familyId: familyId, assigneeId: userId).listen(
         (taskList) {
           logger.d("Tasks received: ${taskList.length} tasks.");
           _tasks = taskList;
@@ -121,14 +134,7 @@ class TaskListProvider with ChangeNotifier {
     logger.i("Updating status for task $taskId to $newStatus.");
 
     try {
-      // The method 'updateTaskStatus' IS defined for TaskServiceInterface in DataServiceInterface,
-      // and TaskService implements TaskServiceInterface by delegating to DataServiceInterface.
-      // So, this error means TaskServiceInterface.updateTaskStatus is either:
-      // 1. Not correctly defined in TaskServiceInterface.
-      // 2. Not correctly implemented in TaskService.
-      // 3. Not correctly implemented in MockTaskService (if using mock data).
-      // We will re-verify TaskServiceInterface and TaskService.
-      await _taskService.updateTaskStatus( // This line is causing the error.
+      await _taskService.updateTaskStatus(
         familyId: familyId,
         taskId: taskId,
         newStatus: newStatus,
@@ -152,5 +158,9 @@ class TaskListProvider with ChangeNotifier {
       logger.d("Task list filter set to: $filter");
       notifyListeners();
     }
+  }
+
+  void dispose() {
+    super.dispose();
   }
 }

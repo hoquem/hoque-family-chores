@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this import is here
+import 'package:hoque_family_chores/models/enums.dart'; // Needed for AuthStatus, FamilyRole
+import 'package:hoque_family_chores/models/family.dart'; // Needed for Family model
 import 'package:hoque_family_chores/services/data_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
-import 'package:hoque_family_chores/test_data/mock_data.dart';
-
-// REMOVED: enum AuthStatus { ... } definition from here, it's now ONLY in enums.dart
+import 'package:hoque_family_chores/test_data/mock_data.dart'; // For constants like family ID
+import 'package:uuid/uuid.dart'; // <--- NEW: Import uuid
 
 class AuthProvider with ChangeNotifier {
   final DataServiceInterface? _dataService;
@@ -14,11 +14,11 @@ class AuthProvider with ChangeNotifier {
 
   UserProfile? _currentUserProfile;
   String? _userFamilyId;
-  AuthStatus _status = AuthStatus.unknown; // Now refers to AuthStatus from enums.dart
+  AuthStatus _status = AuthStatus.unknown;
   String? _errorMessage;
   bool _isLoading = false;
 
-  // --- Public Getters ---
+  // ... (existing getters and constructor)
   UserProfile? get currentUserProfile => _currentUserProfile;
   String? get currentUserId => _currentUserProfile?.id;
   String? get userFamilyId => _userFamilyId;
@@ -36,8 +36,9 @@ class AuthProvider with ChangeNotifier {
     _initAuthStatus();
   }
 
+
   Future<void> _initAuthStatus() async {
-    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
+    _setStatus(AuthStatus.authenticating);
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -48,24 +49,10 @@ class AuthProvider with ChangeNotifier {
           logger.i("AuthProvider: Firebase user is null (signed out or no session).");
           _currentUserProfile = null;
           _userFamilyId = null;
-          _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+          _setStatus(AuthStatus.unauthenticated);
         } else {
           logger.i("AuthProvider: Firebase user found: ${firebaseUser.uid}. Fetching profile.");
-          if (_dataService != null) {
-            _currentUserProfile = await _dataService.getUserProfile(userId: firebaseUser.uid);
-            _userFamilyId = _currentUserProfile?.familyId;
-
-            if (_currentUserProfile != null) {
-              _setStatus(AuthStatus.authenticated); // Refers to AuthStatus from enums.dart
-              logger.i("AuthProvider: User profile loaded for ${firebaseUser.uid}. Status: authenticated.");
-            } else {
-              logger.w("AuthProvider: Firebase user ${firebaseUser.uid} authenticated, but no UserProfile found in Firestore.");
-              _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
-            }
-          } else {
-            logger.w("AuthProvider: DataService is null, cannot fetch user profile for ${firebaseUser.uid}.");
-            _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
-          }
+          await _fetchAndSetUserProfile(firebaseUser.uid, firebaseUser.email);
         }
         _isLoading = false;
         notifyListeners();
@@ -75,16 +62,90 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = "Failed to initialize authentication: $e";
       _currentUserProfile = null;
       _userFamilyId = null;
-      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+      _setStatus(AuthStatus.error);
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // --- Public Methods (removed @override for direct methods not overriding ChangeNotifier) ---
+  // --- Helper to fetch and set user profile after auth state change or sign-in ---
+  Future<void> _fetchAndSetUserProfile(String userId, String? email) async {
+    if (_dataService == null) {
+      logger.w("AuthProvider: DataService is null, cannot fetch user profile for $userId.");
+      _setStatus(AuthStatus.error);
+      return;
+    }
+
+    try {
+      _currentUserProfile = await _dataService!.getUserProfile(userId: userId);
+      if (_currentUserProfile != null) {
+        _userFamilyId = _currentUserProfile?.familyId;
+        _setStatus(AuthStatus.authenticated);
+        logger.i("AuthProvider: User profile loaded for $userId. Status: authenticated.");
+      } else {
+        // User authenticated in Firebase Auth, but no profile in Firestore.
+        // This is a new user or profile creation failed previously.
+        logger.w("AuthProvider: Firebase user $userId authenticated, but no UserProfile found in Firestore. Setting status to unauthenticated (needs family setup).");
+        // No longer auto-create a default profile here. AuthWrapper will direct to FamilySetupScreen.
+        _setStatus(AuthStatus.unauthenticated); // Indicate that auth succeeded, but app data is missing.
+      }
+    } catch (e, s) {
+      logger.e("AuthProvider: Error fetching/creating user profile for $userId: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to load user profile: $e";
+      _setStatus(AuthStatus.error);
+    }
+  }
+
+  // --- Helper to create a default user profile (now only for specific owner logic if needed) ---
+  // This helper will now primarily be called by createFamilyAndSetProfile
+  Future<void> _createDefaultUserProfile({ // <--- Renamed parameters for clarity if called externally
+    required String userId,
+    String? email,
+    String? familyId, // New parameter to pass family ID if already created
+    FamilyRole? role,
+    String? userName,
+  }) async {
+    if (_dataService == null) {
+      logger.e("AuthProvider: DataService is null, cannot create user profile for $userId.");
+      _setStatus(AuthStatus.error);
+      return;
+    }
+
+    // Use provided values or intelligent defaults
+    FamilyRole finalRole = role ?? FamilyRole.child;
+    String finalUserName = userName ?? email?.split('@').first ?? 'New User';
+
+    // Create the UserProfile object
+    UserProfile newUserProfile = UserProfile(
+      id: userId,
+      name: finalUserName,
+      email: email,
+      role: finalRole,
+      familyId: familyId, // Assign the passed family ID
+      joinedAt: DateTime.now(),
+      totalPoints: 0,
+      currentLevel: 0,
+      completedTasks: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      unlockedBadges: [],
+      redeemedRewards: [],
+      achievements: [],
+      lastTaskCompletedAt: null,
+    );
+
+    await _dataService!.createUserProfile(userProfile: newUserProfile);
+    _currentUserProfile = newUserProfile; // Set the newly created profile
+    _userFamilyId = newUserProfile.familyId; // Update AuthProvider's state
+    _setStatus(AuthStatus.authenticated);
+    logger.i("AuthProvider: Default UserProfile created and set for $userId.");
+  }
+
+
+  // --- Public Methods (signIn, signUp, signOut, etc.) ---
   Future<void> signIn({required String email, required String password}) async {
     logger.i("Attempting sign-in for $email.");
-    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
+    _setStatus(AuthStatus.authenticating);
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -95,18 +156,56 @@ class AuthProvider with ChangeNotifier {
         password: password,
       );
       logger.i("Sign-in successful for ${userCredential.user?.uid}.");
+      // After sign-in, ensure user profile exists or is created
+      await _fetchAndSetUserProfile(userCredential.user!.uid, userCredential.user!.email); // Fetch/create profile for the signed-in user
     } on FirebaseAuthException catch (e, s) {
       _errorMessage = e.message ?? "An unknown authentication error occurred.";
       logger.e("Sign-in failed for $email: ${e.code}", error: e, stackTrace: s);
       _currentUserProfile = null;
       _userFamilyId = null;
-      _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+      _setStatus(AuthStatus.unauthenticated);
     } catch (e, s) {
       _errorMessage = "An unexpected error occurred during sign-in: $e";
       logger.e("Sign-in failed for $email: $e", error: e, stackTrace: s);
       _currentUserProfile = null;
       _userFamilyId = null;
-      _setStatus(AuthStatus.unauthenticated); // Refers to AuthStatus from enums.dart
+      _setStatus(AuthStatus.unauthenticated);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    logger.i("Attempting sign-up for $email.");
+    _setStatus(AuthStatus.authenticating);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      logger.i("Sign-up successful for ${userCredential.user?.uid}.");
+      // For sign-up, *do not* directly create a default profile here anymore.
+      // The AuthWrapper will observe the new user (AuthStatus.authenticated but userFamilyId=null)
+      // and redirect to FamilySetupScreen, where _createFamilyAndSetProfile will be called.
+      // This ensures the user *explicitly* creates their family.
+      // _currentUserProfile and _userFamilyId will be set once _createFamilyAndSetProfile is successful.
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An unknown registration error occurred.";
+      logger.e("Sign-up failed for $email: ${e.code}", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign-up: $e";
+      logger.e("Sign-up failed for $email: $e", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -115,7 +214,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signOut() async {
     logger.i("Attempting sign-out.");
-    _setStatus(AuthStatus.authenticating); // Refers to AuthStatus from enums.dart
+    _setStatus(AuthStatus.authenticating);
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -126,11 +225,11 @@ class AuthProvider with ChangeNotifier {
     } on FirebaseAuthException catch (e, s) {
       _errorMessage = e.message ?? "An error occurred during sign out.";
       logger.e("Sign-out failed: ${e.code}", error: e, stackTrace: s);
-      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+      _setStatus(AuthStatus.error);
     } catch (e, s) {
       _errorMessage = "An unexpected error occurred during sign out: $e";
       logger.e("Sign-out failed: $e", error: e, stackTrace: s);
-      _setStatus(AuthStatus.error); // Refers to AuthStatus from enums.dart
+      _setStatus(AuthStatus.error);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -169,7 +268,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedProfile = await _dataService.getUserProfile(userId: _firebaseAuth.currentUser!.uid);
+      final updatedProfile = await _dataService!.getUserProfile(userId: _firebaseAuth.currentUser!.uid);
       if (updatedProfile != null) {
         _currentUserProfile = updatedProfile;
         _userFamilyId = updatedProfile.familyId;
@@ -200,7 +299,100 @@ class AuthProvider with ChangeNotifier {
     return null;
   }
 
-  void _setStatus(AuthStatus newStatus) { // Refers to AuthStatus from enums.dart
+  // --- NEW: Public method to create family and set user profile ---
+  Future<void> createFamilyAndSetProfile({
+    required String familyName,
+    required String creatorUserId,
+    String? creatorEmail,
+    String? creatorName,
+  }) async {
+    logger.i("AuthProvider: Attempting to create family and set user profile for $creatorUserId.");
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    if (_dataService == null) {
+      _errorMessage = "DataService not available for family creation.";
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      // 1. Generate a unique Family ID
+      String uniqueFamilyId = const Uuid().v4();
+      logger.d("Generated unique family ID: $uniqueFamilyId");
+
+      // 2. Create the Family object
+      Family newFamily = Family(
+        id: uniqueFamilyId,
+        name: familyName,
+        creatorUserId: creatorUserId,
+        createdAt: DateTime.now(),
+        memberUserIds: [creatorUserId], // Creator is the first member
+      );
+
+      // 3. Create the Family document in Firestore
+      await _dataService!.createFamily(family: newFamily);
+      logger.i("Family '$familyName' created successfully with ID: $uniqueFamilyId");
+
+      // 4. Create/Update the UserProfile with family details and role
+      // This logic replaces the _createDefaultUserProfile logic if called from FamilySetupScreen
+      UserProfile userProfileToCreate = UserProfile(
+        id: creatorUserId,
+        name: creatorName ?? creatorEmail?.split('@').first ?? 'New User',
+        email: creatorEmail,
+        role: FamilyRole.parent, // Creator is parent by default
+        familyId: uniqueFamilyId,
+        joinedAt: DateTime.now(),
+        // Default gamification fields
+        totalPoints: 0,
+        currentLevel: 0,
+        completedTasks: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        unlockedBadges: [],
+        redeemedRewards: [],
+        achievements: [],
+        lastTaskCompletedAt: null,
+      );
+
+      // If a profile already exists (e.g., from _initAuthStatus seeing Firebase user but no profile), update it.
+      // Otherwise, create it.
+      UserProfile? existingProfile = await _dataService!.getUserProfile(userId: creatorUserId);
+      if (existingProfile != null) {
+        await _dataService!.updateUserProfile(user: userProfileToCreate.copyWith(
+          role: FamilyRole.parent,
+          familyId: uniqueFamilyId,
+          name: creatorName, // Update name if user provided it
+          email: creatorEmail,
+        ));
+      } else {
+        await _dataService!.createUserProfile(userProfile: userProfileToCreate);
+      }
+      
+      // 5. Update AuthProvider's internal state
+      _currentUserProfile = userProfileToCreate;
+      _userFamilyId = uniqueFamilyId;
+      _setStatus(AuthStatus.authenticated);
+      logger.i("User profile for $creatorUserId updated with family ID: $uniqueFamilyId. Status: authenticated.");
+
+    } on FirebaseException catch (e, s) {
+      _errorMessage = e.message ?? "Firebase error during family creation: ${e.code}";
+      logger.e("Firebase error creating family for $creatorUserId: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during family creation: $e";
+      logger.e("Unexpected error creating family for $creatorUserId: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+  void _setStatus(AuthStatus newStatus) {
     _status = newStatus;
   }
 }

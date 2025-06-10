@@ -9,7 +9,7 @@ import 'package:hoque_family_chores/services/data_service_factory.dart';
 import 'package:hoque_family_chores/services/gamification_service_factory.dart';
 import 'package:hoque_family_chores/services/data_service_interface.dart' as app_data_service_interface;
 import 'package:hoque_family_chores/services/gamification_service_interface.dart';
-import 'package:hoque_family_chores/services/task_service.dart';
+import 'package:hoque_family_chores/services/task_service.dart'; // Ensure TaskService is concrete
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 
@@ -21,10 +21,11 @@ import 'package:hoque_family_chores/presentation/providers/task_list_provider.da
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/dashboard_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart'; // <--- NEW: Import FamilySetupScreen
 import 'firebase_options.dart';
 
 // Ensure AuthStatus is available by importing enums.dart
-import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this import is here
+import 'package:hoque_family_chores/models/enums.dart';
 
 void main() async {
   try {
@@ -83,11 +84,13 @@ class MyApp extends StatelessWidget {
         Provider<GamificationServiceInterface>.value(value: gamificationService),
 
         // --- Dependent Service Providers (Adapters) ---
+        // Provides TaskServiceInterface (TaskService depends on DataServiceInterface)
         ProxyProvider<app_data_service_interface.DataServiceInterface, TaskServiceInterface>(
           update: (_, dataService, __) => TaskService(dataService),
         ),
 
         // --- State Management Providers ---
+        // AuthProvider takes DataService in its constructor
         ChangeNotifierProvider<app_auth_provider.AuthProvider>(
           create: (context) => app_auth_provider.AuthProvider(dataService: dataService),
         ),
@@ -101,11 +104,23 @@ class MyApp extends StatelessWidget {
               ),
         ),
 
-        ChangeNotifierProxyProvider<app_auth_provider.AuthProvider, TaskListProvider>(
-          create: (context) => TaskListProvider(),
-          update: (context, authProvider, taskListProvider) {
+        // TaskListProvider now has a constructor with required dependencies
+        // We use ChangeNotifierProxyProvider2 to provide TaskServiceInterface and AuthProvider
+        ChangeNotifierProxyProvider2<TaskServiceInterface, app_auth_provider.AuthProvider, TaskListProvider>(
+          create: (BuildContext context) {
+            // Read TaskServiceInterface and AuthProvider from the context during creation
             final taskService = context.read<TaskServiceInterface>();
-            return taskListProvider!..update(taskService, authProvider);
+            final authProvider = context.read<app_auth_provider.AuthProvider>();
+            // Pass them directly to the TaskListProvider's constructor
+            return TaskListProvider(
+              taskService: taskService,
+              authProvider: authProvider,
+            );
+          },
+          update: (BuildContext context, TaskServiceInterface taskService, app_auth_provider.AuthProvider authProvider, TaskListProvider? previousTaskListProvider) {
+            // The 'update' callback will be called when parent providers change.
+            // If previousTaskListProvider exists, call its update method to refresh its dependencies.
+            return previousTaskListProvider!..update(taskService, authProvider);
           },
         ),
       ],
@@ -129,15 +144,19 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = context.watch<app_auth_provider.AuthProvider>();
     switch (authProvider.status) {
-      case AuthStatus.authenticated: // Uses AuthStatus from enums.dart
-        return const DashboardScreen();
-      case AuthStatus.unauthenticated: // Uses AuthStatus from enums.dart
+      case AuthStatus.authenticated:
+        // If authenticated but no family ID, direct to family setup
+        if (authProvider.userFamilyId == null) { // <--- NEW CONDITION
+          return const FamilySetupScreen(); // <--- Redirect to FamilySetupScreen
+        }
+        return const DashboardScreen(); // Otherwise, proceed to Dashboard
+      case AuthStatus.unauthenticated:
         return const LoginScreen();
-      case AuthStatus.unknown: // Uses AuthStatus from enums.dart
+      case AuthStatus.unknown:
         return const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         );
-      case AuthStatus.authenticating: // Uses AuthStatus from enums.dart
+      case AuthStatus.authenticating:
         return const Scaffold(
           body: Center(child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -148,7 +167,7 @@ class AuthWrapper extends StatelessWidget {
             ],
           )),
         );
-      case AuthStatus.error: // Uses AuthStatus from enums.dart
+      case AuthStatus.error:
         return Scaffold(
           body: Center(child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
