@@ -116,10 +116,9 @@ class MockData {
       'assigneeId': childUserId1,
       'assigneeName': 'Zahra Hoque',
       'creatorId': parentUserId1,
-      'status': TaskStatus.inProgress.name,
-      'dueDate': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
-      'pointValue': 50,
-      'createdAt': DateTime.now().subtract(const Duration(hours: 12)).toIso8601String(),
+      'status': TaskStatus.assigned.name, // MODIFIED
+      'points': 50,
+      'createdAt': DateTime.now().subtract(const Duration(hours: 12)),
     },
     {
       'id': 'task_2',
@@ -130,10 +129,9 @@ class MockData {
       'assigneeId': childUserId2,
       'assigneeName': 'Yusuf Hoque',
       'creatorId': parentUserId1,
-      'status': TaskStatus.completed.name,
-      'dueDate': DateTime.now().subtract(const Duration(hours: 6)).toIso8601String(),
-      'pointValue': 20,
-      'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+      'status': TaskStatus.pendingApproval.name, // MODIFIED
+      'points': 20,
+      'createdAt': DateTime.now().subtract(const Duration(days: 1)),
     },
     {
       'id': 'task_3',
@@ -144,10 +142,9 @@ class MockData {
       'assigneeId': childUserId3,
       'assigneeName': 'Amina Hoque',
       'creatorId': parentUserId2,
-      'status': TaskStatus.verified.name,
-      'dueDate': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-      'pointValue': 75,
-      'createdAt': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
+      'status': TaskStatus.completed.name, // MODIFIED (from verified)
+      'points': 75,
+      'createdAt': DateTime.now().subtract(const Duration(days: 2)),
     },
     {
       'id': 'task_4',
@@ -158,10 +155,9 @@ class MockData {
       'assigneeId': null,
       'assigneeName': null,
       'creatorId': parentUserId1,
-      'status': TaskStatus.pending.name,
-      'dueDate': DateTime.now().add(const Duration(days: 2)).toIso8601String(),
-      'pointValue': 70,
-      'createdAt': DateTime.now().subtract(const Duration(hours: 6)).toIso8601String(),
+      'status': TaskStatus.available.name, // MODIFIED (from pending)
+      'points': 70,
+      'createdAt': DateTime.now().subtract(const Duration(hours: 6)),
     },
     {
       'id': 'task_5',
@@ -172,10 +168,24 @@ class MockData {
       'assigneeId': null,
       'assigneeName': null,
       'creatorId': parentUserId2,
-      'status': TaskStatus.pending.name,
-      'dueDate': DateTime.now().add(const Duration(hours: 3)).toIso8601String(),
-      'pointValue': 15,
-      'createdAt': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+      'status': TaskStatus.available.name, // MODIFIED (from pending)
+      'points': 15,
+      'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
+    },
+    // ADDED: A new task to test the 'needsRevision' state
+    {
+      'id': 'task_6',
+      'title': 'Tidy up the living room',
+      'description': 'Put away books, fold blankets, and organize pillows.',
+      'familyId': familyId,
+      'difficulty': TaskDifficulty.medium.name,
+      'assigneeId': childUserId1,
+      'assigneeName': 'Zahra Hoque',
+      'creatorId': parentUserId1,
+      'status': TaskStatus.needsRevision.name, 
+      'points': 30,
+      'createdAt': DateTime.now().subtract(const Duration(days: 3)),
+      'revisionComments': 'You missed dusting the coffee table. Please fix!',
     },
   ];
 

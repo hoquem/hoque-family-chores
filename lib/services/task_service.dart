@@ -1,77 +1,96 @@
 // lib/services/task_service.dart
-
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart'; // No longer needed if delegating to DataService
 
-/// A specialized service or "repository" for handling only task-related logic.
-/// It uses the main DataServiceInterface to communicate with the backend.
 class TaskService implements TaskServiceInterface {
   final DataServiceInterface _dataService;
 
   TaskService(this._dataService);
 
-  // Helper to convert maps from the data service into Task models
-  List<Task> _mapToTaskList(List<Map<String, dynamic>> taskMaps) {
-    return taskMaps.map((taskMap) => Task.fromMap(taskMap)).toList();
+  @override
+  Stream<List<Task>> streamMyTasks({required String familyId, required String userId}) {
+    logger.d("TaskService: Streaming tasks for family $familyId and user $userId via DataService.");
+    return _dataService.streamTasksByAssignee(familyId: familyId, assigneeId: userId);
   }
 
   @override
-  Stream<List<Task>> streamAllTasks({required String familyId}) {
-    return _dataService.streamTasksByFamily(familyId: familyId).map(_mapToTaskList);
+  Future<void> createTask({required String familyId, required Task task}) async {
+    logger.d("TaskService: Creating task for family $familyId via DataService.");
+    return _dataService.createTask(familyId: familyId, task: task);
+  }
+
+  @override
+  Future<void> updateTask({required String familyId, required Task task}) async {
+    logger.d("TaskService: Updating task ${task.id} for family $familyId via DataService.");
+    return _dataService.updateTask(familyId: familyId, task: task);
+  }
+
+  @override
+  Future<void> updateTaskStatus({required String familyId, required String taskId, required TaskStatus newStatus}) async {
+    logger.d("TaskService: Updating status for task $taskId to ${newStatus.name} for family $familyId via DataService.");
+    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: newStatus);
+  }
+
+  @override
+  Future<void> assignTask({required String familyId, required String taskId, required String assigneeId}) async {
+    logger.d("TaskService: Assigning task $taskId to $assigneeId for family $familyId via DataService.");
+    return _dataService.assignTask(familyId: familyId, taskId: taskId, assigneeId: assigneeId);
+  }
+
+  @override
+  Future<void> deleteTask({required String familyId, required String taskId}) async {
+    logger.d("TaskService: Deleting task $taskId for family $familyId via DataService.");
+    return _dataService.deleteTask(familyId: familyId, taskId: taskId);
+  }
+
+  @override
+  Future<Task?> getTask({required String familyId, required String taskId}) async {
+    logger.d("TaskService: Getting task $taskId for family $familyId via DataService.");
+    return _dataService.getTask(familyId: familyId, taskId: taskId);
+  }
+
+  @override
+  Stream<List<Task>> streamTasks({required String familyId}) {
+    logger.d("TaskService: Streaming all tasks for family $familyId via DataService.");
+    return _dataService.streamTasks(familyId: familyId);
   }
 
   @override
   Stream<List<Task>> streamAvailableTasks({required String familyId}) {
-    return _dataService
-        .streamTasksByFamily(familyId: familyId, assigneeId: null) // Assuming assigneeId: null means available
-        .map(_mapToTaskList);
+    logger.d("TaskService: Streaming available tasks for family $familyId via DataService.");
+    // This requires a specific query in DataService or local filtering.
+    // Assuming DataService.streamTasks can be filtered or you add a specific method.
+    return _dataService.streamTasks(familyId: familyId)
+        .map((tasks) => tasks.where((task) => task.status == TaskStatus.available).toList());
   }
 
   @override
-  Stream<List<Task>> streamCompletedTasks({required String familyId}) {
-    return _dataService
-        .streamTasksByFamily(familyId: familyId, status: TaskStatus.completed)
-        .map(_mapToTaskList);
+  Stream<List<Task>> streamTasksByAssignee({required String familyId, required String assigneeId}) {
+    logger.d("TaskService: Streaming tasks by assignee $assigneeId for family $familyId via DataService.");
+    return _dataService.streamTasksByAssignee(familyId: familyId, assigneeId: assigneeId);
   }
 
   @override
-  Stream<List<Task>> streamMyTasks({required String userId}) {
-    // Assuming your data service stream can filter by assignee
-    const String familyId = 'YOUR_FAMILY_ID'; // This needs to be fetched from user profile
-    return _dataService
-        .streamTasksByFamily(familyId: familyId, assigneeId: userId)
-        .map(_mapToTaskList);
+  Future<void> approveTask({required String familyId, required String taskId, required String approverId}) async {
+    logger.d("TaskService: Approving task $taskId for family $familyId via DataService.");
+    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: TaskStatus.completed);
   }
 
   @override
-  Future<void> assignTask({required String taskId, required String userId, required String userName}) async {
-    // Use the generic updateTask method from the main data service
-    return _dataService.updateTask(
-      taskId: taskId,
-      assigneeId: userId,
-      status: TaskStatus.assigned,
-      // You might want to add an 'assigneeName' field to updateTask if needed
-    );
+  Future<void> rejectTask({required String familyId, required String taskId, required String rejecterId, String? comments}) async {
+    logger.d("TaskService: Rejecting task $taskId for family $familyId via DataService.");
+    // This might require a custom update to add comments as well.
+    // For now, setting status. If comments need to be stored in Task, updateTask is better.
+    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: TaskStatus.needsRevision);
   }
 
   @override
-  Future<List<Task>> getMyPendingTasks({required String userId}) async {
-    final taskMaps = await _dataService.getTasksByAssignee(
-      userId: userId, 
-      status: TaskStatus.pending
-    );
-    return _mapToTaskList(taskMaps);
-  }
-
-  @override
-  Future<List<Task>> getUnassignedTasks({required String familyId}) async {
-    final taskMaps = await _dataService.getTasksByFamily(
-      familyId: familyId,
-      assigneeId: null, // A way to signify unassigned
-      status: TaskStatus.pending,
-    );
-    return _mapToTaskList(taskMaps);
+  Future<void> claimTask({required String familyId, required String taskId, required String userId}) async {
+    logger.d("TaskService: Claiming task $taskId by user $userId for family $familyId via DataService.");
+    return _dataService.assignTask(familyId: familyId, taskId: taskId, assigneeId: userId);
   }
 }

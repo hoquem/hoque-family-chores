@@ -1,75 +1,80 @@
-// lib/models/badge.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/utils/enum_helpers.dart'; // Import the helper
+import 'package:hoque_family_chores/utils/enum_helpers.dart';
 
-
-class Badge {
+class Badge { // This is your custom Badge class
   final String id;
-  final String title;
+  final String name;
   final String description;
-  final String iconName;
-  final String color;
+  final String imageUrl;
+  final BadgeCategory category;
   final BadgeRarity rarity;
   final int requiredPoints;
-  final BadgeCategory category;
   final bool isUnlocked;
   final DateTime? unlockedAt;
 
-  Badge({
+  const Badge({
     required this.id,
-    required this.title,
-    required this.description,
-    required this.iconName,
-    required this.color,
+    required this.name,
+    this.description = '',
+    this.imageUrl = '',
+    required this.category,
     required this.rarity,
     this.requiredPoints = 0,
-    required this.category,
     this.isUnlocked = false,
     this.unlockedAt,
   });
 
   factory Badge.fromMap(Map<String, dynamic> map) {
+    final category = enumFromString(
+      map['category'] as String?,
+      BadgeCategory.values,
+      defaultValue: BadgeCategory.taskMaster,
+    );
+
+    final rarity = enumFromString(
+      map['rarity'] as String?,
+      BadgeRarity.values,
+      defaultValue: BadgeRarity.common,
+    );
+
     return Badge(
       id: map['id'] ?? '',
-      title: map['title'] ?? 'Unknown Badge',
-      description: map['description'] ?? '',
-      iconName: map['iconName'] ?? 'star',
-      color: map['color'] as String? ?? '#808080',
-      rarity: enumFromString(map['rarity'], BadgeRarity.values, defaultValue: BadgeRarity.common),
-      requiredPoints: (map['requiredPoints'] as num?)?.toInt() ?? 0,
-      category: enumFromString(map['category'], BadgeCategory.values, defaultValue: BadgeCategory.taskMaster),
-      isUnlocked: map['isUnlocked'] as bool? ?? false,
-      unlockedAt: map['unlockedAt'] != null ? DateTime.tryParse(map['unlockedAt'].toString()) : null,
-    );
-  }
-
-  Badge copyWith({bool? isUnlocked, DateTime? unlockedAt}) {
-    return Badge(
-      id: id,
-      title: title,
-      description: description,
-      iconName: iconName,
-      color: color,
-      rarity: rarity,
-      requiredPoints: requiredPoints,
+      name: map['name'] as String? ?? 'No Name',
+      description: map['description'] as String? ?? '',
+      imageUrl: map['imageUrl'] as String? ?? (map['iconName'] != null ? 'assets/icons/${map['iconName']}.png' : ''),
       category: category,
-      isUnlocked: isUnlocked ?? this.isUnlocked,
-      unlockedAt: unlockedAt ?? this.unlockedAt,
+      rarity: rarity,
+      requiredPoints: (map['requiredPoints'] as num?)?.toInt() ?? 0,
+      isUnlocked: map['isUnlocked'] as bool? ?? false,
+      unlockedAt: (map['unlockedAt'] as Timestamp?)?.toDate(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
+      'name': name,
       'description': description,
-      'iconName': iconName,
-      'color': color,
+      'imageUrl': imageUrl,
+      'category': category.name,
       'rarity': rarity.name,
       'requiredPoints': requiredPoints,
-      'category': category.name,
       'isUnlocked': isUnlocked,
-      'unlockedAt': unlockedAt?.toIso8601String(),
+      'unlockedAt': unlockedAt != null ? Timestamp.fromDate(unlockedAt!) : null,
     };
+  }
+
+  Badge copyWith({
+    String? id, String? name, String? description, String? imageUrl,
+    BadgeCategory? category, BadgeRarity? rarity, int? requiredPoints,
+    bool? isUnlocked, DateTime? unlockedAt,
+  }) {
+    return Badge(
+      id: id ?? this.id, name: name ?? this.name, description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl, category: category ?? this.category,
+      rarity: rarity ?? this.rarity, requiredPoints: requiredPoints ?? this.requiredPoints,
+      isUnlocked: isUnlocked ?? this.isUnlocked, unlockedAt: unlockedAt ?? this.unlockedAt,
+    );
   }
 }

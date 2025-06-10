@@ -1,15 +1,37 @@
-// lib/models/enums.dart
 import 'package:flutter/material.dart';
 
 // --- Core Enums ---
-enum TaskStatus { pending, inProgress, completed, verified, available, assigned, pendingApproval }
+enum TaskStatus {
+  available,        // For anyone to claim
+  assigned,         // Claimed by a user
+  pendingApproval,  // Submitted for review
+  needsRevision,    // Rejected by a parent, needs changes
+  completed,        // Approved and finished
+}
+
+enum TaskFilterType { all, myTasks, available, completed }
+
 enum TaskDifficulty { easy, medium, hard, challenging }
+
 enum FamilyRole { parent, child, guardian, other }
+
+// --- UI/Provider State Enums ---
+enum TaskSummaryState { loading, loaded, error }
+enum AvailableTasksState { loading, loaded, error, claiming }
+
+// --- Authentication Status Enum (NEWLY MOVED) ---
+enum AuthStatus {
+  authenticated,
+  unauthenticated,
+  unknown,
+  authenticating,
+  error,
+}
 
 // --- Enhanced Enums with properties for the UI ---
 
-enum BadgeCategory { 
-  taskMaster(displayName: 'Task Master'), 
+enum BadgeCategory {
+  taskMaster(displayName: 'Task Master'),
   streaker(displayName: 'Streaker'),
   varietyKing(displayName: 'Variety King'),
   superHelper(displayName: 'Super Helper');
@@ -18,11 +40,11 @@ enum BadgeCategory {
   final String displayName;
 }
 
-enum RewardCategory { 
-  digital(displayName: 'Digital'), 
-  physical(displayName: 'Physical'), 
+enum RewardCategory {
+  digital(displayName: 'Digital'),
+  physical(displayName: 'Physical'),
   privilege(displayName: 'Privilege');
-  
+
   const RewardCategory({required this.displayName});
   final String displayName;
 }
