@@ -1,37 +1,38 @@
-// lib/services/mock_data_service.dart
-import 'dart:async'; // Required for StreamController
-import 'package:hoque_family_chores/models/user_profile.dart'; // Use UserProfile
-import 'package:hoque_family_chores/models/family_member.dart'; // Use FamilyMember
+import 'dart:async';
+import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/badge.dart';
-import 'package:hoque_family_chores/models/achievement.dart'; // Ensure this exists
-import 'package:hoque_family_chores/models/notification.dart' as app_notification; // Use aliased name
-import 'package:hoque_family_chores/models/task.dart'; // Ensure Task is imported
+import 'package:hoque_family_chores/models/achievement.dart';
+import 'package:hoque_family_chores/models/notification.dart' as app_notification;
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
+import 'package:hoque_family_chores/models/family.dart'; // <--- Ensure this import is here
 import 'package:hoque_family_chores/services/data_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/test_data/mock_data.dart'; // For initial data
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 
 class MockDataService implements DataServiceInterface {
-  // Use private fields to hold mock data - these will now be used
+  // Use private fields to hold mock data
   final Map<String, UserProfile> _userProfiles = {
     for (var userData in MockData.userProfiles)
       userData['id'] as String: UserProfile.fromMap(userData),
   };
 
+  final Map<String, Family> _families = {
+    MockData.familyId: Family.fromMap(MockData.family, MockData.familyId),
+  };
+
   final Map<String, List<Badge>> _userBadges = {
-    // Populate with mock badges from MockData, ensuring Badge.fromMap exists
     MockData.childUserId1: [
       Badge.fromMap({'id': MockData.badgeFirstTask, 'name': 'First Task!', 'imageUrl': 'url', 'description': 'Completed first chore', 'isUnlocked': true, 'unlockedAt': DateTime.now()}),
     ],
   };
   final Map<String, List<Achievement>> _userAchievements = {
-    // Populate with mock achievements
     MockData.childUserId1: [
       Achievement.fromMap({'id': MockData.achievementTaskStreak, 'title': 'Task Streak!', 'dateAwarded': DateTime.now()}),
     ],
   };
   final Map<String, List<app_notification.Notification>> _notifications = {
-    // Populate with mock notifications
     MockData.childUserId1: [
       app_notification.Notification.fromMap({
         'id': 'notif_1',
@@ -43,23 +44,19 @@ class MockDataService implements DataServiceInterface {
     ],
   };
 
-  final Map<String, Map<String, Task>> _tasks = {}; // familyId -> (taskId -> Task)
-
   // Stream controllers to simulate real-time updates for mock data
   final StreamController<UserProfile?> _userProfileStreamController = StreamController<UserProfile?>.broadcast();
   final StreamController<List<Badge>> _userBadgesStreamController = StreamController<List<Badge>>.broadcast();
   final StreamController<List<Achievement>> _userAchievementsStreamController = StreamController<List<Achievement>>.broadcast();
   final StreamController<List<app_notification.Notification>> _notificationsStreamController = StreamController<List<app_notification.Notification>>.broadcast();
-  final StreamController<List<Task>> _tasksStreamController = StreamController<List<Task>>.broadcast();
+  final StreamController<List<FamilyMember>> _familyMembersStreamController = StreamController<List<FamilyMember>>.broadcast();
 
   MockDataService() {
     _userProfiles.forEach((userId, userProfile) => _userProfileStreamController.add(userProfile));
     _userBadges.forEach((userId, badges) => _userBadgesStreamController.add(badges));
     _userAchievements.forEach((userId, achievements) => _userAchievementsStreamController.add(achievements));
     _notifications.forEach((userId, notifications) => _notificationsStreamController.add(notifications));
-    if (_tasks.isNotEmpty) {
-      _tasksStreamController.add(_getAllTasks());
-    }
+    _familyMembersStreamController.add(_userProfiles.values.where((p) => p.familyId != null).map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id)).toList());
     logger.i("MockDataService initialized with dummy data for immediate stream emission.");
   }
 
@@ -73,8 +70,18 @@ class MockDataService implements DataServiceInterface {
   @override
   Future<UserProfile?> getUserProfile({required String userId}) async {
     logger.d("Mock: Getting user profile with ID: $userId.");
-    await Future.delayed(const Duration(milliseconds: 50)); // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 50));
     return _userProfiles[userId];
+  }
+
+  @override
+  Future<void> createUserProfile({required UserProfile userProfile}) async {
+    logger.d("Mock: Creating user profile ${userProfile.id}.");
+    _userProfiles[userProfile.id] = userProfile;
+    _userProfileStreamController.add(userProfile);
+    if (userProfile.familyId != null) {
+      _familyMembersStreamController.add(_userProfiles.values.where((p) => p.familyId == userProfile.familyId).map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id)).toList());
+    }
   }
 
   @override
@@ -82,6 +89,9 @@ class MockDataService implements DataServiceInterface {
     logger.d("Mock: Updating user profile ${user.id}.");
     _userProfiles[user.id] = user;
     _userProfileStreamController.add(user);
+    if (user.familyId != null) {
+      _familyMembersStreamController.add(_userProfiles.values.where((p) => p.familyId == user.familyId).map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id)).toList());
+    }
   }
 
   @override
@@ -89,6 +99,7 @@ class MockDataService implements DataServiceInterface {
     logger.d("Mock: Deleting user $userId.");
     _userProfiles.remove(userId);
     _userProfileStreamController.add(null);
+    _familyMembersStreamController.add(_userProfiles.values.where((p) => p.familyId != null).map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id)).toList());
   }
 
   @override
@@ -103,23 +114,33 @@ class MockDataService implements DataServiceInterface {
     }
   }
 
-  // --- Family Member Methods ---
+  // --- Family Methods ---
+  @override
+  Future<void> createFamily({required Family family}) async {
+    logger.d("Mock: Creating family ${family.id}.");
+    _families[family.id] = family;
+    if (family.memberUserIds.isNotEmpty) {
+      _familyMembersStreamController.add(_userProfiles.values.where((p) => p.familyId == family.id).map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id)).toList());
+    }
+  }
+
+  @override
+  Future<Family?> getFamily({required String familyId}) async {
+    logger.d("Mock: Getting family with ID: $familyId.");
+    await Future.delayed(const Duration(milliseconds: 50));
+    return _families[familyId];
+  }
+
   @override
   Stream<List<FamilyMember>> streamFamilyMembers({required String familyId}) {
     logger.d("Mock: Streaming family members for family ID: $familyId.");
-    // Filter _userProfiles to get family members for the given familyId
-    return _userProfileStreamController.stream.map((event) {
-      return _userProfiles.values
-          .where((profile) => profile.familyId == familyId)
-          .map((profile) => FamilyMember.fromMap(profile.toJson()..['id'] = profile.id)) // Convert back to FamilyMember
-          .toList();
-    }).distinct();
+    return _familyMembersStreamController.stream.map((members) => members.where((m) => m.familyId == familyId).toList()).distinct();
   }
 
   @override
   Future<List<FamilyMember>> getFamilyMembers({required String familyId}) async {
     logger.d("Mock: Getting family members for family ID: $familyId.");
-    await Future.delayed(const Duration(milliseconds: 50)); // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 50));
     return _userProfiles.values
         .where((profile) => profile.familyId == familyId)
         .map((profile) => FamilyMember.fromMap(profile.toJson()..['id'] = profile.id))
@@ -140,7 +161,6 @@ class MockDataService implements DataServiceInterface {
     _userBadgesStreamController.add(_userBadges[userId]!);
   }
 
-  // --- Achievement Related Methods ---
   @override
   Stream<List<Achievement>> streamUserAchievements({required String userId}) {
     logger.d("Mock: Streaming achievements for user ID: $userId.");
@@ -154,7 +174,6 @@ class MockDataService implements DataServiceInterface {
     _userAchievementsStreamController.add(_userAchievements[userId]!);
   }
 
-  // --- Notification Related Methods ---
   @override
   Stream<List<app_notification.Notification>> streamNotifications({required String userId}) {
     logger.d("Mock: Streaming notifications for user ID: $userId.");
@@ -181,81 +200,68 @@ class MockDataService implements DataServiceInterface {
     }
   }
 
-  // --- Task-related methods ---
+  // --- Task-related methods (mocking DataServiceInterface) ---
+  final List<Task> _tasks = MockData.tasks.map((data) => Task.fromFirestore(data, data['id'] as String)).toList();
+
   @override
   Stream<List<Task>> streamTasks({required String familyId}) {
-    logger.d("Mock: Streaming tasks for family ID: $familyId");
-    return _tasksStreamController.stream.map((tasks) => 
-      tasks.where((task) => task.familyId == familyId).toList()
-    ).distinct();
+    return Stream.value(_tasks.where((task) => task.familyId == familyId).toList());
   }
 
   @override
   Future<Task?> getTask({required String familyId, required String taskId}) async {
-    logger.d("Mock: Getting task $taskId for family $familyId");
-    await Future.delayed(const Duration(milliseconds: 50));
-    return _tasks[familyId]?[taskId];
+    return _tasks.firstWhereOrNull((task) => task.id == taskId && task.familyId == familyId);
   }
 
   @override
   Future<void> createTask({required String familyId, required Task task}) async {
-    logger.d("Mock: Creating task ${task.id} for family $familyId");
-    if (!_tasks.containsKey(familyId)) {
-      _tasks[familyId] = {};
-    }
-    _tasks[familyId]![task.id] = task;
-    _tasksStreamController.add(_getAllTasks());
+    _tasks.add(task.copyWith(id: 'mock_task_${_tasks.length + 1}'));
   }
 
   @override
   Future<void> updateTask({required String familyId, required Task task}) async {
-    logger.d("Mock: Updating task ${task.id} for family $familyId");
-    if (_tasks[familyId]?[task.id] != null) {
-      _tasks[familyId]![task.id] = task;
-      _tasksStreamController.add(_getAllTasks());
-    }
+    final index = _tasks.indexWhere((t) => t.id == task.id && t.familyId == familyId);
+    if (index != -1) _tasks[index] = task;
   }
 
   @override
   Future<void> updateTaskStatus({required String familyId, required String taskId, required TaskStatus newStatus}) async {
-    logger.d("Mock: Updating task $taskId status to $newStatus for family $familyId");
-    final task = _tasks[familyId]?[taskId];
-    if (task != null) {
-      _tasks[familyId]![taskId] = task.copyWith(status: newStatus);
-      _tasksStreamController.add(_getAllTasks());
-    }
+    final index = _tasks.indexWhere((t) => t.id == taskId && t.familyId == familyId);
+    if (index != -1) _tasks[index] = _tasks[index].copyWith(status: newStatus);
   }
 
   @override
   Future<void> assignTask({required String familyId, required String taskId, required String assigneeId}) async {
-    logger.d("Mock: Assigning task $taskId to user $assigneeId in family $familyId");
-    final task = _tasks[familyId]?[taskId];
-    if (task != null) {
-      _tasks[familyId]![taskId] = task.copyWith(assigneeId: assigneeId);
-      _tasksStreamController.add(_getAllTasks());
-    }
+    final index = _tasks.indexWhere((t) => t.id == taskId && t.familyId == familyId);
+    if (index != -1) _tasks[index] = _tasks[index].copyWith(assigneeId: assigneeId, status: TaskStatus.assigned);
   }
 
   @override
   Future<void> deleteTask({required String familyId, required String taskId}) async {
-    logger.d("Mock: Deleting task $taskId from family $familyId");
-    _tasks[familyId]?.remove(taskId);
-    _tasksStreamController.add(_getAllTasks());
+    _tasks.removeWhere((task) => task.id == taskId && task.familyId == familyId);
   }
 
   @override
   Stream<List<Task>> streamTasksByAssignee({required String familyId, required String assigneeId}) {
-    logger.d("Mock: Streaming tasks for assignee $assigneeId in family $familyId");
-    return _tasksStreamController.stream.map((tasks) => 
-      tasks.where((task) => 
-        task.familyId == familyId && task.assigneeId == assigneeId
-      ).toList()
-    ).distinct();
+    return Stream.value(_tasks.where((task) => task.familyId == familyId && task.assigneeId == assigneeId).toList());
   }
 
-  // Helper method to get all tasks
-  List<Task> _getAllTasks() {
-    return _tasks.values.expand((taskMap) => taskMap.values).toList();
+  @override
+  Future<void> approveTask({required String familyId, required String taskId, required String approverId}) async {
+    final index = _tasks.indexWhere((t) => t.id == taskId && t.familyId == familyId);
+    if (index != -1) _tasks[index] = _tasks[index].copyWith(status: TaskStatus.completed);
+  }
+
+  @override
+  Future<void> rejectTask({required String familyId, required String taskId, required String rejecterId, String? comments}) async {
+    final index = _tasks.indexWhere((t) => t.id == taskId && t.familyId == familyId);
+    if (index != -1) _tasks[index] = _tasks[index].copyWith(status: TaskStatus.needsRevision);
+  }
+
+  @override
+  Future<void> claimTask({required String familyId, required String taskId, required String userId}) async { // <--- Added taskId here
+    final index = _tasks.indexWhere((t) => t.id == taskId && t.familyId == familyId);
+    if (index != -1) _tasks[index] = _tasks[index].copyWith(assigneeId: userId, status: TaskStatus.assigned);
   }
 
   void dispose() {
@@ -263,7 +269,16 @@ class MockDataService implements DataServiceInterface {
     _userBadgesStreamController.close();
     _userAchievementsStreamController.close();
     _notificationsStreamController.close();
-    _tasksStreamController.close();
+    _familyMembersStreamController.close();
     logger.i("MockDataService disposed.");
+  }
+}
+
+extension ListExtension<T> on List<T> {
+  T? firstWhereOrNull(bool Function(T element) test) {
+    for (var element in this) {
+      if (test(element)) return element;
+    }
+    return null;
   }
 }

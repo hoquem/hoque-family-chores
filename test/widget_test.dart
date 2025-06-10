@@ -7,8 +7,9 @@ import 'package:mocktail/mocktail.dart';
 // Import ALL necessary models from your project
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart' as app_enums; // <--- Ensure this alias is consistent
+import 'package:hoque_family_chores/models/enums.dart' as app_enums; // <--- CRITICAL: Alias enums.dart
 
 // Import ALL necessary services and interfaces from your project
 import 'package:hoque_family_chores/services/data_service_interface.dart' as app_data_service_interface;
@@ -18,7 +19,7 @@ import 'package:hoque_family_chores/services/mock_data_service.dart';
 import 'package:hoque_family_chores/services/mock_task_service.dart';
 
 // Import ALL necessary providers from your project, ALIASING YOUR CUSTOM AUTHPROVIDER
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart' as app_auth_provider; // <--- Ensure this alias is consistent
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart' as app_auth_provider;
 import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart' as app_gamification_provider;
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 

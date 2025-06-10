@@ -19,7 +19,7 @@ enum FamilyRole { parent, child, guardian, other }
 enum TaskSummaryState { loading, loaded, error }
 enum AvailableTasksState { loading, loaded, error, claiming }
 
-// --- Authentication Status Enum (NEWLY MOVED) ---
+// --- Authentication Status Enum (This is its correct, single location) ---
 enum AuthStatus {
   authenticated,
   unauthenticated,

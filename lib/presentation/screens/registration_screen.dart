@@ -1,8 +1,7 @@
-// lib/presentation/screens/registration_screen.dart
 import 'package:flutter/material.dart';
-// Potentially import your AuthProvider if registration logic will live there
-// import 'package:provider/provider.dart';
-// import '../providers/auth_provider.dart';
+import 'package:provider/provider.dart'; // <--- CRITICAL: Ensure this import is here
+import '../providers/auth_provider.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // <--- CRITICAL: Ensure this import is here for AuthStatus
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -16,38 +15,59 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  String? _errorMessage; // For displaying errors
 
   Future<void> _register() async {
-    // Basic validation
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match!")),
-      );
+      setState(() {
+        _errorMessage = "Passwords do not match!";
+      });
+      return;
+    }
+
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      setState(() {
+        _errorMessage = "Email and password cannot be empty.";
+      });
       return;
     }
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null; // Clear previous errors
     });
 
-    // TODO: Implement actual registration logic
-    // This would typically involve:
-    // 1. Calling a method on AuthProvider or a dedicated RegistrationProvider.
-    // 2. Handling success (e.g., navigating to dashboard or back to login).
-    // 3. Handling errors (e.g., showing a SnackBar).
-    await Future.delayed(const Duration(seconds: 2)); // Simulate network call
-    // Would log: Simulating registration for: ${_emailController.text}
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // Example: On successful registration, navigate to login or show a success message
-    if (mounted) { // Check if the widget is still in the tree
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registration successful (simulated)! Please login.")),
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signUp( // Calling the signUp method
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-      Navigator.pop(context); // Go back to the login screen
+
+      // Check AuthProvider's status after signUp attempt
+      if (authProvider.status == AuthStatus.authenticated) { // Using AuthStatus from enums.dart
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Registration successful! Welcome!")),
+          );
+          // Assuming AuthWrapper will handle navigation to Dashboard if authenticated
+          // No need to pop here if AuthWrapper is managing the route
+        }
+      } else {
+        // If AuthProvider status is not authenticated, display its error message
+        setState(() {
+          _errorMessage = authProvider.errorMessage ?? "Registration failed unexpectedly.";
+        });
+      }
+    } catch (e) {
+      // Catch any unexpected errors from the provider/Firebase
+      setState(() {
+        _errorMessage = "An error occurred during registration: $e";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -78,6 +98,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             _isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
