@@ -1,37 +1,62 @@
-// lib/presentation/providers/my_tasks_provider.dart
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/utils/exceptions.dart';
 
 enum MyTasksState { initial, loading, loaded, error }
 
 class MyTasksProvider with ChangeNotifier {
-  final TaskServiceInterface _taskService;
-
-  MyTasksProvider(this._taskService);
+  TaskServiceInterface? _taskService;
+  AuthProvider? _authProvider;
+  StreamSubscription? _tasksSubscription;
 
   MyTasksState _state = MyTasksState.initial;
+  String? _errorMessage;
   List<Task> _tasks = [];
-  String _errorMessage = '';
 
   MyTasksState get state => _state;
+  String? get errorMessage => _errorMessage;
   List<Task> get tasks => _tasks;
-  String get errorMessage => _errorMessage;
 
-  Future<void> fetchMyPendingTasks() async {
+  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
+    if (_taskService != taskService || _authProvider != authProvider) {
+      _taskService = taskService;
+      _authProvider = authProvider;
+      _listenToMyTasks();
+    }
+  }
+
+  void _listenToMyTasks() {
+    if (_taskService == null || _authProvider?.currentUserId == null || _authProvider?.userFamilyId == null) return;
+
     _state = MyTasksState.loading;
     notifyListeners();
-
-    try {
-      // FOR NOW: Hardcode the logged-in user's ID for the mock service.
-      // In a real app, this ID would come from your AuthProvider.
-      const mockLoggedInUserId = 'fm_001';
-      _tasks = await _taskService.getMyPendingTasks(mockLoggedInUserId);
+    
+    _tasksSubscription?.cancel();
+    _tasksSubscription = _taskService!
+        // FIX: The streamMyTasks method now requires both userId and familyId.
+        .streamMyTasks(
+          userId: _authProvider!.currentUserId!,
+          familyId: _authProvider!.userFamilyId!,
+        )
+        .listen((tasks) {
+      _tasks = tasks;
       _state = MyTasksState.loaded;
-    } catch (e) {
-      _errorMessage = e.toString();
+      notifyListeners();
+    }, onError: (e, s) {
+      logger.e("Error listening to my tasks", error: e, stackTrace: s);
+      _errorMessage = e is AppException ? e.message : "An unknown error occurred.";
       _state = MyTasksState.error;
-    }
-    notifyListeners();
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tasksSubscription?.cancel();
+    super.dispose();
   }
 }

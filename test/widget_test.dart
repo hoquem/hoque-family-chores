@@ -1,265 +1,271 @@
-// test/widget_test.dart
-
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart'; // Kept from HEAD
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mocktail/mocktail.dart';
 
-// Added from origin/main, and needed for MyApp constructor
-import 'package:hoque_family_chores/services/gamification_service.dart'; 
+// Import ALL necessary models from your project
+import 'package:hoque_family_chores/models/badge.dart';
+import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/models/achievement.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/enums.dart' as app_enums; // <--- CRITICAL: Alias enums.dart
 
-import 'package:hoque_family_chores/main.dart';
-import 'package:hoque_family_chores/services/environment_service.dart';
-import 'package:hoque_family_chores/services/data_service.dart';
-import 'package:hoque_family_chores/services/data_service_factory.dart';
+// Import ALL necessary services and interfaces from your project
+import 'package:hoque_family_chores/services/data_service_interface.dart' as app_data_service_interface;
+import 'package:hoque_family_chores/services/gamification_service_interface.dart';
+import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/services/mock_data_service.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/services/mock_task_service.dart';
 
-void main() {
-  late DataService dataService;
-  late EnvironmentService environmentService;
-  late GamificationServiceInterface mockGamificationService; // Added for MyApp
+// Import ALL necessary providers from your project, ALIASING YOUR CUSTOM AUTHPROVIDER
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart' as app_auth_provider;
+import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart' as app_gamification_provider;
+import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 
-  setUp(() {
-    // Initialize services before each test
-    environmentService = EnvironmentService();
-    dataService = DataServiceFactory.getDataService();
-    mockGamificationService = MockGamificationService(); // Initialize mock gamification service
-  });
+// Import ALL necessary screens from your project
+import 'package:hoque_family_chores/presentation/screens/dashboard_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
+import 'package:hoque_family_chores/main.dart'; // To access AuthWrapper
 
-  tearDown(() {
-    // Clean up after each test
-    if (dataService is MockDataService) {
-      // Sign out to reset state between tests
-      (dataService as MockDataService).signOut(); // Explicit cast for clarity
+// --- Mocktail Mocks for Firebase Auth ---
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+class MockUser extends Mock implements User {}
+class MockUserCredential extends Mock implements UserCredential {}
+
+// --- Mock Service Implementations for Testing ---
+
+class MockGamificationService extends Mock implements GamificationServiceInterface {
+  @override
+  Future<List<Badge>> getPredefinedBadges() async {
+    return const [
+      Badge(id: 'mock_badge_1', name: 'Test Badge', description: '', imageUrl: '', category: app_enums.BadgeCategory.taskMaster, rarity: app_enums.BadgeRarity.common),
+    ];
+  }
+
+  @override
+  Future<List<Reward>> getPredefinedRewards() async {
+    return const [
+      Reward(id: 'mock_reward_1', title: 'Test Reward', description: '', pointsCost: 100, iconName: '', category: app_enums.RewardCategory.digital, rarity: app_enums.RewardRarity.common),
+    ];
+  }
+}
+
+// Mock AuthProvider (now explicitly implements app_auth_provider.AuthProvider)
+// This forces all methods/getters to be defined, resolving override issues and constructor chaining.
+class MockAuthProvider extends Mock implements app_auth_provider.AuthProvider {
+  // Mock properties (getters)
+  @override
+  app_enums.AuthStatus get status => app_enums.AuthStatus.authenticated; // Use aliased enum
+  @override
+  UserProfile? get currentUserProfile => UserProfile( // Removed const
+        id: 'test_user_id',
+        name: 'Test User',
+        email: 'test@example.com',
+        avatarUrl: 'https://example.com/avatar.jpg',
+        role: app_enums.FamilyRole.parent, // Use aliased enum
+        familyId: 'test_family_id',
+        joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)),
+      );
+  @override
+  String? get currentUserId => 'test_user_id';
+  @override
+  String? get userFamilyId => 'test_family_id';
+  @override
+  String? get displayName => 'Test User';
+  @override
+  String? get photoUrl => 'https://example.com/avatar.jpg';
+  @override
+  String? get userEmail => 'test@example.com';
+  @override
+  bool get isLoggedIn => true;
+  @override
+  String? get errorMessage => null;
+  @override
+  bool get isLoading => false;
+
+  // Mock methods (must be defined as per the interface)
+  @override
+  Future<void> signIn({required String email, required String password}) async {}
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> resetPassword({required String email}) async {}
+  @override
+  Future<void> refreshUserProfile() async {}
+  @override
+  UserProfile? getFamilyMember(String userId) {
+    if (userId == 'test_user_id') {
+      return UserProfile( // Removed const
+          id: 'test_user_id',
+          name: 'Test User',
+          joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)));
     }
+    return null;
+  }
+  @override
+  bool get hasListeners => false;
+  @override
+  void addListener(VoidCallback listener) {}
+  @override
+  void removeListener(VoidCallback listener) {}
+  @override
+  void dispose() {}
+  @override
+  void notifyListeners() {}
+}
+
+class MockAuthProviderUnauthenticated extends Mock implements app_auth_provider.AuthProvider {
+  // Overrides for unauthenticated state
+  @override
+  app_enums.AuthStatus get status => app_enums.AuthStatus.unauthenticated; // Use aliased enum
+  @override
+  UserProfile? get currentUserProfile => null;
+  @override
+  String? get currentUserId => null;
+  @override
+  String? get userFamilyId => null;
+  @override
+  String? get displayName => null;
+  @override
+  String? get photoUrl => null;
+  @override
+  String? get userEmail => null;
+  @override
+  bool get isLoggedIn => false;
+  @override
+  String? get errorMessage => null;
+  @override
+  bool get isLoading => false;
+
+  // All methods must be explicitly mocked
+  @override
+  Future<void> signIn({required String email, required String password}) async {}
+  @override
+  Future<void> signOut() async {}
+  @override
+  Future<void> resetPassword({required String email}) async {}
+  @override
+  Future<void> refreshUserProfile() async {}
+  @override
+  UserProfile? getFamilyMember(String userId) => null;
+  @override
+  bool get hasListeners => false;
+  @override
+  void addListener(VoidCallback listener) {}
+  @override
+  void removeListener(VoidCallback listener) {}
+  @override
+  void dispose() {}
+  @override
+  void notifyListeners() {}
+}
+
+// --- Main Test Suite ---
+void main() {
+  setUpAll(() {
+    registerFallbackValue(MockFirebaseAuth());
   });
 
-  group('Environment Service Tests', () {
-    test('Environment service should identify test environment', () {
-      expect(environmentService.isTestEnvironment, isTrue);
-    });
+  testWidgets('App displays DashboardScreen when authenticated', (WidgetTester tester) async {
+    final mockFirebaseAuth = MockFirebaseAuth();
+    final mockUser = MockUser();
+    when(() => mockUser.uid).thenReturn('test_user_id');
+    when(() => mockFirebaseAuth.authStateChanges())
+        .thenAnswer((_) => Stream.value(mockUser));
+    when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
 
-    test('Environment service should use mock data in tests', () {
-      expect(environmentService.useMockData, isTrue);
-    });
+    final mockDataService = MockDataService();
+    when(() => mockDataService.getUserProfile(userId: 'test_user_id'))
+        .thenAnswer((_) async => UserProfile( // Removed const
+              id: 'test_user_id',
+              name: 'Test User',
+              email: 'test@example.com',
+              joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)),
+            ));
 
-    test('Environment service should not connect to Firebase in tests', () {
-      expect(environmentService.shouldConnectToFirebase, isFalse);
-    });
-  });
-
-  group('Data Service Factory Tests', () {
-    test('Data service factory should return MockDataService in test environment', () {
-      final service = DataServiceFactory.getDataService();
-      expect(service, isA<MockDataService>());
-    });
-
-    test('Data service factory explicit mock override works', () {
-      final service = DataServiceFactory.getDataService(forceMock: true);
-      expect(service, isA<MockDataService>());
-    });
-
-    test('Data service factory getMockDataService returns MockDataService', () {
-      final service = DataServiceFactory.getMockDataService();
-      expect(service, isA<MockDataService>());
-    });
-  });
-
-  group('Mock Data Service Authentication Tests', () {
-    test('Mock service should allow sign in with test credentials', () async {
-      // Use one of the predefined test accounts from MockData
-      final userId = await dataService.signIn(
-        email: 'ahmed@example.com',
-        password: 'password123',
-      );
-      
-      expect(userId, isNotNull);
-      expect(await dataService.isAuthenticated(), isTrue); 
-      expect(dataService.getCurrentUserId(), isNotNull);
-    });
-
-    test('Mock service should reject invalid credentials', () async {
-      expect(
-        () => dataService.signIn(
-          email: 'invalid@example.com',
-          password: 'wrongpassword',
-        ),
-        throwsException,
-      );
-    });
-
-    test('Mock service should allow sign up with new credentials', () async {
-      final userId = await dataService.signUp(
-        email: 'newuser@example.com',
-        password: 'newpassword123',
-        displayName: 'New Test User',
-      );
-      
-      expect(userId, isNotNull);
-      
-      final profile = await dataService.getUserProfile(userId: userId!);
-      expect(profile, isNotNull);
-      expect(profile!['displayName'], equals('New Test User'));
-      expect(profile['email'], equals('newuser@example.com'));
-    });
-
-    test('Mock service should allow sign out', () async {
-      // First sign in
-      await dataService.signIn(
-        email: 'ahmed@example.com',
-        password: 'password123',
-      );
-      
-      expect(await dataService.isAuthenticated(), isTrue); 
-      
-      // Then sign out
-      await dataService.signOut();
-      expect(await dataService.isAuthenticated(), isFalse); 
-      expect(dataService.getCurrentUserId(), isNull);
-    });
-  });
-
-  group('Mock Data Service Task Management Tests', () {
-    late String userId;
-    late String familyId;
-    
-    setUp(() async {
-      // Sign in before each test in this group
-      // Ensure signIn is successful and userId is not null
-      final signedInUserId = await dataService.signIn(
-        email: 'ahmed@example.com',
-        password: 'password123',
-      );
-      expect(signedInUserId, isNotNull, reason: "Sign-in must succeed for task tests setup");
-      userId = signedInUserId!;
-      
-      // Get family ID from user profile
-      final userProfile = await dataService.getUserProfile(userId: userId);
-      expect(userProfile, isNotNull, reason: "User profile must exist for task tests setup");
-      expect(userProfile!['familyId'], isNotNull, reason: "Family ID must exist in profile for task tests setup");
-      familyId = userProfile['familyId'] as String;
-    });
-
-    test('Mock service should return tasks for a family', () async {
-      final tasks = await dataService.getTasksByFamily(familyId: familyId);
-      
-      expect(tasks, isNotEmpty);
-      expect(tasks.first['familyId'], equals(familyId));
-      
-      // Check that task has all required fields
-      final task = tasks.first;
-      expect(task['id'], isNotNull);
-      expect(task['title'], isNotNull);
-      expect(task['description'], isNotNull);
-      expect(task['status'], isNotNull);
-    });
-
-    test('Mock service should create a new task', () async {
-      final taskId = await dataService.createTask(
-        title: 'Test Task',
-        description: 'This is a test task created during unit tests',
-        familyId: familyId,
-        difficulty: TaskDifficulty.medium,
-      );
-      
-      expect(taskId, isNotNull);
-      
-      final task = await dataService.getTask(taskId: taskId);
-      expect(task, isNotNull);
-      expect(task!['title'], equals('Test Task'));
-      expect(task['description'], equals('This is a test task created during unit tests'));
-      expect(task['status'], equals(TaskStatus.pending.name));
-    });
-
-    test('Mock service should complete a task', () async {
-      // First create a task
-      final taskId = await dataService.createTask(
-        title: 'Task to Complete',
-        description: 'This task will be completed',
-        familyId: familyId,
-        difficulty: TaskDifficulty.easy,
-        assigneeId: userId,
-      );
-      
-      // Complete the task
-      await dataService.completeTask(
-        taskId: taskId,
-        completedByUserId: userId,
-        completionNotes: 'Completed during test',
-      );
-      
-      // Verify task is completed
-      final task = await dataService.getTask(taskId: taskId);
-      expect(task!['status'], equals(TaskStatus.completed.name));
-      expect(task['completedByUserId'], equals(userId));
-      expect(task['completionNotes'], equals('Completed during test'));
-    });
-  });
-
-  testWidgets('App initializes with mock data in test environment', (WidgetTester tester) async {
-    // Build our app with the mock data service and mock gamification service
-    await tester.pumpWidget(
-      MyApp(
-        dataService: dataService, 
-        gamificationService: mockGamificationService, // Updated constructor
-      )
-    );
-    
-    // Verify that the app builds without errors and shows the login screen
-    expect(find.text('Login'), findsOneWidget); // Assuming LoginScreen is the initial screen for unauthenticated users
-    
-    // Verify we're using mock data by checking the Provider
-    final context = tester.element(find.byType(MaterialApp));
-    final providedDataService = Provider.of<DataService>(context, listen: false);
-    expect(providedDataService, isA<MockDataService>());
-  });
-
-  testWidgets('AuthProvider works with mock data service', (WidgetTester tester) async {
-    // Create a test widget with AuthProvider
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          Provider<DataService>.value(value: dataService),
-          ChangeNotifierProxyProvider<DataService, AuthProvider>(
-            create: (_) => AuthProvider(),
-            update: (_, dataService, authProvider) => 
-                authProvider!..updateDataService(dataService),
+          Provider<app_data_service_interface.DataServiceInterface>.value(value: mockDataService),
+          Provider<GamificationServiceInterface>.value(value: MockGamificationService()),
+          Provider<TaskServiceInterface>.value(value: MockTaskService()),
+          ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+            create: (BuildContext context) => MockAuthProvider(),
           ),
-          // GamificationProvider could be added here if needed for the test
-          Provider<GamificationServiceInterface>.value(value: mockGamificationService),
+          ChangeNotifierProxyProvider2<GamificationServiceInterface, app_data_service_interface.DataServiceInterface, app_gamification_provider.GamificationProvider>(
+            create: (BuildContext context) => app_gamification_provider.GamificationProvider(),
+            update: (
+              BuildContext context,
+              GamificationServiceInterface gamificationService,
+              app_data_service_interface.DataServiceInterface dataService,
+              app_gamification_provider.GamificationProvider? provider,
+            ) {
+              return provider!..updateDependencies(
+                gamificationService: gamificationService,
+                dataService: dataService,
+              );
+            },
+          ),
+          ChangeNotifierProxyProvider<app_auth_provider.AuthProvider, TaskListProvider>(
+            create: (BuildContext context) => TaskListProvider(),
+            update: (
+              BuildContext context,
+              app_auth_provider.AuthProvider authProvider,
+              TaskListProvider? taskListProvider,
+            ) {
+              final taskService = context.read<TaskServiceInterface>();
+              return taskListProvider!..update(taskService, authProvider);
+            },
+          ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: Text('TestWidgetForAuthProvider'), // Unique text to find the context
-          ),
+        child: MaterialApp( // <--- REMOVED const
+          home: AuthWrapper(),
         ),
       ),
     );
-    
-    // Get the AuthProvider
-    final context = tester.element(find.text('TestWidgetForAuthProvider'));
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    // Test sign in
-    final success = await authProvider.signIn(
-      email: 'ahmed@example.com',
-      password: 'password123',
-    );
-    
-    expect(success, isTrue, reason: "Sign-in should succeed with mock credentials");
-    expect(authProvider.isLoggedIn, isTrue, reason: "AuthProvider should reflect logged-in state");
-    expect(authProvider.userId, isNotNull, reason: "User ID should be available after sign-in");
-    expect(authProvider.displayName, isNotNull, reason: "Display name should be available after sign-in");
-    
-    // Test sign out
-    await authProvider.signOut();
-    expect(authProvider.isLoggedIn, isFalse, reason: "AuthProvider should reflect logged-out state");
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
-  // Test that output files are generated for test results
-  test('Test output files can be written', () {
-    // This is just a placeholder - in a real CI environment,
-    // the test runner would generate output files based on configuration
-    expect(true, isTrue, reason: 'Test output files should be configurable in CI');
+  testWidgets('App displays LoginScreen when unauthenticated', (WidgetTester tester) async {
+    final mockFirebaseAuth = MockFirebaseAuth();
+    when(() => mockFirebaseAuth.authStateChanges())
+        .thenAnswer((_) => Stream.value(null));
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<app_data_service_interface.DataServiceInterface>.value(value: MockDataService()),
+          Provider<GamificationServiceInterface>.value(value: MockGamificationService()),
+          Provider<TaskServiceInterface>.value(value: MockTaskService()),
+          ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+            create: (BuildContext context) => MockAuthProviderUnauthenticated(),
+          ),
+          ChangeNotifierProxyProvider<app_auth_provider.AuthProvider, TaskListProvider>(
+            create: (BuildContext context) => TaskListProvider(),
+            update: (
+              BuildContext context,
+              app_auth_provider.AuthProvider authProvider,
+              TaskListProvider? taskListProvider,
+            ) {
+              final taskService = context.read<TaskServiceInterface>();
+              return taskListProvider!..update(taskService, authProvider);
+            },
+          ),
+        ],
+        child: MaterialApp( // <--- REMOVED const
+          home: AuthWrapper(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
   });
 }

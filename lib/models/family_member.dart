@@ -1,18 +1,80 @@
+// lib/models/family_member.dart
+// This acts as the base for UserProfile, containing common identity properties.
+import 'package:hoque_family_chores/models/enums.dart'; // For FamilyRole
+import 'package:hoque_family_chores/utils/enum_helpers.dart'; // <--- NEW: Import enum_helpers
+
 class FamilyMember {
   final String id;
   final String name;
+  final String? email;
   final String? avatarUrl;
-  final String? role;
+  final FamilyRole? role;
+  final String? familyId;
 
-  FamilyMember({
+  const FamilyMember({
     required this.id,
     required this.name,
+    this.email,
     this.avatarUrl,
     this.role,
+    this.familyId,
   });
 
+  // Basic fromMap for FamilyMember
+  factory FamilyMember.fromMap(Map<String, dynamic> map) {
+    // Use enumFromString for FamilyRole
+    final role = enumFromString(
+      map['role'] as String?,
+      FamilyRole.values,
+      defaultValue: FamilyRole.child, // Provide a safe default
+    );
+
+    return FamilyMember(
+      id: map['id'] ?? map['uid'] ?? '',
+      name: map['name'] as String? ?? 'No Name',
+      email: map['email'] as String?,
+      avatarUrl: map['avatarUrl'] as String?,
+      role: role, // Use parsed role
+      familyId: map['familyId'] as String?,
+    );
+  }
+
+  // Basic toJson for FamilyMember
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'avatarUrl': avatarUrl,
+      'role': role?.name,
+      'familyId': familyId,
+    };
+  }
+
+  // Add copyWith for convenience in extending classes or updates
+  FamilyMember copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? avatarUrl,
+    FamilyRole? role,
+    String? familyId,
+  }) {
+    return FamilyMember(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      role: role ?? this.role,
+      familyId: familyId ?? this.familyId,
+    );
+  }
+
   @override
-  String toString() {
-    return 'FamilyMember(id: $id, name: $name, role: $role, photoUrl: $avatarUrl)';
-  } 
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FamilyMember && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

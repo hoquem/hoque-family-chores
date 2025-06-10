@@ -1,79 +1,164 @@
-// lib/presentation/widgets/quick_task_picker_widget.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
+import 'package:hoque_family_chores/models/user_profile.dart'; // Import UserProfile
+import 'package:hoque_family_chores/models/enums.dart'; // Import enums for TaskFilterType, TaskStatus
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
+import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
 
-class QuickTaskPickerWidget extends StatelessWidget {
-  const QuickTaskPickerWidget({super.key});
+class TaskListScreen extends StatefulWidget {
+  const TaskListScreen({super.key});
 
   @override
+  State<TaskListScreen> createState() => _TaskListScreenState();
+}
+
+class _TaskListScreenState extends State<TaskListScreen> {
+  @override
   Widget build(BuildContext context) {
-    return Consumer<AvailableTasksProvider>(
-      builder: (context, provider, child) {
-        if (provider.state == AvailableTasksState.loading || provider.state == AvailableTasksState.initial) {
-          return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()));
-        }
+    final taskListProvider = context.watch<app_task_list_provider.TaskListProvider>();
+    final authProvider = context.read<AuthProvider>();
 
-        if (provider.state == AvailableTasksState.error) {
-          return SizedBox(height: 80, child: Center(child: Text('Error: ${provider.errorMessage}')));
-        }
+    final String? currentUserId = authProvider.currentUserId;
+    final String? userFamilyId = authProvider.userFamilyId;
 
-        if (provider.tasks.isEmpty) {
-          return const Card(
-            child: ListTile(
-              leading: Icon(Icons.check_circle_outline, color: Colors.green),
-              title: Text('No available tasks right now!'),
-              subtitle: Text('Great job, team!'),
+    if (currentUserId == null || userFamilyId == null) {
+      logger.w("TaskListScreen: User ID or Family ID is null, cannot display tasks.");
+      // REMOVED 'const' from Scaffold here to definitively resolve the error.
+      // This Scaffold is returned dynamically based on a condition, and while its
+      // children might be const, the Scaffold itself doesn't strictly need to be.
+      return Scaffold( // <--- REMOVED 'const' from here
+        appBar: AppBar(title: const Text('Tasks')),
+        body: const Center(child: Text('Please log in and join a family to view tasks.')),
+      );
+    }
+
+    if (taskListProvider.isLoading && taskListProvider.tasks.isEmpty) {
+      // This Scaffold already had its 'const' removed in previous steps.
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tasks')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (taskListProvider.errorMessage != null) {
+      // This Scaffold already had its 'const' removed in previous steps.
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tasks')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Error loading tasks: ${taskListProvider.errorMessage}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        return SizedBox(
-          height: 100, // Fixed height for the horizontal list
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: provider.tasks.length,
-            itemBuilder: (context, index) {
-              final task = provider.tasks[index];
-              return Card(
-                elevation: 2,
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: InkWell(
-                  onTap: provider.isAssigning ? null : () async {
-                    final success = await provider.selectTask(task.id);
-                    if (context.mounted && success) {
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(SnackBar(
-                          content: Text('"${task.title}" assigned to you!'),
-                          backgroundColor: Colors.green,
-                        ));
-                    }
-                  },
-                  child: Container(
-                    width: 150,
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          task.title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text('Tap to claim!', style: TextStyle(color: Colors.blue, fontSize: 12))
-                      ],
-                    ),
-                  ),
-                ),
-              );
+    if (taskListProvider.tasks.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tasks')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('No tasks found for you in this family!'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  taskListProvider.fetchTasks(familyId: userFamilyId, userId: currentUserId);
+                },
+                child: const Text('Retry Loading Tasks'),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            logger.i("Navigating to Add New Task screen.");
+          },
+          child: const Icon(Icons.add),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Family Chores'),
+        actions: [
+          PopupMenuButton<TaskFilterType>(
+            icon: const Icon(Icons.filter_list),
+            onSelected: (filter) {
+              taskListProvider.setFilter(filter);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: TaskFilterType.all,
+                child: Text('All Tasks'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.myTasks,
+                child: Text('My Tasks'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.available,
+                child: Text('Available Tasks'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.completed,
+                child: Text('Completed Tasks'),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              logger.i("Navigating to User Profile/Settings.");
             },
           ),
-        );
-      },
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: taskListProvider.tasks.length,
+        itemBuilder: (context, index) {
+          final task = taskListProvider.tasks[index];
+          final UserProfile? assignedUserProfile = authProvider.getFamilyMember(task.assigneeId);
+
+          final UserProfile displayUserProfile = assignedUserProfile ??
+              UserProfile(
+                id: task.assigneeId,
+                name: 'Unknown User',
+                joinedAt: DateTime(2000),
+              );
+
+          return TaskListTile(
+            key: ValueKey(task.id),
+            task: task,
+            user: displayUserProfile,
+            onToggleStatus: (bool? newValue) {
+              if (newValue != null) {
+                final newStatus = newValue ? TaskStatus.pendingApproval : TaskStatus.assigned;
+                logger.d("Toggling status for task ${task.id} to $newStatus.");
+                taskListProvider.updateTaskStatus(
+                  familyId: userFamilyId,
+                  taskId: task.id,
+                  newStatus: newStatus,
+                );
+              }
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          logger.i("Floating action button pressed: Add new task.");
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

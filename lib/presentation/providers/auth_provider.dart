@@ -1,359 +1,398 @@
-// lib/presentation/providers/auth_provider.dart
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // Needed for AuthStatus, FamilyRole
+import 'package:hoque_family_chores/models/family.dart'; // Needed for Family model
+import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/test_data/mock_data.dart'; // For constants like family ID
+import 'package:uuid/uuid.dart'; // <--- NEW: Import uuid
 
-import 'package:flutter/foundation.dart';
-import 'package:hoque_family_chores/services/data_service.dart';
-
-/// Simple User class for compatibility
-class User {
-  final String uid;
-  final String? email;
-  final String? displayName;
-
-  User({
-    required this.uid,
-    this.email,
-    this.displayName,
-  });
-}
-
-/// Authentication states that the UI can react to
-enum AuthStatus {
-  /// Initial state, authentication status unknown
-  initial,
-  
-  /// Authentication in progress
-  authenticating,
-  
-  /// User is authenticated
-  authenticated,
-  
-  /// User is not authenticated
-  unauthenticated,
-  
-  /// Authentication failed
-  error
-}
-
-/// Provider that manages authentication state and operations
 class AuthProvider with ChangeNotifier {
-  // Private fields
-  DataService? _dataService;
-  String? _userId;
-  String? _userEmail;
-  String? _displayName;
-  String? _photoUrl;
-  String? _errorMessage;
-  AuthStatus _status = AuthStatus.initial;
-  bool _isLoading = false;
-  
-  // Getters
-  /// Current authentication status
-  AuthStatus get status => _status;
-  
-  /// Whether the user is logged in
-  bool get isLoggedIn => _userId != null;
-  
-  /// Whether authentication operations are in progress
-  bool get isLoading => _isLoading;
-  
-  /// Current error message, if any
-  String? get errorMessage => _errorMessage;
-  
-  /// Current user ID
-  String? get userId => _userId;
-  
-  /// Current user email
-  String? get userEmail => _userEmail;
-  
-  /// Current user display name
-  String? get displayName => _displayName;
-  
-  /// Current user photo URL
-  String? get photoUrl => _photoUrl;
+  final DataServiceInterface? _dataService;
+  final FirebaseAuth _firebaseAuth;
 
-  /// Current user object (for compatibility with gamification screen)
-  User? get currentUser {
-    if (_userId != null) {
-      return User(
-        uid: _userId!,
-        email: _userEmail,
-        displayName: _displayName,
+  UserProfile? _currentUserProfile;
+  String? _userFamilyId;
+  AuthStatus _status = AuthStatus.unknown;
+  String? _errorMessage;
+  bool _isLoading = false;
+
+  // ... (existing getters and constructor)
+  UserProfile? get currentUserProfile => _currentUserProfile;
+  String? get currentUserId => _currentUserProfile?.id;
+  String? get userFamilyId => _userFamilyId;
+  String? get displayName => _currentUserProfile?.name;
+  String? get photoUrl => _currentUserProfile?.avatarUrl;
+  String? get userEmail => _currentUserProfile?.email;
+  bool get isLoggedIn => _status == AuthStatus.authenticated;
+  AuthStatus get status => _status;
+  String? get errorMessage => _errorMessage;
+  bool get isLoading => _isLoading;
+
+  AuthProvider({FirebaseAuth? firebaseAuth, DataServiceInterface? dataService})
+      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _dataService = dataService {
+    _initAuthStatus();
+  }
+
+
+  Future<void> _initAuthStatus() async {
+    _setStatus(AuthStatus.authenticating);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _firebaseAuth.authStateChanges().listen((User? firebaseUser) async {
+        if (firebaseUser == null) {
+          logger.i("AuthProvider: Firebase user is null (signed out or no session).");
+          _currentUserProfile = null;
+          _userFamilyId = null;
+          _setStatus(AuthStatus.unauthenticated);
+        } else {
+          logger.i("AuthProvider: Firebase user found: ${firebaseUser.uid}. Fetching profile.");
+          await _fetchAndSetUserProfile(firebaseUser.uid, firebaseUser.email);
+        }
+        _isLoading = false;
+        notifyListeners();
+      });
+    } catch (e, s) {
+      logger.e("AuthProvider: Failed to initialize auth status: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to initialize authentication: $e";
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.error);
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // --- Helper to fetch and set user profile after auth state change or sign-in ---
+  Future<void> _fetchAndSetUserProfile(String userId, String? email) async {
+    if (_dataService == null) {
+      logger.w("AuthProvider: DataService is null, cannot fetch user profile for $userId.");
+      _setStatus(AuthStatus.error);
+      return;
+    }
+
+    try {
+      _currentUserProfile = await _dataService!.getUserProfile(userId: userId);
+      if (_currentUserProfile != null) {
+        _userFamilyId = _currentUserProfile?.familyId;
+        _setStatus(AuthStatus.authenticated);
+        logger.i("AuthProvider: User profile loaded for $userId. Status: authenticated.");
+      } else {
+        // User authenticated in Firebase Auth, but no profile in Firestore.
+        // This is a new user or profile creation failed previously.
+        logger.w("AuthProvider: Firebase user $userId authenticated, but no UserProfile found in Firestore. Setting status to unauthenticated (needs family setup).");
+        // No longer auto-create a default profile here. AuthWrapper will direct to FamilySetupScreen.
+        _setStatus(AuthStatus.unauthenticated); // Indicate that auth succeeded, but app data is missing.
+      }
+    } catch (e, s) {
+      logger.e("AuthProvider: Error fetching/creating user profile for $userId: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to load user profile: $e";
+      _setStatus(AuthStatus.error);
+    }
+  }
+
+  // --- Helper to create a default user profile (now only for specific owner logic if needed) ---
+  // This helper will now primarily be called by createFamilyAndSetProfile
+  Future<void> _createDefaultUserProfile({ // <--- Renamed parameters for clarity if called externally
+    required String userId,
+    String? email,
+    String? familyId, // New parameter to pass family ID if already created
+    FamilyRole? role,
+    String? userName,
+  }) async {
+    if (_dataService == null) {
+      logger.e("AuthProvider: DataService is null, cannot create user profile for $userId.");
+      _setStatus(AuthStatus.error);
+      return;
+    }
+
+    // Use provided values or intelligent defaults
+    FamilyRole finalRole = role ?? FamilyRole.child;
+    String finalUserName = userName ?? email?.split('@').first ?? 'New User';
+
+    // Create the UserProfile object
+    UserProfile newUserProfile = UserProfile(
+      id: userId,
+      name: finalUserName,
+      email: email,
+      role: finalRole,
+      familyId: familyId, // Assign the passed family ID
+      joinedAt: DateTime.now(),
+      totalPoints: 0,
+      currentLevel: 0,
+      completedTasks: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      unlockedBadges: [],
+      redeemedRewards: [],
+      achievements: [],
+      lastTaskCompletedAt: null,
+    );
+
+    await _dataService!.createUserProfile(userProfile: newUserProfile);
+    _currentUserProfile = newUserProfile; // Set the newly created profile
+    _userFamilyId = newUserProfile.familyId; // Update AuthProvider's state
+    _setStatus(AuthStatus.authenticated);
+    logger.i("AuthProvider: Default UserProfile created and set for $userId.");
+  }
+
+
+  // --- Public Methods (signIn, signUp, signOut, etc.) ---
+  Future<void> signIn({required String email, required String password}) async {
+    logger.i("Attempting sign-in for $email.");
+    _setStatus(AuthStatus.authenticating);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+      logger.i("Sign-in successful for ${userCredential.user?.uid}.");
+      // After sign-in, ensure user profile exists or is created
+      await _fetchAndSetUserProfile(userCredential.user!.uid, userCredential.user!.email); // Fetch/create profile for the signed-in user
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An unknown authentication error occurred.";
+      logger.e("Sign-in failed for $email: ${e.code}", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign-in: $e";
+      logger.e("Sign-in failed for $email: $e", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signUp({required String email, required String password}) async {
+    logger.i("Attempting sign-up for $email.");
+    _setStatus(AuthStatus.authenticating);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      UserCredential userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      logger.i("Sign-up successful for ${userCredential.user?.uid}.");
+      // For sign-up, *do not* directly create a default profile here anymore.
+      // The AuthWrapper will observe the new user (AuthStatus.authenticated but userFamilyId=null)
+      // and redirect to FamilySetupScreen, where _createFamilyAndSetProfile will be called.
+      // This ensures the user *explicitly* creates their family.
+      // _currentUserProfile and _userFamilyId will be set once _createFamilyAndSetProfile is successful.
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An unknown registration error occurred.";
+      logger.e("Sign-up failed for $email: ${e.code}", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign-up: $e";
+      logger.e("Sign-up failed for $email: $e", error: e, stackTrace: s);
+      _currentUserProfile = null;
+      _userFamilyId = null;
+      _setStatus(AuthStatus.unauthenticated);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signOut() async {
+    logger.i("Attempting sign-out.");
+    _setStatus(AuthStatus.authenticating);
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _firebaseAuth.signOut();
+      logger.i("Sign-out successful.");
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "An error occurred during sign out.";
+      logger.e("Sign-out failed: ${e.code}", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during sign out: $e";
+      logger.e("Sign-out failed: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> resetPassword({required String email}) async {
+    logger.i("Attempting password reset for $email.");
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      logger.i("Password reset email sent to $email.");
+      _errorMessage = "Password reset email sent. Check your inbox.";
+    } on FirebaseAuthException catch (e, s) {
+      _errorMessage = e.message ?? "Password reset failed.";
+      logger.e("Password reset failed for $email: ${e.code}", error: e, stackTrace: s);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during password reset: $e";
+      logger.e("Password reset failed for $email: $e", error: e, stackTrace: s);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshUserProfile() async {
+    if (_firebaseAuth.currentUser?.uid == null || _dataService == null) {
+      logger.w("Cannot refresh user profile: user not logged in or DataService not available.");
+      return;
+    }
+    logger.i("Refreshing user profile for ${_firebaseAuth.currentUser!.uid}.");
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedProfile = await _dataService!.getUserProfile(userId: _firebaseAuth.currentUser!.uid);
+      if (updatedProfile != null) {
+        _currentUserProfile = updatedProfile;
+        _userFamilyId = updatedProfile.familyId;
+        logger.d("User profile refreshed successfully.");
+      } else {
+        logger.w("Refreshed user profile not found for ID: ${_firebaseAuth.currentUser!.uid}.");
+      }
+    } catch (e, s) {
+      logger.e("Error refreshing user profile: $e", error: e, stackTrace: s);
+      _errorMessage = "Failed to refresh profile: $e";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  UserProfile? getFamilyMember(String userId) {
+    if (_dataService != null) {
+      final userData = MockData.userProfiles.firstWhere(
+        (profile) => profile['id'] == userId,
+        orElse: () => {},
+      );
+
+      if (userData.isNotEmpty) {
+        return UserProfile.fromMap(userData);
+      }
     }
     return null;
   }
-  
-  /// Updates the data service reference
-  /// This is called by the ChangeNotifierProxyProvider in main.dart
-  void updateDataService(DataService dataService) {
-    _dataService = dataService;
-    _checkCurrentAuthState();
-  }
-  
-  /// Constructor
-  AuthProvider() {
-    _checkCurrentAuthState();
-  }
-  
-  /// Checks the current authentication state
-  Future<void> _checkCurrentAuthState() async {
-    if (_dataService == null) return;
-    
-    try {
-      final isAuthenticated = await _dataService!.isAuthenticated();
-      
-      if (isAuthenticated) {
-        _userId = _dataService!.getCurrentUserId();
-        
-        if (_userId != null) {
-          final userProfile = await _dataService!.getUserProfile(userId: _userId!);
-          
-          if (userProfile != null) {
-            _userEmail = userProfile['email'];
-            _displayName = userProfile['displayName'];
-            _photoUrl = userProfile['photoUrl'];
-          }
-          
-          _status = AuthStatus.authenticated;
-        } else {
-          _status = AuthStatus.unauthenticated;
-        }
-      } else {
-        _status = AuthStatus.unauthenticated;
-      }
-    } catch (e) {
-      _handleError(e);
-    }
-    
-    notifyListeners();
-  }
-  
-  /// Signs in a user with email and password
-  Future<bool> signIn({required String email, required String password}) async {
-    if (_dataService == null) {
-      _handleError('Data service not initialized');
-      return false;
-    }
-    
-    _setLoading(true);
-    _errorMessage = null;
-    _status = AuthStatus.authenticating;
-    notifyListeners();
-    
-    try {
-      final userId = await _dataService!.signIn(
-        email: email,
-        password: password,
-      );
-      
-      if (userId != null) {
-        _userId = userId;
-        
-        final userProfile = await _dataService!.getUserProfile(userId: userId);
-        
-        if (userProfile != null) {
-          _userEmail = userProfile['email'];
-          _displayName = userProfile['displayName'];
-          _photoUrl = userProfile['photoUrl'];
-        }
-        
-        _status = AuthStatus.authenticated;
-        _setLoading(false);
-        notifyListeners();
-        return true;
-      } else {
-        _handleError('Sign in failed');
-        return false;
-      }
-    } catch (e) {
-      _handleError(e);
-      return false;
-    }
-  }
-  
-  /// Signs up a new user with email and password
-  Future<bool> signUp({
-    required String email, 
-    required String password, 
-    required String displayName
+
+  // --- NEW: Public method to create family and set user profile ---
+  Future<void> createFamilyAndSetProfile({
+    required String familyName,
+    required String creatorUserId,
+    String? creatorEmail,
+    String? creatorName,
   }) async {
-    if (_dataService == null) {
-      _handleError('Data service not initialized');
-      return false;
-    }
-    
-    _setLoading(true);
+    logger.i("AuthProvider: Attempting to create family and set user profile for $creatorUserId.");
+    _isLoading = true;
     _errorMessage = null;
-    _status = AuthStatus.authenticating;
     notifyListeners();
-    
+
+    if (_dataService == null) {
+      _errorMessage = "DataService not available for family creation.";
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
-      final userId = await _dataService!.signUp(
-        email: email,
-        password: password,
-        displayName: displayName,
+      // 1. Generate a unique Family ID
+      String uniqueFamilyId = const Uuid().v4();
+      logger.d("Generated unique family ID: $uniqueFamilyId");
+
+      // 2. Create the Family object
+      Family newFamily = Family(
+        id: uniqueFamilyId,
+        name: familyName,
+        creatorUserId: creatorUserId,
+        createdAt: DateTime.now(),
+        memberUserIds: [creatorUserId], // Creator is the first member
       );
-      
-      if (userId != null) {
-        _userId = userId;
-        _userEmail = email;
-        _displayName = displayName;
-        
-        _status = AuthStatus.authenticated;
-        _setLoading(false);
-        notifyListeners();
-        return true;
+
+      // 3. Create the Family document in Firestore
+      await _dataService!.createFamily(family: newFamily);
+      logger.i("Family '$familyName' created successfully with ID: $uniqueFamilyId");
+
+      // 4. Create/Update the UserProfile with family details and role
+      // This logic replaces the _createDefaultUserProfile logic if called from FamilySetupScreen
+      UserProfile userProfileToCreate = UserProfile(
+        id: creatorUserId,
+        name: creatorName ?? creatorEmail?.split('@').first ?? 'New User',
+        email: creatorEmail,
+        role: FamilyRole.parent, // Creator is parent by default
+        familyId: uniqueFamilyId,
+        joinedAt: DateTime.now(),
+        // Default gamification fields
+        totalPoints: 0,
+        currentLevel: 0,
+        completedTasks: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        unlockedBadges: [],
+        redeemedRewards: [],
+        achievements: [],
+        lastTaskCompletedAt: null,
+      );
+
+      // If a profile already exists (e.g., from _initAuthStatus seeing Firebase user but no profile), update it.
+      // Otherwise, create it.
+      UserProfile? existingProfile = await _dataService!.getUserProfile(userId: creatorUserId);
+      if (existingProfile != null) {
+        await _dataService!.updateUserProfile(user: userProfileToCreate.copyWith(
+          role: FamilyRole.parent,
+          familyId: uniqueFamilyId,
+          name: creatorName, // Update name if user provided it
+          email: creatorEmail,
+        ));
       } else {
-        _handleError('Sign up failed');
-        return false;
+        await _dataService!.createUserProfile(userProfile: userProfileToCreate);
       }
-    } catch (e) {
-      _handleError(e);
-      return false;
-    }
-  }
-  
-  /// Signs out the current user
-  Future<void> signOut() async {
-    if (_dataService == null) return;
-    
-    _setLoading(true);
-    _errorMessage = null;
-    notifyListeners();
-    
-    try {
-      await _dataService!.signOut();
-      _userId = null;
-      _userEmail = null;
-      _displayName = null;
-      _photoUrl = null;
-      _status = AuthStatus.unauthenticated;
-    } catch (e) {
-      _handleError(e);
-    }
-    
-    _setLoading(false);
-    notifyListeners();
-  }
-  
-  /// Sends a password reset email
-  Future<bool> resetPassword({required String email}) async {
-    if (_dataService == null) {
-      _handleError('Data service not initialized');
-      return false;
-    }
-    
-    _setLoading(true);
-    _errorMessage = null;
-    notifyListeners();
-    
-    try {
-      await _dataService!.resetPassword(email: email);
-      _setLoading(false);
+      
+      // 5. Update AuthProvider's internal state
+      _currentUserProfile = userProfileToCreate;
+      _userFamilyId = uniqueFamilyId;
+      _setStatus(AuthStatus.authenticated);
+      logger.i("User profile for $creatorUserId updated with family ID: $uniqueFamilyId. Status: authenticated.");
+
+    } on FirebaseException catch (e, s) {
+      _errorMessage = e.message ?? "Firebase error during family creation: ${e.code}";
+      logger.e("Firebase error creating family for $creatorUserId: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } catch (e, s) {
+      _errorMessage = "An unexpected error occurred during family creation: $e";
+      logger.e("Unexpected error creating family for $creatorUserId: $e", error: e, stackTrace: s);
+      _setStatus(AuthStatus.error);
+    } finally {
+      _isLoading = false;
       notifyListeners();
-      return true;
-    } catch (e) {
-      _handleError(e);
-      return false;
     }
   }
-  
-  /// Updates the user profile
-  Future<bool> updateProfile({
-    String? displayName,
-    String? photoUrl,
-    FamilyRole? role,
-    String? familyId,
-  }) async {
-    if (_dataService == null || _userId == null) {
-      _handleError('User not authenticated');
-      return false;
-    }
-    
-    _setLoading(true);
-    _errorMessage = null;
-    notifyListeners();
-    
-    try {
-      await _dataService!.createOrUpdateUserProfile(
-        userId: _userId!,
-        displayName: displayName ?? _displayName ?? '',
-        email: _userEmail ?? '',
-        photoUrl: photoUrl,
-        role: role,
-        familyId: familyId,
-      );
-      
-      if (displayName != null) {
-        _displayName = displayName;
-      }
-      
-      if (photoUrl != null) {
-        _photoUrl = photoUrl;
-      }
-      
-      _setLoading(false);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _handleError(e);
-      return false;
-    }
-  }
-  
-  /// Refreshes the user profile data
-  Future<void> refreshUserProfile() async {
-    if (_dataService == null || _userId == null) return;
-    
-    try {
-      final userProfile = await _dataService!.getUserProfile(userId: _userId!);
-      
-      if (userProfile != null) {
-        _userEmail = userProfile['email'];
-        _displayName = userProfile['displayName'];
-        _photoUrl = userProfile['photoUrl'];
-        notifyListeners();
-      }
-    } catch (e) {
-      // Silently handle error, don't update UI
-      if (kDebugMode) {
-        print('Error refreshing user profile: $e');
-      }
-    }
-  }
-  
-  /// Handles authentication errors
-  void _handleError(dynamic error) {
-    _status = AuthStatus.error;
-    
-    if (error is String) {
-      _errorMessage = error;
-    } else if (error is Exception) {
-      _errorMessage = error.toString().replaceAll('Exception: ', '');
-    } else {
-      _errorMessage = 'An unexpected error occurred';
-    }
-    
-    if (kDebugMode) {
-      print('Auth error: $_errorMessage');
-    }
-    
-    _setLoading(false);
-    notifyListeners();
-  }
-  
-  /// Updates the loading state
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-  
-  /// Clears any error messages
-  void clearError() {
-    _errorMessage = null;
-    if (_status == AuthStatus.error) {
-      _status = isLoggedIn ? AuthStatus.authenticated : AuthStatus.unauthenticated;
-    }
-    notifyListeners();
+
+
+  void _setStatus(AuthStatus newStatus) {
+    _status = newStatus;
   }
 }

@@ -1,223 +1,169 @@
-// lib/presentation/providers/gamification_provider.dart
-import 'package:flutter/material.dart' as material;
-import 'package:hoque_family_chores/models/badge.dart';
+import 'package:flutter/material.dart' hide Badge; // Hide Flutter's Badge widget
+import 'package:hoque_family_chores/models/badge.dart'; // Correctly import your Badge model
 import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/services/gamification_service.dart';
+import 'package:hoque_family_chores/services/gamification_service_interface.dart';
+import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/services/logging_service.dart';
+import 'dart:async';
 
-enum GamificationLoadingState {
-  initial,
-  loading,
-  loaded,
-  error,
-}
+class GamificationProvider with ChangeNotifier {
+  late GamificationServiceInterface _gamificationService;
+  late DataServiceInterface _dataService;
 
-class GamificationProvider extends material.ChangeNotifier {
-  final GamificationServiceInterface _gamificationService;
-  
   UserProfile? _userProfile;
-  GamificationLoadingState _profileState = GamificationLoadingState.initial;
-  String? _profileError;
+  List<Badge> _unlockedBadges = const [];
+  final List<Reward> _redeemedRewards = const []; // Marked as final
+  List<Achievement> _userAchievements = const [];
+  List<Badge> _predefinedBadges = const [];
+  List<Reward> _predefinedRewards = const [];
 
-  List<Badge> _allBadges = [];
-  List<Badge> _userBadges = [];
-  GamificationLoadingState _badgesState = GamificationLoadingState.initial;
-  String? _badgesError;
-  Badge? _newlyUnlockedBadge;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  List<Reward> _allRewards = [];
-  List<Reward> _userRewards = [];
-  GamificationLoadingState _rewardsState = GamificationLoadingState.initial;
-  String? _rewardsError;
-  Reward? _newlyPurchasedReward;
-
-  final List<GamificationEvent> _recentEvents = [];
-  
-  bool _showLevelUpAnimation = false;
-  bool _showBadgeUnlockAnimation = false;
-  bool _showRewardPurchaseAnimation = false;
-
-  GamificationProvider(this._gamificationService);
-
-  // Getters
+  // Getters for UI consumption
   UserProfile? get userProfile => _userProfile;
-  GamificationLoadingState get profileState => _profileState;
-  String? get profileError => _profileError;
+  List<Badge> get unlockedBadges => _unlockedBadges;
+  List<Reward> get redeemedRewards => _redeemedRewards;
+  List<Achievement> get userAchievements => _userAchievements;
+  List<Badge> get predefinedBadges => _predefinedBadges;
+  List<Reward> get predefinedRewards => _predefinedRewards;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  List<Badge> get allBadges => _allBadges;
-  List<Badge> get userBadges => _userBadges;
-  GamificationLoadingState get badgesState => _badgesState;
-  String? get badgesError => _badgesError;
-  Badge? get newlyUnlockedBadge => _newlyUnlockedBadge;
+  // Stream subscriptions to manage data updates
+  StreamSubscription? _userProfileSubscription;
+  StreamSubscription? _unlockedBadgesSubscription;
+  StreamSubscription? _userAchievementsSubscription;
 
-  List<Reward> get allRewards => _allRewards;
-  List<Reward> get userRewards => _userRewards;
-  GamificationLoadingState get rewardsState => _rewardsState;
-  String? get rewardsError => _rewardsError;
-  Reward? get newlyPurchasedReward => _newlyPurchasedReward;
+  GamificationProvider();
 
-  List<GamificationEvent> get recentEvents => List.unmodifiable(_recentEvents);
+  // No @override needed for updateDependencies unless it implements an interface with this method
+  void updateDependencies({
+    required GamificationServiceInterface gamificationService,
+    required DataServiceInterface dataService,
+  }) {
+    if (!identical(_gamificationService, gamificationService) || !identical(_dataService, dataService)) {
+      _gamificationService = gamificationService;
+      _dataService = dataService;
+      logger.d("GamificationProvider: Dependencies updated.");
+    }
+  }
 
-  bool get showLevelUpAnimation => _showLevelUpAnimation;
-  bool get showBadgeUnlockAnimation => _showBadgeUnlockAnimation;
-  bool get showRewardPurchaseAnimation => _showRewardPurchaseAnimation;
-
-  // Load all gamification data
+  // Method required by GamificationScreen
   Future<void> loadAllData(String userId) async {
-    await Future.wait([
-      _loadUserProfile(userId),
-      _loadBadges(userId),
-      _loadRewards(userId),
-    ]);
-  }
+    if (_isLoading) return;
 
-  // User Profile Methods
-  Future<void> _loadUserProfile(String userId) async {
-    _profileState = GamificationLoadingState.loading;
+    logger.i("GamificationProvider: Loading all gamification data for user: $userId");
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      final profile = await _gamificationService.getUserProfile(userId);
-      _userProfile = profile;
-      _profileState = GamificationLoadingState.loaded;
-      notifyListeners();
-    } catch (e) {
-      _profileState = GamificationLoadingState.error;
-      _profileError = e.toString();
+      _predefinedBadges = await _gamificationService.getPredefinedBadges();
+      _predefinedRewards = await _gamificationService.getPredefinedRewards();
+      logger.d("GamificationProvider: Predefined badges (${_predefinedBadges.length}) and rewards (${_predefinedRewards.length}) loaded.");
+
+      _userProfileSubscription?.cancel();
+      _userProfileSubscription = _dataService.streamUserProfile(userId: userId).listen(
+        (profile) {
+          _userProfile = profile;
+          notifyListeners();
+          logger.d("GamificationProvider: UserProfile updated.");
+        },
+        onError: (e, s) {
+          _errorMessage = "Failed to stream user profile: $e";
+          logger.e("Error streaming user profile: $e", error: e, stackTrace: s);
+        },
+      );
+
+      _unlockedBadgesSubscription?.cancel();
+      _unlockedBadgesSubscription = _dataService.streamUserBadges(userId: userId).listen(
+        (badges) {
+          _unlockedBadges = badges;
+          notifyListeners();
+          logger.d("GamificationProvider: Unlocked badges updated (${badges.length}).");
+        },
+        onError: (e, s) {
+          _errorMessage = "Failed to stream unlocked badges: $e";
+          logger.e("Error streaming unlocked badges: $e", error: e, stackTrace: s);
+        },
+      );
+
+      _userAchievementsSubscription?.cancel();
+      _userAchievementsSubscription = _dataService.streamUserAchievements(userId: userId).listen(
+        (achievements) {
+          _userAchievements = achievements;
+          notifyListeners();
+          logger.d("GamificationProvider: User achievements updated (${achievements.length}).");
+        },
+        onError: (e, s) {
+          _errorMessage = "Failed to stream user achievements: $e";
+          logger.e("Error streaming user achievements: $e", error: e, stackTrace: s);
+        },
+      );
+    } catch (e, s) {
+      _errorMessage = "GamificationProvider: Error loading initial data: $e";
+      logger.e("GamificationProvider: Error loading initial data: $e", error: e, stackTrace: s);
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> retryLoadProfile(String userId) async {
-    await _loadUserProfile(userId);
-  }
+  // --- Actions ---
 
-  // Badge Methods
-  Future<void> _loadBadges(String userId) async {
-    _badgesState = GamificationLoadingState.loading;
+  Future<void> redeemReward(String rewardId) async {
+    if (_userProfile == null || _userProfile!.id.isEmpty) {
+      _errorMessage = "No user profile available to redeem reward.";
+      notifyListeners();
+      return;
+    }
+    logger.i("GamificationProvider: Attempting to redeem reward $rewardId for user ${_userProfile!.id}.");
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      final allBadges = await _gamificationService.getAllBadges();
-      final userBadges = await _gamificationService.getUserBadges(userId);
-      
-      _allBadges = allBadges;
-      _userBadges = userBadges;
-      _badgesState = GamificationLoadingState.loaded;
-      notifyListeners();
-    } catch (e) {
-      _badgesState = GamificationLoadingState.error;
-      _badgesError = e.toString();
-      notifyListeners();
-    }
-  }
+      final rewardToRedeem = _predefinedRewards.firstWhere((r) => r.id == rewardId);
 
-  Future<void> retryLoadBadges(String userId) async {
-    await _loadBadges(userId);
-  }
-
-  // Reward Methods
-  Future<void> _loadRewards(String userId) async {
-    _rewardsState = GamificationLoadingState.loading;
-    notifyListeners();
-
-    try {
-      final allRewards = await _gamificationService.getAllRewards();
-      final userRewards = await _gamificationService.getUserRedeemedRewards(userId);
-      
-      _allRewards = allRewards;
-      _userRewards = userRewards;
-      _rewardsState = GamificationLoadingState.loaded;
-      notifyListeners();
-    } catch (e) {
-      _rewardsState = GamificationLoadingState.error;
-      _rewardsError = e.toString();
-      notifyListeners();
-    }
-  }
-
-  Future<void> retryLoadRewards(String userId) async {
-    await _loadRewards(userId);
-  }
-
-  // Redeem a reward
-  Future<bool> redeemReward(String userId, String rewardId) async {
-    if (_userProfile == null) return false;
-    
-    try {
-      final reward = _allRewards.firstWhere((r) => r.id == rewardId);
-      
-      // Check if user has enough points
-      if (_userProfile!.totalPoints < reward.pointsCost) {
-        return false;
+      if (_userProfile!.totalPoints < rewardToRedeem.pointsCost) {
+        _errorMessage = "Not enough points to redeem this reward.";
+        logger.w(_errorMessage!);
+        return;
       }
-      
-      // Redeem the reward
-      final success = await _gamificationService.redeemReward(userId, rewardId);
-      
-      if (success) {
-        // Update user profile with new points
-        _userProfile = _userProfile!.copyWith(
-          totalPoints: _userProfile!.totalPoints - reward.pointsCost,
-        );
-        
-        // Add reward to user rewards
-        final redeemedReward = reward.copyWith(
-          redeemedAt: DateTime.now(),
-        );
-        _userRewards.add(redeemedReward);
-        
-        // Add event
-        _addEvent(
-          GamificationEventType.rewardRedeemed,
-          'Redeemed "${reward.title}" for ${reward.pointsCost} points',
-          {'rewardId': rewardId},
-        );
-        
-        // Show animation
-        _newlyPurchasedReward = redeemedReward;
-        _showRewardPurchaseAnimation = true;
-        
-        notifyListeners();
-        return true;
-      }
-      
-      return false;
-    } catch (e) {
-      return false;
+
+      await _dataService.updateUserPoints(
+        userId: _userProfile!.id,
+        points: -rewardToRedeem.pointsCost,
+      );
+
+      await _dataService.updateUserProfile(
+        user: _userProfile!.copyWith(
+          redeemedRewards: [..._userProfile!.redeemedRewards, rewardToRedeem.copyWith(
+            isRedeemed: true,
+            redeemedAt: DateTime.now(),
+            redeemedBy: _userProfile!.id,
+          )],
+        ),
+      );
+      logger.i("Reward $rewardId redeemed successfully.");
+    } catch (e, s) {
+      _errorMessage = "Failed to redeem reward: $e";
+      logger.e("Error redeeming reward $rewardId: $e", error: e, stackTrace: s);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  // Add a gamification event
-  void _addEvent(
-    GamificationEventType type,
-    String message,
-    Map<String, dynamic>? data,
-  ) {
-    final event = GamificationEvent(
-      type: type,
-      userId: _userProfile?.id ?? '',
-      message: message,
-      data: data,
-    );
-    
-    _recentEvents.insert(0, event);
-    
-    // Keep only the most recent 20 events
-    if (_recentEvents.length > 20) {
-      _recentEvents.removeLast();
-    }
-    
-    notifyListeners();
-  }
-
-  // Reset animations
-  void resetAnimations() {
-    _showLevelUpAnimation = false;
-    _showBadgeUnlockAnimation = false;
-    _showRewardPurchaseAnimation = false;
-    _newlyUnlockedBadge = null;
-    _newlyPurchasedReward = null;
-    notifyListeners();
+  @override // Keep @override for dispose
+  void dispose() {
+    _userProfileSubscription?.cancel();
+    _unlockedBadgesSubscription?.cancel();
+    _userAchievementsSubscription?.cancel();
+    logger.i("GamificationProvider disposed.");
+    super.dispose();
   }
 }
