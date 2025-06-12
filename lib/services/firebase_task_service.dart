@@ -1,3 +1,7 @@
+// ignore_for_file: unnecessary_cast
+// ignore_for_file: unnecessary_null_comparison
+
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
@@ -60,12 +64,35 @@ class FirebaseTaskService implements TaskServiceInterface {
       "FirebaseTaskService: Creating task ${task.id} for family $familyId.",
     );
     try {
-      await _firestore
-          .collection('families')
-          .doc(familyId)
-          .collection('tasks')
-          .doc(task.id)
-          .set(task.toFirestore());
+      // Add timeout to Firestore operation
+      await Future.any([
+        _firestore
+            .collection('families')
+            .doc(familyId)
+            .collection('tasks')
+            .doc(task.id)
+            .set(task.toFirestore()),
+        Future.delayed(const Duration(seconds: 8)).then((_) {
+          throw TimeoutException(
+            'Firestore operation timed out after 8 seconds',
+          );
+        }),
+      ]);
+      logger.i('FirebaseTaskService: Task created successfully');
+    } on TimeoutException catch (e, s) {
+      logger.e(
+        "FirebaseTaskService: Timeout creating task ${task.id} for family $familyId: $e",
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    } on FirebaseException catch (e, s) {
+      logger.e(
+        "FirebaseTaskService: Firebase error creating task ${task.id} for family $familyId: ${e.code} - ${e.message}",
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
     } catch (e, s) {
       logger.e(
         "FirebaseTaskService: Error creating task ${task.id} for family $familyId: $e",

@@ -22,21 +22,24 @@ class FamilyMember {
 
   // Basic fromMap for FamilyMember
   factory FamilyMember.fromMap(Map<String, dynamic> map) {
-    // Use enumFromString for FamilyRole
-    final role = enumFromString(
-      map['role'] as String?,
-      FamilyRole.values,
-      defaultValue: FamilyRole.child, // Provide a safe default
-    );
-
-    return FamilyMember(
-      id: map['id'] ?? map['uid'] ?? '',
-      name: map['name'] as String? ?? 'No Name',
-      email: map['email'] as String?,
-      avatarUrl: map['avatarUrl'] as String?,
-      role: role, // Use parsed role
-      familyId: map['familyId'] as String?,
-    );
+    try {
+      final role = enumFromString(
+        map['role'] as String?,
+        FamilyRole.values,
+        defaultValue: FamilyRole.child,
+      );
+      return FamilyMember(
+        id: (map['id'] ?? map['uid'] ?? '').toString(),
+        name: (map['name'] as String?)?.trim() ?? 'No Name',
+        email: map['email'] as String?,
+        avatarUrl: map['avatarUrl'] as String?,
+        role: role,
+        familyId: map['familyId'] as String?,
+      );
+    } catch (e) {
+      print('Error parsing FamilyMember.fromMap: $e');
+      return FamilyMember(id: '', name: 'Unknown');
+    }
   }
 
   // Basic toJson for FamilyMember
@@ -73,7 +76,9 @@ class FamilyMember {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is FamilyMember && runtimeType == other.runtimeType && id == other.id;
+      other is FamilyMember &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;
