@@ -12,85 +12,220 @@ class TaskService implements TaskServiceInterface {
   TaskService(this._dataService);
 
   @override
-  Stream<List<Task>> streamMyTasks({required String familyId, required String userId}) {
-    logger.d("TaskService: Streaming tasks for family $familyId and user $userId via DataService.");
-    return _dataService.streamTasksByAssignee(familyId: familyId, assigneeId: userId);
+  Stream<List<Task>> streamMyTasks({
+    required String familyId,
+    required String userId,
+  }) {
+    logger.d(
+      "TaskService: Streaming tasks for family $familyId and user $userId via DataService.",
+    );
+    return _dataService.streamTasksByAssignee(
+      familyId: familyId,
+      assigneeId: userId,
+    );
   }
 
   @override
-  Future<void> createTask({required String familyId, required Task task}) async {
-    logger.d("TaskService: Creating task for family $familyId via DataService.");
+  Future<void> createTask({
+    required String familyId,
+    required Task task,
+  }) async {
+    logger.d(
+      "TaskService: Creating task for family $familyId via DataService.",
+    );
     return _dataService.createTask(familyId: familyId, task: task);
   }
 
   @override
-  Future<void> updateTask({required String familyId, required Task task}) async {
-    logger.d("TaskService: Updating task ${task.id} for family $familyId via DataService.");
+  Future<void> updateTask({
+    required String familyId,
+    required Task task,
+  }) async {
+    logger.d(
+      "TaskService: Updating task ${task.id} for family $familyId via DataService.",
+    );
     return _dataService.updateTask(familyId: familyId, task: task);
   }
 
   @override
-  Future<void> updateTaskStatus({required String familyId, required String taskId, required TaskStatus newStatus}) async {
-    logger.d("TaskService: Updating status for task $taskId to ${newStatus.name} for family $familyId via DataService.");
-    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: newStatus);
+  Future<void> updateTaskStatus({
+    required String familyId,
+    required String taskId,
+    required TaskStatus newStatus,
+  }) async {
+    logger.d(
+      "TaskService: Updating status for task $taskId to ${newStatus.name} for family $familyId via DataService.",
+    );
+    return _dataService.updateTaskStatus(
+      familyId: familyId,
+      taskId: taskId,
+      newStatus: newStatus,
+    );
   }
 
   @override
-  Future<void> assignTask({required String familyId, required String taskId, required String assigneeId}) async {
-    logger.d("TaskService: Assigning task $taskId to $assigneeId for family $familyId via DataService.");
-    return _dataService.assignTask(familyId: familyId, taskId: taskId, assigneeId: assigneeId);
+  Future<void> assignTask({
+    required String familyId,
+    required String taskId,
+    required String assigneeId,
+  }) async {
+    logger.d(
+      "TaskService: Assigning task $taskId to $assigneeId for family $familyId via DataService.",
+    );
+    return _dataService.assignTask(
+      familyId: familyId,
+      taskId: taskId,
+      assigneeId: assigneeId,
+    );
   }
 
   @override
-  Future<void> deleteTask({required String familyId, required String taskId}) async {
-    logger.d("TaskService: Deleting task $taskId for family $familyId via DataService.");
+  Future<void> deleteTask({
+    required String familyId,
+    required String taskId,
+  }) async {
+    logger.d(
+      "TaskService: Deleting task $taskId for family $familyId via DataService.",
+    );
     return _dataService.deleteTask(familyId: familyId, taskId: taskId);
   }
 
   @override
-  Future<Task?> getTask({required String familyId, required String taskId}) async {
-    logger.d("TaskService: Getting task $taskId for family $familyId via DataService.");
+  Future<Task?> getTask({
+    required String familyId,
+    required String taskId,
+  }) async {
+    logger.d(
+      "TaskService: Getting task $taskId for family $familyId via DataService.",
+    );
     return _dataService.getTask(familyId: familyId, taskId: taskId);
   }
 
   @override
+  Future<List<Task>> getTasks({
+    required String familyId,
+    required String userId,
+    required TaskFilterType filter,
+  }) async {
+    logger.d(
+      "TaskService: Getting tasks for family $familyId and user $userId with filter $filter via DataService.",
+    );
+    try {
+      // Get all tasks for the family
+      final tasks = await _dataService.streamTasks(familyId: familyId).first;
+
+      // Filter tasks based on the filter type
+      switch (filter) {
+        case TaskFilterType.all:
+          return tasks;
+        case TaskFilterType.myTasks:
+          return tasks.where((task) => task.assigneeId == userId).toList();
+        case TaskFilterType.available:
+          return tasks
+              .where((task) => task.status == TaskStatus.available)
+              .toList();
+        case TaskFilterType.completed:
+          return tasks
+              .where((task) => task.status == TaskStatus.completed)
+              .toList();
+      }
+    } catch (e, s) {
+      logger.e(
+        "TaskService: Error getting tasks for family $familyId: $e",
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  @override
   Stream<List<Task>> streamTasks({required String familyId}) {
-    logger.d("TaskService: Streaming all tasks for family $familyId via DataService.");
+    logger.d(
+      "TaskService: Streaming all tasks for family $familyId via DataService.",
+    );
     return _dataService.streamTasks(familyId: familyId);
   }
 
   @override
   Stream<List<Task>> streamAvailableTasks({required String familyId}) {
-    logger.d("TaskService: Streaming available tasks for family $familyId via DataService.");
+    logger.d(
+      "TaskService: Streaming available tasks for family $familyId via DataService.",
+    );
     // This requires a specific query in DataService or local filtering.
     // Assuming DataService.streamTasks can be filtered or you add a specific method.
-    return _dataService.streamTasks(familyId: familyId)
-        .map((tasks) => tasks.where((task) => task.status == TaskStatus.available).toList());
+    return _dataService
+        .streamTasks(familyId: familyId)
+        .map(
+          (tasks) =>
+              tasks
+                  .where((task) => task.status == TaskStatus.available)
+                  .toList(),
+        );
   }
 
   @override
-  Stream<List<Task>> streamTasksByAssignee({required String familyId, required String assigneeId}) {
-    logger.d("TaskService: Streaming tasks by assignee $assigneeId for family $familyId via DataService.");
-    return _dataService.streamTasksByAssignee(familyId: familyId, assigneeId: assigneeId);
+  Stream<List<Task>> streamTasksByAssignee({
+    required String familyId,
+    required String assigneeId,
+  }) {
+    logger.d(
+      "TaskService: Streaming tasks by assignee $assigneeId for family $familyId via DataService.",
+    );
+    return _dataService.streamTasksByAssignee(
+      familyId: familyId,
+      assigneeId: assigneeId,
+    );
   }
 
   @override
-  Future<void> approveTask({required String familyId, required String taskId, required String approverId}) async {
-    logger.d("TaskService: Approving task $taskId for family $familyId via DataService.");
-    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: TaskStatus.completed);
+  Future<void> approveTask({
+    required String familyId,
+    required String taskId,
+    required String approverId,
+  }) async {
+    logger.d(
+      "TaskService: Approving task $taskId for family $familyId via DataService.",
+    );
+    return _dataService.updateTaskStatus(
+      familyId: familyId,
+      taskId: taskId,
+      newStatus: TaskStatus.completed,
+    );
   }
 
   @override
-  Future<void> rejectTask({required String familyId, required String taskId, required String rejecterId, String? comments}) async {
-    logger.d("TaskService: Rejecting task $taskId for family $familyId via DataService.");
+  Future<void> rejectTask({
+    required String familyId,
+    required String taskId,
+    required String rejecterId,
+    String? comments,
+  }) async {
+    logger.d(
+      "TaskService: Rejecting task $taskId for family $familyId via DataService.",
+    );
     // This might require a custom update to add comments as well.
     // For now, setting status. If comments need to be stored in Task, updateTask is better.
-    return _dataService.updateTaskStatus(familyId: familyId, taskId: taskId, newStatus: TaskStatus.needsRevision);
+    return _dataService.updateTaskStatus(
+      familyId: familyId,
+      taskId: taskId,
+      newStatus: TaskStatus.needsRevision,
+    );
   }
 
   @override
-  Future<void> claimTask({required String familyId, required String taskId, required String userId}) async {
-    logger.d("TaskService: Claiming task $taskId by user $userId for family $familyId via DataService.");
-    return _dataService.assignTask(familyId: familyId, taskId: taskId, assigneeId: userId);
+  Future<void> claimTask({
+    required String familyId,
+    required String taskId,
+    required String userId,
+  }) async {
+    logger.d(
+      "TaskService: Claiming task $taskId by user $userId for family $familyId via DataService.",
+    );
+    return _dataService.assignTask(
+      familyId: familyId,
+      taskId: taskId,
+      assigneeId: userId,
+    );
   }
 }

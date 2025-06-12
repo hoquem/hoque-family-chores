@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Services & Factories
 import 'package:hoque_family_chores/services/environment_service.dart';
 import 'package:hoque_family_chores/services/data_service_factory.dart';
 import 'package:hoque_family_chores/services/gamification_service_factory.dart';
-import 'package:hoque_family_chores/services/data_service_interface.dart' as app_data_service_interface;
+import 'package:hoque_family_chores/services/data_service_interface.dart'
+    as app_data_service_interface;
 import 'package:hoque_family_chores/services/gamification_service_interface.dart';
 import 'package:hoque_family_chores/services/task_service.dart'; // Ensure TaskService is concrete
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 
 // Providers
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart' as app_auth_provider;
-import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart' as app_gamification_provider;
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'
+    as app_auth_provider;
+import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart'
+    as app_gamification_provider;
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import TaskSummaryProvider
+import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart'; // Import AvailableTasksProvider
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/dashboard_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart'; // <--- NEW: Import FamilySetupScreen
+import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
+import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart';
 import 'firebase_options.dart';
 
 // Ensure AuthStatus is available by importing enums.dart
@@ -37,8 +42,9 @@ void main() async {
 
     final environmentService = EnvironmentService();
     logger.i(
-        "Environment checks: Debug Mode = ${environmentService.isDebugMode}, "
-        "Use Mock Data = ${environmentService.useMockData}");
+      "Environment checks: Debug Mode = ${environmentService.isDebugMode}, "
+      "Use Mock Data = ${environmentService.useMockData}",
+    );
 
     if (environmentService.shouldConnectToFirebase) {
       logger.i("Connecting to Firebase...");
@@ -51,16 +57,23 @@ void main() async {
     }
 
     logger.i("Initializing services using factories...");
-    final app_data_service_interface.DataServiceInterface dataService = DataServiceFactory.getDataService();
-    final GamificationServiceInterface gamificationService = GamificationServiceFactory.getGamificationService();
-    logger.i("Services initialized: ${dataService.runtimeType}, ${gamificationService.runtimeType}");
+    final app_data_service_interface.DataServiceInterface dataService =
+        DataServiceFactory.getDataService();
+    final GamificationServiceInterface gamificationService =
+        GamificationServiceFactory.getGamificationService();
+    logger.i(
+      "Services initialized: ${dataService.runtimeType}, ${gamificationService.runtimeType}",
+    );
 
-    runApp(MyApp(
-      dataService: dataService,
-      gamificationService: gamificationService,
-    ));
+    runApp(
+      MyApp(dataService: dataService, gamificationService: gamificationService),
+    );
   } catch (e, stackTrace) {
-    logger.f("A fatal error occurred during app startup.", error: e, stackTrace: stackTrace);
+    logger.f(
+      "A fatal error occurred during app startup.",
+      error: e,
+      stackTrace: stackTrace,
+    );
     runApp(ErrorApp(error: e));
   }
 }
@@ -80,56 +93,118 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // --- Core Service Providers ---
-        Provider<app_data_service_interface.DataServiceInterface>.value(value: dataService),
-        Provider<GamificationServiceInterface>.value(value: gamificationService),
+        Provider<app_data_service_interface.DataServiceInterface>.value(
+          value: dataService,
+        ),
+        Provider<GamificationServiceInterface>.value(
+          value: gamificationService,
+        ),
 
         // --- Dependent Service Providers (Adapters) ---
         // Provides TaskServiceInterface (TaskService depends on DataServiceInterface)
-        ProxyProvider<app_data_service_interface.DataServiceInterface, TaskServiceInterface>(
-          update: (_, dataService, __) => TaskService(dataService),
-        ),
+        ProxyProvider<
+          app_data_service_interface.DataServiceInterface,
+          TaskServiceInterface
+        >(update: (_, dataService, __) => TaskService(dataService)),
 
         // --- State Management Providers ---
-        // AuthProvider takes DataService in its constructor
         ChangeNotifierProvider<app_auth_provider.AuthProvider>(
-          create: (context) => app_auth_provider.AuthProvider(dataService: dataService),
+          create:
+              (context) =>
+                  app_auth_provider.AuthProvider(dataService: dataService),
         ),
 
-        ChangeNotifierProxyProvider2<GamificationServiceInterface, app_data_service_interface.DataServiceInterface, app_gamification_provider.GamificationProvider>(
-          create: (context) => app_gamification_provider.GamificationProvider(),
-          update: (_, gamificationService, dataService, provider) =>
-              provider!..updateDependencies(
-                gamificationService: gamificationService,
-                dataService: dataService,
+        ChangeNotifierProxyProvider2<
+          GamificationServiceInterface,
+          app_data_service_interface.DataServiceInterface,
+          app_gamification_provider.GamificationProvider
+        >(
+          create:
+              (context) => app_gamification_provider.GamificationProvider(
+                gamificationService:
+                    context.read<GamificationServiceInterface>(),
+                dataService:
+                    context
+                        .read<
+                          app_data_service_interface.DataServiceInterface
+                        >(),
               ),
+          update:
+              (_, gamificationService, dataService, provider) =>
+                  provider!..updateDependencies(
+                    gamificationService: gamificationService,
+                    dataService: dataService,
+                  ),
         ),
 
-        // TaskListProvider now has a constructor with required dependencies
-        // We use ChangeNotifierProxyProvider2 to provide TaskServiceInterface and AuthProvider
-        ChangeNotifierProxyProvider2<TaskServiceInterface, app_auth_provider.AuthProvider, TaskListProvider>(
-          create: (BuildContext context) {
-            // Read TaskServiceInterface and AuthProvider from the context during creation
-            final taskService = context.read<TaskServiceInterface>();
-            final authProvider = context.read<app_auth_provider.AuthProvider>();
-            // Pass them directly to the TaskListProvider's constructor
-            return TaskListProvider(
-              taskService: taskService,
-              authProvider: authProvider,
-            );
-          },
-          update: (BuildContext context, TaskServiceInterface taskService, app_auth_provider.AuthProvider authProvider, TaskListProvider? previousTaskListProvider) {
-            // The 'update' callback will be called when parent providers change.
-            // If previousTaskListProvider exists, call its update method to refresh its dependencies.
+        // TaskListProvider uses its default constructor and dependencies are passed via update method
+        ChangeNotifierProxyProvider2<
+          TaskServiceInterface,
+          app_auth_provider.AuthProvider,
+          TaskListProvider
+        >(
+          create:
+              (BuildContext context) => TaskListProvider(
+                taskService: context.read<TaskServiceInterface>(),
+                authProvider: context.read<app_auth_provider.AuthProvider>(),
+              ),
+          update: (
+            BuildContext context,
+            TaskServiceInterface taskService,
+            app_auth_provider.AuthProvider authProvider,
+            TaskListProvider? previousTaskListProvider,
+          ) {
             return previousTaskListProvider!..update(taskService, authProvider);
+          },
+        ),
+
+        // TaskSummaryProvider uses its default constructor and dependencies are passed via update method
+        ChangeNotifierProxyProvider2<
+          TaskServiceInterface,
+          app_auth_provider.AuthProvider,
+          TaskSummaryProvider
+        >(
+          create:
+              (BuildContext context) => TaskSummaryProvider(
+                taskService: context.read<TaskServiceInterface>(),
+                authProvider: context.read<app_auth_provider.AuthProvider>(),
+              ),
+          update: (
+            BuildContext context,
+            TaskServiceInterface taskService,
+            app_auth_provider.AuthProvider authProvider,
+            TaskSummaryProvider? previousTaskSummaryProvider,
+          ) {
+            return previousTaskSummaryProvider!
+              ..update(taskService, authProvider);
+          },
+        ),
+
+        // AvailableTasksProvider uses its default constructor and dependencies are passed via update method
+        ChangeNotifierProxyProvider2<
+          TaskServiceInterface,
+          app_auth_provider.AuthProvider,
+          AvailableTasksProvider
+        >(
+          create:
+              (BuildContext context) => AvailableTasksProvider(
+                taskService: context.read<TaskServiceInterface>(),
+                authProvider: context.read<app_auth_provider.AuthProvider>(),
+              ),
+          update: (
+            BuildContext context,
+            TaskServiceInterface taskService,
+            app_auth_provider.AuthProvider authProvider,
+            AvailableTasksProvider? previousAvailableTasksProvider,
+          ) {
+            return previousAvailableTasksProvider!
+              ..update(taskService, authProvider);
           },
         ),
       ],
       child: MaterialApp(
         title: 'Family Chores',
-        theme: ThemeData(
-          primarySwatch: Colors.indigo,
-          useMaterial3: true,
-        ),
+        theme: ThemeData(primarySwatch: Colors.indigo, useMaterial3: true),
         debugShowCheckedModeBanner: false,
         home: const AuthWrapper(),
       ),
@@ -145,50 +220,51 @@ class AuthWrapper extends StatelessWidget {
     final authProvider = context.watch<app_auth_provider.AuthProvider>();
     switch (authProvider.status) {
       case AuthStatus.authenticated:
-        // If authenticated but no family ID, direct to family setup
-        if (authProvider.userFamilyId == null) { // <--- NEW CONDITION
-          return const FamilySetupScreen(); // <--- Redirect to FamilySetupScreen
+        if (authProvider.userFamilyId == null) {
+          return const FamilySetupScreen();
         }
-        return const DashboardScreen(); // Otherwise, proceed to Dashboard
+        return const AppShell();
       case AuthStatus.unauthenticated:
         return const LoginScreen();
       case AuthStatus.unknown:
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       case AuthStatus.authenticating:
         return const Scaffold(
-          body: Center(child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Authenticating...'),
-            ],
-          )),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Authenticating...'),
+              ],
+            ),
+          ),
         );
       case AuthStatus.error:
         return Scaffold(
-          body: Center(child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, color: Colors.red, size: 50),
-              const SizedBox(height: 16),
-              Text(
-                'Authentication Error: ${authProvider.errorMessage ?? "Unknown error"}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  // This should trigger a public method to re-attempt init/login
-                  // Example: authProvider.retryInitialization();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          )),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, color: Colors.red, size: 50),
+                const SizedBox(height: 16),
+                Text(
+                  'Authentication Error: ${authProvider.errorMessage ?? "Unknown error"}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    // This should trigger a public method to re-attempt init/login
+                    // Example: authProvider.retryInitialization();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
         );
     }
   }

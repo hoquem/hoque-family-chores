@@ -1,213 +1,205 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/services/data_service_interface.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/enums.dart'; // Needed for AvailableTasksState and TaskStatus
+import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
-import 'package:hoque_family_chores/test_data/mock_data.dart';
+import 'dart:async';
 
-enum AuthStatus {
-  authenticated,
-  unauthenticated,
-  unknown,
-  authenticating,
-  error,
-}
+// Define AvailableTasksState enum (if not already in enums.dart)
+// (Note: This enum is now expected to be in enums.dart for consistency)
+// enum AvailableTasksState { loading, loaded, error, claiming }
 
-class AuthProvider with ChangeNotifier {
-  final DataServiceInterface? _dataService;
-  final FirebaseAuth _firebaseAuth;
+class AvailableTasksProvider with ChangeNotifier {
+  final TaskServiceInterface _taskService;
+  final AuthProvider _authProvider;
+  StreamSubscription? _taskStreamSubscription;
 
-  UserProfile? _currentUserProfile;
-  String? _userFamilyId;
-  AuthStatus _status = AuthStatus.unknown;
+  List<Task> _availableTasks = [];
+  AvailableTasksState _state = AvailableTasksState.loading;
   String? _errorMessage;
-  bool _isLoading = false;
+  bool _isClaiming = false;
+  bool _hasReceivedData = false;
 
-  // --- Public Getters ---
-  UserProfile? get currentUserProfile => _currentUserProfile;
-  String? get currentUserId => _currentUserProfile?.id;
-  String? get userFamilyId => _userFamilyId;
-  String? get displayName => _currentUserProfile?.name;
-  String? get photoUrl => _currentUserProfile?.avatarUrl;
-  String? get userEmail => _currentUserProfile?.email;
-  bool get isLoggedIn => _status == AuthStatus.authenticated;
-  AuthStatus get status => _status;
+  List<Task> get availableTasks => _availableTasks;
+  AvailableTasksState get state => _state;
   String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _state == AvailableTasksState.loading;
+  bool get isClaiming => _isClaiming;
 
-  AuthProvider({FirebaseAuth? firebaseAuth, DataServiceInterface? dataService})
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _dataService = dataService {
-    _initAuthStatus();
+  AvailableTasksProvider({
+    required TaskServiceInterface taskService,
+    required AuthProvider authProvider,
+  }) : _taskService = taskService,
+       _authProvider = authProvider {
+    logger.d(
+      "AvailableTasksProvider initialized with dependencies. Performing initial fetch...",
+    );
+    _fetchAvailableTasksDebounced();
   }
 
-  // updateDataService removed from previous review, as it's passed in constructor now.
-
-  Future<void> _initAuthStatus() async {
-    _setStatus(AuthStatus.authenticating);
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      _firebaseAuth.authStateChanges().listen((User? firebaseUser) async {
-        if (firebaseUser == null) {
-          logger.i("AuthProvider: Firebase user is null (signed out or no session).");
-          _currentUserProfile = null;
-          _userFamilyId = null;
-          _setStatus(AuthStatus.unauthenticated);
-        } else {
-          logger.i("AuthProvider: Firebase user found: ${firebaseUser.uid}. Fetching profile.");
-          if (_dataService != null) {
-            _currentUserProfile = await _dataService!.getUserProfile(userId: firebaseUser.uid);
-            _userFamilyId = _currentUserProfile?.familyId;
-
-            if (_currentUserProfile != null) {
-              _setStatus(AuthStatus.authenticated);
-              logger.i("AuthProvider: User profile loaded for ${firebaseUser.uid}. Status: authenticated.");
-            } else {
-              logger.w("AuthProvider: Firebase user ${firebaseUser.uid} authenticated, but no UserProfile found in Firestore.");
-              _setStatus(AuthStatus.unauthenticated);
-            }
-          } else {
-            logger.w("AuthProvider: DataService is null, cannot fetch user profile for ${firebaseUser.uid}.");
-            _setStatus(AuthStatus.error);
-          }
-        }
-        _isLoading = false;
-        notifyListeners();
-      });
-    } catch (e, s) {
-      logger.e("AuthProvider: Failed to initialize auth status: $e", error: e, stackTrace: s);
-      _errorMessage = "Failed to initialize authentication: $e";
-      _currentUserProfile = null;
-      _userFamilyId = null;
-      _setStatus(AuthStatus.error);
-      _isLoading = false;
-      notifyListeners();
-    }
+  @override
+  void dispose() {
+    _taskStreamSubscription?.cancel();
+    super.dispose();
   }
 
-  // --- Public Methods (removed @override for direct methods not overriding ChangeNotifier) ---
-  Future<void> signIn({required String email, required String password}) async { // <--- REMOVED @override
-    logger.i("Attempting sign-in for $email.");
-    _setStatus(AuthStatus.authenticating);
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
+    if (!identical(_taskService, taskService) ||
+        !identical(_authProvider, authProvider)) {
+      logger.d(
+        "AvailableTasksProvider dependencies updated. Attempting to fetch available tasks...",
       );
-      logger.i("Sign-in successful for ${userCredential.user?.uid}.");
-    } on FirebaseAuthException catch (e, s) {
-      _errorMessage = e.message ?? "An unknown authentication error occurred.";
-      logger.e("Sign-in failed for $email: ${e.code}", error: e, stackTrace: s);
-      _currentUserProfile = null;
-      _userFamilyId = null;
-      _setStatus(AuthStatus.unauthenticated);
-    } catch (e, s) {
-      _errorMessage = "An unexpected error occurred during sign-in: $e";
-      logger.e("Sign-in failed for $email: $e", error: e, stackTrace: s);
-      _currentUserProfile = null;
-      _userFamilyId = null;
-      _setStatus(AuthStatus.unauthenticated);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _fetchAvailableTasksDebounced();
     }
   }
 
-  Future<void> signOut() async { // <--- REMOVED @override
-    logger.i("Attempting sign-out.");
-    _setStatus(AuthStatus.authenticating);
-    _isLoading = true;
+  Timer? _fetchDebounceTimer;
+  void _fetchAvailableTasksDebounced() {
+    _fetchDebounceTimer?.cancel();
+    _fetchDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (_authProvider.currentUserProfile != null &&
+          _authProvider.userFamilyId != null) {
+        fetchAvailableTasks(
+          familyId: _authProvider.userFamilyId!,
+          userId: _authProvider.currentUserProfile!.id,
+        );
+      } else {
+        logger.w(
+          "AvailableTasksProvider: Cannot fetch available tasks, user profile or family ID is null.",
+        );
+        _availableTasks = [];
+        _state = AvailableTasksState.loaded;
+        _errorMessage = null;
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<void> fetchAvailableTasks({
+    required String familyId,
+    required String userId,
+  }) async {
+    logger.d(
+      "AvailableTasksProvider: Starting to fetch available tasks for family $familyId",
+    );
+
+    // Cancel any existing subscription
+    await _taskStreamSubscription?.cancel();
+    _taskStreamSubscription = null;
+
+    _state = AvailableTasksState.loading;
     _errorMessage = null;
+    _hasReceivedData = false;
     notifyListeners();
 
     try {
-      await _firebaseAuth.signOut();
-      logger.i("Sign-out successful.");
-    } on FirebaseAuthException catch (e, s) {
-      _errorMessage = e.message ?? "An error occurred during sign out.";
-      logger.e("Sign-out failed: ${e.code}", error: e, stackTrace: s);
-      _setStatus(AuthStatus.error);
+      _taskStreamSubscription = _taskService
+          .streamAvailableTasks(familyId: familyId)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: (sink) {
+              logger.w(
+                "AvailableTasksProvider: Stream timeout after 5 seconds",
+              );
+              if (!_hasReceivedData) {
+                logger.d(
+                  "AvailableTasksProvider: No data received before timeout, clearing tasks",
+                );
+                _availableTasks = [];
+                _state = AvailableTasksState.loaded;
+                _errorMessage = null;
+                notifyListeners();
+              } else {
+                logger.d(
+                  "AvailableTasksProvider: Timeout occurred but we have existing data, keeping current tasks",
+                );
+              }
+              sink.close();
+            },
+          )
+          .listen(
+            (tasks) {
+              _hasReceivedData = true;
+              logger.d(
+                "AvailableTasksProvider: Received ${tasks.length} available tasks",
+              );
+
+              // Log details of each task for debugging
+              for (var task in tasks) {
+                logger.d(
+                  "AvailableTasksProvider: Task ${task.id}: status=${task.status.name}, title=${task.title}, points=${task.points}",
+                );
+              }
+
+              _availableTasks = tasks;
+              _state = AvailableTasksState.loaded;
+              _errorMessage = null;
+              notifyListeners();
+            },
+            onError: (e, s) {
+              logger.e(
+                "AvailableTasksProvider: Error in available tasks stream: $e",
+                error: e,
+                stackTrace: s,
+              );
+              _state = AvailableTasksState.error;
+              _errorMessage = "Error fetching available tasks: $e";
+              notifyListeners();
+            },
+          );
     } catch (e, s) {
-      _errorMessage = "An unexpected error occurred during sign out: $e";
-      logger.e("Sign-out failed: $e", error: e, stackTrace: s);
-      _setStatus(AuthStatus.error);
-    } finally {
-      _isLoading = false;
+      logger.e(
+        "AvailableTasksProvider: Error setting up available tasks stream: $e",
+        error: e,
+        stackTrace: s,
+      );
+      _state = AvailableTasksState.error;
+      _errorMessage = "Error setting up available tasks stream: $e";
       notifyListeners();
     }
   }
 
-  Future<void> resetPassword({required String email}) async { // <--- REMOVED @override
-    logger.i("Attempting password reset for $email.");
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-    try {
-      await _firebaseAuth.sendPasswordResetEmail(email: email);
-      logger.i("Password reset email sent to $email.");
-      _errorMessage = "Password reset email sent. Check your inbox.";
-    } on FirebaseAuthException catch (e, s) {
-      _errorMessage = e.message ?? "Password reset failed.";
-      logger.e("Password reset failed for $email: ${e.code}", error: e, stackTrace: s);
-    } catch (e, s) {
-      _errorMessage = "An unexpected error occurred during password reset: $e";
-      logger.e("Password reset failed for $email: $e", error: e, stackTrace: s);
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
+  Future<void> claimTask(String taskId) async {
+    final currentUserId = _authProvider.currentUserId;
+    final userFamilyId = _authProvider.userFamilyId;
 
-  Future<void> refreshUserProfile() async { // <--- REMOVED @override
-    if (_firebaseAuth.currentUser?.uid == null || _dataService == null) {
-      logger.w("Cannot refresh user profile: user not logged in or DataService not available.");
+    if (currentUserId == null || userFamilyId == null) {
+      logger.w(
+        "AvailableTasksProvider: Cannot claim task - missing user ID or family ID",
+      );
+      _errorMessage =
+          "Cannot claim task: user not authenticated or family not set.";
+      notifyListeners();
       return;
     }
-    logger.i("Refreshing user profile for ${_firebaseAuth.currentUser!.uid}.");
-    _isLoading = true;
+
+    logger.i(
+      "AvailableTasksProvider: Attempting to claim task $taskId by user $currentUserId in family $userFamilyId",
+    );
+
+    _isClaiming = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final updatedProfile = await _dataService!.getUserProfile(userId: _firebaseAuth.currentUser!.uid);
-      if (updatedProfile != null) {
-        _currentUserProfile = updatedProfile;
-        _userFamilyId = updatedProfile.familyId;
-        logger.d("User profile refreshed successfully.");
-      } else {
-        logger.w("Refreshed user profile not found for ID: ${_firebaseAuth.currentUser!.uid}.");
-      }
+      await _taskService.claimTask(
+        familyId: userFamilyId,
+        taskId: taskId,
+        userId: currentUserId,
+      );
+      logger.d("AvailableTasksProvider: Task $taskId claimed successfully");
     } catch (e, s) {
-      logger.e("Error refreshing user profile: $e", error: e, stackTrace: s);
-      _errorMessage = "Failed to refresh profile: $e";
+      logger.e(
+        "AvailableTasksProvider: Error claiming task $taskId: $e",
+        error: e,
+        stackTrace: s,
+      );
+      _errorMessage = 'Failed to claim task: $e';
+      notifyListeners();
     } finally {
-      _isLoading = false;
+      _isClaiming = false;
       notifyListeners();
     }
-  }
-
-  UserProfile? getFamilyMember(String userId) { // <--- REMOVED @override
-    if (_dataService != null) {
-      final userData = MockData.userProfiles.firstWhere(
-        (profile) => profile['id'] == userId,
-        orElse: () => {},
-      );
-
-      if (userData.isNotEmpty) {
-        return UserProfile.fromMap(userData);
-      }
-    }
-    return null;
-  }
-
-  void _setStatus(AuthStatus newStatus) {
-    _status = newStatus;
   }
 }
