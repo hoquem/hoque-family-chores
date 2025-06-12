@@ -29,6 +29,7 @@ class AuthProvider with ChangeNotifier {
   AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+  UserProfile? get currentUser => _currentUserProfile;
 
   AuthProvider({FirebaseAuth? firebaseAuth, DataServiceInterface? dataService})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,

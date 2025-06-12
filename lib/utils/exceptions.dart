@@ -13,3 +13,8 @@ abstract class AppException implements Exception {
 class AuthException extends AppException {
   AuthException(super.message);
 }
+
+/// Represents an exception related to timeouts.
+//class TimeoutException extends AppException {
+//  TimeoutException(super.message);
+//}
