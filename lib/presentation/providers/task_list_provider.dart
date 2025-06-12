@@ -142,17 +142,43 @@ class TaskListProvider with ChangeNotifier {
     required String familyId,
     required Task task,
   }) async {
+    logger.i('TaskListProvider: Starting task creation for family $familyId');
+    logger.d('Task details: ${task.toFirestore()}');
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      // Validate task data before sending to service
+      if (task.title.isEmpty) {
+        throw Exception('Task title cannot be empty');
+      }
+      if (task.points <= 0) {
+        throw Exception('Task points must be greater than 0');
+      }
+      if (task.familyId != familyId) {
+        throw Exception('Task familyId does not match provided familyId');
+      }
+
+      logger.d('TaskListProvider: Validating task data...');
+      logger.d('Title: ${task.title}');
+      logger.d('Points: ${task.points}');
+      logger.d('Family ID: ${task.familyId}');
+      logger.d('Creator ID: ${task.creatorId}');
+      logger.d('Assignee ID: ${task.assigneeId}');
+      logger.d('Status: ${task.status}');
+
       await _taskService.createTask(familyId: familyId, task: task);
+      logger.i('TaskListProvider: Task created successfully');
+
       // Refresh the task list after creating a new task
+      logger.d('TaskListProvider: Refreshing task list...');
       await fetchTasks(familyId: familyId, userId: task.creatorId);
+      logger.i('TaskListProvider: Task list refreshed successfully');
     } catch (e, s) {
       logger.e(
-        "TaskListProvider: Error creating task: $e",
+        'TaskListProvider: Error creating task: $e',
         error: e,
         stackTrace: s,
       );

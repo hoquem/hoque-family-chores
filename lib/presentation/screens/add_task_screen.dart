@@ -6,7 +6,8 @@ import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:intl/intl.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
+import 'dart:async'; // Add this import for TimeoutException
 
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key});
@@ -23,6 +24,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   DateTime? _dueDate;
   String? _selectedAssigneeId;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFamilyMembers();
+  }
 
   @override
   void dispose() {
@@ -65,6 +72,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         throw Exception('User not properly authenticated');
       }
 
+      logger.i('Creating new task for family $familyId by user $creatorId');
+
       final task = Task(
         id: '', // Will be set by Firestore
         title: _titleController.text.trim(),
@@ -79,10 +88,30 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         updatedAt: DateTime.now(),
       );
 
-      await taskListProvider.createTask(familyId: familyId, task: task);
+      logger.d('Task object created: ${task.toFirestore()}');
+
+      // Add timeout to task creation
+      await Future.any([
+        taskListProvider.createTask(familyId: familyId, task: task),
+        Future.delayed(const Duration(seconds: 10)).then((_) {
+          throw TimeoutException('Task creation timed out after 10 seconds');
+        }),
+      ]);
+
+      logger.i('Task created successfully');
 
       if (mounted) {
         Navigator.of(context).pop();
+      }
+    } on TimeoutException catch (e) {
+      logger.e('Task creation timed out: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task creation timed out. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e, s) {
       logger.e('Error creating task: $e', error: e, stackTrace: s);
@@ -103,10 +132,22 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     }
   }
 
+  Future<void> _loadFamilyMembers() async {
+    final authProvider = context.read<AuthProvider>();
+    final familyProvider = context.read<FamilyProvider>();
+    final familyId = authProvider.userFamilyId;
+
+    if (familyId != null) {
+      await familyProvider.loadFamilyMembers(familyId);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final familyMembers =
-        <UserProfile>[]; // TODO: Replace with actual family members source
+    final authProvider = context.watch<AuthProvider>();
+    final familyProvider = context.watch<FamilyProvider>();
+    final familyMembers = familyProvider.familyMembers;
+    final currentUser = authProvider.currentUser;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add New Task')),
@@ -168,12 +209,21 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   value: null,
                   child: Text('Leave Unassigned'),
                 ),
-                ...familyMembers.map((member) {
-                  return DropdownMenuItem<String>(
-                    value: member.id,
-                    child: Text(member.name),
-                  );
-                }).toList(),
+                if (currentUser != null)
+                  DropdownMenuItem<String>(
+                    value: currentUser.id,
+                    child: Text('Me (${currentUser.name})'),
+                  ),
+                ...familyMembers
+                    .map((member) {
+                      if (member.id == currentUser?.id) return null;
+                      return DropdownMenuItem<String>(
+                        value: member.id,
+                        child: Text(member.name),
+                      );
+                    })
+                    .whereType<DropdownMenuItem<String>>()
+                    .toList(),
               ],
               onChanged: (value) {
                 setState(() {
