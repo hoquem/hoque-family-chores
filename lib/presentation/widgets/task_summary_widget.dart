@@ -16,70 +16,156 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
   @override
   void initState() {
     super.initState();
-    // Fetch summary data after the first frame
+    logger.d("TaskSummaryWidget: initState called");
+    // Schedule the fetch after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final taskSummaryProvider = Provider.of<TaskSummaryProvider>(context, listen: false);
-
-      final String? currentUserId = authProvider.currentUserId;
-      final String? userFamilyId = authProvider.userFamilyId; // Corrected getter
-
-      if (currentUserId != null && userFamilyId != null) {
-        taskSummaryProvider.fetchTaskSummary(
-          familyId: userFamilyId,
-          userId: currentUserId,
+      logger.d("TaskSummaryWidget: Post frame callback executing");
+      if (mounted) {
+        final userProfile = context.read<AuthProvider>().currentUserProfile;
+        final familyId = context.read<AuthProvider>().userFamilyId;
+        logger.d(
+          "TaskSummaryWidget: User profile: ${userProfile?.id}, Family ID: $familyId",
         );
+        if (userProfile != null && familyId != null) {
+          logger.d(
+            "TaskSummaryWidget: Fetching summary for user ${userProfile.id} in family $familyId",
+          );
+          context.read<TaskSummaryProvider>().fetchTaskSummary(
+            familyId: familyId,
+            userId: userProfile.id,
+          );
+        } else {
+          logger.w(
+            "TaskSummaryWidget: Cannot fetch summary - missing user profile or family ID",
+          );
+        }
       } else {
-        logger.w("TaskSummaryWidget: Cannot fetch summary, user or family ID is null.");
+        logger.w(
+          "TaskSummaryWidget: Widget not mounted during post frame callback",
+        );
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final taskSummaryProvider = context.watch<TaskSummaryProvider>();
-
-    if (taskSummaryProvider.state == TaskSummaryState.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (taskSummaryProvider.errorMessage != null) {
-      return Center(
-        child: Text('Error: ${taskSummaryProvider.errorMessage}'),
+  Future<void> _refreshData() async {
+    logger.d("TaskSummaryWidget: Refreshing data");
+    final userProfile = context.read<AuthProvider>().currentUserProfile;
+    final familyId = context.read<AuthProvider>().userFamilyId;
+    if (userProfile != null && familyId != null) {
+      await context.read<TaskSummaryProvider>().fetchTaskSummary(
+        familyId: familyId,
+        userId: userProfile.id,
       );
     }
+  }
 
-    final summary = taskSummaryProvider.summary;
+  @override
+  Widget build(BuildContext context) {
+    logger.d("TaskSummaryWidget: build called");
+    return Consumer<TaskSummaryProvider>(
+      builder: (context, provider, child) {
+        logger.d(
+          "TaskSummaryWidget: Consumer builder called with state: ${provider.state}",
+        );
+        return RefreshIndicator(
+          onRefresh: _refreshData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: switch (provider.state) {
+                TaskSummaryState.loading => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                TaskSummaryState.error => Center(
+                  child: Text('Error: ${provider.errorMessage}'),
+                ),
+                TaskSummaryState.loaded => _buildSummaryContent(
+                  provider.summary,
+                ),
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryContent(TaskSummary summary) {
+    logger.d("TaskSummaryWidget: Building summary content with data: $summary");
+    // Show "No tasks" message if there are no tasks
+    if (summary.totalTasks == 0) {
+      return Card(
+        margin: const EdgeInsets.all(16.0),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.task_alt, size: 48, color: Colors.grey),
+              const SizedBox(height: 16.0),
+              const Text(
+                'No Tasks',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 8.0),
+              const Text(
+                'There are no tasks in your family yet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.all(16.0),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Total Completed: ${summary.totalCompleted}'),
-            Text('Waiting Overall: ${summary.waitingOverall}'),
-            Text('Waiting Assigned: ${summary.waitingAssigned}'),
+            const Text(
+              'Task Summary',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final String? currentUserId = authProvider.currentUserId;
-                final String? userFamilyId = authProvider.userFamilyId; // Corrected getter
-
-                if (currentUserId != null && userFamilyId != null) {
-                  taskSummaryProvider.fetchTaskSummary(
-                    familyId: userFamilyId,
-                    userId: currentUserId,
-                  );
-                } else {
-                  logger.w("Cannot refresh summary: user or family ID is null.");
-                }
-              },
-              child: const Text('Refresh Summary'),
+            _buildSummaryRow('Total Tasks', summary.totalTasks.toString()),
+            _buildSummaryRow('Completed', summary.totalCompleted.toString()),
+            _buildSummaryRow(
+              'Waiting Overall',
+              summary.waitingOverall.toString(),
+            ),
+            _buildSummaryRow(
+              'Waiting Assigned',
+              summary.waitingAssigned.toString(),
+            ),
+            _buildSummaryRow('Available', summary.availableTasks.toString()),
+            _buildSummaryRow(
+              'Needs Revision',
+              summary.needsRevisionTasks.toString(),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

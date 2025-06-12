@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart'; // For generating unique IDs
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For FamilyRole
 import 'package:hoque_family_chores/services/logging_service.dart';
 
 class FamilySetupScreen extends StatefulWidget {
@@ -60,7 +58,9 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
       // Check if family creation was successful and user profile updated
       if (authProvider.userFamilyId != null) {
-        logger.i("Family '${_familyNameController.text.trim()}' created and user profile updated.");
+        logger.i(
+          "Family '${_familyNameController.text.trim()}' created and user profile updated.",
+        );
         if (mounted) {
           // No explicit navigation needed here. AuthWrapper will react to userFamilyId change.
           // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
@@ -68,13 +68,16 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       } else {
         // This case should ideally be caught by AuthProvider's error messages
         setState(() {
-          _errorMessage = authProvider.errorMessage ?? "Failed to create family: Unknown error.";
+          _errorMessage =
+              authProvider.errorMessage ??
+              "Failed to create family: Unknown error.";
         });
       }
     } catch (e, s) {
       logger.e("Error creating family: $e", error: e, stackTrace: s);
       setState(() {
-        _errorMessage = "An error occurred: ${e.toString().split('] ').last}"; // Extract Firebase error message
+        _errorMessage =
+            "An error occurred: ${e.toString().split('] ').last}"; // Extract Firebase error message
       });
     } finally {
       setState(() {
@@ -118,12 +121,14 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                      onPressed: _createFamily,
-                      child: const Text('Create Family'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50), // Make button full width
-                      ),
+                    onPressed: _createFamily,
+                    child: const Text('Create Family'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(
+                        50,
+                      ), // Make button full width
                     ),
+                  ),
             ],
           ),
         ),
