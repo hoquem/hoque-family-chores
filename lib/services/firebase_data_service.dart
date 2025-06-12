@@ -1,3 +1,6 @@
+// ignore_for_file: unnecessary_cast
+// ignore_for_file: unnecessary_null_comparison
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
@@ -26,7 +29,6 @@ class FirebaseDataService implements DataServiceInterface {
         .doc(userId)
         .snapshots()
         .map((doc) {
-          // Changed to 'users'
           if (doc.exists && doc.data() != null) {
             return UserProfile.fromSnapshot(doc);
           }
@@ -38,7 +40,6 @@ class FirebaseDataService implements DataServiceInterface {
             error: e,
             stackTrace: s,
           );
-          // rethrow; // This line should NOT be here if handleError, only in try-catch
         });
   }
 
@@ -46,11 +47,7 @@ class FirebaseDataService implements DataServiceInterface {
   Future<UserProfile?> getUserProfile({required String userId}) async {
     logger.d("Getting user profile with ID: $userId from Firestore.");
     try {
-      final doc =
-          await _firestore
-              .collection('users')
-              .doc(userId)
-              .get(); // Changed to 'users'
+      final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists && doc.data() != null) {
         return UserProfile.fromSnapshot(doc);
       }
@@ -72,7 +69,7 @@ class FirebaseDataService implements DataServiceInterface {
       await _firestore
           .collection('users')
           .doc(userProfile.id)
-          .set(userProfile.toJson()); // Changed to 'users'
+          .set(userProfile.toJson());
     } catch (e, s) {
       logger.e(
         "Error creating user profile ${userProfile.id}: $e",
@@ -90,7 +87,7 @@ class FirebaseDataService implements DataServiceInterface {
       await _firestore
           .collection('users')
           .doc(user.id)
-          .set(user.toJson(), SetOptions(merge: true)); // Changed to 'users'
+          .set(user.toJson(), SetOptions(merge: true));
     } catch (e, s) {
       logger.e(
         "Error updating user profile ${user.id}: $e",
@@ -105,10 +102,7 @@ class FirebaseDataService implements DataServiceInterface {
   Future<void> deleteUser({required String userId}) async {
     logger.d("Deleting user profile $userId from Firestore.");
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .delete(); // Changed to 'users'
+      await _firestore.collection('users').doc(userId).delete();
     } catch (e, s) {
       logger.e(
         "Error deleting user profile $userId: $e",
@@ -128,7 +122,7 @@ class FirebaseDataService implements DataServiceInterface {
     try {
       await _firestore.collection('users').doc(userId).update({
         'totalPoints': FieldValue.increment(points),
-      }); // Changed to 'users'
+      });
     } catch (e, s) {
       logger.e(
         "Error updating points for user $userId: $e",
@@ -179,7 +173,7 @@ class FirebaseDataService implements DataServiceInterface {
       "Streaming family members for family ID: $familyId from Firestore.",
     );
     return _firestore
-        .collection('users') // Changed to 'users'
+        .collection('users')
         .where('familyId', isEqualTo: familyId)
         .snapshots()
         .map(
@@ -203,19 +197,19 @@ class FirebaseDataService implements DataServiceInterface {
   Future<List<FamilyMember>> getFamilyMembers({
     required String familyId,
   }) async {
-    logger.d("Getting family members for family ID: $familyId from Firestore.");
+    logger.d('Getting family members for family $familyId from Firestore');
     try {
-      final querySnapshot =
+      final snapshot =
           await _firestore
-              .collection('users') // Changed to 'users'
+              .collection('users')
               .where('familyId', isEqualTo: familyId)
               .get();
-      return querySnapshot.docs
+      return snapshot.docs
           .map((doc) => FamilyMember.fromMap(doc.data()..['id'] = doc.id))
           .toList();
     } catch (e, s) {
       logger.e(
-        "Error getting family members for family $familyId: $e",
+        'Error getting family members for family $familyId: $e',
         error: e,
         stackTrace: s,
       );
@@ -228,7 +222,7 @@ class FirebaseDataService implements DataServiceInterface {
   Stream<List<Badge>> streamUserBadges({required String userId}) {
     logger.d("Streaming badges for user ID: $userId from Firestore.");
     return _firestore
-        .collection('users') // Changed to 'users'
+        .collection('users')
         .doc(userId)
         .collection('badges')
         .snapshots()
@@ -259,7 +253,7 @@ class FirebaseDataService implements DataServiceInterface {
           .doc(userId)
           .collection('badges')
           .doc(badge.id)
-          .set(badge.toJson(), SetOptions(merge: true)); // Changed to 'users'
+          .set(badge.toJson(), SetOptions(merge: true));
     } catch (e, s) {
       logger.e(
         "Error awarding badge to user $userId: $e",
@@ -275,7 +269,7 @@ class FirebaseDataService implements DataServiceInterface {
   Stream<List<Achievement>> streamUserAchievements({required String userId}) {
     logger.d("Streaming achievements for user ID: $userId from Firestore.");
     return _firestore
-        .collection('users') // Changed to 'users'
+        .collection('users')
         .doc(userId)
         .collection('achievements')
         .snapshots()
@@ -310,10 +304,7 @@ class FirebaseDataService implements DataServiceInterface {
           .doc(userId)
           .collection('achievements')
           .doc(achievement.id)
-          .set(
-            achievement.toJson(),
-            SetOptions(merge: true),
-          ); // Changed to 'users'
+          .set(achievement.toJson(), SetOptions(merge: true));
     } catch (e, s) {
       logger.e(
         "Error granting achievement to user $userId: $e",
@@ -331,7 +322,7 @@ class FirebaseDataService implements DataServiceInterface {
   }) {
     logger.d("Streaming notifications for user ID: $userId from Firestore.");
     return _firestore
-        .collection('users') // Changed to 'users'
+        .collection('users')
         .doc(userId)
         .collection('notifications')
         .orderBy('timestamp', descending: true)
@@ -360,11 +351,6 @@ class FirebaseDataService implements DataServiceInterface {
   Future<void> markNotificationAsRead({required String notificationId}) async {
     logger.d("Marking notification $notificationId as read in Firestore.");
     try {
-      // Adjusted to collectionGroup('notifications') as it's likely a subcollection
-      // This part depends heavily on your actual Firestore structure.
-      // If notifications are directly under 'users', it's `_firestore.collection('users').doc(userId).collection('notifications')`
-      // If it's a top-level collection, it's `_firestore.collection('notifications')`
-      // For now, retaining collectionGroup as it's more flexible.
       await _firestore
           .collectionGroup('notifications')
           .where(FieldPath.documentId, isEqualTo: notificationId)
@@ -425,11 +411,7 @@ class FirebaseDataService implements DataServiceInterface {
   }) async {
     logger.d("Getting task $taskId for family $familyId from Firestore.");
     try {
-      final doc =
-          await _firestore
-              .collection('tasks')
-              .doc(taskId)
-              .get(); // Changed to 'tasks' (top-level)
+      final doc = await _firestore.collection('tasks').doc(taskId).get();
       if (doc.exists && doc.data() != null) {
         final task = Task.fromFirestore(
           doc.data() as Map<String, dynamic>,
@@ -453,15 +435,16 @@ class FirebaseDataService implements DataServiceInterface {
     required String familyId,
     required Task task,
   }) async {
-    logger.d("Creating task ${task.id} for family $familyId in Firestore.");
+    logger.d("Creating task for family $familyId in Firestore.");
     try {
-      await _firestore
-          .collection('tasks')
-          .doc(task.id)
-          .set(task.toFirestore()); // Changed to 'tasks' (top-level)
+      // Let Firestore generate the document ID
+      final docRef = _firestore.collection('tasks').doc();
+      // Create a new task with the generated ID
+      final taskWithId = task.copyWith(id: docRef.id);
+      await docRef.set(taskWithId.toFirestore());
     } catch (e, s) {
       logger.e(
-        "Error creating task ${task.id} for family $familyId: $e",
+        "Error creating task for family $familyId: $e",
         error: e,
         stackTrace: s,
       );
@@ -479,7 +462,7 @@ class FirebaseDataService implements DataServiceInterface {
       await _firestore
           .collection('tasks')
           .doc(task.id)
-          .update(task.toFirestore()); // Changed to 'tasks' (top-level)
+          .update(task.toFirestore());
     } catch (e, s) {
       logger.e(
         "Error updating task ${task.id} for family $familyId: $e",
@@ -502,7 +485,7 @@ class FirebaseDataService implements DataServiceInterface {
     try {
       await _firestore.collection('tasks').doc(taskId).update({
         'status': newStatus.name,
-      }); // Changed to 'tasks' (top-level)
+      });
     } catch (e, s) {
       logger.e(
         "Error updating status for task $taskId: $e",
@@ -524,7 +507,6 @@ class FirebaseDataService implements DataServiceInterface {
     );
     try {
       await _firestore.collection('tasks').doc(taskId).update({
-        // Changed to 'tasks' (top-level)
         'assigneeId': assigneeId,
         'status': TaskStatus.assigned.name,
       });
@@ -541,10 +523,7 @@ class FirebaseDataService implements DataServiceInterface {
   }) async {
     logger.d("Deleting task $taskId for family $familyId from Firestore.");
     try {
-      await _firestore
-          .collection('tasks')
-          .doc(taskId)
-          .delete(); // Changed to 'tasks' (top-level)
+      await _firestore.collection('tasks').doc(taskId).delete();
     } catch (e, s) {
       logger.e("Error deleting task $taskId: $e", error: e, stackTrace: s);
       rethrow;
@@ -560,7 +539,7 @@ class FirebaseDataService implements DataServiceInterface {
       "Streaming tasks assigned to $assigneeId in family $familyId from Firestore.",
     );
     return _firestore
-        .collection('tasks') // Changed to 'tasks' (top-level)
+        .collection('tasks')
         .where('familyId', isEqualTo: familyId)
         .where('assigneeId', isEqualTo: assigneeId)
         .snapshots()
@@ -593,7 +572,6 @@ class FirebaseDataService implements DataServiceInterface {
     logger.d("Approving task $taskId for family $familyId.");
     try {
       await _firestore.collection('tasks').doc(taskId).update({
-        // Changed to 'tasks' (top-level)
         'status': TaskStatus.completed.name,
         'approvedBy': approverId,
         'completedAt': FieldValue.serverTimestamp(),
@@ -614,7 +592,6 @@ class FirebaseDataService implements DataServiceInterface {
     logger.d("Rejecting task $taskId for family $familyId.");
     try {
       await _firestore.collection('tasks').doc(taskId).update({
-        // Changed to 'tasks' (top-level)
         'status': TaskStatus.needsRevision.name,
         'rejectedBy': rejecterId,
         'revisionComments': comments,
@@ -634,7 +611,6 @@ class FirebaseDataService implements DataServiceInterface {
     logger.d("Claiming task $taskId for family $familyId.");
     try {
       await _firestore.collection('tasks').doc(taskId).update({
-        // Changed to 'tasks' (top-level)
         'assigneeId': userId,
         'status': TaskStatus.assigned.name,
       });

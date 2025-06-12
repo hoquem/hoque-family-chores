@@ -13,7 +13,8 @@ class UserProfile extends FamilyMember {
   final int completedTasks;
   final int currentStreak;
   final int longestStreak;
-  final List<Badge> unlockedBadges; // This type will now be correctly recognized
+  final List<Badge>
+  unlockedBadges; // This type will now be correctly recognized
   final List<Reward> redeemedRewards;
   final List<String> achievements;
   final DateTime? lastTaskCompletedAt;
@@ -40,17 +41,17 @@ class UserProfile extends FamilyMember {
     this.achievements = const [],
     this.lastTaskCompletedAt,
     required this.joinedAt,
-  })  : currentLevel = currentLevel ?? calculateLevelFromPoints(totalPoints),
-        pointsToNextLevel =
-            pointsToNextLevel ?? calculatePointsToNextLevel(totalPoints),
-        super(
-          id: id,
-          name: name,
-          email: email,
-          avatarUrl: avatarUrl,
-          role: role,
-          familyId: familyId,
-        );
+  }) : currentLevel = currentLevel ?? calculateLevelFromPoints(totalPoints),
+       pointsToNextLevel =
+           pointsToNextLevel ?? calculatePointsToNextLevel(totalPoints),
+       super(
+         id: id,
+         name: name,
+         email: email,
+         avatarUrl: avatarUrl,
+         role: role,
+         familyId: familyId,
+       );
 
   /// Create a copy of this profile with given fields replaced with new values
   @override
@@ -96,42 +97,48 @@ class UserProfile extends FamilyMember {
 
   /// Factory to create a UserProfile from a map (e.g., from Firestore)
   factory UserProfile.fromMap(Map<String, dynamic> map) {
-    DateTime? parseDate(dynamic dateData) {
-      if (dateData == null) return null;
-      if (dateData is Timestamp) return dateData.toDate();
-      if (dateData is String) return DateTime.tryParse(dateData);
-      return null;
+    try {
+      DateTime? parseDate(dynamic dateData) {
+        if (dateData == null) return null;
+        if (dateData is Timestamp) return dateData.toDate();
+        if (dateData is String) return DateTime.tryParse(dateData);
+        return null;
+      }
+
+      final role = enumFromString(
+        map['role'] as String?,
+        FamilyRole.values,
+        defaultValue: FamilyRole.child,
+      );
+      return UserProfile(
+        id: map['id'] ?? map['uid'] ?? '',
+        name: map['name'] as String? ?? 'No Name',
+        email: map['email'] as String?,
+        avatarUrl: map['avatarUrl'] as String?,
+        role: role,
+        familyId: map['familyId'] as String?,
+        totalPoints: (map['totalPoints'] as num?)?.toInt() ?? 0,
+        completedTasks: (map['completedTasks'] as num?)?.toInt() ?? 0,
+        currentStreak: (map['currentStreak'] as num?)?.toInt() ?? 0,
+        longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
+        unlockedBadges:
+            (map['unlockedBadges'] as List<dynamic>?)
+                ?.map((data) => Badge.fromMap(data))
+                .toList() ??
+            [],
+        redeemedRewards:
+            (map['redeemedRewards'] as List<dynamic>?)
+                ?.map((data) => Reward.fromMap(data))
+                .toList() ??
+            [],
+        achievements: List<String>.from(map['achievements'] ?? []),
+        lastTaskCompletedAt: parseDate(map['lastTaskCompletedAt']),
+        joinedAt: parseDate(map['joinedAt']) ?? DateTime.now(),
+      );
+    } catch (e) {
+      print('Error parsing UserProfile.fromMap: $e');
+      return UserProfile(id: '', name: 'Unknown', joinedAt: DateTime.now());
     }
-
-    final role = enumFromString(
-      map['role'] as String?,
-      FamilyRole.values,
-      defaultValue: FamilyRole.child,
-    );
-
-    return UserProfile(
-      id: map['id'] ?? map['uid'] ?? '',
-      name: map['name'] as String? ?? 'No Name',
-      email: map['email'] as String?,
-      avatarUrl: map['avatarUrl'] as String?,
-      role: role,
-      familyId: map['familyId'] as String?,
-      totalPoints: (map['totalPoints'] as num?)?.toInt() ?? 0,
-      completedTasks: (map['completedTasks'] as num?)?.toInt() ?? 0,
-      currentStreak: (map['currentStreak'] as num?)?.toInt() ?? 0,
-      longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
-      unlockedBadges: (map['unlockedBadges'] as List<dynamic>?)
-              ?.map((data) => Badge.fromMap(data)) // Badge.fromMap will be correctly resolved
-              .toList() ??
-          [],
-      redeemedRewards: (map['redeemedRewards'] as List<dynamic>?)
-              ?.map((data) => Reward.fromMap(data))
-              .toList() ??
-          [],
-      achievements: List<String>.from(map['achievements'] ?? []),
-      lastTaskCompletedAt: parseDate(map['lastTaskCompletedAt']),
-      joinedAt: parseDate(map['joinedAt']) ?? DateTime.now(),
-    );
   }
 
   /// Create a UserProfile from a Firestore document.
@@ -150,10 +157,17 @@ class UserProfile extends FamilyMember {
       'completedTasks': completedTasks,
       'currentStreak': currentStreak,
       'longestStreak': longestStreak,
-      'unlockedBadges': unlockedBadges.map((badge) => badge.toJson()).toList(), // toJson can be unconditionally invoked
-      'redeemedRewards': redeemedRewards.map((reward) => reward.toJson()).toList(),
+      'unlockedBadges':
+          unlockedBadges
+              .map((badge) => badge.toJson())
+              .toList(), // toJson can be unconditionally invoked
+      'redeemedRewards':
+          redeemedRewards.map((reward) => reward.toJson()).toList(),
       'achievements': achievements,
-      'lastTaskCompletedAt': lastTaskCompletedAt != null ? Timestamp.fromDate(lastTaskCompletedAt!) : null,
+      'lastTaskCompletedAt':
+          lastTaskCompletedAt != null
+              ? Timestamp.fromDate(lastTaskCompletedAt!)
+              : null,
       'joinedAt': Timestamp.fromDate(joinedAt),
     };
   }
@@ -178,7 +192,8 @@ class UserProfile extends FamilyMember {
   /// Calculate points needed to reach the next level
   static int calculatePointsToNextLevel(int currentPoints) {
     int currentLevel = calculateLevelFromPoints(currentPoints);
-    int nextLevelPoints = (_basePointsForLevel * (1 + currentLevel * _levelMultiplier)).toInt();
+    int nextLevelPoints =
+        (_basePointsForLevel * (1 + currentLevel * _levelMultiplier)).toInt();
     int pointsNeeded = nextLevelPoints - currentPoints;
     return pointsNeeded > 0 ? pointsNeeded : 0;
   }
@@ -190,14 +205,19 @@ class UserProfile extends FamilyMember {
       return ((totalPoints / _basePointsForLevel) * 100).clamp(0, 100).toInt();
     }
 
-    int previousLevelPoints = (_basePointsForLevel * (1 + (currentLevel - 1) * _levelMultiplier)).toInt();
-    int nextLevelPoints = (_basePointsForLevel * (1 + currentLevel * _levelMultiplier)).toInt();
+    int previousLevelPoints =
+        (_basePointsForLevel * (1 + (currentLevel - 1) * _levelMultiplier))
+            .toInt();
+    int nextLevelPoints =
+        (_basePointsForLevel * (1 + currentLevel * _levelMultiplier)).toInt();
     int pointsInCurrentLevel = totalPoints - previousLevelPoints;
     int pointsRequiredForCurrentLevel = nextLevelPoints - previousLevelPoints;
 
     if (pointsRequiredForCurrentLevel <= 0) return 100;
 
-    return ((pointsInCurrentLevel / pointsRequiredForCurrentLevel) * 100).clamp(0, 100).toInt();
+    return ((pointsInCurrentLevel / pointsRequiredForCurrentLevel) * 100)
+        .clamp(0, 100)
+        .toInt();
   }
 
   /// Check if user has a specific badge by its ID
@@ -244,18 +264,13 @@ class UserProfile extends FamilyMember {
         lastTaskCompletedAt: now,
       );
     } else {
-      return copyWith(
-        currentStreak: 1,
-        lastTaskCompletedAt: now,
-      );
+      return copyWith(currentStreak: 1, lastTaskCompletedAt: now);
     }
   }
 
   /// Returns a new UserProfile with added points.
   UserProfile addPoints(int points) {
-    return copyWith(
-      totalPoints: totalPoints + points,
-    );
+    return copyWith(totalPoints: totalPoints + points);
   }
 
   /// Returns a new UserProfile after completing a task.
@@ -263,13 +278,12 @@ class UserProfile extends FamilyMember {
     final withPoints = addPoints(taskPoints);
     final withStreak = withPoints.updateStreak();
 
-    return withStreak.copyWith(
-      completedTasks: completedTasks + 1,
-    );
+    return withStreak.copyWith(completedTasks: completedTasks + 1);
   }
 
   /// Returns a new UserProfile with a newly unlocked badge.
-  UserProfile unlockBadge(Badge badge) { // Correctly typed
+  UserProfile unlockBadge(Badge badge) {
+    // Correctly typed
     if (hasBadge(badge.id)) return this;
 
     final unlockedBadge = badge.copyWith(
@@ -277,9 +291,7 @@ class UserProfile extends FamilyMember {
       unlockedAt: DateTime.now(),
     );
 
-    return copyWith(
-      unlockedBadges: [...unlockedBadges, unlockedBadge],
-    );
+    return copyWith(unlockedBadges: [...unlockedBadges, unlockedBadge]);
   }
 
   /// Returns a new UserProfile after redeeming a reward, if points are sufficient.
@@ -301,7 +313,8 @@ class UserProfile extends FamilyMember {
   }
 
   /// Checks the user's current stats against a list of available badges and returns any new ones they have earned.
-  List<Badge> checkForNewBadges(List<Badge> availableBadges) { // Correctly typed
+  List<Badge> checkForNewBadges(List<Badge> availableBadges) {
+    // Correctly typed
     final newBadges = <Badge>[]; // Correctly typed
 
     for (final badge in availableBadges) {

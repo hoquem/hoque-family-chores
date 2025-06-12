@@ -13,6 +13,7 @@ import 'package:hoque_family_chores/services/gamification_service_interface.dart
 import 'package:hoque_family_chores/services/task_service.dart'; // Ensure TaskService is concrete
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/services/family_service.dart';
 
 // Providers
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'
@@ -22,6 +23,7 @@ import 'package:hoque_family_chores/presentation/providers/gamification_provider
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import TaskSummaryProvider
 import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart'; // Import AvailableTasksProvider
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
@@ -61,12 +63,17 @@ void main() async {
         DataServiceFactory.getDataService();
     final GamificationServiceInterface gamificationService =
         GamificationServiceFactory.getGamificationService();
+    final FamilyService familyService = FamilyService(dataService);
     logger.i(
-      "Services initialized: ${dataService.runtimeType}, ${gamificationService.runtimeType}",
+      "Services initialized: ${dataService.runtimeType}, ${gamificationService.runtimeType}, ${familyService.runtimeType}",
     );
 
     runApp(
-      MyApp(dataService: dataService, gamificationService: gamificationService),
+      MyApp(
+        dataService: dataService,
+        gamificationService: gamificationService,
+        familyService: familyService,
+      ),
     );
   } catch (e, stackTrace) {
     logger.f(
@@ -81,11 +88,13 @@ void main() async {
 class MyApp extends StatelessWidget {
   final app_data_service_interface.DataServiceInterface dataService;
   final GamificationServiceInterface gamificationService;
+  final FamilyService familyService;
 
   const MyApp({
     super.key,
     required this.dataService,
     required this.gamificationService,
+    required this.familyService,
   });
 
   @override
@@ -99,6 +108,7 @@ class MyApp extends StatelessWidget {
         Provider<GamificationServiceInterface>.value(
           value: gamificationService,
         ),
+        Provider<FamilyService>.value(value: familyService),
 
         // --- Dependent Service Providers (Adapters) ---
         // Provides TaskServiceInterface (TaskService depends on DataServiceInterface)
@@ -200,6 +210,10 @@ class MyApp extends StatelessWidget {
             return previousAvailableTasksProvider!
               ..update(taskService, authProvider);
           },
+        ),
+
+        ChangeNotifierProvider(
+          create: (context) => FamilyProvider(context.read<FamilyService>()),
         ),
       ],
       child: MaterialApp(

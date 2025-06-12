@@ -1,3 +1,7 @@
+// ignore_for_file: unnecessary_non_null_assertion
+// ignore_for_file: unnecessary_null_comparison
+// ignore_for_file: dead_null_aware_expression
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart'; // Import UserProfile
