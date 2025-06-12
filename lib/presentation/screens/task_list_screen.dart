@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart'; // Import UserProfile
 import 'package:hoque_family_chores/models/enums.dart'; // Import enums for TaskFilterType, TaskStatus
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
+import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart'
+    as app_task_list_provider;
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
+import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 
 class TaskListScreen extends StatefulWidget {
@@ -17,18 +19,38 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
-    final taskListProvider = context.watch<app_task_list_provider.TaskListProvider>();
+    final taskListProvider =
+        Provider.of<app_task_list_provider.TaskListProvider>(context);
     final authProvider = context.read<AuthProvider>();
 
-    final String? currentUserId = authProvider.currentUserId;
-    final String? userFamilyId = authProvider.userFamilyId;
+    final currentUserId = authProvider.currentUserId;
+    final userFamilyId = authProvider.userFamilyId;
 
     if (currentUserId == null || userFamilyId == null) {
-      logger.w("TaskListScreen: User ID or Family ID is null, cannot display tasks.");
-      // REMOVED 'const' from Scaffold here to definitively resolve the error.
-      return Scaffold( // <--- REMOVED 'const' here
+      logger.w(
+        "TaskListScreen: User ID or Family ID is null, cannot display tasks.",
+      );
+      return Scaffold(
         appBar: AppBar(title: const Text('Tasks')),
-        body: const Center(child: Text('Please log in and join a family to view tasks.')),
+        body: const Center(
+          child: Text('Please log in and join a family to view tasks.'),
+        ),
+      );
+    }
+
+    // Assign to local non-nullable variables after null check
+    final String userId = currentUserId!;
+    final String familyId = userFamilyId!;
+
+    void handleTaskOperation() {
+      taskListProvider.fetchTasks(familyId: familyId, userId: userId);
+    }
+
+    void handleTaskStatusUpdate(String taskId, TaskStatus status) {
+      taskListProvider.updateTaskStatus(
+        familyId: familyId,
+        taskId: taskId,
+        newStatus: status,
       );
     }
 
@@ -66,7 +88,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  taskListProvider.fetchTasks(familyId: userFamilyId, userId: currentUserId);
+                  handleTaskOperation();
                 },
                 child: const Text('Retry Loading Tasks'),
               ),
@@ -76,6 +98,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             logger.i("Navigating to Add New Task screen.");
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+            );
           },
           child: const Icon(Icons.add),
         ),
@@ -91,24 +116,25 @@ class _TaskListScreenState extends State<TaskListScreen> {
             onSelected: (filter) {
               taskListProvider.setFilter(filter);
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: TaskFilterType.all,
-                child: Text('All Tasks'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.myTasks,
-                child: Text('My Tasks'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.available,
-                child: Text('Available Tasks'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.completed,
-                child: Text('Completed Tasks'),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: TaskFilterType.all,
+                    child: Text('All Tasks'),
+                  ),
+                  const PopupMenuItem(
+                    value: TaskFilterType.myTasks,
+                    child: Text('My Tasks'),
+                  ),
+                  const PopupMenuItem(
+                    value: TaskFilterType.available,
+                    child: Text('Available Tasks'),
+                  ),
+                  const PopupMenuItem(
+                    value: TaskFilterType.completed,
+                    child: Text('Completed Tasks'),
+                  ),
+                ],
           ),
           IconButton(
             icon: const Icon(Icons.person),
@@ -122,28 +148,28 @@ class _TaskListScreenState extends State<TaskListScreen> {
         itemCount: taskListProvider.tasks.length,
         itemBuilder: (context, index) {
           final task = taskListProvider.tasks[index];
-          final UserProfile? assignedUserProfile = authProvider.getFamilyMember(task.assigneeId);
+          final UserProfile? assignedUserProfile = authProvider.getFamilyMember(
+            task.assigneeId ?? '',
+          );
 
-          final UserProfile displayUserProfile = assignedUserProfile ??
+          final UserProfile displayUserProfile =
+              assignedUserProfile ??
               UserProfile(
-                id: task.assigneeId,
+                id: task.assigneeId ?? 'unknown',
                 name: 'Unknown User',
                 joinedAt: DateTime(2000),
               );
 
           return TaskListTile(
-            key: ValueKey(task.id),
+            key: ValueKey(task.id ?? 'no-id'),
             task: task,
             user: displayUserProfile,
             onToggleStatus: (bool? newValue) {
-              if (newValue != null) {
-                final newStatus = newValue ? TaskStatus.pendingApproval : TaskStatus.assigned;
+              if (newValue != null && task.id != null) {
+                final newStatus =
+                    newValue ? TaskStatus.pendingApproval : TaskStatus.assigned;
                 logger.d("Toggling status for task ${task.id} to $newStatus.");
-                taskListProvider.updateTaskStatus(
-                  familyId: userFamilyId,
-                  taskId: task.id,
-                  newStatus: newStatus,
-                );
+                handleTaskStatusUpdate(task.id!, newStatus);
               }
             },
           );
@@ -151,7 +177,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          logger.i("Floating action button pressed: Add new task.");
+          logger.i("Navigating to Add New Task screen.");
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+          );
         },
         child: const Icon(Icons.add),
       ),
