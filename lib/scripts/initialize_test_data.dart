@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 Future<void> main() async {
+  final logger = AppLogger();
   try {
     logger.i("Starting test data initialization...");
     final firestore = FirebaseFirestore.instance;

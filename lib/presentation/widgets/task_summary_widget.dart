@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import your provider
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Needed for authProvider
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskSummaryWidget extends StatefulWidget {
   const TaskSummaryWidget({super.key});
@@ -13,34 +13,36 @@ class TaskSummaryWidget extends StatefulWidget {
 }
 
 class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
+  final _logger = AppLogger();
+
   @override
   void initState() {
     super.initState();
-    logger.d("TaskSummaryWidget: initState called");
+    _logger.d("TaskSummaryWidget: initState called");
     // Schedule the fetch after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      logger.d("TaskSummaryWidget: Post frame callback executing");
+      _logger.d("TaskSummaryWidget: Post frame callback executing");
       if (mounted) {
         final userProfile = context.read<AuthProvider>().currentUserProfile;
         final familyId = context.read<AuthProvider>().userFamilyId;
-        logger.d(
-          "TaskSummaryWidget: User profile: ${userProfile?.id}, Family ID: $familyId",
+        _logger.d(
+          "TaskSummaryWidget: User profile: ${userProfile?.member.id}, Family ID: $familyId",
         );
         if (userProfile != null && familyId != null) {
-          logger.d(
-            "TaskSummaryWidget: Fetching summary for user ${userProfile.id} in family $familyId",
+          _logger.d(
+            "TaskSummaryWidget: Fetching summary for user ${userProfile.member.id} in family $familyId",
           );
           context.read<TaskSummaryProvider>().fetchTaskSummary(
             familyId: familyId,
-            userId: userProfile.id,
+            userId: userProfile.member.id,
           );
         } else {
-          logger.w(
+          _logger.w(
             "TaskSummaryWidget: Cannot fetch summary - missing user profile or family ID",
           );
         }
       } else {
-        logger.w(
+        _logger.w(
           "TaskSummaryWidget: Widget not mounted during post frame callback",
         );
       }
@@ -48,37 +50,50 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
   }
 
   Future<void> _refreshData() async {
-    logger.d("TaskSummaryWidget: Refreshing data");
+    _logger.d("TaskSummaryWidget: Refreshing data");
     final userProfile = context.read<AuthProvider>().currentUserProfile;
     final familyId = context.read<AuthProvider>().userFamilyId;
     if (userProfile != null && familyId != null) {
       await context.read<TaskSummaryProvider>().fetchTaskSummary(
         familyId: familyId,
-        userId: userProfile.id,
+        userId: userProfile.member.id,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    logger.d("TaskSummaryWidget: build called");
+    _logger.d("TaskSummaryWidget: build called");
     return Consumer<TaskSummaryProvider>(
       builder: (context, provider, child) {
-        logger.d(
+        _logger.d(
           "TaskSummaryWidget: Consumer builder called with state: ${provider.state}",
         );
         return RefreshIndicator(
           onRefresh: _refreshData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height,
+            child: IntrinsicHeight(
               child: switch (provider.state) {
                 TaskSummaryState.loading => const Center(
                   child: CircularProgressIndicator(),
                 ),
                 TaskSummaryState.error => Center(
-                  child: Text('Error: ${provider.errorMessage}'),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Error: ${provider.errorMessage}',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8.0),
+                      ElevatedButton(
+                        onPressed: _refreshData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
                 TaskSummaryState.loaded => _buildSummaryContent(
                   provider.summary,
@@ -92,7 +107,9 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
   }
 
   Widget _buildSummaryContent(TaskSummary summary) {
-    logger.d("TaskSummaryWidget: Building summary content with data: $summary");
+    _logger.d(
+      "TaskSummaryWidget: Building summary content with data: $summary",
+    );
     // Show "No tasks" message if there are no tasks
     if (summary.totalTasks == 0) {
       return Card(

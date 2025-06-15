@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this is imported for TaskStatus AND TaskSummaryState
-import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/models/task_summary.dart';
+import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:uuid/uuid.dart';
 
 // REMOVED LOCAL DEFINITION OF TaskSummaryState, as it is now defined in enums.dart
 // enum TaskSummaryState { loading, loaded, error } // <--- THIS LINE IS REMOVED
@@ -33,6 +36,7 @@ class TaskSummary {
 class TaskSummaryProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
   final AuthProvider _authProvider;
+  final _logger = AppLogger();
   StreamSubscription? _taskStreamSubscription;
 
   TaskSummary _summary = const TaskSummary();
@@ -48,7 +52,7 @@ class TaskSummaryProvider with ChangeNotifier {
     required AuthProvider authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
-    logger.d(
+    _logger.d(
       "TaskSummaryProvider initialized with dependencies. Performing initial fetch...",
     );
     _fetchSummaryDebounced();
@@ -63,7 +67,7 @@ class TaskSummaryProvider with ChangeNotifier {
   void update(TaskServiceInterface taskService, AuthProvider authProvider) {
     if (!identical(_taskService, taskService) ||
         !identical(_authProvider, authProvider)) {
-      logger.d(
+      _logger.d(
         "TaskSummaryProvider dependencies updated. Attempting to fetch summary...",
       );
       _fetchSummaryDebounced();
@@ -78,10 +82,10 @@ class TaskSummaryProvider with ChangeNotifier {
           _authProvider.userFamilyId != null) {
         fetchTaskSummary(
           familyId: _authProvider.userFamilyId!,
-          userId: _authProvider.currentUserProfile!.id,
+          userId: _authProvider.currentUserProfile!.member.id,
         );
       } else {
-        logger.w(
+        _logger.w(
           "TaskSummaryProvider: Cannot fetch summary, user profile or family ID is null.",
         );
         _summary = const TaskSummary();
@@ -96,21 +100,20 @@ class TaskSummaryProvider with ChangeNotifier {
     required String familyId,
     required String userId,
   }) async {
-    logger.d(
+    _logger.d(
       "TaskSummaryProvider: fetchTaskSummary called for user $userId in family $familyId",
     );
 
     // Cancel any existing subscription
     if (_taskStreamSubscription != null) {
-      logger.d("TaskSummaryProvider: Cancelling existing stream subscription");
+      _logger.d("TaskSummaryProvider: Cancelling existing stream subscription");
       await _taskStreamSubscription?.cancel();
       _taskStreamSubscription = null;
     }
 
-    // Always allow fetching to proceed, but track if we're already loading
     final wasLoading = _state == TaskSummaryState.loading;
     if (wasLoading) {
-      logger.d(
+      _logger.d(
         "TaskSummaryProvider: Was already loading, but proceeding with new fetch",
       );
     }
@@ -120,19 +123,39 @@ class TaskSummaryProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      logger.d("TaskSummaryProvider: Setting up task stream...");
+      _logger.d("TaskSummaryProvider: Setting up task stream...");
       bool hasReceivedData = false;
 
       _taskStreamSubscription = _taskService
           .streamTasks(familyId: familyId)
           .timeout(
             const Duration(seconds: 5),
-            onTimeout: (sink) {
-              logger.w("TaskSummaryProvider: Stream timeout after 5 seconds");
+            onTimeout: (sink) async {
+              _logger.w("TaskSummaryProvider: Stream timeout after 5 seconds");
               if (!hasReceivedData) {
-                logger.d(
-                  "TaskSummaryProvider: No data received before timeout, setting empty summary",
+                _logger.d(
+                  "TaskSummaryProvider: No data received before timeout, setting empty summary and creating default task",
                 );
+                // Create a default task if none exist
+                final now = DateTime.now();
+                final defaultTask = Task(
+                  id: const Uuid().v4(),
+                  title: 'Welcome Task',
+                  description:
+                      'This is your first task! Edit or delete as needed.',
+                  points: 10,
+                  difficulty: TaskDifficulty.easy,
+                  status: TaskStatus.available,
+                  familyId: familyId,
+                  assignedTo: null,
+                  completedBy: null,
+                  createdAt: now,
+                  updatedAt: now,
+                  dueDate: now.add(const Duration(days: 7)),
+                  completedAt: null,
+                  imageUrl: null,
+                );
+                await _taskService.createTask(task: defaultTask);
                 _summary = const TaskSummary();
                 _state = TaskSummaryState.loaded;
                 _errorMessage = null;
@@ -142,35 +165,50 @@ class TaskSummaryProvider with ChangeNotifier {
             },
           )
           .listen(
-            (allTasks) {
+            (allTasks) async {
               hasReceivedData = true;
-              logger.d(
+              _logger.d(
                 "TaskSummaryProvider: Received ${allTasks.length} tasks from stream.",
               );
 
-              // Log each task's status for debugging
-              for (var task in allTasks) {
-                logger.d(
-                  "TaskSummaryProvider: Task ${task.id}: status=${task.status.name}, assigneeId=${task.assigneeId}, title=${task.title}",
-                );
-              }
-
-              // If no tasks, set empty summary immediately
               if (allTasks.isEmpty) {
-                logger.d(
-                  "TaskSummaryProvider: No tasks found, setting empty summary.",
+                _logger.d(
+                  "TaskSummaryProvider: No tasks found, creating a default task...",
                 );
-                _summary = const TaskSummary();
-                _state = TaskSummaryState.loaded;
-                _errorMessage = null;
-                notifyListeners();
+                final now = DateTime.now();
+                final defaultTask = Task(
+                  id: const Uuid().v4(),
+                  title: 'Welcome Task',
+                  description:
+                      'This is your first task! Edit or delete as needed.',
+                  points: 10,
+                  difficulty: TaskDifficulty.easy,
+                  status: TaskStatus.available,
+                  familyId: familyId,
+                  assignedTo: null,
+                  completedBy: null,
+                  createdAt: now,
+                  updatedAt: now,
+                  dueDate: now.add(const Duration(days: 7)),
+                  completedAt: null,
+                  imageUrl: null,
+                );
+                await _taskService.createTask(task: defaultTask);
+                // No need to set summary here, will be updated on next stream event
                 return;
               }
 
+              // Log each task's status for debugging
+              for (var task in allTasks) {
+                _logger.d(
+                  "TaskSummaryProvider: Task ${task.id}: status=${task.status.name}, assignedTo=${task.assignedTo}, title=${task.title}",
+                );
+              }
+
               final assignedToMe = allTasks.where(
-                (task) => task.assigneeId == userId,
+                (task) => task.assignedTo == userId,
               );
-              logger.d(
+              _logger.d(
                 "TaskSummaryProvider: Found ${assignedToMe.length} tasks assigned to user $userId",
               );
 
@@ -205,14 +243,14 @@ class TaskSummaryProvider with ChangeNotifier {
                           .where((task) => task.status == TaskStatus.assigned)
                           .length,
                 );
-                logger.d(
+                _logger.d(
                   "TaskSummaryProvider: Successfully created summary: $_summary",
                 );
                 _state = TaskSummaryState.loaded;
                 _errorMessage = null;
                 notifyListeners();
               } catch (e, s) {
-                logger.e(
+                _logger.e(
                   "TaskSummaryProvider: Error creating summary: $e",
                   error: e,
                   stackTrace: s,
@@ -223,7 +261,7 @@ class TaskSummaryProvider with ChangeNotifier {
               }
             },
             onError: (e, s) {
-              logger.e(
+              _logger.e(
                 "TaskSummaryProvider: Error in task stream: $e",
                 error: e,
                 stackTrace: s,
@@ -234,7 +272,7 @@ class TaskSummaryProvider with ChangeNotifier {
             },
           );
     } catch (e, s) {
-      logger.e(
+      _logger.e(
         "TaskSummaryProvider: Error setting up task stream: $e",
         error: e,
         stackTrace: s,
@@ -250,22 +288,18 @@ class TaskSummaryProvider with ChangeNotifier {
     required String taskId,
     required TaskStatus newStatus,
   }) async {
-    logger.i(
+    _logger.i(
       "TaskSummaryProvider: Updating status for task $taskId to $newStatus.",
     );
     try {
-      await _taskService.updateTaskStatus(
-        familyId: familyId,
-        taskId: taskId,
-        newStatus: newStatus,
-      );
-      logger.d(
+      await _taskService.updateTaskStatus(taskId: taskId, status: newStatus);
+      _logger.d(
         "Task $taskId status updated successfully by TaskSummaryProvider.",
       );
     } catch (e, s) {
       _errorMessage = 'Failed to update task status: $e';
       notifyListeners();
-      logger.e(
+      _logger.e(
         "Error updating task status $taskId from TaskSummaryProvider: $e",
         error: e,
         stackTrace: s,

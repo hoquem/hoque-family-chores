@@ -4,7 +4,7 @@ import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
 import 'dart:async'; // Add this import for TimeoutException
@@ -24,6 +24,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   DateTime? _dueDate;
   String? _selectedAssigneeId;
   bool _isLoading = false;
+  final _logger = AppLogger();
 
   @override
   void initState() {
@@ -72,23 +73,23 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         throw Exception('User not properly authenticated');
       }
 
-      logger.i('Creating new task for family $familyId by user $creatorId');
+      _logger.i('Creating new task for family $familyId by user $creatorId');
 
       final task = Task(
         id: '', // Will be set by Firestore
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         points: int.parse(_pointsController.text),
+        difficulty: TaskDifficulty.easy, // Default to easy difficulty
         status: TaskStatus.available,
         familyId: familyId,
-        creatorId: creatorId,
-        assigneeId: _selectedAssigneeId,
-        dueDate: _dueDate,
+        assignedTo: _selectedAssigneeId,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        dueDate: _dueDate,
       );
 
-      logger.d('Task object created: ${task.toFirestore()}');
+      _logger.d('Task object created: ${task.toJson()}');
 
       // Add timeout to task creation
       await Future.any([
@@ -98,13 +99,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         }),
       ]);
 
-      logger.i('Task created successfully');
+      _logger.i('Task created successfully');
 
       if (mounted) {
         Navigator.of(context).pop();
       }
     } on TimeoutException catch (e) {
-      logger.e('Task creation timed out: $e');
+      _logger.e('Task creation timed out: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -114,7 +115,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         );
       }
     } catch (e, s) {
-      logger.e('Error creating task: $e', error: e, stackTrace: s);
+      _logger.e('Error creating task: $e', error: e, stackTrace: s);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -148,6 +149,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final familyProvider = context.watch<FamilyProvider>();
     final familyMembers = familyProvider.familyMembers;
     final currentUser = authProvider.currentUser;
+
+    _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
       appBar: AppBar(title: const Text('Add New Task')),
@@ -211,12 +214,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 if (currentUser != null)
                   DropdownMenuItem<String>(
-                    value: currentUser.id,
-                    child: Text('Me (${currentUser.name})'),
+                    value: currentUser.member.id,
+                    child: Text('Me (${currentUser.member.name})'),
                   ),
                 ...familyMembers
                     .map((member) {
-                      if (member.id == currentUser?.id) return null;
+                      if (member.id == currentUser?.member.id) return null;
                       return DropdownMenuItem<String>(
                         value: member.id,
                         child: Text(member.name),

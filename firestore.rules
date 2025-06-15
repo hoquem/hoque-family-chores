@@ -41,17 +41,17 @@ service cloud.firestore {
         isFamilyMember(familyId)
       );
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.creatorUserId;
-    }
 
-    // Rules for the 'tasks' collection
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        request.auth.uid == resource.data.createdBy ||
-        request.auth.uid == resource.data.assigneeId
-      );
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.createdBy;
+      // Rules for tasks subcollection
+      match /tasks/{taskId} {
+        allow read: if isAuthenticated() && isFamilyMember(familyId);
+        allow create: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId) && (
+          request.auth.uid == resource.data.createdBy ||
+          request.auth.uid == resource.data.assigneeId
+        );
+        allow delete: if isAuthenticated() && isFamilyMember(familyId) && request.auth.uid == resource.data.createdBy;
+      }
     }
 
     // Rules for the 'badges' collection

@@ -1,16 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirestoreInitializer {
   final FirebaseFirestore _firestore;
+  final _logger = AppLogger();
 
   FirestoreInitializer({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<void> initializeCollections() async {
     try {
-      logger.i("Starting Firestore collections initialization...");
+      _logger.i("Starting Firestore collections initialization...");
 
       // Initialize users collection
       await _initializeUsersCollection();
@@ -30,9 +31,9 @@ class FirestoreInitializer {
       // Initialize notifications collection
       await _initializeNotificationsCollection();
 
-      logger.i("Firestore collections initialization completed successfully.");
+      _logger.i("Firestore collections initialization completed successfully.");
     } catch (e, s) {
-      logger.e(
+      _logger.e(
         "Error initializing Firestore collections: $e",
         error: e,
         stackTrace: s,
@@ -42,7 +43,7 @@ class FirestoreInitializer {
   }
 
   Future<void> _initializeUsersCollection() async {
-    logger.d("Initializing users collection...");
+    _logger.d("Initializing users collection...");
     // Create a test user if it doesn't exist
     final testUserId = 'OVGdeZJWqEQmx7ErJ3cu3dp5uTh1'; // Your test user ID
     final userDoc = await _firestore.collection('users').doc(testUserId).get();
@@ -66,12 +67,12 @@ class FirestoreInitializer {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test user profile.");
+      _logger.i("Created test user profile.");
     }
   }
 
   Future<void> _initializeFamiliesCollection() async {
-    logger.d("Initializing families collection...");
+    _logger.d("Initializing families collection...");
     final familyId = 'ef37e597-5e7a-46b0-a00a-62147cb29c8c';
     final familyDoc =
         await _firestore.collection('families').doc(familyId).get();
@@ -85,12 +86,12 @@ class FirestoreInitializer {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test family.");
+      _logger.i("Created test family.");
     }
   }
 
   Future<void> _initializeTasksCollection() async {
-    logger.d("Initializing tasks collection...");
+    _logger.d("Initializing tasks collection...");
     // Create a test task if none exist
     final tasksSnapshot = await _firestore.collection('tasks').limit(1).get();
 
@@ -106,12 +107,12 @@ class FirestoreInitializer {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test task.");
+      _logger.i("Created test task.");
     }
   }
 
   Future<void> _initializeBadgesCollection() async {
-    logger.d("Initializing badges collection...");
+    _logger.d("Initializing badges collection...");
     // Create some basic badges if none exist
     final badgesSnapshot = await _firestore.collection('badges').limit(1).get();
 
@@ -123,12 +124,12 @@ class FirestoreInitializer {
         'points': 100,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test badge.");
+      _logger.i("Created test badge.");
     }
   }
 
   Future<void> _initializeAchievementsCollection() async {
-    logger.d("Initializing achievements collection...");
+    _logger.d("Initializing achievements collection...");
     // Create some basic achievements if none exist
     final achievementsSnapshot =
         await _firestore.collection('achievements').limit(1).get();
@@ -141,12 +142,12 @@ class FirestoreInitializer {
         'points': 500,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test achievement.");
+      _logger.i("Created test achievement.");
     }
   }
 
   Future<void> _initializeNotificationsCollection() async {
-    logger.d("Initializing notifications collection...");
+    _logger.d("Initializing notifications collection...");
     // Create a test notification if none exist
     final notificationsSnapshot =
         await _firestore.collection('notifications').limit(1).get();
@@ -160,7 +161,7 @@ class FirestoreInitializer {
         'read': false,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      logger.i("Created test notification.");
+      _logger.i("Created test notification.");
     }
   }
 }

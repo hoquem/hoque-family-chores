@@ -1,92 +1,199 @@
 // lib/models/reward.dart
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/utils/enum_helpers.dart'; // <--- NEW: Import enum_helpers
+import 'package:hoque_family_chores/models/base_model.dart';
 
-class Reward {
+class Reward extends BaseModel {
+  @override
   final String id;
-  final String title;
+  final String name;
   final String description;
   final int pointsCost;
   final String iconName;
-  final RewardCategory category;
+  final RewardType type;
+  final String familyId;
+  final String? creatorId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final RewardRarity rarity;
-  final bool isAvailable;
-  final bool isRedeemed;
-  final DateTime? redeemedAt;
-  final String? redeemedBy;
 
-  const Reward({
+  Reward._({
     required this.id,
-    required this.title,
-    this.description = '',
+    required this.name,
+    required this.description,
     required this.pointsCost,
-    this.iconName = 'card_giftcard',
-    required this.category,
-    required this.rarity,
-    this.isAvailable = true,
-    this.isRedeemed = false,
-    this.redeemedAt,
-    this.redeemedBy,
+    required this.iconName,
+    required this.type,
+    required this.familyId,
+    this.creatorId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.rarity = RewardRarity.common,
   });
 
-  factory Reward.fromMap(Map<String, dynamic> map) {
-    // Use enumFromString for RewardCategory
-    final category = enumFromString(
-      map['category'] as String?,
-      RewardCategory.values,
-      defaultValue: RewardCategory.physical,
-    );
-
-    // Use enumFromString for RewardRarity
-    final rarity = enumFromString(
-      map['rarity'] as String?,
-      RewardRarity.values,
-      defaultValue: RewardRarity.common,
-    );
-
-    return Reward(
-      id: map['id'] ?? '',
-      title: map['title'] as String? ?? 'No Title',
-      description: map['description'] as String? ?? '',
-      pointsCost: (map['pointsCost'] as num?)?.toInt() ?? 0,
-      iconName: map['iconName'] as String? ?? 'card_giftcard',
-      category: category, // Use parsed category
-      rarity: rarity, // Use parsed rarity
-      isAvailable: map['isAvailable'] as bool? ?? true,
-      isRedeemed: map['isRedeemed'] as bool? ?? false,
-      redeemedAt: (map['redeemedAt'] as Timestamp?)?.toDate(),
-      redeemedBy: map['redeemedBy'] as String?,
+  factory Reward({
+    required String id,
+    required String name,
+    required String description,
+    required int pointsCost,
+    required String iconName,
+    required RewardType type,
+    required String familyId,
+    String? creatorId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    RewardRarity rarity = RewardRarity.common,
+  }) {
+    return Reward._(
+      id: id,
+      name: name,
+      description: description,
+      pointsCost: pointsCost,
+      iconName: iconName,
+      type: type,
+      familyId: familyId,
+      creatorId: creatorId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      rarity: rarity,
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': title,
+      'name': name,
       'description': description,
       'pointsCost': pointsCost,
       'iconName': iconName,
-      'category': category.name,
+      'type': type.name,
+      'familyId': familyId,
+      'creatorId': creatorId,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
       'rarity': rarity.name,
-      'isAvailable': isAvailable,
-      'isRedeemed': isRedeemed,
-      'redeemedAt': redeemedAt != null ? Timestamp.fromDate(redeemedAt!) : null,
-      'redeemedBy': redeemedBy,
     };
   }
 
+  factory Reward.fromJson(Map<String, dynamic> json) {
+    return Reward(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      pointsCost: json['pointsCost'] as int? ?? 0,
+      iconName: json['iconName'] ?? 'card_giftcard',
+      type: RewardType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => RewardType.digital,
+      ),
+      familyId: json['familyId'] ?? '',
+      creatorId: json['creatorId'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      rarity: RewardRarity.values.firstWhere(
+        (e) => e.name == json['rarity'],
+        orElse: () => RewardRarity.common,
+      ),
+    );
+  }
+
   Reward copyWith({
-    String? id, String? title, String? description, int? pointsCost,
-    String? iconName, RewardCategory? category, RewardRarity? rarity,
-    bool? isAvailable, bool? isRedeemed, DateTime? redeemedAt, String? redeemedBy,
+    String? id,
+    String? name,
+    String? description,
+    int? pointsCost,
+    String? iconName,
+    RewardType? type,
+    String? familyId,
+    String? creatorId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    RewardRarity? rarity,
   }) {
     return Reward(
-      id: id ?? this.id, title: title ?? this.title, description: description ?? this.description,
-      pointsCost: pointsCost ?? this.pointsCost, iconName: iconName ?? this.iconName,
-      category: category ?? this.category, rarity: rarity ?? this.rarity,
-      isAvailable: isAvailable ?? this.isAvailable, isRedeemed: isRedeemed ?? this.isRedeemed,
-      redeemedAt: redeemedAt ?? this.redeemedAt, redeemedBy: redeemedBy ?? this.redeemedBy,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      pointsCost: pointsCost ?? this.pointsCost,
+      iconName: iconName ?? this.iconName,
+      type: type ?? this.type,
+      familyId: familyId ?? this.familyId,
+      creatorId: creatorId ?? this.creatorId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rarity: rarity ?? this.rarity,
     );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Reward &&
+        other.id == id &&
+        other.name == name &&
+        other.description == description &&
+        other.pointsCost == pointsCost &&
+        other.iconName == iconName &&
+        other.type == type &&
+        other.familyId == familyId &&
+        other.creatorId == creatorId &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt &&
+        other.rarity == rarity;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      name,
+      description,
+      pointsCost,
+      iconName,
+      type,
+      familyId,
+      creatorId,
+      createdAt,
+      updatedAt,
+      rarity,
+    );
+  }
+
+  String get title => name;
+}
+
+// --- Reward-related Enums (kept in this file for encapsulation) ---
+enum RewardCategory {
+  digital(displayName: 'Digital'),
+  physical(displayName: 'Physical'),
+  privilege(displayName: 'Privilege');
+
+  const RewardCategory({required this.displayName});
+  final String displayName;
+}
+
+enum RewardType { digital, physical, privilege }
+
+enum RewardRarity {
+  common,
+  uncommon,
+  rare,
+  epic,
+  legendary;
+
+  Color get color {
+    switch (this) {
+      case RewardRarity.common:
+        return Colors.green;
+      case RewardRarity.uncommon:
+        return Colors.cyan;
+      case RewardRarity.rare:
+        return Colors.deepOrange;
+      case RewardRarity.epic:
+        return Colors.purpleAccent;
+      case RewardRarity.legendary:
+        return Colors.amber;
+    }
   }
 }
