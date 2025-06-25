@@ -46,7 +46,7 @@ import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
 import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
-import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 

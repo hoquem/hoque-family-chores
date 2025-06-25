@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 
 // --- Badge-related Enums (kept in this file for encapsulation) ---
 enum BadgeCategory {

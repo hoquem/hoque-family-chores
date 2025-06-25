@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListTile extends StatefulWidget {
@@ -38,7 +37,7 @@ class _TaskListTileState extends State<TaskListTile> {
 
     try {
       widget.onToggleStatus(value);
-    } catch (e, stackTrace) {
+    } catch (e) {
       _logger.e('Error updating task status: $e');
       setState(() {
         _isError = true;

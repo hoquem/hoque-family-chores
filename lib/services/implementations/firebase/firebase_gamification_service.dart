@@ -5,7 +5,6 @@ import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -39,12 +38,7 @@ class FirebaseGamificationService implements GamificationServiceInterface {
         .map(
           (snapshot) =>
               snapshot.docs
-                  .map(
-                    (doc) => Badge.fromJson({
-                      ...doc.data() as Map<String, dynamic>,
-                      'id': doc.id,
-                    }),
-                  )
+                  .map((doc) => Badge.fromJson({...doc.data(), 'id': doc.id}))
                   .toList(),
         );
   }
@@ -106,7 +100,7 @@ class FirebaseGamificationService implements GamificationServiceInterface {
       return snapshot.docs
           .map(
             (doc) => Badge.fromJson({
-              ...?doc.data() as Map<String, dynamic>,
+              ...doc.data() as Map<String, dynamic>,
               'id': doc.id,
             }),
           )
@@ -171,10 +165,8 @@ class FirebaseGamificationService implements GamificationServiceInterface {
           (snapshot) =>
               snapshot.docs
                   .map(
-                    (doc) => Achievement.fromJson({
-                      ...doc.data() as Map<String, dynamic>,
-                      'id': doc.id,
-                    }),
+                    (doc) =>
+                        Achievement.fromJson({...doc.data(), 'id': doc.id}),
                   )
                   .toList(),
         );

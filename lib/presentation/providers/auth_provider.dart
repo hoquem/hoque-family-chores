@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/interfaces/user_profile_service_interface.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
@@ -90,7 +89,7 @@ class AuthProvider with ChangeNotifier {
     }
 
     try {
-      _currentUserProfile = await _userProfileService!.getUserProfile(
+      _currentUserProfile = await _userProfileService.getUserProfile(
         userId: userId,
       );
       if (_currentUserProfile != null) {
@@ -133,7 +132,7 @@ class AuthProvider with ChangeNotifier {
       if (_currentUserProfile != null &&
           _userFamilyId != null &&
           _gamificationService != null) {
-        await _gamificationService!.initializeUserData(
+        await _gamificationService.initializeUserData(
           userId: _currentUserProfile!.member.id,
           familyId: _userFamilyId!,
         );

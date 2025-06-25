@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import your provider
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Needed for authProvider
 import 'package:hoque_family_chores/utils/logger.dart';

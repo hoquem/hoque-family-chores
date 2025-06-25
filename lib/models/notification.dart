@@ -1,9 +1,7 @@
 // lib/models/notification.dart
 import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
-import 'package:hoque_family_chores/models/base_model.dart';
 
-class Notification extends BaseModel {
-  @override
+class Notification {
   final String id;
   final String userId;
   final String title;
@@ -90,7 +88,6 @@ class Notification extends BaseModel {
     );
   }
 
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Notification &&
@@ -103,7 +100,6 @@ class Notification extends BaseModel {
         other.createdAt == createdAt;
   }
 
-  @override
   int get hashCode {
     return Object.hash(id, userId, title, message, imageUrl, isRead, createdAt);
   }

@@ -1,6 +1,5 @@
 import 'package:hoque_family_chores/models/family.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/family_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
 import 'package:hoque_family_chores/utils/logger.dart';

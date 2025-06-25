@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this is imported for TaskStatus AND TaskSummaryState
-import 'package:hoque_family_chores/models/task_summary.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/task_summary.dart' as model;
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
-import 'package:hoque_family_chores/models/task.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hoque_family_chores/models/task_summary.dart';
 
 // REMOVED LOCAL DEFINITION OF TaskSummaryState, as it is now defined in enums.dart
 // enum TaskSummaryState { loading, loaded, error } // <--- THIS LINE IS REMOVED
@@ -148,12 +148,10 @@ class TaskSummaryProvider with ChangeNotifier {
                   status: TaskStatus.available,
                   familyId: familyId,
                   assignedTo: null,
-                  completedBy: null,
                   createdAt: now,
-                  updatedAt: now,
                   dueDate: now.add(const Duration(days: 7)),
                   completedAt: null,
-                  imageUrl: null,
+                  tags: const [],
                 );
                 await _taskService.createTask(task: defaultTask);
                 _summary = const TaskSummary();
@@ -186,12 +184,10 @@ class TaskSummaryProvider with ChangeNotifier {
                   status: TaskStatus.available,
                   familyId: familyId,
                   assignedTo: null,
-                  completedBy: null,
                   createdAt: now,
-                  updatedAt: now,
                   dueDate: now.add(const Duration(days: 7)),
                   completedAt: null,
-                  imageUrl: null,
+                  tags: const [],
                 );
                 await _taskService.createTask(task: defaultTask);
                 // No need to set summary here, will be updated on next stream event

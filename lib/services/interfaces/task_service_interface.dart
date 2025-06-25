@@ -1,5 +1,4 @@
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 
 abstract class TaskServiceInterface {
   Future<List<Task>> getTasksForFamily({required String familyId});

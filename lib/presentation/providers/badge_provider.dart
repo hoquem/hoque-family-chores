@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/services/interfaces/badge_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/models/enums.dart' as enums;
 
 class BadgeProvider extends ChangeNotifier {
   final BadgeServiceInterface _badgeService;
@@ -36,7 +35,7 @@ class BadgeProvider extends ChangeNotifier {
           description: 'This is your first badge! Edit or delete as needed.',
           iconName: 'emoji_events',
           requiredPoints: 10,
-          type: enums.BadgeType.taskCompletion,
+          type: BadgeType.taskCompletion,
           creatorId: null,
         );
         // Fetch again to update the list
@@ -57,7 +56,7 @@ class BadgeProvider extends ChangeNotifier {
     required String description,
     required String iconName,
     required int requiredPoints,
-    required enums.BadgeType type,
+    required BadgeType type,
     String? creatorId,
   }) async {
     try {
@@ -94,7 +93,7 @@ class BadgeProvider extends ChangeNotifier {
     String? description,
     String? iconName,
     int? requiredPoints,
-    enums.BadgeType? type,
+    BadgeType? type,
   }) async {
     try {
       _logger.d('Updating badge $badgeId for family $familyId');

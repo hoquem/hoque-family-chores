@@ -1,10 +1,7 @@
 import 'dart:async';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/badge.dart';
-import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/reward.dart';
-import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';

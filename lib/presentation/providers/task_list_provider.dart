@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -96,12 +95,10 @@ class TaskListProvider with ChangeNotifier {
           status: TaskStatus.available,
           familyId: familyId,
           assignedTo: null,
-          completedBy: null,
           createdAt: now,
-          updatedAt: now,
           dueDate: now.add(const Duration(days: 7)),
           completedAt: null,
-          imageUrl: null,
+          tags: const [],
         );
 
         try {

@@ -1,10 +1,8 @@
 // lib/models/reward.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hoque_family_chores/models/base_model.dart';
 
-class Reward extends BaseModel {
-  @override
+class Reward {
   final String id;
   final String name;
   final String description;
@@ -59,7 +57,6 @@ class Reward extends BaseModel {
     );
   }
 
-  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -126,7 +123,6 @@ class Reward extends BaseModel {
     );
   }
 
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Reward &&
@@ -143,7 +139,6 @@ class Reward extends BaseModel {
         other.rarity == rarity;
   }
 
-  @override
   int get hashCode {
     return Object.hash(
       id,

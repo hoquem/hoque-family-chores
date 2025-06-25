@@ -1,8 +1,7 @@
 // lib/models/family.dart
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/base_model.dart';
 
-class Family extends BaseModel {
+class Family {
   @override
   final String id;
   final String name;
@@ -46,6 +45,7 @@ class Family extends BaseModel {
     );
   }
 
+  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,

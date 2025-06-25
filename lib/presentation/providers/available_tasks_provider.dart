@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart'
     hide Badge; // Hide Flutter's Badge widget to prevent ambiguity
 import 'package:hoque_family_chores/models/badge.dart'; // Import your Badge model
-import 'package:hoque_family_chores/models/enums.dart';
 
 class BadgesWidget extends StatelessWidget {
   final List<Badge> badges;

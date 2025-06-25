@@ -1,13 +1,12 @@
 // lib/models/task_summary.dart
-import 'package:hoque_family_chores/models/base_model.dart';
+// import 'package:hoque_family_chores/models/base_model.dart';
 
 // --- TaskSummary-related Enums (kept in this file for encapsulation) ---
 enum TaskSummaryState { loading, loaded, error }
 
 enum AvailableTasksState { loading, loaded, error, claiming }
 
-class TaskSummary extends BaseModel {
-  @override
+class TaskSummary {
   final String id;
   final int totalTasks;
   final int completedTasks;
@@ -47,7 +46,6 @@ class TaskSummary extends BaseModel {
     );
   }
 
-  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -61,7 +59,6 @@ class TaskSummary extends BaseModel {
     };
   }
 
-  @override
   TaskSummary copyWith({
     String? id,
     int? totalTasks,
@@ -84,7 +81,6 @@ class TaskSummary extends BaseModel {
     );
   }
 
-  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is TaskSummary &&
@@ -98,7 +94,6 @@ class TaskSummary extends BaseModel {
         other.dueToday == dueToday;
   }
 
-  @override
   int get hashCode {
     return Object.hash(
       id,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart'
     as app_task_list_provider;

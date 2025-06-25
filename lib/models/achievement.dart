@@ -1,5 +1,6 @@
 // lib/models/achievement.dart
-import 'package:hoque_family_chores/models/enums.dart';
+// import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/badge.dart';
 
 class Achievement {
   @override

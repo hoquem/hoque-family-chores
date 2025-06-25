@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -85,8 +85,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         familyId: familyId,
         assignedTo: _selectedAssigneeId,
         createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
         dueDate: _dueDate,
+        tags: const [],
       );
 
       _logger.d('Task object created: ${task.toJson()}');

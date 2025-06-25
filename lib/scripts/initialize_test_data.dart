@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/badge.dart';
+import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 
 Future<void> main() async {
   final logger = AppLogger();

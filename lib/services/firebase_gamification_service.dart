@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/task.dart';
-import '../models/enums.dart';
 
 /// A service that handles gamification features using Firebase.
 class FirebaseGamificationService {

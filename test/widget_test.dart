@@ -5,10 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
 
 // Import ALL necessary models from your project
+import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart' as enums;
 import 'package:hoque_family_chores/models/family_member.dart';
 
 // Import ALL necessary services and interfaces from your project
@@ -280,7 +280,7 @@ void main() {
               update: (
                 BuildContext context,
                 GamificationServiceInterface gamificationService,
-                UserProfileServiceInterface _userProfileService,
+                UserProfileServiceInterface userProfileService,
                 app_gamification_provider.GamificationProvider? provider,
               ) {
                 return provider!..updateDependencies(

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/reward.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/reward_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 

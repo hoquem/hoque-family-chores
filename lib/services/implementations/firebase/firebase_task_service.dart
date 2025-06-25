@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -22,7 +21,7 @@ class FirebaseTaskService implements TaskServiceInterface {
                 .collection('tasks')
                 .get();
         return snapshot.docs
-            .map((doc) => Task.fromJson({...?doc.data(), 'id': doc.id}))
+            .map((doc) => Task.fromJson({...doc.data(), 'id': doc.id}))
             .toList();
       },
       operationName: 'getTasksForFamily',
@@ -40,7 +39,7 @@ class FirebaseTaskService implements TaskServiceInterface {
                 .where('assigneeId', isEqualTo: userId)
                 .get();
         return snapshot.docs
-            .map((doc) => Task.fromJson({...?doc.data(), 'id': doc.id}))
+            .map((doc) => Task.fromJson({...doc.data(), 'id': doc.id}))
             .toList();
       },
       operationName: 'getTasksForUser',
@@ -292,8 +291,7 @@ class FirebaseTaskService implements TaskServiceInterface {
                 (snapshot) =>
                     snapshot.docs
                         .map(
-                          (doc) =>
-                              Task.fromJson({...?doc.data(), 'id': doc.id}),
+                          (doc) => Task.fromJson({...doc.data(), 'id': doc.id}),
                         )
                         .toList(),
               ),
@@ -316,8 +314,7 @@ class FirebaseTaskService implements TaskServiceInterface {
                 (snapshot) =>
                     snapshot.docs
                         .map(
-                          (doc) =>
-                              Task.fromJson({...?doc.data(), 'id': doc.id}),
+                          (doc) => Task.fromJson({...doc.data(), 'id': doc.id}),
                         )
                         .toList(),
               ),
@@ -343,8 +340,7 @@ class FirebaseTaskService implements TaskServiceInterface {
                 (snapshot) =>
                     snapshot.docs
                         .map(
-                          (doc) =>
-                              Task.fromJson({...?doc.data(), 'id': doc.id}),
+                          (doc) => Task.fromJson({...doc.data(), 'id': doc.id}),
                         )
                         .toList(),
               ),

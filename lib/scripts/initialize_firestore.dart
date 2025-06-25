@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 
 class FirestoreInitializer {
   final FirebaseFirestore _firestore;

@@ -4,7 +4,6 @@ import 'package:hoque_family_chores/models/badge.dart'; // Correctly import your
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
