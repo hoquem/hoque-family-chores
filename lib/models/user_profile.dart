@@ -1,4 +1,6 @@
 import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/utils/json_parser.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 /// UserProfile extends FamilyMember with detailed gamification data and business logic.
 class UserProfile {
@@ -33,6 +35,13 @@ class UserProfile {
     required this.preferences,
     required this.statistics,
   });
+
+  // --- Convenience getters for backward compatibility ---
+  String get name => member.name;
+  String get email => member.email ?? 'no-email@example.com';
+  int get currentLevel => _calculateLevel(points);
+  int get totalPoints => points;
+  String get familyId => member.familyId;
 
   UserProfile copyWith({
     String? id,
@@ -88,56 +97,68 @@ class UserProfile {
   }
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    // Helper function to safely convert to list
-    List<String> _safeListFromJson(dynamic value) {
-      if (value == null) return [];
-      if (value is List) {
-        return List<String>.from(value);
-      }
-      // If it's not a list, return empty list
-      return [];
-    }
-
-    return UserProfile(
-      id: json['id'] as String,
-      member: json['member'] != null 
-          ? FamilyMember.fromJson(json['member'] as Map<String, dynamic>)
-          : FamilyMember(
-              id: json['id'] as String,
-              userId: json['id'] as String, // Use id as userId for fallback
-              familyId: json['familyId'] as String? ?? 'unknown',
-              name: json['name'] as String? ?? 'Unknown User',
-              photoUrl: json['avatarUrl'] as String?,
-              role: FamilyRole.child, // Default to child role
-              points: json['points'] as int? ?? 0,
-              joinedAt: json['createdAt'] != null 
-                  ? DateTime.parse(json['createdAt'] as String)
-                  : DateTime.now(),
-              updatedAt: json['updatedAt'] != null 
-                  ? DateTime.parse(json['updatedAt'] as String)
-                  : DateTime.now(),
+    final logger = AppLogger();
+    
+    try {
+      return UserProfile(
+        id: JsonParser.parseRequiredString(json, 'id'),
+        member: JsonParser.parseObject(json, 'member')?.let((obj) => FamilyMember.fromJson(obj)) ??
+            FamilyMember(
+              id: JsonParser.parseRequiredString(json, 'id'),
+              userId: JsonParser.parseRequiredString(json, 'id'),
+              familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown',
+              name: JsonParser.parseString(json, 'name') ?? 'Unknown User',
+              photoUrl: JsonParser.parseString(json, 'avatarUrl'),
+              role: FamilyRole.child,
+              points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+              joinedAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+              updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
             ),
-      points: json['points'] as int? ?? 0,
-      badges: _safeListFromJson(json['badges']),
-      achievements: _safeListFromJson(json['achievements']),
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt'] as String)
-          : DateTime.now(),
-      avatarUrl: json['avatarUrl'] as String?,
-      bio: json['bio'] as String?,
-      completedTasks: _safeListFromJson(json['completedTasks']),
-      inProgressTasks: _safeListFromJson(json['inProgressTasks']),
-      availableTasks: _safeListFromJson(json['availableTasks']),
-      preferences: json['preferences'] != null 
-          ? Map<String, dynamic>.from(json['preferences'] as Map)
-          : <String, dynamic>{},
-      statistics: json['statistics'] != null 
-          ? Map<String, dynamic>.from(json['statistics'] as Map)
-          : <String, dynamic>{},
-    );
+        points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+        badges: JsonParser.parseList(json, 'badges', (item) => item.toString(), defaultValue: []) ?? [],
+        achievements: JsonParser.parseList(json, 'achievements', (item) => item.toString(), defaultValue: []) ?? [],
+        createdAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+        updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+        avatarUrl: JsonParser.parseString(json, 'avatarUrl'),
+        bio: JsonParser.parseString(json, 'bio'),
+        completedTasks: JsonParser.parseList(json, 'completedTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        inProgressTasks: JsonParser.parseList(json, 'inProgressTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        availableTasks: JsonParser.parseList(json, 'availableTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        preferences: JsonParser.parseObject(json, 'preferences') ?? <String, dynamic>{},
+        statistics: JsonParser.parseObject(json, 'statistics') ?? <String, dynamic>{},
+      );
+    } catch (e) {
+      logger.e('Failed to parse UserProfile from JSON: $e');
+      logger.d('JSON data: $json');
+      
+      // Return a minimal valid user profile with defaults
+      return UserProfile(
+        id: JsonParser.parseString(json, 'id') ?? 'unknown-${DateTime.now().millisecondsSinceEpoch}',
+        member: FamilyMember(
+          id: JsonParser.parseString(json, 'id') ?? 'unknown-user',
+          userId: JsonParser.parseString(json, 'id') ?? 'unknown-user',
+          familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown-family',
+          name: JsonParser.parseString(json, 'name') ?? 'Unknown User',
+          photoUrl: JsonParser.parseString(json, 'avatarUrl'),
+          role: FamilyRole.child,
+          points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+          joinedAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+          updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+        ),
+        points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+        badges: JsonParser.parseList(json, 'badges', (item) => item.toString(), defaultValue: []) ?? [],
+        achievements: JsonParser.parseList(json, 'achievements', (item) => item.toString(), defaultValue: []) ?? [],
+        createdAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+        updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+        avatarUrl: JsonParser.parseString(json, 'avatarUrl'),
+        bio: JsonParser.parseString(json, 'bio'),
+        completedTasks: JsonParser.parseList(json, 'completedTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        inProgressTasks: JsonParser.parseList(json, 'inProgressTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        availableTasks: JsonParser.parseList(json, 'availableTasks', (item) => item.toString(), defaultValue: []) ?? [],
+        preferences: JsonParser.parseObject(json, 'preferences') ?? <String, dynamic>{},
+        statistics: JsonParser.parseObject(json, 'statistics') ?? <String, dynamic>{},
+      );
+    }
   }
 
   @override
@@ -304,6 +325,34 @@ class UserProfile {
   int get levelProgressPercentage {
     if (nextLevelPoints <= 0) return 100;
     return ((points % _basePointsForLevel) / _basePointsForLevel * 100).round();
+  }
+
+  int _calculateLevel(int points) {
+    return calculateLevelFromPoints(points);
+  }
+
+  /// Factory method for creating user profiles from Firestore documents
+  factory UserProfile.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return UserProfile.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
+
+  /// Alias for fromJson for backward compatibility
+  factory UserProfile.fromMap(Map<String, dynamic> json) {
+    return UserProfile.fromJson(json);
+  }
+
+  /// Alias for fromFirestore for backward compatibility
+  factory UserProfile.fromSnapshot(Map<String, dynamic> data, String id) {
+    return UserProfile.fromFirestore(data, id);
   }
 }
 

@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 import 'package:hoque_family_chores/services/interfaces/user_profile_service_interface.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:uuid/uuid.dart';
-
-enum AuthStatus { unknown, authenticating, authenticated, unauthenticated, error }
 
 class AuthProvider with ChangeNotifier {
   final GamificationServiceInterface? _gamificationService;

@@ -4,7 +4,6 @@ import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
-import 'package:uuid/uuid.dart';
 
 enum TaskSummaryState { loading, loaded, error }
 
@@ -31,8 +30,8 @@ class TaskSummary {
 }
 
 class TaskSummaryProvider with ChangeNotifier {
-  TaskServiceInterface _taskService;
-  AuthProvider _authProvider;
+  final TaskServiceInterface _taskService;
+  final AuthProvider _authProvider;
 
   TaskSummaryState _state = TaskSummaryState.loading;
   TaskSummary? _summary;
@@ -155,7 +154,7 @@ class TaskSummaryProvider with ChangeNotifier {
           final waitingAssigned = tasks
               .where((task) =>
                   task.status == TaskStatus.assigned &&
-                  task.assignedTo == userId)
+                  task.assignedTo?.id == userId)
               .length;
           final availableTasks = tasks
               .where((task) => task.status == TaskStatus.available)
@@ -250,7 +249,7 @@ class TaskSummaryProvider with ChangeNotifier {
         final waitingAssigned = tasks
             .where((task) =>
                 task.status == TaskStatus.assigned &&
-                task.assignedTo == userId)
+                task.assignedTo?.id == userId)
             .length;
         final availableTasks = tasks
             .where((task) => task.status == TaskStatus.available)

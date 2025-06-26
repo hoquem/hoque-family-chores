@@ -1,7 +1,5 @@
 import 'package:hoque_family_chores/models/badge.dart'; // Your custom Badge model
 import 'package:hoque_family_chores/models/reward.dart'; // Your custom Reward model
-// import 'package:hoque_family_chores/models/achievement.dart'; // <--- REMOVED UNUSED IMPORT
-import 'package:hoque_family_chores/models/enums.dart'; // For BadgeCategory, BadgeRarity, RewardCategory, RewardRarity
 import 'package:hoque_family_chores/services/gamification_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/test_data/mock_data.dart'; // Import mock_data for constants
@@ -12,51 +10,64 @@ class MockGamificationService implements GamificationServiceInterface {
       id: MockData.badgeFirstTask,
       name: 'First Task!',
       description: 'Completed your very first chore.',
-      imageUrl: 'assets/icons/star_border.png',
-      category: BadgeCategory.taskMaster,
-      rarity: BadgeRarity.common,
+      iconName: 'star_border',
       requiredPoints: 10,
+      type: BadgeType.taskCompletion,
+      familyId: 'family_hoque_1',
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+      updatedAt: DateTime.now(),
+      rarity: BadgeRarity.common,
     ),
     Badge(
       id: MockData.badgeTaskMaster,
       name: 'Task Master',
       description: 'Completed 10 chores.',
-      imageUrl: 'assets/icons/military_tech.png',
-      category: BadgeCategory.taskMaster,
-      rarity: BadgeRarity.rare,
+      iconName: 'military_tech',
       requiredPoints: 100,
+      type: BadgeType.taskCompletion,
+      familyId: 'family_hoque_1',
+      createdAt: DateTime.now().subtract(const Duration(days: 20)),
+      updatedAt: DateTime.now(),
+      rarity: BadgeRarity.rare,
     ),
     Badge(
       id: MockData.badgeConsistent,
       name: 'Consistent Helper',
       description: 'Completed a chore 7 days in a row.',
-      imageUrl: 'assets/icons/local_fire_department.png',
-      category: BadgeCategory.streaker,
-      rarity: BadgeRarity.epic,
+      iconName: 'local_fire_department',
       requiredPoints: 500,
+      type: BadgeType.streak,
+      familyId: 'family_hoque_1',
+      createdAt: DateTime.now().subtract(const Duration(days: 10)),
+      updatedAt: DateTime.now(),
+      rarity: BadgeRarity.epic,
     ),
   ];
 
   final List<Reward> _predefinedRewards = [
     Reward(
       id: 'reward_movie_night',
-      title: 'Movie Night Pick',
+      name: 'Movie Night Pick',
       description: 'You get to pick the movie for family movie night!',
       pointsCost: 500,
       iconName: 'theaters',
-      category: RewardCategory.privilege,
+      type: RewardType.privilege,
+      familyId: 'family_hoque_1',
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+      updatedAt: DateTime.now(),
       rarity: RewardRarity.rare,
-      isAvailable: true,
     ),
     Reward(
       id: 'reward_ice_cream',
-      title: 'Ice Cream Treat',
+      name: 'Ice Cream Treat',
       description: 'A special ice cream treat, on the house.',
       pointsCost: 250,
       iconName: 'icecream',
-      category: RewardCategory.physical,
+      type: RewardType.physical,
+      familyId: 'family_hoque_1',
+      createdAt: DateTime.now().subtract(const Duration(days: 20)),
+      updatedAt: DateTime.now(),
       rarity: RewardRarity.uncommon,
-      isAvailable: true,
     ),
   ];
 

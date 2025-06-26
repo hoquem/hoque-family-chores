@@ -11,7 +11,6 @@ class MockRewardService implements RewardServiceInterface {
     logger.i("MockRewardService initialized with empty rewards list.");
   }
 
-  @override
   Stream<List<Reward>> streamRewards({required String familyId}) {
     return ServiceUtils.handleServiceStream(
       stream: () async* {

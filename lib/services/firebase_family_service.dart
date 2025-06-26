@@ -1,7 +1,6 @@
 // lib/services/firebase_family_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // ADDED: Import for the FamilyRole enum
 import 'package:hoque_family_chores/services/family_service_interface.dart';
 
 class FirebaseFamilyService implements FamilyServiceInterface {
@@ -19,22 +18,26 @@ class FirebaseFamilyService implements FamilyServiceInterface {
 
       List<FamilyMember> members = querySnapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-
-        // Safely parse the role string into a FamilyRole enum
         final roleString = data['role'] as String?;
-        final roleEnum = roleString != null ? FamilyRole.values.byName(roleString) : null;
-
+        final roleEnum = roleString != null ? FamilyRole.values.byName(roleString) : FamilyRole.child;
         return FamilyMember(
           id: doc.id,
+          userId: data['userId'] as String? ?? doc.id,
+          familyId: data['familyId'] as String? ?? 'unknown-family',
           name: data['displayName'] as String? ?? 'Unnamed Member',
-          avatarUrl: data['photoURL'] as String?,
-          // MODIFIED: Pass the converted enum to the constructor
+          photoUrl: data['photoURL'] as String?,
           role: roleEnum,
+          points: data['points'] as int? ?? 0,
+          joinedAt: (data['joinedAt'] is Timestamp)
+              ? (data['joinedAt'] as Timestamp).toDate()
+              : DateTime.tryParse(data['joinedAt']?.toString() ?? '') ?? DateTime.now(),
+          updatedAt: (data['updatedAt'] is Timestamp)
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
         );
       }).toList();
 
       return members;
-
     } catch (e) {
       print("Error fetching family members from Firestore: $e");
       throw Exception("Failed to fetch family members: ${e.toString()}");

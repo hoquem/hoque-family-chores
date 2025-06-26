@@ -34,7 +34,6 @@ class FirebaseAchievementService implements AchievementServiceInterface {
     );
   }
 
-  @override
   Future<void> createAchievement({
     required String familyId,
     required Achievement achievement,
@@ -53,7 +52,6 @@ class FirebaseAchievementService implements AchievementServiceInterface {
     );
   }
 
-  @override
   Future<void> updateAchievement({
     required String familyId,
     required String achievementId,
@@ -73,7 +71,6 @@ class FirebaseAchievementService implements AchievementServiceInterface {
     );
   }
 
-  @override
   Future<void> deleteAchievement({
     required String familyId,
     required String achievementId,
@@ -111,7 +108,6 @@ class FirebaseAchievementService implements AchievementServiceInterface {
     );
   }
 
-  @override
   Future<void> revokeAchievement({
     required String familyId,
     required String userId,

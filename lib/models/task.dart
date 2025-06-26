@@ -1,6 +1,19 @@
-// lib/models/task.dart
-// import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/utils/json_parser.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
+
+// --- Task-related Enums (co-located for encapsulation) ---
+enum TaskStatus {
+  available, // For anyone to claim
+  assigned, // Claimed by a user
+  pendingApproval, // Submitted for review
+  needsRevision, // Rejected by a parent, needs changes
+  completed, // Approved and finished
+}
+
+enum TaskFilterType { all, myTasks, available, completed }
+
+enum TaskDifficulty { easy, medium, hard, challenging }
 
 class Task {
   final String id;
@@ -36,6 +49,9 @@ class Task {
     this.lastCompletedAt,
     required this.familyId,
   });
+
+  // --- Convenience getter for backward compatibility ---
+  String? get assigneeId => assignedTo?.id;
 
   Task copyWith({
     String? id,
@@ -78,8 +94,8 @@ class Task {
       'id': id,
       'title': title,
       'description': description,
-      'status': status.toString(),
-      'difficulty': difficulty.toString(),
+      'status': status.name,
+      'difficulty': difficulty.name,
       'dueDate': dueDate.toIso8601String(),
       'assignedTo': assignedTo?.toJson(),
       'createdBy': createdBy?.toJson(),
@@ -94,55 +110,62 @@ class Task {
   }
 
   factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      status: TaskStatus.values.firstWhere(
-        (e) => e.toString() == json['status'],
-        orElse: () => TaskStatus.available,
-      ),
-      difficulty: TaskDifficulty.values.firstWhere(
-        (e) => e.toString() == json['difficulty'],
-        orElse: () => TaskDifficulty.easy,
-      ),
-      dueDate: DateTime.parse(json['dueDate'] as String),
-      assignedTo:
-          json['assignedTo'] != null
-              ? FamilyMember.fromJson(
-                json['assignedTo'] as Map<String, dynamic>,
-              )
-              : null,
-      createdBy:
-          json['createdBy'] != null
-              ? FamilyMember.fromJson(json['createdBy'] as Map<String, dynamic>)
-              : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      completedAt:
-          json['completedAt'] != null
-              ? DateTime.parse(json['completedAt'] as String)
-              : null,
-      points: json['points'] as int,
-      tags: List<String>.from(json['tags'] as List),
-      recurringPattern: json['recurringPattern'] as String?,
-      lastCompletedAt:
-          json['lastCompletedAt'] != null
-              ? DateTime.parse(json['lastCompletedAt'] as String)
-              : null,
-      familyId: json['familyId'] as String,
-    );
+    final logger = AppLogger();
+    
+    try {
+      return Task(
+        id: JsonParser.parseRequiredString(json, 'id'),
+        title: JsonParser.parseRequiredString(json, 'title'),
+        description: JsonParser.parseRequiredString(json, 'description'),
+        status: JsonParser.parseRequiredEnum(json, 'status', TaskStatus.values, TaskStatus.available),
+        difficulty: JsonParser.parseRequiredEnum(json, 'difficulty', TaskDifficulty.values, TaskDifficulty.easy),
+        dueDate: JsonParser.parseRequiredDateTime(json, 'dueDate'),
+        assignedTo: JsonParser.parseObject(json, 'assignedTo')?.let((obj) => FamilyMember.fromJson(obj)),
+        createdBy: JsonParser.parseObject(json, 'createdBy')?.let((obj) => FamilyMember.fromJson(obj)),
+        createdAt: JsonParser.parseRequiredDateTime(json, 'createdAt'),
+        completedAt: JsonParser.parseDateTime(json, 'completedAt'),
+        points: JsonParser.parseRequiredInt(json, 'points'),
+        tags: JsonParser.parseRequiredList(json, 'tags', (item) => item.toString()),
+        recurringPattern: JsonParser.parseString(json, 'recurringPattern'),
+        lastCompletedAt: JsonParser.parseDateTime(json, 'lastCompletedAt'),
+        familyId: JsonParser.parseRequiredString(json, 'familyId'),
+      );
+    } catch (e) {
+      logger.e('Failed to parse Task from JSON: $e');
+      logger.d('JSON data: $json');
+      
+      // Return a minimal valid task with defaults
+      return Task(
+        id: JsonParser.parseString(json, 'id') ?? 'unknown-${DateTime.now().millisecondsSinceEpoch}',
+        title: JsonParser.parseString(json, 'title') ?? 'Unknown Task',
+        description: JsonParser.parseString(json, 'description') ?? 'Task description not available',
+        status: JsonParser.parseEnum(json, 'status', TaskStatus.values, TaskStatus.available) ?? TaskStatus.available,
+        difficulty: JsonParser.parseEnum(json, 'difficulty', TaskDifficulty.values, TaskDifficulty.easy) ?? TaskDifficulty.easy,
+        dueDate: JsonParser.parseDateTime(json, 'dueDate') ?? DateTime.now().add(const Duration(days: 1)),
+        assignedTo: null,
+        createdBy: null,
+        createdAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+        completedAt: JsonParser.parseDateTime(json, 'completedAt'),
+        points: JsonParser.parseInt(json, 'points', defaultValue: 10) ?? 10,
+        tags: JsonParser.parseList(json, 'tags', (item) => item.toString(), defaultValue: []) ?? [],
+        recurringPattern: JsonParser.parseString(json, 'recurringPattern'),
+        lastCompletedAt: JsonParser.parseDateTime(json, 'lastCompletedAt'),
+        familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown-family',
+      );
+    }
   }
-}
 
-// --- Task-related Enums (kept in this file for encapsulation) ---
-enum TaskStatus {
-  available, // For anyone to claim
-  assigned, // Claimed by a user
-  pendingApproval, // Submitted for review
-  needsRevision, // Rejected by a parent, needs changes
-  completed, // Approved and finished
-}
+  /// Factory method for creating tasks from Firestore documents
+  factory Task.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Task.fromJson(json);
+  }
 
-enum TaskFilterType { all, myTasks, available, completed }
-
-enum TaskDifficulty { easy, medium, hard, challenging }
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
+} 

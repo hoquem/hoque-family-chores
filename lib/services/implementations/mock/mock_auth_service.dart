@@ -167,7 +167,6 @@ class MockUser implements User {
   @override
   UserMetadata get metadata => MockUserMetadata();
 
-  @override
   List<String> get providerId => [];
 
   @override

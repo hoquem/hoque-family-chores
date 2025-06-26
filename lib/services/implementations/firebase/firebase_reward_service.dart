@@ -9,7 +9,6 @@ class FirebaseRewardService implements RewardServiceInterface {
   FirebaseRewardService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  @override
   Stream<List<Reward>> streamRewards({required String familyId}) {
     return ServiceUtils.handleServiceStream(
       stream:

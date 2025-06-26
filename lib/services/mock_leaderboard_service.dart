@@ -22,6 +22,7 @@ class MockLeaderboardService implements LeaderboardServiceInterface {
       int points = random.nextInt(200) + 20; // Random points between 20 and 220
       int tasksCompleted = (points / (random.nextInt(10) + 5)).round(); // Loosely related tasks
       return LeaderboardEntry(
+        id: member.id,
         member: member,
         points: points,
         tasksCompleted: tasksCompleted,

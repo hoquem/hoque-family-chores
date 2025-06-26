@@ -43,6 +43,9 @@ class Family {
     );
   }
 
+  // --- Convenience getter for backward compatibility ---
+  List<String> get memberUserIds => memberIds;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -67,6 +70,25 @@ class Family {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
+  }
+
+  /// Alias for fromJson for backward compatibility
+  factory Family.fromMap(Map<String, dynamic> json) {
+    return Family.fromJson(json);
+  }
+
+  /// Factory method for creating families from Firestore documents
+  factory Family.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Family.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
   }
 
   Family copyWith({

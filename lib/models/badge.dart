@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/utils/json_parser.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
-// --- Badge-related Enums (kept in this file for encapsulation) ---
+// --- Badge-related Enums (co-located for encapsulation) ---
 enum BadgeCategory {
   taskMaster(displayName: 'Task Master'),
   streaker(displayName: 'Streaker'),
@@ -22,23 +24,15 @@ enum BadgeType {
 }
 
 enum BadgeRarity {
-  common,
-  rare,
-  epic,
-  legendary;
+  common(color: Colors.brown, displayName: 'Common'),
+  uncommon(color: Colors.blueGrey, displayName: 'Uncommon'),
+  rare(color: Colors.blue, displayName: 'Rare'),
+  epic(color: Colors.purpleAccent, displayName: 'Epic'),
+  legendary(color: Colors.amber, displayName: 'Legendary');
 
-  Color get color {
-    switch (this) {
-      case BadgeRarity.common:
-        return Colors.grey;
-      case BadgeRarity.rare:
-        return Colors.blue;
-      case BadgeRarity.epic:
-        return Colors.purple;
-      case BadgeRarity.legendary:
-        return Colors.orange;
-    }
-  }
+  const BadgeRarity({required this.color, required this.displayName});
+  final Color color;
+  final String displayName;
 }
 
 class Badge {
@@ -96,6 +90,21 @@ class Badge {
     );
   }
 
+  // --- Convenience getters for backward compatibility ---
+  String? get imageUrl => null; // Badge uses iconName instead of imageUrl
+  BadgeCategory get category {
+    switch (type) {
+      case BadgeType.taskCompletion:
+        return BadgeCategory.taskMaster;
+      case BadgeType.streak:
+        return BadgeCategory.streaker;
+      case BadgeType.points:
+        return BadgeCategory.superHelper;
+      default:
+        return BadgeCategory.taskMaster;
+    }
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -113,25 +122,41 @@ class Badge {
   }
 
   factory Badge.fromJson(Map<String, dynamic> json) {
-    return Badge(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      iconName: json['iconName'] ?? 'emoji_events',
-      requiredPoints: json['requiredPoints'] ?? 0,
-      type: BadgeType.values.firstWhere(
-        (e) => e.name == json['type'],
-        orElse: () => BadgeType.taskCompletion,
-      ),
-      familyId: json['familyId'] ?? '',
-      creatorId: json['creatorId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      rarity: BadgeRarity.values.firstWhere(
-        (e) => e.name == json['rarity'],
-        orElse: () => BadgeRarity.common,
-      ),
-    );
+    final logger = AppLogger();
+    
+    try {
+      return Badge(
+        id: JsonParser.parseRequiredString(json, 'id'),
+        name: JsonParser.parseRequiredString(json, 'name'),
+        description: JsonParser.parseRequiredString(json, 'description'),
+        iconName: JsonParser.parseString(json, 'iconName', defaultValue: 'emoji_events') ?? 'emoji_events',
+        requiredPoints: JsonParser.parseInt(json, 'requiredPoints', defaultValue: 0) ?? 0,
+        type: JsonParser.parseRequiredEnum(json, 'type', BadgeType.values, BadgeType.taskCompletion),
+        familyId: JsonParser.parseString(json, 'familyId', defaultValue: '') ?? '',
+        creatorId: JsonParser.parseString(json, 'creatorId'),
+        createdAt: JsonParser.parseRequiredDateTime(json, 'createdAt'),
+        updatedAt: JsonParser.parseRequiredDateTime(json, 'updatedAt'),
+        rarity: JsonParser.parseRequiredEnum(json, 'rarity', BadgeRarity.values, BadgeRarity.common),
+      );
+    } catch (e) {
+      logger.e('Failed to parse Badge from JSON: $e');
+      logger.d('JSON data: $json');
+      
+      // Return a minimal valid badge with defaults
+      return Badge(
+        id: JsonParser.parseString(json, 'id') ?? 'unknown-${DateTime.now().millisecondsSinceEpoch}',
+        name: JsonParser.parseString(json, 'name') ?? 'Unknown Badge',
+        description: JsonParser.parseString(json, 'description') ?? 'Badge description not available',
+        iconName: JsonParser.parseString(json, 'iconName', defaultValue: 'emoji_events') ?? 'emoji_events',
+        requiredPoints: JsonParser.parseInt(json, 'requiredPoints', defaultValue: 0) ?? 0,
+        type: JsonParser.parseEnum(json, 'type', BadgeType.values, BadgeType.taskCompletion) ?? BadgeType.taskCompletion,
+        familyId: JsonParser.parseString(json, 'familyId', defaultValue: '') ?? '',
+        creatorId: JsonParser.parseString(json, 'creatorId'),
+        createdAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+        updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+        rarity: JsonParser.parseEnum(json, 'rarity', BadgeRarity.values, BadgeRarity.common) ?? BadgeRarity.common,
+      );
+    }
   }
 
   Badge copyWith({
@@ -160,6 +185,25 @@ class Badge {
       updatedAt: updatedAt ?? this.updatedAt,
       rarity: rarity ?? this.rarity,
     );
+  }
+
+  /// Alias for fromJson for backward compatibility
+  factory Badge.fromMap(Map<String, dynamic> json) {
+    return Badge.fromJson(json);
+  }
+
+  /// Factory method for creating badges from Firestore documents
+  factory Badge.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Badge.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
   }
 
   @override

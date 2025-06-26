@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Import ALL necessary models from your project
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/badge.dart';
-import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:hoque_family_chores/models/reward.dart';
 
 // Import ALL necessary services and interfaces from your project
 import 'package:hoque_family_chores/services/interfaces/user_profile_service_interface.dart';
@@ -17,7 +18,6 @@ import 'package:hoque_family_chores/services/interfaces/gamification_service_int
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/services/implementations/mock/mock_user_profile_service.dart';
 import 'package:hoque_family_chores/services/implementations/mock/mock_task_service.dart';
-import 'package:hoque_family_chores/services/implementations/mock/mock_gamification_service.dart';
 
 // Import ALL necessary providers from your project, ALIASING YOUR CUSTOM AUTHPROVIDER
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'
@@ -31,7 +31,6 @@ import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dar
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart';
-import 'package:hoque_family_chores/main.dart'; // To access AuthWrapper
 import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
 
 // --- Mocktail Mocks for Firebase Auth ---
@@ -54,7 +53,7 @@ class MockGamificationService extends Mock
         description: '',
         iconName: 'star_border',
         requiredPoints: 10,
-        type: enums.BadgeType.taskCompletion,
+        type: BadgeType.taskCompletion,
         familyId: 'test_family_id',
         createdAt: DateTime(2020, 1, 1),
         updatedAt: DateTime(2020, 1, 1),
@@ -71,7 +70,7 @@ class MockGamificationService extends Mock
         description: '',
         pointsCost: 100,
         iconName: 'card_giftcard',
-        type: enums.RewardType.digital,
+        type: RewardType.digital,
         familyId: 'test_family_id',
         createdAt: DateTime(2020, 1, 1),
         updatedAt: DateTime(2020, 1, 1),
@@ -84,21 +83,30 @@ class MockGamificationService extends Mock
 class MockAuthProvider extends Mock implements app_auth_provider.AuthProvider {
   // Mock properties (getters)
   @override
-  enums.AuthStatus get status => enums.AuthStatus.authenticated;
+  AuthStatus get status => AuthStatus.authenticated;
   @override
   UserProfile? get currentUserProfile => UserProfile(
+    id: 'test_user_id',
     member: FamilyMember(
       id: 'test_user_id',
       userId: 'test_user_id',
       familyId: 'test_family_id',
       name: 'Test User',
       photoUrl: 'https://example.com/avatar.jpg',
-      role: enums.FamilyRole.parent,
+      role: FamilyRole.parent,
       points: 0,
       joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
       updatedAt: DateTime(2020, 1, 1),
     ),
-    email: 'test@example.com',
+    achievements: [],
+    badges: [],
+    availableTasks: [],
+    completedTasks: [],
+    inProgressTasks: [],
+    points: 0,
+    preferences: {},
+    statistics: {},
+    updatedAt: DateTime(2020, 1, 1),
     createdAt: DateTime(2020, 1, 1),
   );
   @override
@@ -134,18 +142,27 @@ class MockAuthProvider extends Mock implements app_auth_provider.AuthProvider {
   UserProfile? getFamilyMember(String userId) {
     if (userId == 'test_user_id') {
       return UserProfile(
+        id: 'test_user_id',
         member: FamilyMember(
           id: 'test_user_id',
           userId: 'test_user_id',
           familyId: 'test_family_id',
           name: 'Test User',
           photoUrl: 'https://example.com/avatar.jpg',
-          role: enums.FamilyRole.parent,
+          role: FamilyRole.parent,
           points: 0,
           joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
           updatedAt: DateTime(2020, 1, 1),
         ),
-        email: 'test@example.com',
+        achievements: [],
+        badges: [],
+        availableTasks: [],
+        completedTasks: [],
+        inProgressTasks: [],
+        points: 0,
+        preferences: {},
+        statistics: {},
+        updatedAt: DateTime(2020, 1, 1),
         createdAt: DateTime(2020, 1, 1),
       );
     }
@@ -168,7 +185,7 @@ class MockAuthProviderUnauthenticated extends Mock
     implements app_auth_provider.AuthProvider {
   // Overrides for unauthenticated state
   @override
-  enums.AuthStatus get status => enums.AuthStatus.unauthenticated;
+  AuthStatus get status => AuthStatus.unauthenticated;
   @override
   UserProfile? get currentUserProfile => null;
   @override
@@ -237,18 +254,27 @@ void main() {
         () => mockUserProfileService.getUserProfile(userId: 'test_user_id'),
       ).thenAnswer(
         (_) async => UserProfile(
+          id: 'test_user_id',
           member: FamilyMember(
             id: 'test_user_id',
             userId: 'test_user_id',
             familyId: 'test_family_id',
             name: 'Test User',
             photoUrl: 'https://example.com/avatar.jpg',
-            role: enums.FamilyRole.parent,
+            role: FamilyRole.parent,
             points: 0,
             joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
             updatedAt: DateTime(2020, 1, 1),
           ),
-          email: 'test@example.com',
+          achievements: [],
+          badges: [],
+          availableTasks: [],
+          completedTasks: [],
+          inProgressTasks: [],
+          points: 0,
+          preferences: {},
+          statistics: {},
+          updatedAt: DateTime(2020, 1, 1),
           createdAt: DateTime(2020, 1, 1),
         ),
       );
@@ -422,7 +448,7 @@ void main() {
         authProvider: MockAuthProvider(),
       );
       // Set loading state
-      mockProvider.setFilter(enums.TaskFilterType.all);
+      mockProvider.setFilter(TaskFilterType.all);
       await tester.pumpWidget(
         ChangeNotifierProvider<TaskListProvider>.value(
           value: mockProvider,

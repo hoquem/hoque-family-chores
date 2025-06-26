@@ -1,6 +1,11 @@
 // lib/models/family_member.dart
 // This acts as the base for UserProfile, containing common identity properties.
-// <--- NEW: Import enum_helpers
+
+import 'package:hoque_family_chores/utils/json_parser.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
+
+// --- Family-related Enums (co-located for encapsulation) ---
+enum FamilyRole { parent, child, guardian, other }
 
 class FamilyMember {
   final String id;
@@ -49,6 +54,10 @@ class FamilyMember {
     );
   }
 
+  // --- Convenience getters for backward compatibility ---
+  String? get email => null; // FamilyMember doesn't store email, it's in UserProfile
+  String? get avatarUrl => photoUrl;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -64,26 +73,56 @@ class FamilyMember {
   }
 
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
-    return FamilyMember(
-      id: json['id'] as String,
-      userId: json['userId'] as String? ?? json['id'] as String,
-      familyId: json['familyId'] as String? ?? 'unknown',
-      name: json['name'] as String? ?? 'Unknown User',
-      photoUrl: json['photoUrl'] as String?,
-      role: json['role'] != null 
-          ? FamilyRole.values.firstWhere(
-              (e) => e.name == json['role'],
-              orElse: () => FamilyRole.child,
-            )
-          : FamilyRole.child,
-      points: json['points'] as int? ?? 0,
-      joinedAt: json['joinedAt'] != null 
-          ? DateTime.parse(json['joinedAt'] as String)
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt'] as String)
-          : DateTime.now(),
-    );
+    final logger = AppLogger();
+    
+    try {
+      return FamilyMember(
+        id: JsonParser.parseRequiredString(json, 'id'),
+        userId: JsonParser.parseString(json, 'userId') ?? JsonParser.parseRequiredString(json, 'id'),
+        familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown',
+        name: JsonParser.parseString(json, 'name') ?? 'Unknown User',
+        photoUrl: JsonParser.parseString(json, 'photoUrl'),
+        role: JsonParser.parseEnum(json, 'role', FamilyRole.values, FamilyRole.child) ?? FamilyRole.child,
+        points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+        joinedAt: JsonParser.parseDateTime(json, 'joinedAt') ?? DateTime.now(),
+        updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+      );
+    } catch (e) {
+      logger.e('Failed to parse FamilyMember from JSON: $e');
+      logger.d('JSON data: $json');
+      
+      // Return a minimal valid family member with defaults
+      return FamilyMember(
+        id: JsonParser.parseString(json, 'id') ?? 'unknown-${DateTime.now().millisecondsSinceEpoch}',
+        userId: JsonParser.parseString(json, 'userId') ?? JsonParser.parseString(json, 'id') ?? 'unknown-user',
+        familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown-family',
+        name: JsonParser.parseString(json, 'name') ?? 'Unknown User',
+        photoUrl: JsonParser.parseString(json, 'photoUrl'),
+        role: JsonParser.parseEnum(json, 'role', FamilyRole.values, FamilyRole.child) ?? FamilyRole.child,
+        points: JsonParser.parseInt(json, 'points', defaultValue: 0) ?? 0,
+        joinedAt: JsonParser.parseDateTime(json, 'joinedAt') ?? DateTime.now(),
+        updatedAt: JsonParser.parseDateTime(json, 'updatedAt') ?? DateTime.now(),
+      );
+    }
+  }
+
+  /// Alias for fromJson for backward compatibility
+  factory FamilyMember.fromMap(Map<String, dynamic> json) {
+    return FamilyMember.fromJson(json);
+  }
+
+  /// Factory method for creating family members from Firestore documents
+  factory FamilyMember.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return FamilyMember.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
   }
 
   FamilyMember copyWith({
@@ -140,6 +179,3 @@ class FamilyMember {
     );
   }
 }
-
-// --- FamilyRole Enum (kept in this file for encapsulation) ---
-enum FamilyRole { parent, child, guardian, other }

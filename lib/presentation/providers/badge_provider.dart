@@ -10,31 +10,29 @@ class BadgeProvider extends ChangeNotifier {
   List<Badge> _badges = [];
   bool _isLoading = false;
   String? _errorMessage;
-  AuthProvider? _authProvider;
+  final AuthProvider _authProvider;
   VoidCallback? _authListener;
 
-  BadgeProvider(this._badgeService, [this._authProvider]) {
-    if (_authProvider != null) {
-      _authListener = () {
-        final familyId = _authProvider!.userFamilyId;
-        if (familyId != null) {
-          _logger.d('AuthProvider changed, fetching badges for family $familyId');
-          fetchBadges(familyId);
-        }
-      };
-      _authProvider!.addListener(_authListener!);
-      // Initial fetch if familyId is available
-      final familyId = _authProvider!.userFamilyId;
+  BadgeProvider(this._badgeService, this._authProvider) {
+    _authListener = () {
+      final familyId = _authProvider.userFamilyId;
       if (familyId != null) {
+        _logger.d('AuthProvider changed, fetching badges for family $familyId');
         fetchBadges(familyId);
       }
+    };
+    _authProvider.addListener(_authListener!);
+    // Initial fetch if familyId is available
+    final familyId = _authProvider.userFamilyId;
+    if (familyId != null) {
+      fetchBadges(familyId);
     }
   }
 
   @override
   void dispose() {
-    if (_authProvider != null && _authListener != null) {
-      _authProvider!.removeListener(_authListener!);
+    if (_authListener != null) {
+      _authProvider.removeListener(_authListener!);
     }
     super.dispose();
   }

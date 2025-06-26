@@ -9,7 +9,6 @@ import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/notification.dart'
     as app_notification;
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 import 'package:hoque_family_chores/models/family.dart';
 import 'package:hoque_family_chores/services/data_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
@@ -30,7 +29,7 @@ class FirebaseDataService implements DataServiceInterface {
         .snapshots()
         .map((doc) {
           if (doc.exists && doc.data() != null) {
-            return UserProfile.fromSnapshot(doc);
+            return UserProfile.fromSnapshot(doc.data()!, doc.id);
           }
           return null;
         })
@@ -49,7 +48,7 @@ class FirebaseDataService implements DataServiceInterface {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists && doc.data() != null) {
-        return UserProfile.fromSnapshot(doc);
+        return UserProfile.fromSnapshot(doc.data()!, doc.id);
       }
       return null;
     } catch (e, s) {
@@ -158,7 +157,7 @@ class FirebaseDataService implements DataServiceInterface {
     try {
       final doc = await _firestore.collection('families').doc(familyId).get();
       if (doc.exists && doc.data() != null) {
-        return Family.fromMap(doc.data()!, doc.id);
+        return Family.fromMap(doc.data()!);
       }
       return null;
     } catch (e, s) {
@@ -180,7 +179,7 @@ class FirebaseDataService implements DataServiceInterface {
           (snapshot) =>
               snapshot.docs
                   .map(
-                    (doc) => FamilyMember.fromMap(doc.data()..['id'] = doc.id),
+                    (doc) => FamilyMember.fromMap({...doc.data(), 'id': doc.id}),
                   )
                   .toList(),
         )
@@ -205,7 +204,7 @@ class FirebaseDataService implements DataServiceInterface {
               .where('familyId', isEqualTo: familyId)
               .get();
       return snapshot.docs
-          .map((doc) => FamilyMember.fromMap(doc.data()..['id'] = doc.id))
+          .map((doc) => FamilyMember.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e, s) {
       logger.e(

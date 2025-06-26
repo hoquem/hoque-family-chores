@@ -136,4 +136,23 @@ class Achievement {
       completedBy,
     );
   }
+
+  /// Alias for fromJson for backward compatibility
+  factory Achievement.fromMap(Map<String, dynamic> json) {
+    return Achievement.fromJson(json);
+  }
+
+  /// Factory method for creating achievements from Firestore documents
+  factory Achievement.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Achievement.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
 }

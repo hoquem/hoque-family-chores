@@ -9,8 +9,8 @@ import 'package:hoque_family_chores/utils/logger.dart';
 enum MyTasksState { initial, loading, loaded, error }
 
 class MyTasksProvider with ChangeNotifier {
-  TaskServiceInterface? _taskService;
-  AuthProvider? _authProvider;
+  final TaskServiceInterface _taskService;
+  final AuthProvider _authProvider;
   StreamSubscription? _tasksSubscription;
   final _logger = AppLogger();
 
@@ -23,48 +23,45 @@ class MyTasksProvider with ChangeNotifier {
   List<Task> get tasks => _tasks;
 
   MyTasksProvider({
-    TaskServiceInterface? taskService,
-    AuthProvider? authProvider,
+    required TaskServiceInterface taskService,
+    required AuthProvider authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
-    _logger.d('MyTasksProvider: Initialized with taskService: ${_taskService != null}, authProvider: ${_authProvider != null}');
-    if (_authProvider != null) {
-      _authProvider!.addListener(_onAuthChanged);
-      _logger.d('MyTasksProvider: Added auth listener');
-    }
+    _logger.d('MyTasksProvider: Initialized with taskService and authProvider');
+    _authProvider.addListener(_onAuthChanged);
+    _logger.d('MyTasksProvider: Added auth listener');
   }
 
   void _onAuthChanged() {
-    _logger.d("MyTasksProvider: Auth state changed - userId: ${_authProvider?.currentUserId}, familyId: ${_authProvider?.userFamilyId}");
+    _logger.d("MyTasksProvider: Auth state changed - userId: ${_authProvider.currentUserId}, familyId: ${_authProvider.userFamilyId}");
     _listenToMyTasks();
   }
 
   void _listenToMyTasks() {
     _logger.d("MyTasksProvider: _listenToMyTasks called");
-    _logger.d("MyTasksProvider: taskService: ${_taskService != null}");
-    _logger.d("MyTasksProvider: currentUserId: ${_authProvider?.currentUserId}");
-    _logger.d("MyTasksProvider: userFamilyId: ${_authProvider?.userFamilyId}");
+    _logger.d("MyTasksProvider: taskService: true");
+    _logger.d("MyTasksProvider: currentUserId: ${_authProvider.currentUserId}");
+    _logger.d("MyTasksProvider: userFamilyId: ${_authProvider.userFamilyId}");
     
-    if (_taskService == null ||
-        _authProvider?.currentUserId == null ||
-        _authProvider?.userFamilyId == null) {
+    if (_authProvider.currentUserId == null ||
+        _authProvider.userFamilyId == null) {
       _logger.w("MyTasksProvider: Cannot listen to tasks - missing dependencies");
       return;
     }
 
-    _logger.d("MyTasksProvider: Starting to listen to tasks for user ${_authProvider!.currentUserId} in family ${_authProvider!.userFamilyId}");
+    _logger.d("MyTasksProvider: Starting to listen to tasks for user ${_authProvider.currentUserId} in family ${_authProvider.userFamilyId}");
     _state = MyTasksState.loading;
     notifyListeners();
 
     _tasksSubscription?.cancel();
-    _tasksSubscription = _taskService!
+    _tasksSubscription = _taskService
         .streamTasksByAssignee(
-          familyId: _authProvider!.userFamilyId!,
-          assigneeId: _authProvider!.currentUserId!,
+          familyId: _authProvider.userFamilyId!,
+          assigneeId: _authProvider.currentUserId!,
         )
         .listen(
           (tasks) {
-            _logger.d("MyTasksProvider: Received ${tasks.length} tasks from stream");
+            _logger.d("MyTasksProvider: Received [1m${tasks.length}[0m tasks from stream");
             _tasks = tasks;
             _state = MyTasksState.loaded;
             notifyListeners();
@@ -89,7 +86,7 @@ class MyTasksProvider with ChangeNotifier {
   void dispose() {
     _logger.d("MyTasksProvider: dispose() called");
     _tasksSubscription?.cancel();
-    _authProvider?.removeListener(_onAuthChanged);
+    _authProvider.removeListener(_onAuthChanged);
     super.dispose();
   }
 }

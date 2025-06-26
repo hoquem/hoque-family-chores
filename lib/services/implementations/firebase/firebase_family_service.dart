@@ -10,7 +10,6 @@ class FirebaseFamilyService implements FamilyServiceInterface {
   FirebaseFamilyService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  @override
   Stream<Family?> streamFamily({required String familyId}) {
     return ServiceUtils.handleServiceStream(
       stream:

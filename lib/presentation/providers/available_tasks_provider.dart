@@ -12,7 +12,7 @@ import 'dart:async';
 
 class AvailableTasksProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  AuthProvider _authProvider;
+  final AuthProvider _authProvider;
   final _logger = AppLogger();
   StreamSubscription? _taskStreamSubscription;
 

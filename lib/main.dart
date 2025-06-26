@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'
     show
         ChangeNotifierProvider,
-        ChangeNotifierProxyProvider2,
         Provider,
         Consumer,
         MultiProvider;
@@ -47,10 +46,10 @@ import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
-import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 
 /// Service factory that creates services based on the environment
 class ServiceFactory {

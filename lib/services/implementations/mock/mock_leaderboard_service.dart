@@ -36,7 +36,6 @@ class MockLeaderboardService implements LeaderboardServiceInterface {
     );
   }
 
-  @override
   Future<void> updateLeaderboard({
     required String familyId,
     required List<LeaderboardEntry> entries,

@@ -108,4 +108,23 @@ class TaskSummary {
       dueToday,
     );
   }
+
+  /// Alias for fromJson for backward compatibility
+  factory TaskSummary.fromMap(Map<String, dynamic> json) {
+    return TaskSummary.fromJson(json);
+  }
+
+  /// Factory method for creating task summaries from Firestore documents
+  factory TaskSummary.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return TaskSummary.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
 }

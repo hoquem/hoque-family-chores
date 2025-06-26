@@ -157,6 +157,28 @@ class Reward {
   }
 
   String get title => name;
+
+  // --- Convenience getters for backward compatibility ---
+  bool get isAvailable => true; // Default to available, can be overridden
+
+  /// Alias for fromJson for backward compatibility
+  factory Reward.fromMap(Map<String, dynamic> json) {
+    return Reward.fromJson(json);
+  }
+
+  /// Factory method for creating rewards from Firestore documents
+  factory Reward.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Reward.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
 }
 
 // --- Reward-related Enums (kept in this file for encapsulation) ---

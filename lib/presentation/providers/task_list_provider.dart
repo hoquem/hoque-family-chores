@@ -6,7 +6,7 @@ import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
 class TaskListProvider with ChangeNotifier {
-  final TaskServiceInterface _taskService;
+  TaskServiceInterface _taskService;
   AuthProvider _authProvider;
   final _logger = AppLogger();
 
@@ -295,5 +295,11 @@ class TaskListProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
+    _taskService = taskService;
+    _authProvider = authProvider;
+    notifyListeners();
   }
 }

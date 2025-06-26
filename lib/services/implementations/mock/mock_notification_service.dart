@@ -25,7 +25,6 @@ class MockNotificationService implements NotificationServiceInterface {
     );
   }
 
-  @override
   Future<List<Notification>> getNotifications({required String userId}) {
     return ServiceUtils.handleServiceCall(
       operation: () async {
@@ -37,7 +36,6 @@ class MockNotificationService implements NotificationServiceInterface {
     );
   }
 
-  @override
   Future<void> createNotification({
     required String userId,
     required Notification notification,
@@ -52,7 +50,6 @@ class MockNotificationService implements NotificationServiceInterface {
     );
   }
 
-  @override
   Future<void> updateNotification({
     required String userId,
     required Notification notification,
@@ -70,7 +67,6 @@ class MockNotificationService implements NotificationServiceInterface {
     );
   }
 
-  @override
   Future<void> deleteNotification({
     required String userId,
     required String notificationId,
@@ -100,7 +96,6 @@ class MockNotificationService implements NotificationServiceInterface {
     );
   }
 
-  @override
   Future<void> markAllAsRead({required String userId}) {
     return ServiceUtils.handleServiceCall(
       operation: () async {

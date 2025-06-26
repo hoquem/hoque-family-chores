@@ -17,18 +17,19 @@ class FamilyService {
           .map(
             (member) => UserProfile(
               id: member.id,
-              name: member.name,
-              email: member.email,
-              familyId: member.familyId,
-              role: member.role,
-              joinedAt: DateTime.now(), // fallback if not available
-              totalPoints: 0,
-              completedTasks: 0,
-              currentStreak: 0,
-              longestStreak: 0,
-              unlockedBadges: const [],
-              redeemedRewards: const [],
+              member: member,
+              points: member.points,
+              badges: const [],
               achievements: const [],
+              createdAt: member.joinedAt,
+              updatedAt: member.updatedAt,
+              avatarUrl: member.photoUrl,
+              bio: null,
+              completedTasks: const [],
+              inProgressTasks: const [],
+              availableTasks: const [],
+              preferences: const {},
+              statistics: const {},
             ),
           )
           .toList();
