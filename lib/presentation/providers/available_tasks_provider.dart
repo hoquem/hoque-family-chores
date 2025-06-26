@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
@@ -12,7 +12,7 @@ import 'dart:async';
 
 class AvailableTasksProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  final AuthProvider _authProvider;
+  final AuthProviderBase _authProvider;
   final _logger = AppLogger();
   StreamSubscription? _taskStreamSubscription;
   VoidCallback? _onTaskClaimed; // Callback to refresh task list
@@ -31,7 +31,7 @@ class AvailableTasksProvider with ChangeNotifier {
 
   AvailableTasksProvider({
     required TaskServiceInterface taskService,
-    required AuthProvider authProvider,
+    required AuthProviderBase authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
     _logger.d(

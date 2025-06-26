@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/services/interfaces/badge_service_interface.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'auth_provider.dart';
 
 class BadgeProvider extends ChangeNotifier {
   final BadgeServiceInterface _badgeService;
@@ -10,7 +10,7 @@ class BadgeProvider extends ChangeNotifier {
   List<Badge> _badges = [];
   bool _isLoading = false;
   String? _errorMessage;
-  final AuthProvider _authProvider;
+  final AuthProviderBase _authProvider;
   VoidCallback? _authListener;
 
   BadgeProvider(this._badgeService, this._authProvider) {

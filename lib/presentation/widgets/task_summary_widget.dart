@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import your provider
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Needed for authProvider
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart'; // Needed for authProvider
+import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskSummaryWidget extends StatefulWidget {
@@ -20,8 +20,8 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       logger.d("[TaskSummaryWidget] Post frame callback executing");
       if (mounted) {
-        final userProfile = context.read<AuthProvider>().currentUserProfile;
-        final familyId = context.read<AuthProvider>().userFamilyId;
+        final userProfile = context.read<AuthProviderBase>().currentUserProfile;
+        final familyId = context.read<AuthProviderBase>().userFamilyId;
         logger.d("[TaskSummaryWidget] User profile: ${userProfile?.member.id}, Family ID: $familyId");
         
         if (userProfile != null && familyId != null) {
@@ -45,8 +45,8 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
 
   Future<void> _refreshData() async {
     logger.i("[TaskSummaryWidget] Refreshing data");
-    final userProfile = context.read<AuthProvider>().currentUserProfile;
-    final familyId = context.read<AuthProvider>().userFamilyId;
+    final userProfile = context.read<AuthProviderBase>().currentUserProfile;
+    final familyId = context.read<AuthProviderBase>().userFamilyId;
     
     if (userProfile != null && familyId != null) {
       logger.d("[TaskSummaryWidget] Refreshing summary for user ${userProfile.member.id} in family $familyId");

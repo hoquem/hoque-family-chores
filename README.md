@@ -77,6 +77,59 @@ An app for managing family chores, making it fun and easy to keep track of respo
 
 ## 🛠️ Development Guide
 
+### 🔧 **CRITICAL: Mock Implementation Requirement**
+
+**⚠️ MANDATORY FOR ALL NEW FEATURES**
+
+When implementing any new feature, you **MUST** complete both implementations:
+
+1. **Firebase Implementation** - The production-ready service using Firebase
+2. **Mock Implementation** - A complete mock service for development/testing
+
+#### Why This Matters
+- **Development Speed**: Mock data allows rapid development without Firebase setup
+- **Testing**: Ensures features work in isolation without network dependencies
+- **CI/CD**: All tests run with mock data (`USE_MOCK_DATA=true`)
+- **Offline Development**: Developers can work without Firebase credentials
+
+#### Implementation Checklist
+For every new feature, ensure you have:
+
+- ✅ **Service Interface** - Define the contract in `lib/services/interfaces/`
+- ✅ **Firebase Service** - Implement in `lib/services/implementations/firebase/`
+- ✅ **Mock Service** - Implement in `lib/services/implementations/mock/`
+- ✅ **Service Factory** - Add to `ServiceFactory` in `main.dart`
+- ✅ **Provider Registration** - Add to provider tree in `main.dart`
+- ✅ **Mock Data** - Add realistic test data to `lib/test_data/mock_data.dart`
+- ✅ **Service Provider** - Ensure service is provided in main.dart if needed by screens
+
+#### Example Structure
+```
+lib/services/
+├── interfaces/
+│   └── new_feature_service_interface.dart
+├── implementations/
+│   ├── firebase/
+│   │   └── firebase_new_feature_service.dart
+│   └── mock/
+│       └── mock_new_feature_service.dart
+```
+
+#### Testing Your Implementation
+```bash
+# Test with mock data
+flutter run --dart-define=USE_MOCK_DATA=true
+
+# Test with Firebase (requires setup)
+flutter run
+```
+
+**🚨 Failure to implement both versions will result in:**
+- Broken CI/CD pipelines
+- Inability to test features locally
+- Development bottlenecks for team members
+- Inconsistent behavior between environments
+
 ### 1️⃣ Handling `pubspec.lock` Merge Conflicts
 | Topic | Details |
 |-------|---------|
@@ -101,7 +154,7 @@ An app for managing family chores, making it fun and easy to keep track of respo
 
 | Symptom | Suggested Fix |
 |---------|---------------|
-| **Build fails with “Read-only file system”** | Check that CI script writes `.env` inside `$CI_WORKSPACE`, not to `/`. The current script handles this automatically—verify environment variables are set. |
+| **Build fails with "Read-only file system"** | Check that CI script writes `.env` inside `$CI_WORKSPACE`, not to `/`. The current script handles this automatically—verify environment variables are set. |
 | **Flutter package version mismatch locally vs CI** | Delete local `.dart_tool/` and `pubspec.lock`, run `flutter pub get`, and ensure you committed the updated `pubspec.lock`. |
 | **Pod install errors in Xcode Cloud** | Confirm Bundler/CocoaPods versions in `Gemfile`. If Ruby version mismatch, pin an older Bundler (`2.2.x`) which is installed by the script. |
 | **GoogleService-Info.plist missing** | Commit the file or add a secure download step in `ci_pre_xcodebuild.sh`. |

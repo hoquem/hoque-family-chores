@@ -7,8 +7,9 @@ import 'package:hoque_family_chores/services/interfaces/user_profile_service_int
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:uuid/uuid.dart';
+import 'auth_provider_base.dart';
 
-class AuthProvider with ChangeNotifier {
+class AuthProvider extends AuthProviderBase {
   final GamificationServiceInterface? _gamificationService;
   final UserProfileServiceInterface? _userProfileService;
   final FirebaseAuth _firebaseAuth;

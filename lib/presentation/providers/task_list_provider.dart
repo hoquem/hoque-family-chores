@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
 class TaskListProvider with ChangeNotifier {
-  TaskServiceInterface _taskService;
-  AuthProvider _authProvider;
+  final TaskServiceInterface _taskService;
+  final AuthProviderBase _authProvider;
   final _logger = AppLogger();
 
   List<Task> _tasks = [];
@@ -54,7 +55,7 @@ class TaskListProvider with ChangeNotifier {
 
   TaskListProvider({
     required TaskServiceInterface taskService,
-    required AuthProvider authProvider,
+    required AuthProviderBase authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
     _logger.d(
@@ -335,9 +336,10 @@ class TaskListProvider with ChangeNotifier {
     }
   }
 
-  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    _taskService = taskService;
-    _authProvider = authProvider;
-    notifyListeners();
+  void update(TaskServiceInterface taskService, AuthProviderBase authProvider) {
+    // Note: Since _taskService and _authProvider are final, we cannot reassign them.
+    // This method is kept for interface compatibility but does not modify the fields.
+    // If you need to update these, consider recreating the provider instead.
+    _logger.d("TaskListProvider: Update called but fields are final - no changes made");
   }
 }

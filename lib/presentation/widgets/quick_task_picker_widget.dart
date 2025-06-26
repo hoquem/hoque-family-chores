@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class QuickTaskPickerWidget extends StatefulWidget {
@@ -37,8 +38,8 @@ class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
     });
 
     try {
-      final userProfile = context.read<AuthProvider>().currentUserProfile;
-      final familyId = context.read<AuthProvider>().userFamilyId;
+      final userProfile = context.read<AuthProviderBase>().currentUserProfile;
+      final familyId = context.read<AuthProviderBase>().userFamilyId;
 
       if (userProfile != null && familyId != null) {
         _logger.d(
@@ -77,8 +78,8 @@ class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
     });
 
     try {
-      final userProfile = context.read<AuthProvider>().currentUserProfile;
-      final familyId = context.read<AuthProvider>().userFamilyId;
+      final userProfile = context.read<AuthProviderBase>().currentUserProfile;
+      final familyId = context.read<AuthProviderBase>().userFamilyId;
       
       if (userProfile != null && familyId != null) {
         _logger.d(

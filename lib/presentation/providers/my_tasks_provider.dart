@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/utils/exceptions.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -10,7 +11,7 @@ enum MyTasksState { initial, loading, loaded, error }
 
 class MyTasksProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  final AuthProvider _authProvider;
+  final AuthProviderBase _authProvider;
   StreamSubscription? _tasksSubscription;
   final _logger = AppLogger();
 
@@ -24,7 +25,7 @@ class MyTasksProvider with ChangeNotifier {
 
   MyTasksProvider({
     required TaskServiceInterface taskService,
-    required AuthProvider authProvider,
+    required AuthProviderBase authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
     _logger.d('MyTasksProvider: Initialized with taskService and authProvider');

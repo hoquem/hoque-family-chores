@@ -1,10 +1,12 @@
 // lib/presentation/screens/family_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
+import 'package:hoque_family_chores/models/family.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/interfaces/family_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 
 class FamilyListScreen extends StatefulWidget {
   const FamilyListScreen({super.key});
@@ -24,7 +26,7 @@ class _FamilyListScreenState extends State<FamilyListScreen> {
   }
 
   Future<void> _loadFamilyMembers() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProviderBase>(context, listen: false);
     final familyService = Provider.of<FamilyServiceInterface>(
       context,
       listen: false,

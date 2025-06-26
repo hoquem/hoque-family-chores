@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
 // Import all screens that will be part of the bottom navigation
@@ -46,7 +46,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviderBase>(context);
 
     return Scaffold(
       appBar: AppBar(

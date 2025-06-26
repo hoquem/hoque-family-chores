@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Needed to access AuthProvider
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Needed for AuthProvider
+import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart'; // <--- Ensure this import is here
+import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 // For logging
 
 // This screen now represents the content for the 'Home' tab in the AppShell
@@ -12,7 +13,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Watch AuthProvider for user profile details
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.watch<AuthProviderBase>();
 
     // Retrieve user profile for display
     final currentUserProfile = authProvider.currentUserProfile;

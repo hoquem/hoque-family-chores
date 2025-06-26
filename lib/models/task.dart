@@ -119,7 +119,7 @@ class Task {
         description: JsonParser.parseRequiredString(json, 'description'),
         status: JsonParser.parseRequiredEnum(json, 'status', TaskStatus.values, TaskStatus.available),
         difficulty: JsonParser.parseRequiredEnum(json, 'difficulty', TaskDifficulty.values, TaskDifficulty.easy),
-        dueDate: JsonParser.parseRequiredDateTime(json, 'dueDate'),
+        dueDate: JsonParser.parseDateTime(json, 'dueDate', defaultValue: DateTime.now().add(const Duration(days: 1))) ?? DateTime.now().add(const Duration(days: 1)),
         assignedTo: JsonParser.parseObject(json, 'assignedTo')?.let((obj) => FamilyMember.fromJson(obj)),
         createdBy: JsonParser.parseObject(json, 'createdBy')?.let((obj) => FamilyMember.fromJson(obj)),
         createdAt: JsonParser.parseRequiredDateTime(json, 'createdAt'),

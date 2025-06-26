@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class FamilySetupScreen extends StatefulWidget {
@@ -36,7 +38,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProviderBase>(context, listen: false);
       final currentUserId = authProvider.currentUserId;
       final currentUserEmail = authProvider.userEmail;
       final currentUserName = authProvider.displayName;

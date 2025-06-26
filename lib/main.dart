@@ -19,6 +19,7 @@ import 'package:hoque_family_chores/services/interfaces/badge_service_interface.
 import 'package:hoque_family_chores/services/interfaces/reward_service_interface.dart';
 import 'package:hoque_family_chores/services/interfaces/achievement_service_interface.dart';
 import 'package:hoque_family_chores/services/interfaces/notification_service_interface.dart';
+import 'package:hoque_family_chores/services/interfaces/leaderboard_service_interface.dart';
 
 // Service Implementations
 import 'package:hoque_family_chores/services/implementations/firebase/firebase_task_service.dart';
@@ -31,6 +32,14 @@ import 'package:hoque_family_chores/services/implementations/firebase/firebase_n
 import 'package:hoque_family_chores/services/implementations/firebase/firebase_gamification_service.dart';
 import 'package:hoque_family_chores/services/implementations/mock/mock_task_service.dart';
 import 'package:hoque_family_chores/services/implementations/mock/mock_gamification_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_user_profile_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_family_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_badge_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_reward_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_achievement_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_notification_service.dart';
+import 'package:hoque_family_chores/services/implementations/firebase/firebase_leaderboard_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_leaderboard_service.dart';
 
 // Providers
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
@@ -43,6 +52,10 @@ import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/mock_auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_factory.dart';
+import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
@@ -72,27 +85,33 @@ class ServiceFactory {
 
       // Create user profile service
       logger.d('[ServiceFactory] Creating UserProfileService...');
-      services[UserProfileServiceInterface] = FirebaseUserProfileService();
+      services[UserProfileServiceInterface] = 
+          _environment.useMockData ? MockUserProfileService() : FirebaseUserProfileService();
 
       // Create family service
       logger.d('[ServiceFactory] Creating FamilyService...');
-      services[FamilyServiceInterface] = FirebaseFamilyService();
+      services[FamilyServiceInterface] = 
+          _environment.useMockData ? MockFamilyService() : FirebaseFamilyService();
 
       // Create badge service
       logger.d('[ServiceFactory] Creating BadgeService...');
-      services[BadgeServiceInterface] = FirebaseBadgeService();
+      services[BadgeServiceInterface] = 
+          _environment.useMockData ? MockBadgeService() : FirebaseBadgeService();
 
       // Create reward service
       logger.d('[ServiceFactory] Creating RewardService...');
-      services[RewardServiceInterface] = FirebaseRewardService();
+      services[RewardServiceInterface] = 
+          _environment.useMockData ? MockRewardService() : FirebaseRewardService();
 
       // Create achievement service
       logger.d('[ServiceFactory] Creating AchievementService...');
-      services[AchievementServiceInterface] = FirebaseAchievementService();
+      services[AchievementServiceInterface] = 
+          _environment.useMockData ? MockAchievementService() : FirebaseAchievementService();
 
       // Create notification service
       logger.d('[ServiceFactory] Creating NotificationService...');
-      services[NotificationServiceInterface] = FirebaseNotificationService();
+      services[NotificationServiceInterface] = 
+          _environment.useMockData ? MockNotificationService() : FirebaseNotificationService();
 
       // Create gamification service
       logger.d('[ServiceFactory] Creating GamificationService...');
@@ -100,6 +119,12 @@ class ServiceFactory {
           _environment.useMockData
               ? MockGamificationService()
               : FirebaseGamificationService();
+
+      // Create leaderboard service
+      logger.d('[ServiceFactory] Creating LeaderboardService...');
+      services[LeaderboardServiceInterface] =
+          _environment.useMockData ? MockLeaderboardService() : FirebaseLeaderboardService();
+      logger.d('[ServiceFactory] LeaderboardService created: ${services[LeaderboardServiceInterface]?.runtimeType}');
 
       logger.i('[ServiceFactory] All services created successfully. Total services: ${services.length}');
     } catch (e, s) {
@@ -159,7 +184,7 @@ void main() async {
 
     // Run the app
     logger.i("[Startup] Running the app...");
-    runApp(MyApp(services: services));
+    runApp(MyApp(services: services.cast<Type, Object>(), useMockData: environmentService.useMockData));
   } catch (e, stackTrace) {
     logger.e(
       "[Startup] A fatal error occurred during app startup.",
@@ -171,9 +196,14 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  final Map<Type, dynamic> services;
+  final Map<Type, Object> services;
+  final bool useMockData;
 
-  const MyApp({super.key, required this.services});
+  const MyApp({
+    super.key,
+    required this.services,
+    required this.useMockData,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -186,70 +216,9 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: Consumer<AuthProvider>(
+        home: Consumer<AuthProviderBase>(
           builder: (context, authProvider, _) {
-            logger.d("[App] Building home screen. Auth status: ${authProvider.status}, Loading: ${authProvider.isLoading}");
-            
-            // Show loading screen while determining auth status
-            if (authProvider.status == AuthStatus.unknown || authProvider.isLoading) {
-              logger.i("[App] Showing loading screen - status: ${authProvider.status}, loading: ${authProvider.isLoading}");
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            
-            // Show authenticated user the main app
-            if (authProvider.status == AuthStatus.authenticated) {
-              logger.i("[App] User authenticated - showing AppShell. User: ${authProvider.currentUserProfile?.member.id}");
-              return const AppShell();
-            } 
-            
-            // Show login screen for unauthenticated users
-            if (authProvider.status == AuthStatus.unauthenticated) {
-              logger.i("[App] User unauthenticated - showing LoginScreen");
-              return const LoginScreen();
-            }
-            
-            // Show error screen for authentication errors
-            if (authProvider.status == AuthStatus.error) {
-              logger.e("[App] Authentication error - showing error screen. Error: ${authProvider.errorMessage}");
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Authentication Error',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        authProvider.errorMessage ?? 'Unknown error occurred',
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          logger.i("[App] User clicked retry button - refreshing auth status");
-                          // Try to refresh auth status
-                          authProvider.refreshUserProfile();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            
-            // Fallback to login screen
-            logger.w("[App] Unknown auth status - falling back to LoginScreen. Status: ${authProvider.status}");
-            return const LoginScreen();
+            return _buildHomeScreen(authProvider);
           },
         ),
       ),
@@ -264,99 +233,146 @@ class MyApp extends StatelessWidget {
       providers.add(Provider.value(value: service));
     });
 
+    // Create auth provider using factory
+    final authProvider = AuthProviderFactory.create(useMock: useMockData);
+    providers.add(ChangeNotifierProvider<AuthProviderBase>.value(value: authProvider));
+
     // Add state management providers
     providers.addAll([
-      ChangeNotifierProvider<AuthProvider>(
-        create: (context) {
-          print("DEBUG: Creating AuthProvider");
-          return AuthProvider(
-            userProfileService: services[UserProfileServiceInterface],
-            gamificationService: services[GamificationServiceInterface],
-          );
-        },
-      ),
-
       ChangeNotifierProvider<GamificationProvider>(
-        create:
-            (context) => GamificationProvider(
-              gamificationService: services[GamificationServiceInterface],
-            ),
+        create: (_) => GamificationProvider(
+          gamificationService: services[GamificationServiceInterface] as GamificationServiceInterface,
+        ),
       ),
-
-      // Add missing providers
+      ChangeNotifierProvider<TaskListProvider>(
+        create: (context) => TaskListProvider(
+          taskService: services[TaskServiceInterface] as TaskServiceInterface,
+          authProvider: Provider.of<AuthProviderBase>(context, listen: false),
+        ),
+      ),
+      ChangeNotifierProvider<TaskSummaryProvider>(
+        create: (context) => TaskSummaryProvider(
+          taskService: services[TaskServiceInterface] as TaskServiceInterface,
+          authProvider: Provider.of<AuthProviderBase>(context, listen: false),
+        ),
+      ),
+      ChangeNotifierProvider<AvailableTasksProvider>(
+        create: (context) => AvailableTasksProvider(
+          taskService: services[TaskServiceInterface] as TaskServiceInterface,
+          authProvider: Provider.of<AuthProviderBase>(context, listen: false),
+        ),
+      ),
+      ChangeNotifierProvider<MyTasksProvider>(
+        create: (context) => MyTasksProvider(
+          taskService: services[TaskServiceInterface] as TaskServiceInterface,
+          authProvider: Provider.of<AuthProviderBase>(context, listen: false),
+        ),
+      ),
       ChangeNotifierProvider<BadgeProvider>(
         create: (context) => BadgeProvider(
-          services[BadgeServiceInterface],
-          Provider.of<AuthProvider>(context, listen: false),
+          services[BadgeServiceInterface] as BadgeServiceInterface,
+          Provider.of<AuthProviderBase>(context, listen: false),
         ),
       ),
-
       ChangeNotifierProvider<RewardProvider>(
-        create: (context) => RewardProvider(
-          services[RewardServiceInterface],
+        create: (_) => RewardProvider(
+          services[RewardServiceInterface] as RewardServiceInterface,
         ),
       ),
-
       ChangeNotifierProvider<TaskProvider>(
-        create: (context) => TaskProvider(
-          services[TaskServiceInterface],
+        create: (_) => TaskProvider(
+          services[TaskServiceInterface] as TaskServiceInterface,
         ),
       ),
-
-      // Add FamilyServiceInterface provider
-      Provider<FamilyServiceInterface>(
-        create: (context) => services[FamilyServiceInterface],
-      ),
-
-      // Create task-related providers with direct dependencies
-      ChangeNotifierProvider<MyTasksProvider>(
-        create: (context) {
-          print("DEBUG: Creating MyTasksProvider");
-          return MyTasksProvider(
-            taskService: services[TaskServiceInterface],
-            authProvider: Provider.of<AuthProvider>(context, listen: false),
-          );
-        },
-      ),
-
-      ChangeNotifierProvider<TaskListProvider>(
-        create: (context) {
-          print("DEBUG: Creating TaskListProvider");
-          return TaskListProvider(
-            taskService: services[TaskServiceInterface],
-            authProvider: Provider.of<AuthProvider>(context, listen: false),
-          );
-        },
-      ),
-
-      ChangeNotifierProvider<AvailableTasksProvider>(
-        create: (context) {
-          print("DEBUG: Creating AvailableTasksProvider");
-          return AvailableTasksProvider(
-            taskService: services[TaskServiceInterface],
-            authProvider: Provider.of<AuthProvider>(context, listen: false),
-          );
-        },
-      ),
-
-      ChangeNotifierProvider<TaskSummaryProvider>(
-        create: (context) {
-          print("DEBUG: Creating TaskSummaryProvider");
-          return TaskSummaryProvider(
-            taskService: services[TaskServiceInterface],
-            authProvider: Provider.of<AuthProvider>(context, listen: false),
-          );
-        },
-      ),
-
       ChangeNotifierProvider<FamilyProvider>(
-        create: (context) => FamilyProvider(
-          services[FamilyServiceInterface],
+        create: (_) => FamilyProvider(
+          services[FamilyServiceInterface] as FamilyServiceInterface,
         ),
+      ),
+      ChangeNotifierProvider<LeaderboardProvider>(
+        create: (_) {
+          logger.d('[Main] Creating LeaderboardProvider');
+          final service = services[LeaderboardServiceInterface] as LeaderboardServiceInterface;
+          logger.d('[Main] LeaderboardService type: ${service.runtimeType}');
+          final provider = LeaderboardProvider(leaderboardService: service);
+          logger.d('[Main] LeaderboardProvider created successfully');
+          return provider;
+        },
+      ),
+      Provider<FamilyServiceInterface>(
+        create: (_) {
+          logger.d('[Main] Providing FamilyServiceInterface');
+          return services[FamilyServiceInterface] as FamilyServiceInterface;
+        },
       ),
     ]);
 
     return providers;
+  }
+
+  Widget _buildHomeScreen(AuthProviderBase authProvider) {
+    logger.d("[App] Building home screen. Auth status: ${authProvider.status}, Loading: ${authProvider.isLoading}");
+    
+    // Show loading screen while determining auth status
+    if (authProvider.status == AuthStatus.unknown || authProvider.isLoading) {
+      logger.i("[App] Showing loading screen - status: ${authProvider.status}, loading: ${authProvider.isLoading}");
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // Show authenticated user the main app
+    if (authProvider.status == AuthStatus.authenticated) {
+      logger.i("[App] User authenticated - showing AppShell. User: ${authProvider.currentUserProfile?.member.id}");
+      return const AppShell();
+    } 
+    
+    // Show login screen for unauthenticated users
+    if (authProvider.status == AuthStatus.unauthenticated) {
+      logger.i("[App] User unauthenticated - showing LoginScreen");
+      return const LoginScreen();
+    }
+    
+    // Show error screen for authentication errors
+    if (authProvider.status == AuthStatus.error) {
+      logger.e("[App] Authentication error - showing error screen. Error: ${authProvider.errorMessage}");
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              const Text(
+                'Authentication Error',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                authProvider.errorMessage ?? 'Unknown error occurred',
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  logger.i("[App] User clicked retry button - refreshing auth status");
+                  // Try to refresh auth status
+                  authProvider.refreshUserProfile();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Fallback to login screen
+    logger.w("[App] Unknown auth status - falling back to LoginScreen. Status: ${authProvider.status}");
+    return const LoginScreen();
   }
 }
 

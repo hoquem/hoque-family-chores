@@ -2,14 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviderBase>(context);
     final displayName = authProvider.displayName ?? 'Family Member';
     final email = authProvider.userEmail ?? 'No email';
 

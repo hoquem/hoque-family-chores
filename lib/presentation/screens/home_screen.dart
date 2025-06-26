@@ -3,7 +3,7 @@ import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dar
 import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -20,8 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
     logger.i("[HomeScreen] Refreshing data...");
     final taskSummaryProvider = context.read<TaskSummaryProvider>();
     final taskProvider = context.read<TaskProvider>();
-    final userProfile = context.read<AuthProvider>().currentUserProfile;
-    final familyId = context.read<AuthProvider>().userFamilyId;
+    final userProfile = context.read<AuthProviderBase>().currentUserProfile;
+    final familyId = context.read<AuthProviderBase>().userFamilyId;
 
     if (userProfile != null && familyId != null) {
       logger.d("[HomeScreen] User profile and family ID available. User: ${userProfile.member.id}, Family: $familyId");
@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     logger.d("[HomeScreen] Building screen");
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.watch<AuthProviderBase>();
     final currentUserProfile = authProvider.currentUserProfile;
 
     if (currentUserProfile == null) {

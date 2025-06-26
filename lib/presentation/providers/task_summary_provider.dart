@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
@@ -31,7 +31,7 @@ class TaskSummary {
 
 class TaskSummaryProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  final AuthProvider _authProvider;
+  final AuthProviderBase _authProvider;
 
   TaskSummaryState _state = TaskSummaryState.loading;
   TaskSummary? _summary;
@@ -44,7 +44,7 @@ class TaskSummaryProvider with ChangeNotifier {
 
   TaskSummaryProvider({
     required TaskServiceInterface taskService,
-    required AuthProvider authProvider,
+    required AuthProviderBase authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
     logger.i("[TaskSummaryProvider] Initialized with dependencies. Waiting for authentication...");

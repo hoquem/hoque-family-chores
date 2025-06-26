@@ -2,11 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/presentation/widgets/user_level_widget.dart';
+import 'package:hoque_family_chores/presentation/widgets/badges_widget.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class GamificationScreen extends StatefulWidget {
   const GamificationScreen({super.key});
@@ -27,7 +30,7 @@ class _GamificationScreenState extends State<GamificationScreen>
   }
 
   Future<void> _loadData() async {
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<AuthProviderBase>();
     final badgeProvider = context.read<BadgeProvider>();
     final rewardProvider = context.read<RewardProvider>();
     final familyId = authProvider.userFamilyId;
@@ -45,7 +48,7 @@ class _GamificationScreenState extends State<GamificationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.watch<AuthProviderBase>();
     final userProfile = authProvider.currentUserProfile;
     final badgeProvider = context.watch<BadgeProvider>();
     final rewardProvider = context.watch<RewardProvider>();

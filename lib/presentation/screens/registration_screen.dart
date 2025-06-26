@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // <--- CRITICAL: Ensure this import is here
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -41,7 +42,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProviderBase>(context, listen: false);
       await authProvider.signUp(
         email: _emailController.text,
         password: _passwordController.text,

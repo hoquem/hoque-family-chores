@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart'
     as app_task_list_provider;
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
@@ -24,7 +24,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     _logger.d('TaskListScreen: Refreshing tasks');
     final taskListProvider =
         context.read<app_task_list_provider.TaskListProvider>();
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<AuthProviderBase>();
 
     final currentUserId = authProvider.currentUserId;
     final userFamilyId = authProvider.userFamilyId;
@@ -49,7 +49,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     try {
       final taskListProvider =
           context.read<app_task_list_provider.TaskListProvider>();
-      final authProvider = context.read<AuthProvider>();
+      final authProvider = context.read<AuthProviderBase>();
       final familyId = authProvider.userFamilyId;
 
       if (familyId == null) {
@@ -89,7 +89,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Widget _buildTaskList() {
     final taskListProvider =
         context.watch<app_task_list_provider.TaskListProvider>();
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<AuthProviderBase>();
 
     if (taskListProvider.isLoading && taskListProvider.filteredTasks.isEmpty) {
       return const Center(
@@ -234,7 +234,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
     _logger.d('TaskListScreen: Building screen');
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<AuthProviderBase>();
 
     final currentUserId = authProvider.currentUserId;
     final userFamilyId = authProvider.userFamilyId;

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
-import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
 import 'dart:async'; // Add this import for TimeoutException
 
 class AddTaskScreen extends StatefulWidget {
@@ -63,7 +64,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
 
     try {
-      final authProvider = context.read<AuthProvider>();
+      final authProvider = context.read<AuthProviderBase>();
       final taskListProvider = context.read<TaskListProvider>();
       final familyId = authProvider.userFamilyId;
       final creatorId = authProvider.currentUserId;
@@ -135,7 +136,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Future<void> _loadFamilyMembers() async {
-    final authProvider = context.read<AuthProvider>();
+    final authProvider = context.read<AuthProviderBase>();
     final familyProvider = context.read<FamilyProvider>();
     final familyId = authProvider.userFamilyId;
 
@@ -146,7 +147,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.watch<AuthProviderBase>();
     final familyProvider = context.watch<FamilyProvider>();
     final familyMembers = familyProvider.familyMembers;
     final currentUser = authProvider.currentUser;
