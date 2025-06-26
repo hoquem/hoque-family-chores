@@ -2,14 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/notification.dart';
 import 'package:hoque_family_chores/services/interfaces/notification_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
+/// Service for handling Firebase Firestore notification operations
 class FirebaseNotificationService implements NotificationServiceInterface {
-  final FirebaseFirestore _firestore;
-  final _logger = AppLogger();
-
-  FirebaseNotificationService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   Stream<List<Notification>> streamNotifications({required String userId}) {

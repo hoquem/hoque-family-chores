@@ -16,30 +16,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _logger = AppLogger();
-
   Future<void> _refreshData() async {
-    _logger.d('HomeScreen: Refreshing data');
+    logger.i("[HomeScreen] Refreshing data...");
     final taskSummaryProvider = context.read<TaskSummaryProvider>();
     final taskProvider = context.read<TaskProvider>();
     final userProfile = context.read<AuthProvider>().currentUserProfile;
     final familyId = context.read<AuthProvider>().userFamilyId;
 
     if (userProfile != null && familyId != null) {
-      await Future.wait([
-        taskSummaryProvider.fetchTaskSummary(
-          familyId: familyId,
-          userId: userProfile.member.id,
-        ),
-        taskProvider.fetchQuickTasks(
-          familyId: familyId,
-          userId: userProfile.member.id,
-        ),
-      ]);
+      logger.d("[HomeScreen] User profile and family ID available. User: ${userProfile.member.id}, Family: $familyId");
+      try {
+        await Future.wait([
+          taskSummaryProvider.refreshSummary(
+            familyId: familyId,
+            userId: userProfile.member.id,
+          ),
+          taskProvider.fetchQuickTasks(
+            familyId: familyId,
+            userId: userProfile.member.id,
+          ),
+        ]);
+        logger.i("[HomeScreen] Data refresh completed successfully");
+      } catch (e, s) {
+        logger.e("[HomeScreen] Error refreshing data: $e", error: e, stackTrace: s);
+      }
+    } else {
+      logger.w("[HomeScreen] Cannot refresh data - missing user profile or family ID. UserProfile: $userProfile, FamilyId: $familyId");
     }
   }
 
   Widget _buildUserProfileSection(UserProfile userProfile) {
+    logger.d("[HomeScreen] Building user profile section for user: ${userProfile.member.id}");
     return Row(
       children: [
         CircleAvatar(
@@ -82,47 +89,42 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _logger.d('HomeScreen: Building screen');
+    logger.d("[HomeScreen] Building screen");
     final authProvider = context.watch<AuthProvider>();
     final currentUserProfile = authProvider.currentUserProfile;
 
     if (currentUserProfile == null) {
-      _logger.w('HomeScreen: User profile is null');
-      return Scaffold(
-        appBar: AppBar(title: const Text('Home')),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      logger.w("[HomeScreen] User profile is null - showing loading indicator");
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUserProfileSection(currentUserProfile),
-                const SizedBox(height: 24.0),
-                const Text(
-                  'Task Summary',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16.0),
-                const TaskSummaryWidget(),
-                const SizedBox(height: 24.0),
-                const Text(
-                  'Quick Tasks',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16.0),
-                const QuickTaskPickerWidget(),
-                const SizedBox(height: 50.0), // Bottom padding
-              ],
-            ),
+    logger.d("[HomeScreen] Building home screen for user: ${currentUserProfile.member.id}");
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildUserProfileSection(currentUserProfile),
+              const SizedBox(height: 24.0),
+              const Text(
+                'Task Summary',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16.0),
+              const TaskSummaryWidget(),
+              const SizedBox(height: 24.0),
+              const Text(
+                'Quick Tasks',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16.0),
+              const QuickTaskPickerWidget(),
+              const SizedBox(height: 50.0), // Bottom padding
+            ],
           ),
         ),
       ),

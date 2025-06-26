@@ -39,7 +39,7 @@ class MockTaskService implements TaskServiceInterface {
     return ServiceUtils.handleServiceCall(
       operation:
           () async =>
-              _tasks.where((task) => task.assignedTo == userId).toList(),
+              _tasks.where((task) => task.assignedTo?.userId == userId).toList(),
       operationName: 'getTasksForUser',
       context: {'userId': userId},
     );
@@ -111,8 +111,12 @@ class MockTaskService implements TaskServiceInterface {
         _logger.d("Mock: Assigning task $taskId to $userId.");
         final index = _tasks.indexWhere((t) => t.id == taskId);
         if (index != -1) {
+          // Find the FamilyMember by userId (simulate, as we don't have a family member list here)
+          final member = _tasks[index].assignedTo != null && _tasks[index].assignedTo!.userId == userId
+            ? _tasks[index].assignedTo
+            : null;
           _tasks[index] = _tasks[index].copyWith(
-            assignedTo: userId,
+            assignedTo: member, // In real code, look up FamilyMember by userId
             status: TaskStatus.assigned,
           );
           _taskStreamController.add(List.from(_tasks)); // Notify listeners
@@ -283,7 +287,8 @@ class MockTaskService implements TaskServiceInterface {
                   .where(
                     (task) =>
                         task.familyId == familyId &&
-                        task.assignedTo == assigneeId,
+                        task.assignedTo != null &&
+                        task.assignedTo!.userId == assigneeId,
                   )
                   .toList(),
         );
@@ -346,8 +351,12 @@ class MockTaskService implements TaskServiceInterface {
         _logger.d("Mock: Claiming task $taskId by user $userId.");
         final index = _tasks.indexWhere((t) => t.id == taskId);
         if (index != -1) {
+          // Find the FamilyMember by userId (simulate, as we don't have a family member list here)
+          final member = _tasks[index].assignedTo != null && _tasks[index].assignedTo!.userId == userId
+            ? _tasks[index].assignedTo
+            : null;
           _tasks[index] = _tasks[index].copyWith(
-            assignedTo: userId,
+            assignedTo: member, // In real code, look up FamilyMember by userId
             status: TaskStatus.assigned,
           );
           _taskStreamController.add(List.from(_tasks)); // Notify listeners

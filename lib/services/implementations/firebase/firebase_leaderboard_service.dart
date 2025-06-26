@@ -25,7 +25,7 @@ class FirebaseLeaderboardService implements LeaderboardServiceInterface {
                     snapshot.docs
                         .map(
                           (doc) => LeaderboardEntry.fromJson({
-                            ...?doc.data(),
+                            ...doc.data(),
                             'id': doc.id,
                           }),
                         )
@@ -69,7 +69,10 @@ class FirebaseLeaderboardService implements LeaderboardServiceInterface {
         return snapshot.docs
             .map(
               (doc) =>
-                  LeaderboardEntry.fromJson({...?doc.data(), 'id': doc.id}),
+                  LeaderboardEntry.fromJson({
+                    ...doc.data(),
+                    'id': doc.id,
+                  }),
             )
             .toList();
       },
@@ -92,11 +95,14 @@ class FirebaseLeaderboardService implements LeaderboardServiceInterface {
               .doc(memberId)
               .get();
 
-      if (!doc.exists) {
+      if (!doc.exists || doc.data() == null) {
         return null;
       }
 
-      return LeaderboardEntry.fromJson({...?doc.data(), 'id': doc.id});
+      return LeaderboardEntry.fromJson({
+        ...doc.data()!,
+        'id': doc.id,
+      });
     } catch (e) {
       AppLogger().e('Error getting leaderboard entry: $e', error: e);
       rethrow;

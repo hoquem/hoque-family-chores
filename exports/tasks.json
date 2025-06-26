@@ -1,0 +1,38 @@
+{
+  "task-1": {
+    "id": "task-1",
+    "familyId": "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+    "title": "Clean the kitchen",
+    "description": "Wash dishes, wipe counters, and sweep the floor",
+    "status": "available",
+    "difficulty": "medium",
+    "points": 50,
+    "tags": ["cleaning", "kitchen"],
+    "dueDate": "2025-06-27T10:19:31.000Z",
+    "createdAt": "2025-06-26T10:19:31.000Z"
+  },
+  "task-2": {
+    "id": "task-2",
+    "familyId": "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+    "title": "Take out the trash",
+    "description": "Empty all trash bins and take to the curb",
+    "status": "available",
+    "difficulty": "easy",
+    "points": 25,
+    "tags": ["cleaning", "trash"],
+    "dueDate": "2025-06-28T10:19:31.000Z",
+    "createdAt": "2025-06-26T10:19:31.000Z"
+  },
+  "task-3": {
+    "id": "task-3",
+    "familyId": "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+    "title": "Do laundry",
+    "description": "Wash, dry, and fold clothes",
+    "status": "available",
+    "difficulty": "hard",
+    "points": 75,
+    "tags": ["laundry", "clothes"],
+    "dueDate": "2025-06-29T10:19:31.000Z",
+    "createdAt": "2025-06-26T10:19:31.000Z"
+  }
+}

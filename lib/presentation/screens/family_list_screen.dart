@@ -49,7 +49,6 @@ class _FamilyListScreenState extends State<FamilyListScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Family Members')),
       body: RefreshIndicator(
         onRefresh: _loadFamilyMembers,
         child: FutureBuilder<List<FamilyMember>>(

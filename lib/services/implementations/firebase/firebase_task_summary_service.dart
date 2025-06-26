@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/services/interfaces/task_summary_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirebaseTaskSummaryService implements TaskSummaryServiceInterface {
   final FirebaseFirestore _firestore;

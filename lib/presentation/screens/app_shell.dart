@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
 // Import all screens that will be part of the bottom navigation
 import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
@@ -50,6 +52,39 @@ class _AppShellState extends State<AppShell> {
       appBar: AppBar(
         title: Text(_appBarTitles[_selectedIndex]),
         actions: [
+          // Show filter button only when Tasks tab is selected
+          if (_selectedIndex == 1) // Tasks tab
+            PopupMenuButton<TaskFilterType>(
+              icon: const Icon(Icons.filter_list),
+              onSelected: (filter) {
+                _logger.d('AppShell: Setting task filter to $filter');
+                // Find the TaskListProvider and set the filter
+                try {
+                  final taskListProvider = context.read<app_task_list_provider.TaskListProvider>();
+                  taskListProvider.setFilter(filter);
+                } catch (e) {
+                  _logger.w('AppShell: Could not find TaskListProvider: $e');
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: TaskFilterType.all,
+                  child: Text('All Tasks'),
+                ),
+                const PopupMenuItem(
+                  value: TaskFilterType.myTasks,
+                  child: Text('My Tasks'),
+                ),
+                const PopupMenuItem(
+                  value: TaskFilterType.available,
+                  child: Text('Available Tasks'),
+                ),
+                const PopupMenuItem(
+                  value: TaskFilterType.completed,
+                  child: Text('Completed Tasks'),
+                ),
+              ],
+            ),
           IconButton(
             icon: CircleAvatar(
               backgroundImage:

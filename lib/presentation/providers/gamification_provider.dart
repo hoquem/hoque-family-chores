@@ -10,7 +10,6 @@ import 'dart:async';
 
 class GamificationProvider with ChangeNotifier {
   final GamificationServiceInterface _gamificationService;
-  final _logger = AppLogger();
 
   UserProfile? _userProfile;
   List<Badge> _unlockedBadges = const [];
@@ -40,25 +39,25 @@ class GamificationProvider with ChangeNotifier {
   GamificationProvider({
     required GamificationServiceInterface gamificationService,
   }) : _gamificationService = gamificationService {
-    _logger.d("GamificationProvider initialized with dependencies.");
+    logger.d("GamificationProvider initialized with dependencies.");
   }
 
   void updateDependencies({
     required GamificationServiceInterface gamificationService,
   }) {
     if (!identical(_gamificationService, gamificationService)) {
-      _logger.d("GamificationProvider: Dependencies updated.");
+      logger.d("GamificationProvider: Dependencies updated.");
     }
   }
 
   // New method to initialize gamification data after login
   Future<void> initializeAfterLogin(String userId) async {
     if (userId.isEmpty) {
-      _logger.w("GamificationProvider: Cannot initialize - empty user ID");
+      logger.w("GamificationProvider: Cannot initialize - empty user ID");
       return;
     }
 
-    _logger.i(
+    logger.i(
       "GamificationProvider: Initializing after login for user: $userId",
     );
 
@@ -68,7 +67,7 @@ class GamificationProvider with ChangeNotifier {
         userId: userId,
       );
       if (userProfile == null || userProfile.member.familyId.isEmpty) {
-        _logger.w(
+        logger.w(
           "GamificationProvider: Cannot initialize - no family ID found",
         );
         return;
@@ -84,7 +83,7 @@ class GamificationProvider with ChangeNotifier {
       await loadAllData(userId);
     } catch (e, s) {
       _errorMessage = "Failed to initialize gamification data: $e";
-      _logger.e(
+      logger.e(
         "GamificationProvider: Error initializing after login: $e",
         error: e,
         stackTrace: s,
@@ -96,7 +95,7 @@ class GamificationProvider with ChangeNotifier {
   Future<void> loadAllData(String userId) async {
     if (_isLoading) return;
 
-    _logger.i(
+    logger.i(
       "GamificationProvider: Loading all gamification data for user: $userId",
     );
     _isLoading = true;
@@ -110,7 +109,7 @@ class GamificationProvider with ChangeNotifier {
       _predefinedRewards = await _gamificationService.getRewards(
         familyId: userId,
       );
-      _logger.d(
+      logger.d(
         "GamificationProvider: Predefined badges (${_predefinedBadges.length}) and rewards (${_predefinedRewards.length}) loaded.",
       );
 
@@ -121,11 +120,11 @@ class GamificationProvider with ChangeNotifier {
             (profile) {
               _userProfile = profile;
               notifyListeners();
-              _logger.d("GamificationProvider: UserProfile updated.");
+              logger.d("GamificationProvider: UserProfile updated.");
             },
             onError: (e, s) {
               _errorMessage = "Failed to stream user profile: $e";
-              _logger.e(
+              logger.e(
                 "Error streaming user profile: $e",
                 error: e,
                 stackTrace: s,
@@ -140,13 +139,13 @@ class GamificationProvider with ChangeNotifier {
             (badges) {
               _unlockedBadges = badges;
               notifyListeners();
-              _logger.d(
+              logger.d(
                 "GamificationProvider: Unlocked badges updated (${badges.length}).",
               );
             },
             onError: (e, s) {
               _errorMessage = "Failed to stream unlocked badges: $e";
-              _logger.e(
+              logger.e(
                 "Error streaming unlocked badges: $e",
                 error: e,
                 stackTrace: s,
@@ -161,13 +160,13 @@ class GamificationProvider with ChangeNotifier {
             (achievements) async {
               _userAchievements = achievements;
               notifyListeners();
-              _logger.d(
+              logger.d(
                 "GamificationProvider: User achievements updated (${achievements.length}).",
               );
 
               // If no achievements exist, create a default one
               if (achievements.isEmpty) {
-                _logger.d(
+                logger.d(
                   'No achievements found, creating a default achievement...',
                 );
                 final now = DateTime.now();
@@ -192,7 +191,7 @@ class GamificationProvider with ChangeNotifier {
             },
             onError: (e, s) {
               _errorMessage = "Failed to stream user achievements: $e";
-              _logger.e(
+              logger.e(
                 "Error streaming user achievements: $e",
                 error: e,
                 stackTrace: s,
@@ -201,7 +200,7 @@ class GamificationProvider with ChangeNotifier {
           );
     } catch (e, s) {
       _errorMessage = "GamificationProvider: Error loading initial data: $e";
-      _logger.e(
+      logger.e(
         "GamificationProvider: Error loading initial data: $e",
         error: e,
         stackTrace: s,
@@ -220,7 +219,7 @@ class GamificationProvider with ChangeNotifier {
       notifyListeners();
       return;
     }
-    _logger.i(
+    logger.i(
       "GamificationProvider: Attempting to redeem reward $rewardId for user ${_userProfile!.member.id}.",
     );
     _isLoading = true;
@@ -239,14 +238,14 @@ class GamificationProvider with ChangeNotifier {
         rewardId: rewardId,
       );
 
-      _logger.i(
+      logger.i(
         "GamificationProvider: Successfully redeemed reward $rewardId for user ${_userProfile!.member.id}.",
       );
       _redeemedRewards.add(rewardToRedeem);
       notifyListeners();
     } catch (e, s) {
       _errorMessage = "Failed to redeem reward: $e";
-      _logger.e(
+      logger.e(
         "GamificationProvider: Error redeeming reward: $e",
         error: e,
         stackTrace: s,
@@ -262,7 +261,7 @@ class GamificationProvider with ChangeNotifier {
     _userProfileSubscription?.cancel();
     _unlockedBadgesSubscription?.cancel();
     _userAchievementsSubscription?.cancel();
-    _logger.i("GamificationProvider disposed.");
+    logger.i("GamificationProvider disposed.");
     super.dispose();
   }
 }

@@ -40,58 +40,72 @@ import 'package:hoque_family_chores/presentation/providers/task_list_provider.da
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
 import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 
 /// Service factory that creates services based on the environment
 class ServiceFactory {
   final EnvironmentService _environment;
-  final _logger = AppLogger();
 
   ServiceFactory(this._environment);
 
   /// Creates all services based on the environment
   Map<Type, dynamic> createServices() {
-    _logger.i(
-      'Creating services for environment: ${_environment.useMockData ? 'MOCK' : 'FIREBASE'}',
-    );
+    logger.i('[ServiceFactory] Creating services for environment: ${_environment.useMockData ? 'MOCK' : 'FIREBASE'}');
 
     final services = <Type, dynamic>{};
 
-    // Create task service
-    services[TaskServiceInterface] =
-        _environment.useMockData ? MockTaskService() : FirebaseTaskService();
+    try {
+      // Create task service
+      logger.d('[ServiceFactory] Creating TaskService...');
+      services[TaskServiceInterface] =
+          _environment.useMockData ? MockTaskService() : FirebaseTaskService();
 
-    // Create user profile service
-    services[UserProfileServiceInterface] = FirebaseUserProfileService();
+      // Create user profile service
+      logger.d('[ServiceFactory] Creating UserProfileService...');
+      services[UserProfileServiceInterface] = FirebaseUserProfileService();
 
-    // Create family service
-    services[FamilyServiceInterface] = FirebaseFamilyService();
+      // Create family service
+      logger.d('[ServiceFactory] Creating FamilyService...');
+      services[FamilyServiceInterface] = FirebaseFamilyService();
 
-    // Create badge service
-    services[BadgeServiceInterface] = FirebaseBadgeService();
+      // Create badge service
+      logger.d('[ServiceFactory] Creating BadgeService...');
+      services[BadgeServiceInterface] = FirebaseBadgeService();
 
-    // Create reward service
-    services[RewardServiceInterface] = FirebaseRewardService();
+      // Create reward service
+      logger.d('[ServiceFactory] Creating RewardService...');
+      services[RewardServiceInterface] = FirebaseRewardService();
 
-    // Create achievement service
-    services[AchievementServiceInterface] = FirebaseAchievementService();
+      // Create achievement service
+      logger.d('[ServiceFactory] Creating AchievementService...');
+      services[AchievementServiceInterface] = FirebaseAchievementService();
 
-    // Create notification service
-    services[NotificationServiceInterface] = FirebaseNotificationService();
+      // Create notification service
+      logger.d('[ServiceFactory] Creating NotificationService...');
+      services[NotificationServiceInterface] = FirebaseNotificationService();
 
-    // Create gamification service
-    services[GamificationServiceInterface] =
-        _environment.useMockData
-            ? MockGamificationService()
-            : FirebaseGamificationService();
+      // Create gamification service
+      logger.d('[ServiceFactory] Creating GamificationService...');
+      services[GamificationServiceInterface] =
+          _environment.useMockData
+              ? MockGamificationService()
+              : FirebaseGamificationService();
+
+      logger.i('[ServiceFactory] All services created successfully. Total services: ${services.length}');
+    } catch (e, s) {
+      logger.e('[ServiceFactory] Error creating services: $e', error: e, stackTrace: s);
+      rethrow;
+    }
 
     return services;
   }
@@ -99,43 +113,56 @@ class ServiceFactory {
 
 void main() async {
   final logger = AppLogger();
-  try {
-    // Initialize Flutter bindings
-    WidgetsFlutterBinding.ensureInitialized();
-    logger.i("App starting up...");
+  logger.init(); // Initialize the logger first
 
-    // Load environment variables
-    await dotenv.load(fileName: ".env");
-    logger.i("Loaded .env file for configuration secrets.");
+  try {
+    logger.i("[Startup] Initializing Flutter bindings...");
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Load environment variables (optional)
+    try {
+      logger.i("[Startup] Attempting to load .env file...");
+      await dotenv.load(fileName: ".env");
+      logger.i("[Startup] Loaded .env file for configuration secrets.");
+    } catch (e) {
+      logger.w("[Startup] No .env file found, using default configuration. Error: $e");
+    }
 
     // Initialize environment service
+    logger.i("[Startup] Initializing environment service...");
     final environmentService = EnvironmentService();
     logger.i(
-      "Environment checks: Debug Mode = ${environmentService.isDebugMode}, "
-      "Use Mock Data = ${environmentService.useMockData}",
+      "[Startup] Environment checks: Debug Mode = ${environmentService.isDebugMode}, Use Mock Data = ${environmentService.useMockData}",
     );
 
     // Initialize Firebase if needed
     if (environmentService.shouldConnectToFirebase) {
-      logger.i("Connecting to Firebase...");
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      logger.i("Firebase connected successfully.");
+      try {
+        logger.i("[Startup] Connecting to Firebase...");
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        logger.i("[Startup] Firebase connected successfully.");
+      } catch (e, s) {
+        logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
+        rethrow;
+      }
     } else {
-      logger.w("Firebase connection skipped (using mock data).");
+      logger.w("[Startup] Firebase connection skipped (using mock data). UseMockData: ${environmentService.useMockData}");
     }
 
     // Create services
+    logger.i("[Startup] Creating service factory and initializing services...");
     final serviceFactory = ServiceFactory(environmentService);
     final services = serviceFactory.createServices();
-    logger.i("Services initialized successfully");
+    logger.i("[Startup] Services initialized successfully");
 
     // Run the app
+    logger.i("[Startup] Running the app...");
     runApp(MyApp(services: services));
   } catch (e, stackTrace) {
     logger.e(
-      "A fatal error occurred during app startup.",
+      "[Startup] A fatal error occurred during app startup.",
       error: e,
       stackTrace: stackTrace,
     );
@@ -161,13 +188,68 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
-            if (authProvider.status == AuthStatus.authenticated) {
-              return const AppShell();
-            } else if (authProvider.status == AuthStatus.unauthenticated) {
-              return const LoginScreen();
-            } else {
-              return const FamilySetupScreen();
+            logger.d("[App] Building home screen. Auth status: ${authProvider.status}, Loading: ${authProvider.isLoading}");
+            
+            // Show loading screen while determining auth status
+            if (authProvider.status == AuthStatus.unknown || authProvider.isLoading) {
+              logger.i("[App] Showing loading screen - status: ${authProvider.status}, loading: ${authProvider.isLoading}");
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
             }
+            
+            // Show authenticated user the main app
+            if (authProvider.status == AuthStatus.authenticated) {
+              logger.i("[App] User authenticated - showing AppShell. User: ${authProvider.currentUserProfile?.member.id}");
+              return const AppShell();
+            } 
+            
+            // Show login screen for unauthenticated users
+            if (authProvider.status == AuthStatus.unauthenticated) {
+              logger.i("[App] User unauthenticated - showing LoginScreen");
+              return const LoginScreen();
+            }
+            
+            // Show error screen for authentication errors
+            if (authProvider.status == AuthStatus.error) {
+              logger.e("[App] Authentication error - showing error screen. Error: ${authProvider.errorMessage}");
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Authentication Error',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        authProvider.errorMessage ?? 'Unknown error occurred',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          logger.i("[App] User clicked retry button - refreshing auth status");
+                          // Try to refresh auth status
+                          authProvider.refreshUserProfile();
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            // Fallback to login screen
+            logger.w("[App] Unknown auth status - falling back to LoginScreen. Status: ${authProvider.status}");
+            return const LoginScreen();
           },
         ),
       ),
@@ -185,11 +267,13 @@ class MyApp extends StatelessWidget {
     // Add state management providers
     providers.addAll([
       ChangeNotifierProvider<AuthProvider>(
-        create:
-            (context) => AuthProvider(
-              userProfileService: services[UserProfileServiceInterface],
-              gamificationService: services[GamificationServiceInterface],
-            ),
+        create: (context) {
+          print("DEBUG: Creating AuthProvider");
+          return AuthProvider(
+            userProfileService: services[UserProfileServiceInterface],
+            gamificationService: services[GamificationServiceInterface],
+          );
+        },
       ),
 
       ChangeNotifierProvider<GamificationProvider>(
@@ -199,60 +283,70 @@ class MyApp extends StatelessWidget {
             ),
       ),
 
-      ChangeNotifierProxyProvider2<
-        TaskServiceInterface,
-        AuthProvider,
-        MyTasksProvider
-      >(
-        create: (context) => MyTasksProvider(),
-        update:
-            (_, taskService, authProvider, provider) =>
-                provider!..update(taskService, authProvider),
+      // Add missing providers
+      ChangeNotifierProvider<BadgeProvider>(
+        create: (context) => BadgeProvider(
+          services[BadgeServiceInterface],
+          Provider.of<AuthProvider>(context, listen: false),
+        ),
       ),
 
-      ChangeNotifierProxyProvider2<
-        TaskServiceInterface,
-        AuthProvider,
-        TaskListProvider
-      >(
-        create:
-            (context) => TaskListProvider(
-              taskService: services[TaskServiceInterface],
-              authProvider: Provider.of<AuthProvider>(context, listen: false),
-            ),
-        update:
-            (_, taskService, authProvider, provider) =>
-                provider!..update(taskService, authProvider),
+      ChangeNotifierProvider<RewardProvider>(
+        create: (context) => RewardProvider(
+          services[RewardServiceInterface],
+        ),
       ),
 
-      ChangeNotifierProxyProvider2<
-        TaskServiceInterface,
-        AuthProvider,
-        AvailableTasksProvider
-      >(
-        create:
-            (context) => AvailableTasksProvider(
-              taskService: services[TaskServiceInterface],
-              authProvider: Provider.of<AuthProvider>(context, listen: false),
-            ),
-        update:
-            (_, taskService, authProvider, provider) =>
-                provider!..update(taskService, authProvider),
+      ChangeNotifierProvider<TaskProvider>(
+        create: (context) => TaskProvider(
+          services[TaskServiceInterface],
+        ),
       ),
 
-      ChangeNotifierProxyProvider2<
-        TaskServiceInterface,
-        AuthProvider,
-        TaskSummaryProvider
-      >(
-        create:
-            (context) => TaskSummaryProvider(
-              taskService: services[TaskServiceInterface],
-              authProvider: Provider.of<AuthProvider>(context, listen: false),
-            ),
-        update:
-            (_, taskService, authProvider, provider) =>
-                provider!..update(taskService, authProvider),
+      // Add FamilyServiceInterface provider
+      Provider<FamilyServiceInterface>(
+        create: (context) => services[FamilyServiceInterface],
+      ),
+
+      // Create task-related providers with direct dependencies
+      ChangeNotifierProvider<MyTasksProvider>(
+        create: (context) {
+          print("DEBUG: Creating MyTasksProvider");
+          return MyTasksProvider(
+            taskService: services[TaskServiceInterface],
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          );
+        },
+      ),
+
+      ChangeNotifierProvider<TaskListProvider>(
+        create: (context) {
+          print("DEBUG: Creating TaskListProvider");
+          return TaskListProvider(
+            taskService: services[TaskServiceInterface],
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          );
+        },
+      ),
+
+      ChangeNotifierProvider<AvailableTasksProvider>(
+        create: (context) {
+          print("DEBUG: Creating AvailableTasksProvider");
+          return AvailableTasksProvider(
+            taskService: services[TaskServiceInterface],
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          );
+        },
+      ),
+
+      ChangeNotifierProvider<TaskSummaryProvider>(
+        create: (context) {
+          print("DEBUG: Creating TaskSummaryProvider");
+          return TaskSummaryProvider(
+            taskService: services[TaskServiceInterface],
+            authProvider: Provider.of<AuthProvider>(context, listen: false),
+          );
+        },
       ),
     ]);
 

@@ -220,48 +220,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
       _logger.w(
         'TaskListScreen: User ID or Family ID is null, cannot display tasks',
       );
-      return Scaffold(
-        appBar: AppBar(title: const Text('Tasks')),
-        body: const Center(
+      return const Scaffold(
+        body: Center(
           child: Text('Please log in and join a family to view tasks.'),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tasks'),
-        actions: [
-          PopupMenuButton<TaskFilterType>(
-            icon: const Icon(Icons.filter_list),
-            onSelected: (filter) {
-              _logger.d('TaskListScreen: Setting filter to $filter');
-              context.read<app_task_list_provider.TaskListProvider>().setFilter(
-                filter,
-              );
-            },
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(
-                    value: TaskFilterType.all,
-                    child: Text('All Tasks'),
-                  ),
-                  const PopupMenuItem(
-                    value: TaskFilterType.myTasks,
-                    child: Text('My Tasks'),
-                  ),
-                  const PopupMenuItem(
-                    value: TaskFilterType.available,
-                    child: Text('Available Tasks'),
-                  ),
-                  const PopupMenuItem(
-                    value: TaskFilterType.completed,
-                    child: Text('Completed Tasks'),
-                  ),
-                ],
-          ),
-        ],
-      ),
       body: _buildTaskList(),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddTask,

@@ -88,21 +88,55 @@ class UserProfile {
   }
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert to list
+    List<String> _safeListFromJson(dynamic value) {
+      if (value == null) return [];
+      if (value is List) {
+        return List<String>.from(value);
+      }
+      // If it's not a list, return empty list
+      return [];
+    }
+
     return UserProfile(
       id: json['id'] as String,
-      member: FamilyMember.fromJson(json['member'] as Map<String, dynamic>),
-      points: json['points'] as int,
-      badges: List<String>.from(json['badges'] as List),
-      achievements: List<String>.from(json['achievements'] as List),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      member: json['member'] != null 
+          ? FamilyMember.fromJson(json['member'] as Map<String, dynamic>)
+          : FamilyMember(
+              id: json['id'] as String,
+              userId: json['id'] as String, // Use id as userId for fallback
+              familyId: json['familyId'] as String? ?? 'unknown',
+              name: json['name'] as String? ?? 'Unknown User',
+              photoUrl: json['avatarUrl'] as String?,
+              role: FamilyRole.child, // Default to child role
+              points: json['points'] as int? ?? 0,
+              joinedAt: json['createdAt'] != null 
+                  ? DateTime.parse(json['createdAt'] as String)
+                  : DateTime.now(),
+              updatedAt: json['updatedAt'] != null 
+                  ? DateTime.parse(json['updatedAt'] as String)
+                  : DateTime.now(),
+            ),
+      points: json['points'] as int? ?? 0,
+      badges: _safeListFromJson(json['badges']),
+      achievements: _safeListFromJson(json['achievements']),
+      createdAt: json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt'] as String)
+          : DateTime.now(),
       avatarUrl: json['avatarUrl'] as String?,
       bio: json['bio'] as String?,
-      completedTasks: List<String>.from(json['completedTasks'] as List),
-      inProgressTasks: List<String>.from(json['inProgressTasks'] as List),
-      availableTasks: List<String>.from(json['availableTasks'] as List),
-      preferences: Map<String, dynamic>.from(json['preferences'] as Map),
-      statistics: Map<String, dynamic>.from(json['statistics'] as Map),
+      completedTasks: _safeListFromJson(json['completedTasks']),
+      inProgressTasks: _safeListFromJson(json['inProgressTasks']),
+      availableTasks: _safeListFromJson(json['availableTasks']),
+      preferences: json['preferences'] != null 
+          ? Map<String, dynamic>.from(json['preferences'] as Map)
+          : <String, dynamic>{},
+      statistics: json['statistics'] != null 
+          ? Map<String, dynamic>.from(json['statistics'] as Map)
+          : <String, dynamic>{},
     );
   }
 
@@ -275,11 +309,3 @@ class UserProfile {
 
 // --- User-related Enums (kept in this file for encapsulation) ---
 enum UserRole { member, admin, moderator }
-
-enum AuthStatus {
-  authenticated,
-  unauthenticated,
-  unknown,
-  authenticating,
-  error,
-}

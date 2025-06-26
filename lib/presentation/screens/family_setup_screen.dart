@@ -52,9 +52,8 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       // Call AuthProvider's method to create family and update user profile
       await authProvider.createFamilyAndSetProfile(
         familyName: _familyNameController.text.trim(),
-        creatorUserId: currentUserId,
-        creatorEmail: currentUserEmail,
-        creatorName: currentUserName,
+        familyDescription: 'Family created by ${currentUserName ?? 'user'}',
+        creatorEmail: currentUserEmail ?? '',
       );
 
       // Check if family creation was successful and user profile updated

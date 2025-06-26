@@ -42,7 +42,6 @@ enum BadgeRarity {
 }
 
 class Badge {
-  @override
   final String id;
   final String name;
   final String description;

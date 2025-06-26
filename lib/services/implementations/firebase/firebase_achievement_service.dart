@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/services/interfaces/achievement_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirebaseAchievementService implements AchievementServiceInterface {
   final FirebaseFirestore _firestore;
@@ -24,7 +23,7 @@ class FirebaseAchievementService implements AchievementServiceInterface {
                     snapshot.docs
                         .map(
                           (doc) => Achievement.fromJson({
-                            ...?doc.data(),
+                            ...doc.data(),
                             'id': doc.id,
                           }),
                         )

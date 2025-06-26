@@ -3,7 +3,6 @@ import 'package:hoque_family_chores/models/family.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/interfaces/family_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirebaseFamilyService implements FamilyServiceInterface {
   final FirebaseFirestore _firestore;
@@ -18,7 +17,7 @@ class FirebaseFamilyService implements FamilyServiceInterface {
           () => _firestore.collection('families').doc(familyId).snapshots().map(
             (doc) {
               if (doc.exists && doc.data() != null) {
-                return Family.fromJson({...?doc.data(), 'id': doc.id});
+                return Family.fromJson({...doc.data()!, 'id': doc.id});
               }
               return null;
             },
@@ -34,10 +33,10 @@ class FirebaseFamilyService implements FamilyServiceInterface {
       operation: () async {
         final familyDoc =
             await _firestore.collection('families').doc(familyId).get();
-        if (!familyDoc.exists) {
+        if (!familyDoc.exists || familyDoc.data() == null) {
           return null;
         }
-        return Family.fromJson({...?familyDoc.data(), 'id': familyDoc.id});
+        return Family.fromJson({...familyDoc.data()!, 'id': familyDoc.id});
       },
       operationName: 'getFamily',
       context: {'familyId': familyId},
@@ -54,7 +53,7 @@ class FirebaseFamilyService implements FamilyServiceInterface {
                 .where('memberIds', arrayContains: userId)
                 .get();
         return snapshot.docs
-            .map((doc) => Family.fromJson({...?doc.data(), 'id': doc.id}))
+            .map((doc) => Family.fromJson({...doc.data(), 'id': doc.id}))
             .toList();
       },
       operationName: 'getFamiliesForUser',
@@ -150,7 +149,7 @@ class FirebaseFamilyService implements FamilyServiceInterface {
                     snapshot.docs
                         .map(
                           (doc) => FamilyMember.fromJson({
-                            ...?doc.data(),
+                            ...doc.data(),
                             'id': doc.id,
                           }),
                         )
@@ -172,7 +171,7 @@ class FirebaseFamilyService implements FamilyServiceInterface {
                 .collection('members')
                 .get();
         return membersSnapshot.docs
-            .map((doc) => FamilyMember.fromJson({...?doc.data(), 'id': doc.id}))
+            .map((doc) => FamilyMember.fromJson({...doc.data(), 'id': doc.id}))
             .toList();
       },
       operationName: 'getFamilyMembers',

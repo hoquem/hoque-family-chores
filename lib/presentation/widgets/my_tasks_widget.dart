@@ -23,12 +23,14 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
 
   @override
   Widget build(BuildContext context) {
+    _logger.d('MyTasksWidget: build() called');
     return Card(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Consumer<MyTasksProvider>(
           builder: (context, provider, child) {
+            _logger.d('MyTasksWidget: Consumer builder called with state: ${provider.state}, tasks count: ${provider.tasks.length}');
             return RefreshIndicator(
               onRefresh: _refreshData,
               child: SingleChildScrollView(
@@ -70,7 +72,10 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
   }
 
   Widget _buildTasksList(MyTasksProvider provider) {
+    _logger.d('MyTasksWidget: _buildTasksList called with ${provider.tasks.length} tasks');
+    
     if (provider.tasks.isEmpty) {
+      _logger.d('MyTasksWidget: No tasks found - showing empty state');
       return const Center(
         child: ListTile(
           leading: Icon(Icons.check_circle, color: Colors.green),
@@ -80,6 +85,7 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
       );
     }
 
+    _logger.d('MyTasksWidget: Building task list with ${provider.tasks.length} tasks');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,6 +95,7 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
           itemCount: provider.tasks.length > 3 ? 3 : provider.tasks.length,
           itemBuilder: (context, index) {
             final task = provider.tasks[index];
+            _logger.d('MyTasksWidget: Building task item $index: ${task.title}');
             return ListTile(
               leading: Icon(
                 Icons.check_box_outline_blank,

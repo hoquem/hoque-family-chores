@@ -3,7 +3,6 @@
 // <--- NEW: Import enum_helpers
 
 class FamilyMember {
-  @override
   final String id;
   final String userId;
   final String familyId;
@@ -67,17 +66,23 @@ class FamilyMember {
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
     return FamilyMember(
       id: json['id'] as String,
-      userId: json['userId'] as String,
-      familyId: json['familyId'] as String,
-      name: json['name'] as String,
+      userId: json['userId'] as String? ?? json['id'] as String,
+      familyId: json['familyId'] as String? ?? 'unknown',
+      name: json['name'] as String? ?? 'Unknown User',
       photoUrl: json['photoUrl'] as String?,
-      role: FamilyRole.values.firstWhere(
-        (e) => e.name == json['role'],
-        orElse: () => FamilyRole.child,
-      ),
+      role: json['role'] != null 
+          ? FamilyRole.values.firstWhere(
+              (e) => e.name == json['role'],
+              orElse: () => FamilyRole.child,
+            )
+          : FamilyRole.child,
       points: json['points'] as int? ?? 0,
-      joinedAt: DateTime.parse(json['joinedAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      joinedAt: json['joinedAt'] != null 
+          ? DateTime.parse(json['joinedAt'] as String)
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? DateTime.parse(json['updatedAt'] as String)
+          : DateTime.now(),
     );
   }
 

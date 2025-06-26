@@ -3,7 +3,6 @@
 import 'package:hoque_family_chores/models/badge.dart';
 
 class Achievement {
-  @override
   final String id;
   final String title;
   final String description;

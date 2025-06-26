@@ -2,13 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class GamificationScreen extends StatefulWidget {
   const GamificationScreen({super.key});
@@ -20,7 +17,6 @@ class GamificationScreen extends StatefulWidget {
 class _GamificationScreenState extends State<GamificationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _logger = AppLogger();
 
   @override
   void initState() {

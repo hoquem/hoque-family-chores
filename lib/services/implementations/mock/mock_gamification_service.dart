@@ -2,17 +2,16 @@ import 'dart:async';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
-import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
+/// Mock implementation of the gamification service for testing
 class MockGamificationService implements GamificationServiceInterface {
   final Map<String, List<Badge>> _userBadges = {};
   final Map<String, List<Achievement>> _userAchievements = {};
   final Map<String, List<Reward>> _userRewards = {};
-  final Map<String, TaskSummary> _userTaskSummaries = {};
   final Map<String, UserProfile> _userProfiles = {};
 
   @override

@@ -7,7 +7,7 @@ import 'dart:async';
 
 class TaskListProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  final AuthProvider _authProvider;
+  AuthProvider _authProvider;
   final _logger = AppLogger();
 
   List<Task> _tasks = [];
@@ -26,27 +26,56 @@ class TaskListProvider with ChangeNotifier {
   }) : _taskService = taskService,
        _authProvider = authProvider {
     _logger.d(
-      "TaskListProvider initialized with dependencies. Performing initial fetch...",
+      "TaskListProvider initialized with dependencies. Waiting for authentication...",
     );
-    _fetchTasksDebounced();
+    _logger.d("TaskListProvider: AuthProvider reference: $_authProvider");
+    _logger.d("TaskListProvider: TaskService reference: $_taskService");
+    // Listen to auth provider changes
+    _authProvider.addListener(_onAuthChanged);
+    _logger.d("TaskListProvider: Added listener to AuthProvider");
+    
+    // Check if user is already authenticated when provider is created
+    _logger.d("TaskListProvider: Checking if user is already authenticated");
+    _logger.d("TaskListProvider: Current auth status: ${_authProvider.status}");
+    _logger.d("TaskListProvider: Current user profile: ${_authProvider.currentUserProfile?.member.id}");
+    _logger.d("TaskListProvider: Current family ID: ${_authProvider.userFamilyId}");
+    
+    // If user is already authenticated, fetch tasks immediately
+    if (_authProvider.currentUserProfile != null && _authProvider.userFamilyId != null) {
+      _logger.d("TaskListProvider: User already authenticated, fetching tasks immediately");
+      _fetchTasksDebounced();
+    } else {
+      _logger.d("TaskListProvider: User not authenticated yet, waiting for auth change");
+    }
   }
 
-  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    if (!identical(_taskService, taskService) ||
-        !identical(_authProvider, authProvider)) {
-      _logger.d(
-        "TaskListProvider dependencies observed to change. Triggering re-fetch...",
-      );
-      _fetchTasksDebounced();
-    }
+  @override
+  void dispose() {
+    _authProvider.removeListener(_onAuthChanged);
+    _fetchDebounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    _logger.d("TaskListProvider: Auth state changed, checking if we should fetch data");
+    _logger.d("TaskListProvider: Auth status: ${_authProvider.status}");
+    _logger.d("TaskListProvider: Current user profile: ${_authProvider.currentUserProfile?.member.id}");
+    _logger.d("TaskListProvider: Current family ID: ${_authProvider.userFamilyId}");
+    _logger.d("TaskListProvider: Is loading: ${_authProvider.isLoading}");
+    _fetchTasksDebounced();
   }
 
   Timer? _fetchDebounceTimer;
   void _fetchTasksDebounced() {
+    _logger.d("TaskListProvider: _fetchTasksDebounced called");
     _fetchDebounceTimer?.cancel();
     _fetchDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+      _logger.d("TaskListProvider: Debounced fetch executing");
+      _logger.d("TaskListProvider: User profile: ${_authProvider.currentUserProfile?.member.id}");
+      _logger.d("TaskListProvider: Family ID: ${_authProvider.userFamilyId}");
       if (_authProvider.currentUserProfile != null &&
           _authProvider.userFamilyId != null) {
+        _logger.d("TaskListProvider: Calling fetchTasks");
         fetchTasks(
           familyId: _authProvider.userFamilyId!,
           userId: _authProvider.currentUserProfile!.member.id,
@@ -87,7 +116,7 @@ class TaskListProvider with ChangeNotifier {
         );
         final now = DateTime.now();
         final defaultTask = Task(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          id: '', // Will be set by Firestore
           title: 'Welcome Task',
           description: 'This is your first task! Edit or delete as needed.',
           points: 10,

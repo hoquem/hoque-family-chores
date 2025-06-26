@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/services/interfaces/reward_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirebaseRewardService implements RewardServiceInterface {
   final FirebaseFirestore _firestore;
@@ -24,7 +23,7 @@ class FirebaseRewardService implements RewardServiceInterface {
                     snapshot.docs
                         .map(
                           (doc) =>
-                              Reward.fromJson({...?doc.data(), 'id': doc.id}),
+                              Reward.fromJson({...doc.data(), 'id': doc.id}),
                         )
                         .toList(),
               ),
@@ -44,7 +43,7 @@ class FirebaseRewardService implements RewardServiceInterface {
                 .collection('rewards')
                 .get();
         return rewardsSnapshot.docs
-            .map((doc) => Reward.fromJson({...?doc.data(), 'id': doc.id}))
+            .map((doc) => Reward.fromJson({...doc.data(), 'id': doc.id}))
             .toList();
       },
       operationName: 'getRewards',
@@ -59,12 +58,17 @@ class FirebaseRewardService implements RewardServiceInterface {
   }) {
     return ServiceUtils.handleServiceCall(
       operation: () async {
-        await _firestore
+        // Let Firestore auto-generate the document ID
+        final docRef = _firestore
             .collection('families')
             .doc(familyId)
             .collection('rewards')
-            .doc(reward.id)
-            .set(reward.toJson());
+            .doc();
+        
+        // Create the reward with the auto-generated ID
+        final rewardWithId = reward.copyWith(id: docRef.id);
+        
+        await docRef.set(rewardWithId.toJson());
       },
       operationName: 'createReward',
       context: {'familyId': familyId, 'rewardId': reward.id},
@@ -129,12 +133,12 @@ class FirebaseRewardService implements RewardServiceInterface {
                 .doc(rewardId)
                 .get();
 
-        if (!rewardDoc.exists) {
+        if (!rewardDoc.exists || rewardDoc.data() == null) {
           throw Exception('Reward not found');
         }
 
         final reward = Reward.fromJson({
-          ...?rewardDoc.data(),
+          ...rewardDoc.data()!,
           'id': rewardDoc.id,
         });
 

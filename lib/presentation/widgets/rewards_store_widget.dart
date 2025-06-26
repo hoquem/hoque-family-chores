@@ -52,7 +52,7 @@ class _RewardsStoreWidgetState extends State<RewardsStoreWidget> {
       itemBuilder: (context, index) {
         final reward = widget.availableRewards[index];
         final isRedeemed = widget.redeemedRewards.any((r) => r.id == reward.id);
-        final canAfford = widget.userProfile.totalPoints >= reward.pointsCost;
+        final canAfford = widget.userProfile.points >= reward.pointsCost;
 
         return RewardTile(
           reward: reward,

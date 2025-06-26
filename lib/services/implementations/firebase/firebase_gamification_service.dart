@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/reward.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -274,13 +273,13 @@ class FirebaseGamificationService implements GamificationServiceInterface {
       });
 
       final userProfile = await getUserProfile(userId: userId);
-      if (userProfile.totalPoints < reward.pointsCost) {
+      if (userProfile.points < reward.pointsCost) {
         throw Exception('Not enough points to redeem reward');
       }
 
       // Update user points
       await _userProfilesCollection.doc(userId).update({
-        'totalPoints': userProfile.totalPoints - reward.pointsCost,
+        'points': userProfile.points - reward.pointsCost,
       });
 
       // Record redemption
@@ -309,7 +308,7 @@ class FirebaseGamificationService implements GamificationServiceInterface {
   }) async {
     try {
       await _db.collection('users').doc(userId).update({
-        'totalPoints': points,
+        'points': points,
         'updatedAt': FieldValue.serverTimestamp(),
       });
       _logger.i('User $userId points updated to $points');
@@ -400,6 +399,7 @@ class FirebaseGamificationService implements GamificationServiceInterface {
     try {
       final now = DateTime.now();
       final userProfile = UserProfile(
+        id: userId,
         member: FamilyMember(
           id: userId,
           userId: userId,
@@ -410,15 +410,16 @@ class FirebaseGamificationService implements GamificationServiceInterface {
           joinedAt: now,
           updatedAt: now,
         ),
-        totalPoints: 0,
-        currentLevel: 1,
-        pointsToNextLevel: 100,
-        completedTasks: 0,
-        currentStreak: 0,
-        longestStreak: 0,
+        points: 0,
         badges: [],
         achievements: [],
         createdAt: now,
+        updatedAt: now,
+        completedTasks: [],
+        inProgressTasks: [],
+        availableTasks: [],
+        preferences: {},
+        statistics: {},
       );
 
       await _userProfilesCollection.doc(userId).set(userProfile.toJson());

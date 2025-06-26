@@ -4,12 +4,9 @@ import 'package:hoque_family_chores/services/interfaces/user_profile_service_int
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
+/// Service for handling Firebase Firestore user profile operations
 class FirebaseUserProfileService implements UserProfileServiceInterface {
-  final FirebaseFirestore _firestore;
-  final _logger = AppLogger();
-
-  FirebaseUserProfileService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   Stream<UserProfile?> streamUserProfile({required String userId}) {
@@ -20,10 +17,22 @@ class FirebaseUserProfileService implements UserProfileServiceInterface {
               .doc(userId)
               .snapshots()
               .map(
-                (doc) =>
-                    doc.exists
-                        ? UserProfile.fromJson({...doc.data()!, 'id': doc.id})
-                        : null,
+                (doc) {
+                  if (!doc.exists) return null;
+                  
+                  final data = doc.data();
+                  if (data == null) {
+                    logger.w('[FirebaseUserProfileService] Document exists but data is null for user: $userId');
+                    return null;
+                  }
+                  
+                  try {
+                    return UserProfile.fromJson({...data, 'id': doc.id});
+                  } catch (e, s) {
+                    logger.e('[FirebaseUserProfileService] Error parsing user profile for user $userId: $e', error: e, stackTrace: s);
+                    return null;
+                  }
+                },
               ),
       streamName: 'streamUserProfile',
       context: {'userId': userId},
@@ -35,9 +44,24 @@ class FirebaseUserProfileService implements UserProfileServiceInterface {
     return ServiceUtils.handleServiceCall(
       operation: () async {
         final doc = await _firestore.collection('users').doc(userId).get();
-        return doc.exists
-            ? UserProfile.fromJson({...doc.data()!, 'id': doc.id})
-            : null;
+        
+        if (!doc.exists) {
+          logger.d('[FirebaseUserProfileService] User profile document does not exist for user: $userId');
+          return null;
+        }
+        
+        final data = doc.data();
+        if (data == null) {
+          logger.w('[FirebaseUserProfileService] Document exists but data is null for user: $userId');
+          return null;
+        }
+        
+        try {
+          return UserProfile.fromJson({...data, 'id': doc.id});
+        } catch (e, s) {
+          logger.e('[FirebaseUserProfileService] Error parsing user profile for user $userId: $e', error: e, stackTrace: s);
+          return null;
+        }
       },
       operationName: 'getUserProfile',
       context: {'userId': userId},
@@ -91,7 +115,7 @@ class FirebaseUserProfileService implements UserProfileServiceInterface {
     return ServiceUtils.handleServiceCall(
       operation: () async {
         await _firestore.collection('users').doc(userId).update({
-          'totalPoints': FieldValue.increment(points),
+          'points': FieldValue.increment(points),
         });
       },
       operationName: 'updateUserPoints',

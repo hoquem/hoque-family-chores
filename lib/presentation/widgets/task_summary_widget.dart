@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/task_summary.dart';
 import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart'; // Import your provider
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'; // Needed for authProvider
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -14,62 +12,64 @@ class TaskSummaryWidget extends StatefulWidget {
 }
 
 class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
-  final _logger = AppLogger();
-
   @override
   void initState() {
     super.initState();
-    _logger.d("TaskSummaryWidget: initState called");
+    logger.i("[TaskSummaryWidget] initState called");
     // Schedule the fetch after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _logger.d("TaskSummaryWidget: Post frame callback executing");
+      logger.d("[TaskSummaryWidget] Post frame callback executing");
       if (mounted) {
         final userProfile = context.read<AuthProvider>().currentUserProfile;
         final familyId = context.read<AuthProvider>().userFamilyId;
-        _logger.d(
-          "TaskSummaryWidget: User profile: ${userProfile?.member.id}, Family ID: $familyId",
-        );
+        logger.d("[TaskSummaryWidget] User profile: ${userProfile?.member.id}, Family ID: $familyId");
+        
         if (userProfile != null && familyId != null) {
-          _logger.d(
-            "TaskSummaryWidget: Fetching summary for user ${userProfile.member.id} in family $familyId",
-          );
-          context.read<TaskSummaryProvider>().fetchTaskSummary(
-            familyId: familyId,
-            userId: userProfile.member.id,
-          );
+          logger.i("[TaskSummaryWidget] Fetching summary for user ${userProfile.member.id} in family $familyId");
+          try {
+            context.read<TaskSummaryProvider>().refreshSummary(
+              familyId: familyId,
+              userId: userProfile.member.id,
+            );
+          } catch (e, s) {
+            logger.e("[TaskSummaryWidget] Error fetching summary: $e", error: e, stackTrace: s);
+          }
         } else {
-          _logger.w(
-            "TaskSummaryWidget: Cannot fetch summary - missing user profile or family ID",
-          );
+          logger.w("[TaskSummaryWidget] Cannot fetch summary - missing user profile or family ID. UserProfile: $userProfile, FamilyId: $familyId");
         }
       } else {
-        _logger.w(
-          "TaskSummaryWidget: Widget not mounted during post frame callback",
-        );
+        logger.w("[TaskSummaryWidget] Widget not mounted during post frame callback");
       }
     });
   }
 
   Future<void> _refreshData() async {
-    _logger.d("TaskSummaryWidget: Refreshing data");
+    logger.i("[TaskSummaryWidget] Refreshing data");
     final userProfile = context.read<AuthProvider>().currentUserProfile;
     final familyId = context.read<AuthProvider>().userFamilyId;
+    
     if (userProfile != null && familyId != null) {
-      await context.read<TaskSummaryProvider>().fetchTaskSummary(
-        familyId: familyId,
-        userId: userProfile.member.id,
-      );
+      logger.d("[TaskSummaryWidget] Refreshing summary for user ${userProfile.member.id} in family $familyId");
+      try {
+        await context.read<TaskSummaryProvider>().refreshSummary(
+          familyId: familyId,
+          userId: userProfile.member.id,
+        );
+        logger.i("[TaskSummaryWidget] Data refresh completed successfully");
+      } catch (e, s) {
+        logger.e("[TaskSummaryWidget] Error refreshing data: $e", error: e, stackTrace: s);
+      }
+    } else {
+      logger.w("[TaskSummaryWidget] Cannot refresh data - missing user profile or family ID. UserProfile: $userProfile, FamilyId: $familyId");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    _logger.d("TaskSummaryWidget: build called");
+    logger.d("[TaskSummaryWidget] Building widget");
     return Consumer<TaskSummaryProvider>(
       builder: (context, provider, child) {
-        _logger.d(
-          "TaskSummaryWidget: Consumer builder called with state: ${provider.state}",
-        );
+        logger.d("[TaskSummaryWidget] Consumer builder called with state: ${provider.state}");
         return RefreshIndicator(
           onRefresh: _refreshData,
           child: SingleChildScrollView(
@@ -83,15 +83,16 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
                       Text(
-                        'Error: ${provider.errorMessage}',
+                        'Error: ${provider.errorMessage ?? 'Unknown error'}',
                         style: const TextStyle(color: Colors.red),
                         textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8.0),
-                      ElevatedButton(
-                        onPressed: _refreshData,
-                        child: const Text('Retry'),
                       ),
                     ],
                   ),
@@ -108,11 +109,10 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
   }
 
   Widget _buildSummaryContent(TaskSummary summary) {
-    _logger.d(
-      "TaskSummaryWidget: Building summary content with data: $summary",
-    );
+    logger.d("[TaskSummaryWidget] Building summary content with data: $summary");
     // Show "No tasks" message if there are no tasks
     if (summary.totalTasks == 0) {
+      logger.d("[TaskSummaryWidget] No tasks found - showing empty state");
       return Card(
         margin: const EdgeInsets.all(16.0),
         child: Padding(

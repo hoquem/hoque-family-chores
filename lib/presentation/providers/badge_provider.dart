@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/services/interfaces/badge_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'auth_provider.dart';
 
 class BadgeProvider extends ChangeNotifier {
   final BadgeServiceInterface _badgeService;
@@ -9,8 +10,34 @@ class BadgeProvider extends ChangeNotifier {
   List<Badge> _badges = [];
   bool _isLoading = false;
   String? _errorMessage;
+  AuthProvider? _authProvider;
+  VoidCallback? _authListener;
 
-  BadgeProvider(this._badgeService);
+  BadgeProvider(this._badgeService, [this._authProvider]) {
+    if (_authProvider != null) {
+      _authListener = () {
+        final familyId = _authProvider!.userFamilyId;
+        if (familyId != null) {
+          _logger.d('AuthProvider changed, fetching badges for family $familyId');
+          fetchBadges(familyId);
+        }
+      };
+      _authProvider!.addListener(_authListener!);
+      // Initial fetch if familyId is available
+      final familyId = _authProvider!.userFamilyId;
+      if (familyId != null) {
+        fetchBadges(familyId);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_authProvider != null && _authListener != null) {
+      _authProvider!.removeListener(_authListener!);
+    }
+    super.dispose();
+  }
 
   List<Badge> get badges => _badges;
   bool get isLoading => _isLoading;

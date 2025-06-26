@@ -88,19 +88,27 @@ class Notification {
     );
   }
 
+  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Notification &&
         other.id == id &&
-        other.userId == userId &&
         other.title == title &&
         other.message == message &&
-        other.imageUrl == imageUrl &&
         other.isRead == isRead &&
-        other.createdAt == createdAt;
+        other.createdAt == createdAt &&
+        other.userId == userId;
   }
 
+  @override
   int get hashCode {
-    return Object.hash(id, userId, title, message, imageUrl, isRead, createdAt);
+    return Object.hash(
+      id,
+      title,
+      message,
+      isRead,
+      createdAt,
+      userId,
+    );
   }
 }

@@ -77,7 +77,7 @@ class _TaskListTileState extends State<TaskListTile> {
                       ),
                       const SizedBox(height: 4.0),
                       Text(
-                        'Assigned to: ${widget.user.member.name} (Lvl ${widget.user.currentLevel})',
+                        'Assigned to: ${widget.user.member.name} (Lvl ${UserProfile.calculateLevelFromPoints(widget.user.points)})',
                         style: TextStyle(
                           fontSize: 14.0,
                           color: Colors.grey[600],

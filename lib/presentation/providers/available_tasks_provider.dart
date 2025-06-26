@@ -12,7 +12,7 @@ import 'dart:async';
 
 class AvailableTasksProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
-  final AuthProvider _authProvider;
+  AuthProvider _authProvider;
   final _logger = AppLogger();
   StreamSubscription? _taskStreamSubscription;
 
@@ -34,25 +34,23 @@ class AvailableTasksProvider with ChangeNotifier {
   }) : _taskService = taskService,
        _authProvider = authProvider {
     _logger.d(
-      "AvailableTasksProvider initialized with dependencies. Performing initial fetch...",
+      "AvailableTasksProvider initialized with dependencies. Waiting for authentication...",
     );
-    _fetchAvailableTasksDebounced();
+    // Listen to auth provider changes
+    _authProvider.addListener(_onAuthChanged);
+    // Don't fetch immediately - wait for authentication
   }
 
   @override
   void dispose() {
     _taskStreamSubscription?.cancel();
+    _authProvider.removeListener(_onAuthChanged);
     super.dispose();
   }
 
-  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    if (!identical(_taskService, taskService) ||
-        !identical(_authProvider, authProvider)) {
-      _logger.d(
-        "AvailableTasksProvider dependencies updated. Attempting to fetch available tasks...",
-      );
-      _fetchAvailableTasksDebounced();
-    }
+  void _onAuthChanged() {
+    _logger.d("AvailableTasksProvider: Auth state changed, checking if we should fetch data");
+    _fetchAvailableTasksDebounced();
   }
 
   Timer? _fetchDebounceTimer;

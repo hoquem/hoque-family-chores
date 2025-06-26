@@ -1,6 +1,5 @@
 // lib/models/reward.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Reward {
   final String id;
@@ -123,6 +122,7 @@ class Reward {
     );
   }
 
+  @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Reward &&
@@ -139,6 +139,7 @@ class Reward {
         other.rarity == rarity;
   }
 
+  @override
   int get hashCode {
     return Object.hash(
       id,

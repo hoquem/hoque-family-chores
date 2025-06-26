@@ -91,7 +91,7 @@ class BadgesWidget extends StatelessWidget {
           elevation: 2.0,
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: badge.rarity.color.withOpacity(0.2),
+              backgroundColor: badge.rarity.color.withValues(alpha: 0.2),
               child: Icon(Icons.emoji_events, color: badge.rarity.color),
             ),
             title: Text(

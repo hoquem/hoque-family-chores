@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/services/task_service.dart';
+import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 enum TaskState { initial, loading, loaded, error }
 
 class TaskProvider extends ChangeNotifier {
-  final TaskService _taskService;
+  final TaskServiceInterface _taskService;
   final _logger = AppLogger();
 
   TaskState _state = TaskState.initial;
@@ -29,10 +29,10 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _quickTasks = await _taskService.getQuickTasks(
-        familyId: familyId,
-        userId: userId,
-      );
+      // Get available tasks for the family
+      _quickTasks = await _taskService.getTasksForFamily(familyId: familyId);
+      // Filter to only show unassigned tasks as quick tasks
+      _quickTasks = _quickTasks.where((task) => task.assignedTo == null).toList();
       _state = TaskState.loaded;
       _logger.d('TaskProvider: Fetched ${_quickTasks.length} quick tasks');
     } catch (e, stackTrace) {
@@ -51,6 +51,7 @@ class TaskProvider extends ChangeNotifier {
   Future<void> assignTask({
     required String taskId,
     required String userId,
+    required String familyId,
   }) async {
     _logger.d('TaskProvider: Assigning task $taskId to user $userId');
     try {
@@ -58,7 +59,7 @@ class TaskProvider extends ChangeNotifier {
       _logger.d('TaskProvider: Task assigned successfully');
       // Refresh quick tasks after assignment
       await fetchQuickTasks(
-        familyId: _taskService.currentFamilyId!,
+        familyId: familyId,
         userId: userId,
       );
     } catch (e, stackTrace) {

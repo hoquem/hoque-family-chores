@@ -22,24 +22,37 @@ class MyTasksProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<Task> get tasks => _tasks;
 
-  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    if (_taskService != taskService || _authProvider != authProvider) {
-      _taskService = taskService;
-      _authProvider = authProvider;
-      _listenToMyTasks();
+  MyTasksProvider({
+    TaskServiceInterface? taskService,
+    AuthProvider? authProvider,
+  }) : _taskService = taskService,
+       _authProvider = authProvider {
+    _logger.d('MyTasksProvider: Initialized with taskService: ${_taskService != null}, authProvider: ${_authProvider != null}');
+    if (_authProvider != null) {
+      _authProvider!.addListener(_onAuthChanged);
+      _logger.d('MyTasksProvider: Added auth listener');
     }
   }
 
-  void refresh() {
+  void _onAuthChanged() {
+    _logger.d("MyTasksProvider: Auth state changed - userId: ${_authProvider?.currentUserId}, familyId: ${_authProvider?.userFamilyId}");
     _listenToMyTasks();
   }
 
   void _listenToMyTasks() {
+    _logger.d("MyTasksProvider: _listenToMyTasks called");
+    _logger.d("MyTasksProvider: taskService: ${_taskService != null}");
+    _logger.d("MyTasksProvider: currentUserId: ${_authProvider?.currentUserId}");
+    _logger.d("MyTasksProvider: userFamilyId: ${_authProvider?.userFamilyId}");
+    
     if (_taskService == null ||
         _authProvider?.currentUserId == null ||
-        _authProvider?.userFamilyId == null)
+        _authProvider?.userFamilyId == null) {
+      _logger.w("MyTasksProvider: Cannot listen to tasks - missing dependencies");
       return;
+    }
 
+    _logger.d("MyTasksProvider: Starting to listen to tasks for user ${_authProvider!.currentUserId} in family ${_authProvider!.userFamilyId}");
     _state = MyTasksState.loading;
     notifyListeners();
 
@@ -51,12 +64,14 @@ class MyTasksProvider with ChangeNotifier {
         )
         .listen(
           (tasks) {
+            _logger.d("MyTasksProvider: Received ${tasks.length} tasks from stream");
             _tasks = tasks;
             _state = MyTasksState.loaded;
             notifyListeners();
+            _logger.d("MyTasksProvider: State changed to loaded with ${_tasks.length} tasks");
           },
           onError: (e, s) {
-            _logger.e("Error listening to my tasks", error: e, stackTrace: s);
+            _logger.e("MyTasksProvider: Error listening to my tasks", error: e, stackTrace: s);
             _errorMessage =
                 e is AppException ? e.message : "An unknown error occurred.";
             _state = MyTasksState.error;
@@ -65,9 +80,16 @@ class MyTasksProvider with ChangeNotifier {
         );
   }
 
+  Future<void> refresh() async {
+    _logger.d("MyTasksProvider: refresh() called");
+    _listenToMyTasks();
+  }
+
   @override
   void dispose() {
+    _logger.d("MyTasksProvider: dispose() called");
     _tasksSubscription?.cancel();
+    _authProvider?.removeListener(_onAuthChanged);
     super.dispose();
   }
 }

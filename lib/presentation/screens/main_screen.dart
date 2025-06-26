@@ -14,7 +14,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final _logger = AppLogger();
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -25,15 +24,16 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   void _onNavItemTapped(int index) {
-    _logger.d('MainScreen: Navigation item tapped: $index');
+    logger.i("[MainScreen] Navigation item tapped: $index (from $_currentIndex)");
     setState(() {
       _currentIndex = index;
     });
+    logger.d("[MainScreen] Navigation state updated to index: $_currentIndex");
   }
 
   @override
   Widget build(BuildContext context) {
-    _logger.d('MainScreen: Building with current index: $_currentIndex');
+    logger.d("[MainScreen] Building screen with current index: $_currentIndex");
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavBar(

@@ -13,12 +13,14 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _logger = AppLogger();
-    _logger.d('BottomNavBar: Building with current index: $currentIndex');
+    logger.d("[BottomNavBar] Building with current index: $currentIndex");
 
     return BottomNavigationBar(
       currentIndex: currentIndex,
-      onTap: onTap,
+      onTap: (index) {
+        logger.i("[BottomNavBar] Navigation tapped: $index");
+        onTap(index);
+      },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Theme.of(context).primaryColor,
       unselectedItemColor: Colors.grey,

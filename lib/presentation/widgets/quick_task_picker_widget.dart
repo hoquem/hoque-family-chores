@@ -20,7 +20,12 @@ class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
   void initState() {
     super.initState();
     _logger.d('QuickTaskPickerWidget: initState called');
-    _loadQuickTasks();
+    // Schedule the load after the first frame to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadQuickTasks();
+      }
+    });
   }
 
   Future<void> _loadQuickTasks() async {
@@ -73,18 +78,21 @@ class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
 
     try {
       final userProfile = context.read<AuthProvider>().currentUserProfile;
-      if (userProfile != null) {
+      final familyId = context.read<AuthProvider>().userFamilyId;
+      
+      if (userProfile != null && familyId != null) {
         _logger.d(
-          'QuickTaskPickerWidget: Assigning task ${task.id} to user ${userProfile.member.id}',
+          'QuickTaskPickerWidget: Assigning task ${task.id} to user ${userProfile.member.id} in family $familyId',
         );
         await context.read<TaskProvider>().assignTask(
           taskId: task.id,
           userId: userProfile.member.id,
+          familyId: familyId,
         );
         _logger.d('QuickTaskPickerWidget: Task assigned successfully');
       } else {
         _logger.w(
-          'QuickTaskPickerWidget: Cannot assign task - missing user profile',
+          'QuickTaskPickerWidget: Cannot assign task - missing user profile or family ID',
         );
       }
     } catch (e, stackTrace) {

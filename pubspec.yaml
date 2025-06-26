@@ -40,6 +40,7 @@ dependencies:
   get_it: ^7.6.0
   collection: ^1.17.0
   meta: ^1.10.0 # For annotations like @protected
+  http: ^1.2.0 # For HTTP requests
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -78,9 +79,6 @@ flutter_launcher_icons:
 
 # The following section is specific to Flutter packages.
 flutter:
-  assets:
-    - .env
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

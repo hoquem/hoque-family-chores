@@ -74,7 +74,7 @@ class FirebaseAuthService implements AuthServiceInterface {
   @override
   Future<void> updateEmail(String newEmail) async {
     try {
-      await _auth.currentUser?.updateEmail(newEmail);
+      await _auth.currentUser?.verifyBeforeUpdateEmail(newEmail);
     } catch (e) {
       _logger.e('Error updating email', error: e);
       rethrow;

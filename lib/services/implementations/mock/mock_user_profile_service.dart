@@ -84,7 +84,7 @@ class MockUserProfileService implements UserProfileServiceInterface {
         final profile = _userProfiles[userId];
         if (profile != null) {
           _userProfiles[userId] = profile.copyWith(
-            totalPoints: profile.totalPoints + points,
+            points: profile.points + points,
           );
         }
       },

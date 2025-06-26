@@ -22,7 +22,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _descriptionController = TextEditingController();
   final _pointsController = TextEditingController();
   DateTime? _dueDate;
-  String? _selectedAssigneeId;
+  FamilyMember? _selectedAssignee;
   bool _isLoading = false;
   final _logger = AppLogger();
 
@@ -83,9 +83,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         difficulty: TaskDifficulty.easy, // Default to easy difficulty
         status: TaskStatus.available,
         familyId: familyId,
-        assignedTo: _selectedAssigneeId,
+        assignedTo: _selectedAssignee,
         createdAt: DateTime.now(),
-        dueDate: _dueDate,
+        dueDate: _dueDate ?? DateTime.now(),
         tags: const [],
       );
 
@@ -201,36 +201,33 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<FamilyMember?>(
               decoration: const InputDecoration(
                 labelText: 'Assign To (Optional)',
                 border: OutlineInputBorder(),
               ),
-              value: _selectedAssigneeId,
+              value: _selectedAssignee,
               items: [
-                const DropdownMenuItem<String>(
+                const DropdownMenuItem<FamilyMember?>(
                   value: null,
                   child: Text('Leave Unassigned'),
                 ),
                 if (currentUser != null)
-                  DropdownMenuItem<String>(
-                    value: currentUser.member.id,
+                  DropdownMenuItem<FamilyMember?>(
+                    value: currentUser.member,
                     child: Text('Me (${currentUser.member.name})'),
                   ),
                 ...familyMembers
-                    .map((member) {
-                      if (member.id == currentUser?.member.id) return null;
-                      return DropdownMenuItem<String>(
-                        value: member.id,
-                        child: Text(member.name),
-                      );
-                    })
-                    .whereType<DropdownMenuItem<String>>()
+                    .where((member) => member.id != currentUser?.member.id)
+                    .map((member) => DropdownMenuItem<FamilyMember?>(
+                          value: member,
+                          child: Text(member.name),
+                        ))
                     .toList(),
               ],
               onChanged: (value) {
                 setState(() {
-                  _selectedAssigneeId = value;
+                  _selectedAssignee = value;
                 });
               },
             ),

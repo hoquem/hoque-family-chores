@@ -3,7 +3,6 @@
 import 'package:hoque_family_chores/models/family_member.dart';
 
 class Task {
-  @override
   final String id;
   final String title;
   final String description;

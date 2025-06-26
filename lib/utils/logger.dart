@@ -20,7 +20,8 @@ class AppLogger {
   factory AppLogger() => _instance;
   AppLogger._internal();
 
-  late final Logger _logger;
+  Logger? _logger;
+  bool _initialized = false;
 
   /// Initialize the logger with custom settings.
   ///
@@ -29,14 +30,12 @@ class AppLogger {
   /// [lineLength] is the width of the log print.
   /// [colors] determines whether to use colors in the log output.
   /// [printEmojis] determines whether to print emojis for each log level.
-  /// [printTime] determines whether to print the timestamp.
   void init({
     int methodCount = 2,
     int errorMethodCount = 8,
     int lineLength = 120,
     bool colors = true,
     bool printEmojis = true,
-    bool printTime = true,
   }) {
     _logger = Logger(
       printer: PrettyPrinter(
@@ -45,9 +44,9 @@ class AppLogger {
         lineLength: lineLength,
         colors: colors,
         printEmojis: printEmojis,
-        printTime: printTime,
       ),
     );
+    _initialized = true;
   }
 
   /// Log a debug message.
@@ -115,14 +114,14 @@ class AppLogger {
   }
 
   /// Log a critical error message.
-  void wtf(
+  void fatal(
     String message, {
     Object? error,
     StackTrace? stackTrace,
     Map<String, dynamic>? context,
   }) {
     _log(
-      Level.wtf,
+      Level.fatal,
       message,
       error: error,
       stackTrace: stackTrace,
@@ -145,10 +144,10 @@ class AppLogger {
     final errorStr = error != null ? ' Error: $error' : '';
     final stackStr = stackTrace != null ? '\n$stackTrace' : '';
 
-    _logger.log(level, '$message$contextStr$errorStr$stackStr');
+    _logger!.log(level, '$message$contextStr$errorStr$stackStr');
   }
 
-  bool get _isInitialized => _logger != null;
+  bool get _isInitialized => _initialized && _logger != null;
 
   void _initializeDefault() {
     init(
@@ -157,7 +156,6 @@ class AppLogger {
       lineLength: 120,
       colors: true,
       printEmojis: true,
-      printTime: true,
     );
   }
 }
