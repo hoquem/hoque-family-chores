@@ -42,6 +42,7 @@ import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dar
 import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
@@ -346,6 +347,12 @@ class MyApp extends StatelessWidget {
             authProvider: Provider.of<AuthProvider>(context, listen: false),
           );
         },
+      ),
+
+      ChangeNotifierProvider<FamilyProvider>(
+        create: (context) => FamilyProvider(
+          services[FamilyServiceInterface],
+        ),
       ),
     ]);
 
