@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
 
 class GamificationScreen extends StatefulWidget {
@@ -242,13 +243,9 @@ class _GamificationScreenState extends State<GamificationScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  IconData(
-                    int.parse(badge.iconName),
-                    fontFamily: 'MaterialIcons',
-                  ),
+                  _getIconFromName(badge.iconName),
                   size: 48,
-                  color:
-                      isUnlocked ? Theme.of(context).primaryColor : Colors.grey,
+                  color: isUnlocked ? badge.rarity.color : Colors.grey,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -310,9 +307,9 @@ class _GamificationScreenState extends State<GamificationScreen>
           ),
           child: ListTile(
             leading: Icon(
-              IconData(int.parse(reward.iconName), fontFamily: 'MaterialIcons'),
+              _getIconFromName(reward.iconName),
               size: 32,
-              color: canAfford ? Theme.of(context).primaryColor : Colors.grey,
+              color: canAfford ? reward.rarity.color : Colors.grey,
             ),
             title: Text(
               reward.name,
@@ -334,9 +331,7 @@ class _GamificationScreenState extends State<GamificationScreen>
                 ),
                 if (canAfford)
                   TextButton(
-                    onPressed: () {
-                      // TODO: Implement reward redemption
-                    },
+                    onPressed: () => _redeemReward(context, reward.id),
                     child: const Text('Redeem'),
                   ),
               ],
@@ -345,5 +340,66 @@ class _GamificationScreenState extends State<GamificationScreen>
         );
       },
     );
+  }
+
+  /// Helper method to redeem a reward
+  Future<void> _redeemReward(BuildContext context, String rewardId) async {
+    final gamificationProvider = context.read<GamificationProvider>();
+    
+    try {
+      await gamificationProvider.redeemReward(rewardId);
+      
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reward redeemed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to redeem reward: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Helper method to convert icon name string to IconData
+  IconData _getIconFromName(String iconName) {
+    switch (iconName) {
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'star_border':
+        return Icons.star_border;
+      case 'military_tech':
+        return Icons.military_tech;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'card_giftcard':
+        return Icons.card_giftcard;
+      case 'theaters':
+        return Icons.theaters;
+      case 'icecream':
+        return Icons.icecream;
+      case 'trending_up':
+        return Icons.trending_up;
+      case 'redeem':
+        return Icons.redeem;
+      case 'attach_money':
+        return Icons.attach_money;
+      case 'check_circle':
+        return Icons.check_circle;
+      case 'star':
+        return Icons.star;
+      default:
+        return Icons.emoji_events; // Default fallback
+    }
   }
 }
