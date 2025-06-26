@@ -23,6 +23,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _pointsController = TextEditingController();
   DateTime? _dueDate;
   FamilyMember? _selectedAssignee;
+  TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
   bool _isLoading = false;
   final _logger = AppLogger();
 
@@ -80,7 +81,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         points: int.parse(_pointsController.text),
-        difficulty: TaskDifficulty.easy, // Default to easy difficulty
+        difficulty: _selectedDifficulty,
         status: TaskStatus.available,
         familyId: familyId,
         assignedTo: _selectedAssignee,
@@ -185,8 +186,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             TextFormField(
               controller: _pointsController,
               decoration: const InputDecoration(
-                labelText: 'Points',
+                labelText: 'Points (Effort Size)',
                 border: OutlineInputBorder(),
+                helperText: 'Points earned for completing this task (typically 5-50)',
               ),
               keyboardType: TextInputType.number,
               validator: (value) {
@@ -198,6 +200,43 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   return 'Please enter a valid number of points';
                 }
                 return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<TaskDifficulty>(
+              decoration: const InputDecoration(
+                labelText: 'Difficulty Level',
+                border: OutlineInputBorder(),
+                helperText: 'Select the effort size for this task',
+              ),
+              value: _selectedDifficulty,
+              items: TaskDifficulty.values.map((difficulty) {
+                String description;
+                switch (difficulty) {
+                  case TaskDifficulty.easy:
+                    description = 'Easy (S) - Quick tasks, 5-15 minutes';
+                    break;
+                  case TaskDifficulty.medium:
+                    description = 'Medium (M) - Moderate tasks, 15-30 minutes';
+                    break;
+                  case TaskDifficulty.hard:
+                    description = 'Hard (L) - Complex tasks, 30-60 minutes';
+                    break;
+                  case TaskDifficulty.challenging:
+                    description = 'Challenging (XL) - Major tasks, 1+ hours';
+                    break;
+                }
+                return DropdownMenuItem<TaskDifficulty>(
+                  value: difficulty,
+                  child: Text(description),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedDifficulty = value;
+                  });
+                }
               },
             ),
             const SizedBox(height: 16),
@@ -236,8 +275,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               onTap: () => _selectDate(context),
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'Due Date (Optional)',
+                  labelText: 'Due Date (Approximate Time to Complete)',
                   border: OutlineInputBorder(),
+                  helperText: 'When should this task be completed by?',
                 ),
                 child: Text(
                   _dueDate != null
