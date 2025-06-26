@@ -56,3 +56,6 @@ app.*.map.json
 .env
 
 /scripts/hoque-family-chores-app-c35f3d287a24.json
+
+# Node dependencies
+scripts/node_modules/
