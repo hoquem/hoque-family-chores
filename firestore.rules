@@ -22,6 +22,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.role == 'parent';
     }
 
+    // Helper function to check if user can update task assignment fields
+    function canUpdateTaskAssignment(taskData) {
+      return isAuthenticated() && 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status', 'assignedAt', 'claimedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+    }
+
     // Rules for the 'userProfiles' collection (where user profiles are stored)
     match /userProfiles/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
@@ -59,7 +67,9 @@ service cloud.firestore {
       match /tasks/{taskId} {
         allow read: if isAuthenticated() && isFamilyMember(familyId);
         allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId) && 
+          (canUpdateTaskAssignment(resource.data) || 
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
         allow delete: if isAuthenticated() && isFamilyMember(familyId);
       }
 
@@ -92,7 +102,9 @@ service cloud.firestore {
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (canUpdateTaskAssignment(resource.data) || 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
       allow delete: if isAuthenticated();
     }
 
@@ -116,4 +128,4 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
   }
-} 
+}
