@@ -19,7 +19,8 @@ class UserLevelWidget extends StatefulWidget {
   State<UserLevelWidget> createState() => _UserLevelWidgetState();
 }
 
-class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProviderStateMixin {
+class _UserLevelWidgetState extends State<UserLevelWidget>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _progressAnimation;
   late Animation<double> _scaleAnimation;
@@ -36,35 +37,34 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
 
     _progressAnimation = Tween<double>(
       begin: 0,
-      end: widget.userProfile.levelProgressPercentage / 100,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
-    ));
+      end: widget.userProfile.progressToNextLevel,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+      ),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.25,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.65, 0.85, curve: Curves.elasticOut),
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.65, 0.85, curve: Curves.elasticOut),
+      ),
+    );
 
-    _rotateAnimation = Tween<double>(
-      begin: 0,
-      end: 2 * math.pi,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.65, 0.85, curve: Curves.easeOut),
-    ));
+    _rotateAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.65, 0.85, curve: Curves.easeOut),
+      ),
+    );
 
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.85, 1.0, curve: Curves.easeIn),
-    ));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.85, 1.0, curve: Curves.easeIn),
+      ),
+    );
 
     // Start the animation when the widget is first built
     _animationController.forward().then((_) {
@@ -77,18 +77,21 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
   @override
   void didUpdateWidget(UserLevelWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // If the level changed or we're showing the level up animation, restart the animation
-    if (oldWidget.userProfile.currentLevel != widget.userProfile.currentLevel ||
+    if (UserProfile.calculateLevelFromPoints(oldWidget.userProfile.points) !=
+            UserProfile.calculateLevelFromPoints(widget.userProfile.points) ||
         widget.showLevelUpAnimation) {
       _animationController.reset();
       _progressAnimation = Tween<double>(
         begin: 0,
-        end: widget.userProfile.levelProgressPercentage / 100,
-      ).animate(CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
-      ));
+        end: widget.userProfile.progressToNextLevel,
+      ).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+        ),
+      );
       _animationController.forward().then((_) {
         if (widget.onAnimationComplete != null) {
           widget.onAnimationComplete!();
@@ -105,7 +108,10 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
 
   // Get gradient colors based on user level
   List<Color> _getLevelGradient() {
-    switch (widget.userProfile.currentLevel) {
+    final level = UserProfile.calculateLevelFromPoints(
+      widget.userProfile.points,
+    );
+    switch (level) {
       case 0:
         return [Colors.grey.shade300, Colors.grey.shade500];
       case 1:
@@ -117,13 +123,13 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
       case 4:
         return [Colors.orange.shade300, Colors.orange.shade700];
       default:
-        if (widget.userProfile.currentLevel >= 5 && widget.userProfile.currentLevel < 10) {
+        if (level >= 5 && level < 10) {
           return [Colors.red.shade300, Colors.red.shade700];
-        } else if (widget.userProfile.currentLevel >= 10 && widget.userProfile.currentLevel < 15) {
+        } else if (level >= 10 && level < 15) {
           return [Colors.pink.shade300, Colors.pink.shade700];
         } else {
           return [
-            Color.fromARGB(255, 255, 215, 0),  // Gold
+            Color.fromARGB(255, 255, 215, 0), // Gold
             Color.fromARGB(255, 218, 165, 32), // Darker gold
           ];
         }
@@ -133,12 +139,13 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final levelGradient = _getLevelGradient();
-    
+    final level = UserProfile.calculateLevelFromPoints(
+      widget.userProfile.points,
+    );
+
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -149,13 +156,10 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
               children: [
                 const Text(
                   'Your Level',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${widget.userProfile.totalPoints} points',
+                  '${widget.userProfile.points} points',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[700],
@@ -172,9 +176,15 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                   animation: _animationController,
                   builder: (context, child) {
                     return Transform.scale(
-                      scale: widget.showLevelUpAnimation ? _scaleAnimation.value : 1.0,
+                      scale:
+                          widget.showLevelUpAnimation
+                              ? _scaleAnimation.value
+                              : 1.0,
                       child: Transform.rotate(
-                        angle: widget.showLevelUpAnimation ? _rotateAnimation.value : 0.0,
+                        angle:
+                            widget.showLevelUpAnimation
+                                ? _rotateAnimation.value
+                                : 0.0,
                         child: Container(
                           width: 60,
                           height: 60,
@@ -187,7 +197,9 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context).primaryColor.withAlpha((255 * 0.1).round()),
+                                color: Theme.of(
+                                  context,
+                                ).primaryColor.withAlpha((255 * 0.1).round()),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -195,7 +207,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                           ),
                           child: Center(
                             child: Text(
-                              '${widget.userProfile.currentLevel}',
+                              '$level',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -214,7 +226,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getLevelTitle(widget.userProfile.currentLevel),
+                        _getLevelTitle(level),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -241,8 +253,10 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                                     // Progress
                                     Container(
                                       height: 10,
-                                      width: MediaQuery.of(context).size.width * 
-                                          _progressAnimation.value * 0.6, // Adjust for padding
+                                      width:
+                                          MediaQuery.of(context).size.width *
+                                          _progressAnimation.value *
+                                          0.6, // Adjust for padding
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: levelGradient,
@@ -255,24 +269,12 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${widget.userProfile.levelProgressPercentage}%',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    '${widget.userProfile.pointsToNextLevel} points to next level',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                '${widget.userProfile.pointsInCurrentLevel} / ${widget.userProfile.pointsNeededForNextLevel} points to next level',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                             ],
                           );
@@ -292,25 +294,22 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
                     opacity: _opacityAnimation.value,
                     child: Container(
                       margin: const EdgeInsets.only(top: 12),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: levelGradient[0].withAlpha(51),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: levelGradient[1],
-                          width: 1,
-                        ),
+                        border: Border.all(color: levelGradient[1], width: 1),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.celebration,
-                            color: levelGradient[1],
-                          ),
+                          Icon(Icons.celebration, color: levelGradient[1]),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Congratulations! You reached Level ${widget.userProfile.currentLevel}!',
+                              'Congratulations! You reached Level $level!',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: levelGradient[1],
@@ -329,39 +328,30 @@ class _UserLevelWidgetState extends State<UserLevelWidget> with SingleTickerProv
     );
   }
 
-  // Get level title based on level number
   String _getLevelTitle(int level) {
     switch (level) {
       case 0:
-        return 'Beginner';
+        return 'Novice';
       case 1:
-        return 'Helper';
+        return 'Apprentice';
       case 2:
-        return 'Assistant';
+        return 'Journeyman';
       case 3:
-        return 'Contributor';
-      case 4:
-        return 'Organizer';
-      case 5:
-        return 'Manager';
-      case 6:
         return 'Expert';
-      case 7:
+      case 4:
         return 'Master';
-      case 8:
-        return 'Champion';
-      case 9:
-        return 'Hero';
-      case 10:
+      case 5:
+        return 'Grand Master';
+      case 6:
         return 'Legend';
+      case 7:
+        return 'Mythic';
+      case 8:
+        return 'Divine';
+      case 9:
+        return 'Immortal';
       default:
-        if (level > 10 && level <= 15) {
-          return 'Grand Master';
-        } else if (level > 15 && level <= 20) {
-          return 'Ultimate Master';
-        } else {
-          return 'Family Legend';
-        }
+        return 'Godlike';
     }
   }
 }

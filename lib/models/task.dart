@@ -1,153 +1,171 @@
-// lib/models/task.dart
-import 'package:hoque_family_chores/models/enums.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/utils/json_parser.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
+
+// --- Task-related Enums (co-located for encapsulation) ---
+enum TaskStatus {
+  available, // For anyone to claim
+  assigned, // Claimed by a user
+  pendingApproval, // Submitted for review
+  needsRevision, // Rejected by a parent, needs changes
+  completed, // Approved and finished
+}
+
+enum TaskFilterType { all, myTasks, available, completed }
+
+enum TaskDifficulty { easy, medium, hard, challenging }
 
 class Task {
   final String id;
   final String title;
   final String description;
-  final int points;
   final TaskStatus status;
-  final String familyId;
-  final String creatorId;
-  final String? assigneeId;
-  final DateTime? dueDate;
+  final TaskDifficulty difficulty;
+  final DateTime dueDate;
+  final FamilyMember? assignedTo;
+  final FamilyMember? createdBy;
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? completedAt;
+  final int points;
+  final List<String> tags;
+  final String? recurringPattern;
+  final DateTime? lastCompletedAt;
+  final String familyId;
 
-  const Task({
+  Task({
     required this.id,
     required this.title,
     required this.description,
-    required this.points,
     required this.status,
-    required this.familyId,
-    required this.creatorId,
-    this.assigneeId,
-    this.dueDate,
+    required this.difficulty,
+    required this.dueDate,
+    this.assignedTo,
+    this.createdBy,
     required this.createdAt,
-    required this.updatedAt,
+    this.completedAt,
+    required this.points,
+    required this.tags,
+    this.recurringPattern,
+    this.lastCompletedAt,
+    required this.familyId,
   });
 
-  factory Task.fromFirestore(Map<String, dynamic> data, String id) {
-    logger.d("Task.fromFirestore: Parsing task data: $data");
-
-    DateTime? dueDate;
-    if (data['dueDate'] != null) {
-      try {
-        if (data['dueDate'] is Timestamp) {
-          dueDate = (data['dueDate'] as Timestamp).toDate();
-        } else if (data['dueDate'] is String) {
-          dueDate = DateTime.parse(data['dueDate']);
-        }
-      } catch (e, s) {
-        logger.e(
-          "Task.fromFirestore: Error parsing dueDate: $e",
-          error: e,
-          stackTrace: s,
-        );
-      }
-    }
-
-    return Task(
-      id: id,
-      title: data['title'] ?? '',
-      description: data['description'] ?? '',
-      points: data['points'] ?? 0,
-      status: TaskStatus.values.firstWhere(
-        (e) => e.name == data['status'],
-        orElse: () => TaskStatus.available,
-      ),
-      familyId: data['familyId'] ?? '',
-      creatorId: data['creatorId'] ?? '',
-      assigneeId: data['assigneeId'],
-      dueDate: dueDate,
-      createdAt:
-          data['createdAt'] != null
-              ? (data['createdAt'] as Timestamp).toDate()
-              : DateTime.now(),
-      updatedAt:
-          data['updatedAt'] != null
-              ? (data['updatedAt'] as Timestamp).toDate()
-              : DateTime.now(),
-    );
-  }
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      'title': title,
-      'description': description,
-      'points': points,
-      'status': status.name,
-      'familyId': familyId,
-      'creatorId': creatorId,
-      'assigneeId': assigneeId,
-      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
-    };
-  }
+  // --- Convenience getter for backward compatibility ---
+  String? get assigneeId => assignedTo?.id;
 
   Task copyWith({
     String? id,
     String? title,
     String? description,
-    int? points,
     TaskStatus? status,
-    String? familyId,
-    String? creatorId,
-    String? assigneeId,
+    TaskDifficulty? difficulty,
     DateTime? dueDate,
+    FamilyMember? assignedTo,
+    FamilyMember? createdBy,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? completedAt,
+    int? points,
+    List<String>? tags,
+    String? recurringPattern,
+    DateTime? lastCompletedAt,
+    String? familyId,
   }) {
     return Task(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
-      points: points ?? this.points,
       status: status ?? this.status,
-      familyId: familyId ?? this.familyId,
-      creatorId: creatorId ?? this.creatorId,
-      assigneeId: assigneeId ?? this.assigneeId,
+      difficulty: difficulty ?? this.difficulty,
       dueDate: dueDate ?? this.dueDate,
+      assignedTo: assignedTo ?? this.assignedTo,
+      createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      completedAt: completedAt ?? this.completedAt,
+      points: points ?? this.points,
+      tags: tags ?? this.tags,
+      recurringPattern: recurringPattern ?? this.recurringPattern,
+      lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
+      familyId: familyId ?? this.familyId,
     );
   }
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Task &&
-        other.id == id &&
-        other.title == title &&
-        other.description == description &&
-        other.points == points &&
-        other.status == status &&
-        other.familyId == familyId &&
-        other.creatorId == creatorId &&
-        other.assigneeId == assigneeId &&
-        other.dueDate == dueDate &&
-        other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'status': status.name,
+      'difficulty': difficulty.name,
+      'dueDate': dueDate.toIso8601String(),
+      'assignedTo': assignedTo?.toJson(),
+      'createdBy': createdBy?.toJson(),
+      'createdAt': createdAt.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
+      'points': points,
+      'tags': tags,
+      'recurringPattern': recurringPattern,
+      'lastCompletedAt': lastCompletedAt?.toIso8601String(),
+      'familyId': familyId,
+    };
   }
 
-  @override
-  int get hashCode {
-    return Object.hash(
-      id,
-      title,
-      description,
-      points,
-      status,
-      familyId,
-      creatorId,
-      assigneeId,
-      dueDate,
-      createdAt,
-      updatedAt,
-    );
+  factory Task.fromJson(Map<String, dynamic> json) {
+    final logger = AppLogger();
+    
+    try {
+      return Task(
+        id: JsonParser.parseRequiredString(json, 'id'),
+        title: JsonParser.parseRequiredString(json, 'title'),
+        description: JsonParser.parseRequiredString(json, 'description'),
+        status: JsonParser.parseRequiredEnum(json, 'status', TaskStatus.values, TaskStatus.available),
+        difficulty: JsonParser.parseRequiredEnum(json, 'difficulty', TaskDifficulty.values, TaskDifficulty.easy),
+        dueDate: JsonParser.parseRequiredDateTime(json, 'dueDate'),
+        assignedTo: JsonParser.parseObject(json, 'assignedTo')?.let((obj) => FamilyMember.fromJson(obj)),
+        createdBy: JsonParser.parseObject(json, 'createdBy')?.let((obj) => FamilyMember.fromJson(obj)),
+        createdAt: JsonParser.parseRequiredDateTime(json, 'createdAt'),
+        completedAt: JsonParser.parseDateTime(json, 'completedAt'),
+        points: JsonParser.parseRequiredInt(json, 'points'),
+        tags: JsonParser.parseRequiredList(json, 'tags', (item) => item.toString()),
+        recurringPattern: JsonParser.parseString(json, 'recurringPattern'),
+        lastCompletedAt: JsonParser.parseDateTime(json, 'lastCompletedAt'),
+        familyId: JsonParser.parseRequiredString(json, 'familyId'),
+      );
+    } catch (e) {
+      logger.e('Failed to parse Task from JSON: $e');
+      logger.d('JSON data: $json');
+      
+      // Return a minimal valid task with defaults
+      return Task(
+        id: JsonParser.parseString(json, 'id') ?? 'unknown-${DateTime.now().millisecondsSinceEpoch}',
+        title: JsonParser.parseString(json, 'title') ?? 'Unknown Task',
+        description: JsonParser.parseString(json, 'description') ?? 'Task description not available',
+        status: JsonParser.parseEnum(json, 'status', TaskStatus.values, TaskStatus.available) ?? TaskStatus.available,
+        difficulty: JsonParser.parseEnum(json, 'difficulty', TaskDifficulty.values, TaskDifficulty.easy) ?? TaskDifficulty.easy,
+        dueDate: JsonParser.parseDateTime(json, 'dueDate') ?? DateTime.now().add(const Duration(days: 1)),
+        assignedTo: null,
+        createdBy: null,
+        createdAt: JsonParser.parseDateTime(json, 'createdAt') ?? DateTime.now(),
+        completedAt: JsonParser.parseDateTime(json, 'completedAt'),
+        points: JsonParser.parseInt(json, 'points', defaultValue: 10) ?? 10,
+        tags: JsonParser.parseList(json, 'tags', (item) => item.toString(), defaultValue: []) ?? [],
+        recurringPattern: JsonParser.parseString(json, 'recurringPattern'),
+        lastCompletedAt: JsonParser.parseDateTime(json, 'lastCompletedAt'),
+        familyId: JsonParser.parseString(json, 'familyId') ?? 'unknown-family',
+      );
+    }
   }
-}
+
+  /// Factory method for creating tasks from Firestore documents
+  factory Task.fromFirestore(Map<String, dynamic> data, String id) {
+    final json = Map<String, dynamic>.from(data);
+    json['id'] = id; // Ensure ID is included
+    return Task.fromJson(json);
+  }
+
+  /// Convert to Firestore document format
+  Map<String, dynamic> toFirestore() {
+    final json = toJson();
+    json.remove('id'); // Firestore uses document ID as the ID
+    return json;
+  }
+} 

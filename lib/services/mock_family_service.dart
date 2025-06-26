@@ -1,6 +1,5 @@
 // lib/services/mock_family_service.dart
 
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/family_service_interface.dart';
 
@@ -9,48 +8,58 @@ class MockFamilyService implements FamilyServiceInterface {
   final List<FamilyMember> _mockMembers = [
     FamilyMember(
       id: 'user_parent_1',
-      name: 'Ahmed Hoque',
-      email: 'ahmed@example.com',
-      avatarUrl: 'https://example.com/profiles/ahmed.jpg',
-      // MODIFIED: Used the FamilyRole enum instead of a String
-      role: FamilyRole.parent, 
+      userId: 'user_parent_1',
       familyId: 'family_hoque_1',
+      name: 'Ahmed Hoque',
+      photoUrl: 'https://example.com/profiles/ahmed.jpg',
+      role: FamilyRole.parent,
+      points: 150,
+      joinedAt: DateTime.now().subtract(const Duration(days: 365)),
+      updatedAt: DateTime.now(),
     ),
     FamilyMember(
       id: 'user_parent_2',
-      name: 'Fatima Hoque',
-      email: 'fatima@example.com',
-      avatarUrl: 'https://example.com/profiles/fatima.jpg',
-      // MODIFIED: Used the FamilyRole enum instead of a String
-      role: FamilyRole.parent,
+      userId: 'user_parent_2',
       familyId: 'family_hoque_1',
+      name: 'Fatima Hoque',
+      photoUrl: 'https://example.com/profiles/fatima.jpg',
+      role: FamilyRole.parent,
+      points: 120,
+      joinedAt: DateTime.now().subtract(const Duration(days: 365)),
+      updatedAt: DateTime.now(),
     ),
     FamilyMember(
       id: 'user_child_1',
-      name: 'Zahra Hoque',
-      email: 'zahra@example.com',
-      avatarUrl: 'https://example.com/profiles/zahra.jpg',
-      // MODIFIED: Used the FamilyRole enum instead of a String
-      role: FamilyRole.child,
+      userId: 'user_child_1',
       familyId: 'family_hoque_1',
+      name: 'Zahra Hoque',
+      photoUrl: 'https://example.com/profiles/zahra.jpg',
+      role: FamilyRole.child,
+      points: 80,
+      joinedAt: DateTime.now().subtract(const Duration(days: 200)),
+      updatedAt: DateTime.now(),
     ),
     FamilyMember(
       id: 'user_child_2',
-      name: 'Yusuf Hoque',
-      email: 'yusuf@example.com',
-      avatarUrl: 'https://example.com/profiles/yusuf.jpg',
-      // MODIFIED: Used the FamilyRole enum instead of a String
-      role: FamilyRole.child,
+      userId: 'user_child_2',
       familyId: 'family_hoque_1',
+      name: 'Yusuf Hoque',
+      photoUrl: 'https://example.com/profiles/yusuf.jpg',
+      role: FamilyRole.child,
+      points: 60,
+      joinedAt: DateTime.now().subtract(const Duration(days: 150)),
+      updatedAt: DateTime.now(),
     ),
     FamilyMember(
       id: 'user_child_3',
-      name: 'Amina Hoque',
-      email: 'amina@example.com',
-      avatarUrl: 'https://example.com/profiles/amina.jpg',
-      // MODIFIED: Used the FamilyRole enum instead of a String
-      role: FamilyRole.child,
+      userId: 'user_child_3',
       familyId: 'family_hoque_1',
+      name: 'Amina Hoque',
+      photoUrl: 'https://example.com/profiles/amina.jpg',
+      role: FamilyRole.child,
+      points: 40,
+      joinedAt: DateTime.now().subtract(const Duration(days: 100)),
+      updatedAt: DateTime.now(),
     ),
   ];
 

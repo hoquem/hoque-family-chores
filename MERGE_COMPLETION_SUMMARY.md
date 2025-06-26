@@ -45,7 +45,7 @@ nothing to commit, working tree clean
 
 ---
 
-## 5. What’s Now Live on **`main`**
+## 5. What's Now Live on **`main`**
 - **Environment-aware architecture**  
   `EnvironmentService`, `DataService` interface, `MockDataService`, `FirebaseDataService`, `DataServiceFactory`.
 - **Comprehensive testing infrastructure** with realistic mock data.

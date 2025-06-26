@@ -11,12 +11,28 @@ service cloud.firestore {
     function isFamilyMember(familyId) {
       return isAuthenticated() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId == familyId;
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId;
     }
 
-    // Rules for the 'users' collection
+    // Helper function to check if user owns the family
+    function isFamilyOwner(familyId) {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.role == 'parent';
+    }
+
+    // Rules for the 'userProfiles' collection (where user profiles are stored)
+    match /userProfiles/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Rules for the 'users' collection (main user profiles)
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && request.auth.uid == userId;
       allow write: if isAuthenticated() && request.auth.uid == userId;
 
       // Rules for badges subcollection
@@ -34,33 +50,59 @@ service cloud.firestore {
 
     // Rules for the 'families' collection
     match /families/{familyId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && isFamilyMember(familyId);
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        request.auth.uid == resource.data.creatorUserId ||
-        isFamilyMember(familyId)
-      );
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.creatorUserId;
+      allow update: if isAuthenticated() && isFamilyMember(familyId);
+      allow delete: if isAuthenticated() && isFamilyOwner(familyId);
+
+      // Rules for tasks subcollection under families
+      match /tasks/{taskId} {
+        allow read: if isAuthenticated() && isFamilyMember(familyId);
+        allow create: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId);
+        allow delete: if isAuthenticated() && isFamilyMember(familyId);
+      }
+
+      // Rules for badges subcollection under families
+      match /badges/{badgeId} {
+        allow read: if isAuthenticated() && isFamilyMember(familyId);
+        allow create: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId);
+        allow delete: if isAuthenticated() && isFamilyMember(familyId);
+      }
+
+      // Rules for rewards subcollection under families
+      match /rewards/{rewardId} {
+        allow read: if isAuthenticated() && isFamilyMember(familyId);
+        allow create: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId);
+        allow delete: if isAuthenticated() && isFamilyMember(familyId);
+      }
+
+      // Rules for family members subcollection
+      match /members/{memberId} {
+        allow read: if isAuthenticated() && isFamilyMember(familyId);
+        allow create: if isAuthenticated() && isFamilyMember(familyId);
+        allow update: if isAuthenticated() && isFamilyMember(familyId);
+        allow delete: if isAuthenticated() && isFamilyMember(familyId);
+      }
     }
 
-    // Rules for the 'tasks' collection
+    // Legacy rules for top-level collections (if still used)
     match /tasks/{taskId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        request.auth.uid == resource.data.createdBy ||
-        request.auth.uid == resource.data.assigneeId
-      );
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.createdBy;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
     }
 
-    // Rules for the 'badges' collection
+    // Legacy rules for top-level collections (if still used)
     match /badges/{badgeId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
-    // Rules for the 'achievements' collection
+    // Legacy rules for top-level collections (if still used)
     match /achievements/{achievementId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();

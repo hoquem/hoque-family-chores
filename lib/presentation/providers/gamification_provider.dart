@@ -4,14 +4,12 @@ import 'package:hoque_family_chores/models/badge.dart'; // Correctly import your
 import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/services/gamification_service_interface.dart';
-import 'package:hoque_family_chores/services/data_service_interface.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
 class GamificationProvider with ChangeNotifier {
   final GamificationServiceInterface _gamificationService;
-  final DataServiceInterface _dataService;
 
   UserProfile? _userProfile;
   List<Badge> _unlockedBadges = const [];
@@ -40,19 +38,56 @@ class GamificationProvider with ChangeNotifier {
 
   GamificationProvider({
     required GamificationServiceInterface gamificationService,
-    required DataServiceInterface dataService,
-  }) : _gamificationService = gamificationService,
-       _dataService = dataService {
+  }) : _gamificationService = gamificationService {
     logger.d("GamificationProvider initialized with dependencies.");
   }
 
   void updateDependencies({
     required GamificationServiceInterface gamificationService,
-    required DataServiceInterface dataService,
   }) {
-    if (!identical(_gamificationService, gamificationService) ||
-        !identical(_dataService, dataService)) {
+    if (!identical(_gamificationService, gamificationService)) {
       logger.d("GamificationProvider: Dependencies updated.");
+    }
+  }
+
+  // New method to initialize gamification data after login
+  Future<void> initializeAfterLogin(String userId) async {
+    if (userId.isEmpty) {
+      logger.w("GamificationProvider: Cannot initialize - empty user ID");
+      return;
+    }
+
+    logger.i(
+      "GamificationProvider: Initializing after login for user: $userId",
+    );
+
+    try {
+      // Get the user's family ID from their profile
+      final userProfile = await _gamificationService.getUserProfile(
+        userId: userId,
+      );
+      if (userProfile == null || userProfile.member.familyId.isEmpty) {
+        logger.w(
+          "GamificationProvider: Cannot initialize - no family ID found",
+        );
+        return;
+      }
+
+      // Initialize user data through the service
+      await _gamificationService.initializeUserData(
+        userId: userId,
+        familyId: userProfile.member.familyId,
+      );
+
+      // Load all data after initialization
+      await loadAllData(userId);
+    } catch (e, s) {
+      _errorMessage = "Failed to initialize gamification data: $e";
+      logger.e(
+        "GamificationProvider: Error initializing after login: $e",
+        error: e,
+        stackTrace: s,
+      );
     }
   }
 
@@ -68,14 +103,18 @@ class GamificationProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _predefinedBadges = await _gamificationService.getPredefinedBadges();
-      _predefinedRewards = await _gamificationService.getPredefinedRewards();
+      _predefinedBadges = await _gamificationService.getBadges(
+        familyId: userId,
+      );
+      _predefinedRewards = await _gamificationService.getRewards(
+        familyId: userId,
+      );
       logger.d(
         "GamificationProvider: Predefined badges (${_predefinedBadges.length}) and rewards (${_predefinedRewards.length}) loaded.",
       );
 
       _userProfileSubscription?.cancel();
-      _userProfileSubscription = _dataService
+      _userProfileSubscription = _gamificationService
           .streamUserProfile(userId: userId)
           .listen(
             (profile) {
@@ -94,7 +133,7 @@ class GamificationProvider with ChangeNotifier {
           );
 
       _unlockedBadgesSubscription?.cancel();
-      _unlockedBadgesSubscription = _dataService
+      _unlockedBadgesSubscription = _gamificationService
           .streamUserBadges(userId: userId)
           .listen(
             (badges) {
@@ -115,15 +154,40 @@ class GamificationProvider with ChangeNotifier {
           );
 
       _userAchievementsSubscription?.cancel();
-      _userAchievementsSubscription = _dataService
+      _userAchievementsSubscription = _gamificationService
           .streamUserAchievements(userId: userId)
           .listen(
-            (achievements) {
+            (achievements) async {
               _userAchievements = achievements;
               notifyListeners();
               logger.d(
                 "GamificationProvider: User achievements updated (${achievements.length}).",
               );
+
+              // If no achievements exist, create a default one
+              if (achievements.isEmpty) {
+                logger.d(
+                  'No achievements found, creating a default achievement...',
+                );
+                final now = DateTime.now();
+                final defaultAchievement = Achievement(
+                  id: '', // Firestore will assign an ID
+                  title: 'Welcome Achievement',
+                  description:
+                      'This is your first achievement! Edit or delete as needed.',
+                  points: 10,
+                  icon: '🎉',
+                  type: BadgeType.taskCompletion,
+                  createdAt: now,
+                  completedAt: null,
+                  completedBy: null,
+                );
+                await _gamificationService.grantAchievement(
+                  userId: userId,
+                  achievement: defaultAchievement,
+                );
+                // No need to update _userAchievements here, will be updated on next stream event
+              }
             },
             onError: (e, s) {
               _errorMessage = "Failed to stream user achievements: $e";
@@ -150,13 +214,13 @@ class GamificationProvider with ChangeNotifier {
   // --- Actions ---
 
   Future<void> redeemReward(String rewardId) async {
-    if (_userProfile == null || _userProfile!.id.isEmpty) {
+    if (_userProfile == null || _userProfile!.member.id.isEmpty) {
       _errorMessage = "No user profile available to redeem reward.";
       notifyListeners();
       return;
     }
     logger.i(
-      "GamificationProvider: Attempting to redeem reward $rewardId for user ${_userProfile!.id}.",
+      "GamificationProvider: Attempting to redeem reward $rewardId for user ${_userProfile!.member.id}.",
     );
     _isLoading = true;
     _errorMessage = null;
@@ -165,35 +229,27 @@ class GamificationProvider with ChangeNotifier {
     try {
       final rewardToRedeem = _predefinedRewards.firstWhere(
         (r) => r.id == rewardId,
+        orElse: () => throw Exception('Reward not found'),
       );
 
-      if (_userProfile!.totalPoints < rewardToRedeem.pointsCost) {
-        _errorMessage = "Not enough points to redeem this reward.";
-        logger.w(_errorMessage!);
-        return;
-      }
-
-      await _dataService.updateUserPoints(
-        userId: _userProfile!.id,
-        points: -rewardToRedeem.pointsCost,
+      await _gamificationService.redeemReward(
+        familyId: _userProfile!.member.familyId,
+        userId: _userProfile!.member.id,
+        rewardId: rewardId,
       );
 
-      await _dataService.updateUserProfile(
-        user: _userProfile!.copyWith(
-          redeemedRewards: [
-            ..._userProfile!.redeemedRewards,
-            rewardToRedeem.copyWith(
-              isRedeemed: true,
-              redeemedAt: DateTime.now(),
-              redeemedBy: _userProfile!.id,
-            ),
-          ],
-        ),
+      logger.i(
+        "GamificationProvider: Successfully redeemed reward $rewardId for user ${_userProfile!.member.id}.",
       );
-      logger.i("Reward $rewardId redeemed successfully.");
+      _redeemedRewards.add(rewardToRedeem);
+      notifyListeners();
     } catch (e, s) {
       _errorMessage = "Failed to redeem reward: $e";
-      logger.e("Error redeeming reward $rewardId: $e", error: e, stackTrace: s);
+      logger.e(
+        "GamificationProvider: Error redeeming reward: $e",
+        error: e,
+        stackTrace: s,
+      );
     } finally {
       _isLoading = false;
       notifyListeners();

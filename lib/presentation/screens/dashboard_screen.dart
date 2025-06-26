@@ -34,17 +34,15 @@ class DashboardScreen extends StatelessWidget {
               CircleAvatar(
                 radius: 40,
                 backgroundImage:
-                    currentUserProfile.avatarUrl != null &&
-                            currentUserProfile.avatarUrl!.isNotEmpty
+                    (currentUserProfile.avatarUrl?.isNotEmpty ?? false)
                         ? NetworkImage(currentUserProfile.avatarUrl!)
                         : null,
                 child:
-                    currentUserProfile.avatarUrl == null ||
-                            currentUserProfile.avatarUrl!.isEmpty
+                    (currentUserProfile.avatarUrl?.isEmpty ?? true)
                         ? Text(
-                          currentUserProfile.name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(fontSize: 30),
-                        )
+                            currentUserProfile.name.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(fontSize: 30),
+                          )
                         : null,
               ),
               const SizedBox(width: 16),

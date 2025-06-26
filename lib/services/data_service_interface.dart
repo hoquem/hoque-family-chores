@@ -1,11 +1,10 @@
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/models/user_profile.dart';
 import 'package:hoque_family_chores/models/badge.dart';
 import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/notification.dart'
     as app_notification;
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart';
 import 'package:hoque_family_chores/models/family.dart';
 
 abstract class DataServiceInterface {

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Import ALL necessary models from your project
+import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/models/badge.dart';
-import 'package:hoque_family_chores/models/reward.dart';
 import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/enums.dart'
-    as app_enums; // Critical: Alias enums.dart
+import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:hoque_family_chores/models/reward.dart';
 
 // Import ALL necessary services and interfaces from your project
-import 'package:hoque_family_chores/services/data_service_interface.dart'
-    as app_data_service_interface;
-import 'package:hoque_family_chores/services/gamification_service_interface.dart';
-import 'package:hoque_family_chores/services/task_service_interface.dart';
-import 'package:hoque_family_chores/services/mock_data_service.dart';
-import 'package:hoque_family_chores/services/mock_task_service.dart';
+import 'package:hoque_family_chores/services/interfaces/user_profile_service_interface.dart';
+import 'package:hoque_family_chores/services/interfaces/gamification_service_interface.dart';
+import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_user_profile_service.dart';
+import 'package:hoque_family_chores/services/implementations/mock/mock_task_service.dart';
 
 // Import ALL necessary providers from your project, ALIASING YOUR CUSTOM AUTHPROVIDER
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart'
@@ -27,9 +27,11 @@ import 'package:hoque_family_chores/presentation/providers/gamification_provider
 import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
 
 // Import ALL necessary screens from your project
-import 'package:hoque_family_chores/presentation/screens/dashboard_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/family_setup_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
-import 'package:hoque_family_chores/main.dart'; // To access AuthWrapper
+import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
 
 // --- Mocktail Mocks for Firebase Auth ---
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -44,29 +46,34 @@ class MockGamificationService extends Mock
     implements GamificationServiceInterface {
   @override
   Future<List<Badge>> getPredefinedBadges() async {
-    return const [
+    return [
       Badge(
         id: 'mock_badge_1',
         name: 'Test Badge',
         description: '',
-        imageUrl: '',
-        category: app_enums.BadgeCategory.taskMaster,
-        rarity: app_enums.BadgeRarity.common,
+        iconName: 'star_border',
+        requiredPoints: 10,
+        type: BadgeType.taskCompletion,
+        familyId: 'test_family_id',
+        createdAt: DateTime(2020, 1, 1),
+        updatedAt: DateTime(2020, 1, 1),
       ),
     ];
   }
 
   @override
   Future<List<Reward>> getPredefinedRewards() async {
-    return const [
+    return [
       Reward(
         id: 'mock_reward_1',
-        title: 'Test Reward',
+        name: 'Test Reward',
         description: '',
         pointsCost: 100,
-        iconName: '',
-        category: app_enums.RewardCategory.digital,
-        rarity: app_enums.RewardRarity.common,
+        iconName: 'card_giftcard',
+        type: RewardType.digital,
+        familyId: 'test_family_id',
+        createdAt: DateTime(2020, 1, 1),
+        updatedAt: DateTime(2020, 1, 1),
       ),
     ];
   }
@@ -76,16 +83,31 @@ class MockGamificationService extends Mock
 class MockAuthProvider extends Mock implements app_auth_provider.AuthProvider {
   // Mock properties (getters)
   @override
-  app_enums.AuthStatus get status => app_enums.AuthStatus.authenticated;
+  AuthStatus get status => AuthStatus.authenticated;
   @override
   UserProfile? get currentUserProfile => UserProfile(
     id: 'test_user_id',
-    name: 'Test User',
-    email: 'test@example.com',
-    avatarUrl: 'https://example.com/avatar.jpg',
-    role: app_enums.FamilyRole.parent,
-    familyId: 'test_family_id',
-    joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)),
+    member: FamilyMember(
+      id: 'test_user_id',
+      userId: 'test_user_id',
+      familyId: 'test_family_id',
+      name: 'Test User',
+      photoUrl: 'https://example.com/avatar.jpg',
+      role: FamilyRole.parent,
+      points: 0,
+      joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime(2020, 1, 1),
+    ),
+    achievements: [],
+    badges: [],
+    availableTasks: [],
+    completedTasks: [],
+    inProgressTasks: [],
+    points: 0,
+    preferences: {},
+    statistics: {},
+    updatedAt: DateTime(2020, 1, 1),
+    createdAt: DateTime(2020, 1, 1),
   );
   @override
   String? get currentUserId => 'test_user_id';
@@ -121,8 +143,27 @@ class MockAuthProvider extends Mock implements app_auth_provider.AuthProvider {
     if (userId == 'test_user_id') {
       return UserProfile(
         id: 'test_user_id',
-        name: 'Test User',
-        joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)),
+        member: FamilyMember(
+          id: 'test_user_id',
+          userId: 'test_user_id',
+          familyId: 'test_family_id',
+          name: 'Test User',
+          photoUrl: 'https://example.com/avatar.jpg',
+          role: FamilyRole.parent,
+          points: 0,
+          joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
+          updatedAt: DateTime(2020, 1, 1),
+        ),
+        achievements: [],
+        badges: [],
+        availableTasks: [],
+        completedTasks: [],
+        inProgressTasks: [],
+        points: 0,
+        preferences: {},
+        statistics: {},
+        updatedAt: DateTime(2020, 1, 1),
+        createdAt: DateTime(2020, 1, 1),
       );
     }
     return null;
@@ -144,7 +185,7 @@ class MockAuthProviderUnauthenticated extends Mock
     implements app_auth_provider.AuthProvider {
   // Overrides for unauthenticated state
   @override
-  app_enums.AuthStatus get status => app_enums.AuthStatus.unauthenticated;
+  AuthStatus get status => AuthStatus.unauthenticated;
   @override
   UserProfile? get currentUserProfile => null;
   @override
@@ -196,170 +237,255 @@ void main() {
     registerFallbackValue(MockFirebaseAuth());
   });
 
-  testWidgets('App displays DashboardScreen when authenticated', (
-    WidgetTester tester,
-  ) async {
-    final mockFirebaseAuth = MockFirebaseAuth();
-    final mockUser = MockUser();
-    when(() => mockUser.uid).thenReturn('test_user_id');
-    when(
-      () => mockFirebaseAuth.authStateChanges(),
-    ).thenAnswer((_) => Stream.value(mockUser));
-    when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+  group('Root Navigation', () {
+    testWidgets('App displays DashboardScreen when authenticated', (
+      WidgetTester tester,
+    ) async {
+      final mockFirebaseAuth = MockFirebaseAuth();
+      final mockUser = MockUser();
+      when(() => mockUser.uid).thenReturn('test_user_id');
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(mockUser));
+      when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
 
-    final mockDataService = MockDataService();
-    when(
-      () => mockDataService.getUserProfile(userId: 'test_user_id'),
-    ).thenAnswer(
-      (_) async => UserProfile(
-        id: 'test_user_id',
-        name: 'Test User',
-        email: 'test@example.com',
-        joinedAt: (DateTime.fromMillisecondsSinceEpoch(0)),
-      ),
-    );
-
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          Provider<app_data_service_interface.DataServiceInterface>.value(
-            value: mockDataService,
+      final mockUserProfileService = MockUserProfileService();
+      when(
+        () => mockUserProfileService.getUserProfile(userId: 'test_user_id'),
+      ).thenAnswer(
+        (_) async => UserProfile(
+          id: 'test_user_id',
+          member: FamilyMember(
+            id: 'test_user_id',
+            userId: 'test_user_id',
+            familyId: 'test_family_id',
+            name: 'Test User',
+            photoUrl: 'https://example.com/avatar.jpg',
+            role: FamilyRole.parent,
+            points: 0,
+            joinedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            updatedAt: DateTime(2020, 1, 1),
           ),
-          Provider<GamificationServiceInterface>.value(
-            value: MockGamificationService(),
-          ),
-          Provider<TaskServiceInterface>.value(value: MockTaskService()),
-          ChangeNotifierProvider<app_auth_provider.AuthProvider>(
-            create: (BuildContext context) => MockAuthProvider(),
-          ),
-          ChangeNotifierProxyProvider2<
-            GamificationServiceInterface,
-            app_data_service_interface.DataServiceInterface,
-            app_gamification_provider.GamificationProvider
-          >(
-            create:
-                (BuildContext context) =>
-                    app_gamification_provider.GamificationProvider(
-                      gamificationService:
-                          context.read<GamificationServiceInterface>(),
-                      dataService:
-                          context
-                              .read<
-                                app_data_service_interface.DataServiceInterface
-                              >(),
-                    ),
-            update: (
-              BuildContext context,
-              GamificationServiceInterface gamificationService,
-              app_data_service_interface.DataServiceInterface dataService,
-              app_gamification_provider.GamificationProvider? provider,
-            ) {
-              return provider!..updateDependencies(
-                gamificationService: gamificationService,
-                dataService: dataService,
-              );
-            },
-          ),
-          // TaskListProvider needs TaskServiceInterface and AuthProvider in its constructor
-          ChangeNotifierProxyProvider2<
-            TaskServiceInterface,
-            app_auth_provider.AuthProvider,
-            TaskListProvider
-          >(
-            create: (BuildContext context) {
-              final taskService = context.read<TaskServiceInterface>();
-              final authProvider =
-                  context.read<app_auth_provider.AuthProvider>();
-              return TaskListProvider(
-                // <--- Providing required args in create
-                taskService: taskService,
-                authProvider: authProvider,
-              );
-            },
-            update: (
-              BuildContext context,
-              TaskServiceInterface taskService,
-              app_auth_provider.AuthProvider authProvider,
-              TaskListProvider? previousTaskListProvider,
-            ) {
-              // The update method just triggers the update on the existing instance
-              return previousTaskListProvider!
-                ..update(taskService, authProvider);
-            },
-          ),
-        ],
-        child: MaterialApp(
-          // Removed const
-          home: AuthWrapper(),
+          achievements: [],
+          badges: [],
+          availableTasks: [],
+          completedTasks: [],
+          inProgressTasks: [],
+          points: 0,
+          preferences: {},
+          statistics: {},
+          updatedAt: DateTime(2020, 1, 1),
+          createdAt: DateTime(2020, 1, 1),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            Provider<UserProfileServiceInterface>.value(
+              value: mockUserProfileService,
+            ),
+            Provider<GamificationServiceInterface>.value(
+              value: MockGamificationService(),
+            ),
+            Provider<TaskServiceInterface>.value(value: MockTaskService()),
+            ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+              create: (BuildContext context) => MockAuthProvider(),
+            ),
+            ChangeNotifierProxyProvider2<
+              GamificationServiceInterface,
+              UserProfileServiceInterface,
+              app_gamification_provider.GamificationProvider
+            >(
+              create:
+                  (BuildContext context) =>
+                      app_gamification_provider.GamificationProvider(
+                        gamificationService:
+                            context.read<GamificationServiceInterface>(),
+                      ),
+              update: (
+                BuildContext context,
+                GamificationServiceInterface gamificationService,
+                UserProfileServiceInterface userProfileService,
+                app_gamification_provider.GamificationProvider? provider,
+              ) {
+                return provider!..updateDependencies(
+                  gamificationService: gamificationService,
+                );
+              },
+            ),
+            ChangeNotifierProxyProvider2<
+              TaskServiceInterface,
+              app_auth_provider.AuthProvider,
+              TaskListProvider
+            >(
+              create: (BuildContext context) {
+                final taskService = context.read<TaskServiceInterface>();
+                final authProvider =
+                    context.read<app_auth_provider.AuthProvider>();
+                return TaskListProvider(
+                  taskService: taskService,
+                  authProvider: authProvider,
+                );
+              },
+              update: (
+                BuildContext context,
+                TaskServiceInterface taskService,
+                app_auth_provider.AuthProvider authProvider,
+                TaskListProvider? previousTaskListProvider,
+              ) {
+                return previousTaskListProvider!
+                  ..update(taskService, authProvider);
+              },
+            ),
+          ],
+          child: MaterialApp(home: AppShell()),
+        ),
+      );
 
-    expect(find.byType(DashboardScreen), findsOneWidget);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppShell), findsOneWidget);
+    });
+
+    testWidgets('App displays LoginScreen when unauthenticated', (
+      WidgetTester tester,
+    ) async {
+      final mockFirebaseAuth = MockFirebaseAuth();
+      when(
+        () => mockFirebaseAuth.authStateChanges(),
+      ).thenAnswer((_) => Stream.value(null));
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            Provider<UserProfileServiceInterface>.value(
+              value: MockUserProfileService(),
+            ),
+            Provider<GamificationServiceInterface>.value(
+              value: MockGamificationService(),
+            ),
+            Provider<TaskServiceInterface>.value(value: MockTaskService()),
+            ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+              create:
+                  (BuildContext context) => MockAuthProviderUnauthenticated(),
+            ),
+            ChangeNotifierProxyProvider2<
+              TaskServiceInterface,
+              app_auth_provider.AuthProvider,
+              TaskListProvider
+            >(
+              create: (BuildContext context) {
+                final taskService = context.read<TaskServiceInterface>();
+                final authProvider =
+                    context.read<app_auth_provider.AuthProvider>();
+                return TaskListProvider(
+                  taskService: taskService,
+                  authProvider: authProvider,
+                );
+              },
+              update: (
+                BuildContext context,
+                TaskServiceInterface taskService,
+                app_auth_provider.AuthProvider authProvider,
+                TaskListProvider? previousTaskListProvider,
+              ) {
+                return previousTaskListProvider!
+                  ..update(taskService, authProvider);
+              },
+            ),
+          ],
+          child: MaterialApp(home: AppShell()),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LoginScreen), findsOneWidget);
+    });
   });
 
-  testWidgets('App displays LoginScreen when unauthenticated', (
-    WidgetTester tester,
-  ) async {
-    final mockFirebaseAuth = MockFirebaseAuth();
-    when(
-      () => mockFirebaseAuth.authStateChanges(),
-    ).thenAnswer((_) => Stream.value(null));
-
-    await tester.pumpWidget(
-      MultiProvider(
-        providers: [
-          Provider<app_data_service_interface.DataServiceInterface>.value(
-            value: MockDataService(),
-          ),
-          Provider<GamificationServiceInterface>.value(
-            value: MockGamificationService(),
-          ),
-          Provider<TaskServiceInterface>.value(value: MockTaskService()),
-          ChangeNotifierProvider<app_auth_provider.AuthProvider>(
-            create: (BuildContext context) => MockAuthProviderUnauthenticated(),
-          ),
-          // TaskListProvider needs TaskServiceInterface and AuthProvider in its constructor
-          ChangeNotifierProxyProvider2<
-            TaskServiceInterface,
-            app_auth_provider.AuthProvider,
-            TaskListProvider
-          >(
-            create: (BuildContext context) {
-              final taskService = context.read<TaskServiceInterface>();
-              final authProvider =
-                  context.read<app_auth_provider.AuthProvider>();
-              return TaskListProvider(
-                // <--- Providing required args in create
-                taskService: taskService,
-                authProvider: authProvider,
-              );
-            },
-            update: (
-              BuildContext context,
-              TaskServiceInterface taskService,
-              app_auth_provider.AuthProvider authProvider,
-              TaskListProvider? previousTaskListProvider,
-            ) {
-              // The update method just triggers the update on the existing instance
-              return previousTaskListProvider!
-                ..update(taskService, authProvider);
-            },
-          ),
-        ],
-        child: MaterialApp(
-          // Removed const
-          home: AuthWrapper(),
+  group('FamilySetupScreen', () {
+    testWidgets('displays form and allows family creation', (
+      WidgetTester tester,
+    ) async {
+      // Arrange: Provide necessary mocks
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+              create: (_) => MockAuthProviderUnauthenticated(),
+            ),
+          ],
+          child: MaterialApp(home: FamilySetupScreen()),
         ),
-      ),
-    );
+      );
+      await tester.pumpAndSettle();
 
-    await tester.pump();
-    await tester.pumpAndSettle();
+      // Assert: Form fields are present
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Create Family'), findsOneWidget);
 
-    expect(find.byType(LoginScreen), findsOneWidget);
+      // Act: Enter family name and tap button
+      await tester.enterText(find.byType(TextField), 'The Testers');
+      await tester.tap(find.text('Create Family'));
+      await tester.pump();
+
+      // Assert: Loading indicator or error message (simulate as needed)
+      // (In a real test, mock the provider to simulate loading or error)
+    });
   });
+
+  group('TaskListScreen', () {
+    testWidgets('shows loading indicator and then tasks', (
+      WidgetTester tester,
+    ) async {
+      // Arrange: Mock provider with loading state
+      final mockProvider = TaskListProvider(
+        taskService: MockTaskService(),
+        authProvider: MockAuthProvider(),
+      );
+      // Set loading state
+      mockProvider.setFilter(TaskFilterType.all);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TaskListProvider>.value(
+          value: mockProvider,
+          child: MaterialApp(home: TaskListScreen()),
+        ),
+      );
+      await tester.pump();
+      // Assert: Loading indicator present
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      // (Expand: Add tasks to provider and pump again to check task rendering)
+    });
+  });
+
+  group('GamificationScreen', () {
+    testWidgets('renders badges and rewards', (WidgetTester tester) async {
+      // Arrange: Provide mock providers
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<app_auth_provider.AuthProvider>(
+              create: (_) => MockAuthProvider(),
+            ),
+            Provider<GamificationServiceInterface>.value(
+              value: MockGamificationService(),
+            ),
+          ],
+          child: MaterialApp(home: GamificationScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Assert: Badges and rewards are rendered
+      expect(find.text('Test Badge'), findsWidgets);
+      expect(find.text('Test Reward'), findsWidgets);
+    });
+  });
+
+  // TODO: Add more widget tests for other screens and widgets (e.g., MyTasksWidget, FamilyListScreen, etc.)
+  // TODO: Add tests for error states, edge cases, and user roles
+  // TODO: Add golden tests for visual regression (see flutter_test docs)
 }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // <--- Ensure this is imported for TaskStatus AND TaskSummaryState
-import 'package:hoque_family_chores/services/task_service_interface.dart';
+import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
+import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import 'dart:async';
 
-// REMOVED LOCAL DEFINITION OF TaskSummaryState, as it is now defined in enums.dart
-// enum TaskSummaryState { loading, loaded, error } // <--- THIS LINE IS REMOVED
+enum TaskSummaryState { loading, loaded, error }
 
 class TaskSummary {
   final int totalTasks;
@@ -33,13 +32,13 @@ class TaskSummary {
 class TaskSummaryProvider with ChangeNotifier {
   final TaskServiceInterface _taskService;
   final AuthProvider _authProvider;
-  StreamSubscription? _taskStreamSubscription;
 
-  TaskSummary _summary = const TaskSummary();
   TaskSummaryState _state = TaskSummaryState.loading;
+  TaskSummary? _summary;
   String? _errorMessage;
+  StreamSubscription<List<Task>>? _taskSummarySubscription;
 
-  TaskSummary get summary => _summary;
+  TaskSummary get summary => _summary ?? const TaskSummary();
   TaskSummaryState get state => _state;
   String? get errorMessage => _errorMessage;
 
@@ -48,42 +47,41 @@ class TaskSummaryProvider with ChangeNotifier {
     required AuthProvider authProvider,
   }) : _taskService = taskService,
        _authProvider = authProvider {
-    logger.d(
-      "TaskSummaryProvider initialized with dependencies. Performing initial fetch...",
-    );
-    _fetchSummaryDebounced();
+    logger.i("[TaskSummaryProvider] Initialized with dependencies. Waiting for authentication...");
+    // Listen to auth provider changes
+    _authProvider.addListener(_onAuthChanged);
+    // Don't fetch immediately - wait for authentication
   }
 
   @override
   void dispose() {
-    _taskStreamSubscription?.cancel();
+    logger.i("[TaskSummaryProvider] Disposing provider...");
+    _taskSummarySubscription?.cancel();
+    _fetchDebounceTimer?.cancel();
+    _authProvider.removeListener(_onAuthChanged);
     super.dispose();
   }
 
-  void update(TaskServiceInterface taskService, AuthProvider authProvider) {
-    if (!identical(_taskService, taskService) ||
-        !identical(_authProvider, authProvider)) {
-      logger.d(
-        "TaskSummaryProvider dependencies updated. Attempting to fetch summary...",
-      );
-      _fetchSummaryDebounced();
-    }
+  void _onAuthChanged() {
+    logger.d("[TaskSummaryProvider] Auth state changed, checking if we should fetch data");
+    _fetchSummaryDebounced();
   }
 
   Timer? _fetchDebounceTimer;
   void _fetchSummaryDebounced() {
     _fetchDebounceTimer?.cancel();
     _fetchDebounceTimer = Timer(const Duration(milliseconds: 100), () {
-      if (_authProvider.currentUserProfile != null &&
-          _authProvider.userFamilyId != null) {
-        fetchTaskSummary(
-          familyId: _authProvider.userFamilyId!,
-          userId: _authProvider.currentUserProfile!.id,
+      final userProfile = _authProvider.currentUserProfile;
+      final familyId = _authProvider.userFamilyId;
+      
+      if (userProfile != null && familyId != null) {
+        logger.d("[TaskSummaryProvider] Debounced fetch triggered for user ${userProfile.member.id} in family $familyId");
+        _setupTaskStream(
+          familyId: familyId,
+          userId: userProfile.member.id,
         );
       } else {
-        logger.w(
-          "TaskSummaryProvider: Cannot fetch summary, user profile or family ID is null.",
-        );
+        logger.w("[TaskSummaryProvider] Cannot fetch summary, user profile or family ID is null. UserProfile: $userProfile, FamilyId: $familyId");
         _summary = const TaskSummary();
         _state = TaskSummaryState.loaded;
         _errorMessage = null;
@@ -92,184 +90,207 @@ class TaskSummaryProvider with ChangeNotifier {
     });
   }
 
-  Future<void> fetchTaskSummary({
+  /// Public method to refresh the summary manually
+  Future<void> refreshSummary({required String familyId, required String userId}) async {
+    logger.i("[TaskSummaryProvider] Manual refresh requested for user $userId in family $familyId");
+    await _setupTaskStream(familyId: familyId, userId: userId);
+  }
+
+  Future<void> _setupTaskStream({
     required String familyId,
     required String userId,
   }) async {
-    logger.d(
-      "TaskSummaryProvider: fetchTaskSummary called for user $userId in family $familyId",
-    );
+    logger.i("[TaskSummaryProvider] Setting up task stream for user $userId in family $familyId");
 
     // Cancel any existing subscription
-    if (_taskStreamSubscription != null) {
-      logger.d("TaskSummaryProvider: Cancelling existing stream subscription");
-      await _taskStreamSubscription?.cancel();
-      _taskStreamSubscription = null;
+    if (_taskSummarySubscription != null) {
+      logger.d("[TaskSummaryProvider] Cancelling existing stream subscription");
+      await _taskSummarySubscription?.cancel();
+      _taskSummarySubscription = null;
     }
-
-    // Always allow fetching to proceed, but track if we're already loading
-    final wasLoading = _state == TaskSummaryState.loading;
-    if (wasLoading) {
-      logger.d(
-        "TaskSummaryProvider: Was already loading, but proceeding with new fetch",
-      );
-    }
-
-    _state = TaskSummaryState.loading;
-    _errorMessage = null;
-    notifyListeners();
 
     try {
-      logger.d("TaskSummaryProvider: Setting up task stream...");
+      _setState(TaskSummaryState.loading);
       bool hasReceivedData = false;
 
-      _taskStreamSubscription = _taskService
+      logger.d("[TaskSummaryProvider] Starting task stream with timeout...");
+      _taskSummarySubscription = _taskService
           .streamTasks(familyId: familyId)
           .timeout(
-            const Duration(seconds: 5),
+            const Duration(seconds: 15),
             onTimeout: (sink) {
-              logger.w("TaskSummaryProvider: Stream timeout after 5 seconds");
-              if (!hasReceivedData) {
-                logger.d(
-                  "TaskSummaryProvider: No data received before timeout, setting empty summary",
-                );
-                _summary = const TaskSummary();
-                _state = TaskSummaryState.loaded;
-                _errorMessage = null;
-                notifyListeners();
-              }
+              logger.w("[TaskSummaryProvider] Stream timeout after 15 seconds");
               sink.close();
+              // Set empty summary instead of staying in loading state
+              if (!hasReceivedData) {
+                logger.d("[TaskSummaryProvider] Setting empty summary due to timeout");
+                _summary = const TaskSummary();
+                _setState(TaskSummaryState.loaded);
+                // Try to fetch tasks using regular method as fallback
+                logger.i("[TaskSummaryProvider] Triggering fallback fetch after timeout");
+                _fetchTasksAsFallback(familyId: familyId, userId: userId);
+              } else {
+                logger.d("[TaskSummaryProvider] Timeout occurred but we already received data, not triggering fallback");
+              }
             },
           )
           .listen(
-            (allTasks) {
-              hasReceivedData = true;
-              logger.d(
-                "TaskSummaryProvider: Received ${allTasks.length} tasks from stream.",
-              );
+        (tasks) {
+          logger.d("[TaskSummaryProvider] Received ${tasks.length} tasks from stream");
 
-              // Log each task's status for debugging
-              for (var task in allTasks) {
-                logger.d(
-                  "TaskSummaryProvider: Task ${task.id}: status=${task.status.name}, assigneeId=${task.assigneeId}, title=${task.title}",
-                );
-              }
+          if (!hasReceivedData) {
+            hasReceivedData = true;
+            logger.d("[TaskSummaryProvider] First data received from stream");
+          }
 
-              // If no tasks, set empty summary immediately
-              if (allTasks.isEmpty) {
-                logger.d(
-                  "TaskSummaryProvider: No tasks found, setting empty summary.",
-                );
-                _summary = const TaskSummary();
-                _state = TaskSummaryState.loaded;
-                _errorMessage = null;
-                notifyListeners();
-                return;
-              }
+          // Calculate summary from tasks
+          final totalTasks = tasks.length;
+          final totalCompleted = tasks
+              .where((task) => task.status == TaskStatus.completed)
+              .length;
+          final waitingOverall = tasks
+              .where((task) => task.status == TaskStatus.assigned)
+              .length;
+          final waitingAssigned = tasks
+              .where((task) =>
+                  task.status == TaskStatus.assigned &&
+                  task.assignedTo?.id == userId)
+              .length;
+          final availableTasks = tasks
+              .where((task) => task.status == TaskStatus.available)
+              .length;
+          final needsRevisionTasks = tasks
+              .where((task) => task.status == TaskStatus.needsRevision)
+              .length;
 
-              final assignedToMe = allTasks.where(
-                (task) => task.assigneeId == userId,
-              );
-              logger.d(
-                "TaskSummaryProvider: Found ${assignedToMe.length} tasks assigned to user $userId",
-              );
-
-              try {
-                _summary = TaskSummary(
-                  totalTasks: allTasks.length,
-                  completedTasks:
-                      assignedToMe
-                          .where((task) => task.status == TaskStatus.completed)
-                          .length,
-                  pendingTasks:
-                      assignedToMe
-                          .where(
-                            (task) =>
-                                task.status == TaskStatus.assigned ||
-                                task.status == TaskStatus.pendingApproval ||
-                                task.status == TaskStatus.needsRevision,
-                          )
-                          .length,
-                  availableTasks:
-                      allTasks
-                          .where((task) => task.status == TaskStatus.available)
-                          .length,
-                  needsRevisionTasks:
-                      assignedToMe
-                          .where(
-                            (task) => task.status == TaskStatus.needsRevision,
-                          )
-                          .length,
-                  assignedTasks:
-                      assignedToMe
-                          .where((task) => task.status == TaskStatus.assigned)
-                          .length,
-                );
-                logger.d(
-                  "TaskSummaryProvider: Successfully created summary: $_summary",
-                );
-                _state = TaskSummaryState.loaded;
-                _errorMessage = null;
-                notifyListeners();
-              } catch (e, s) {
-                logger.e(
-                  "TaskSummaryProvider: Error creating summary: $e",
-                  error: e,
-                  stackTrace: s,
-                );
-                _state = TaskSummaryState.error;
-                _errorMessage = "Error creating summary: $e";
-                notifyListeners();
-              }
-            },
-            onError: (e, s) {
-              logger.e(
-                "TaskSummaryProvider: Error in task stream: $e",
-                error: e,
-                stackTrace: s,
-              );
-              _state = TaskSummaryState.error;
-              _errorMessage = "Error fetching tasks: $e";
-              notifyListeners();
-            },
+          final newSummary = TaskSummary(
+            totalTasks: totalTasks,
+            completedTasks: totalCompleted,
+            pendingTasks: waitingOverall,
+            availableTasks: availableTasks,
+            needsRevisionTasks: needsRevisionTasks,
+            assignedTasks: waitingAssigned,
           );
-    } catch (e, s) {
-      logger.e(
-        "TaskSummaryProvider: Error setting up task stream: $e",
-        error: e,
-        stackTrace: s,
+
+          logger.d("[TaskSummaryProvider] Calculated new summary: $newSummary");
+
+          _summary = newSummary;
+          _setState(TaskSummaryState.loaded);
+        },
+        onError: (error, stackTrace) {
+          logger.e("[TaskSummaryProvider] Error in task stream: $error", error: error, stackTrace: stackTrace);
+          
+          // Handle permission denied errors gracefully
+          if (error.toString().contains('permission-denied') || 
+              error.toString().contains('PERMISSION_DENIED')) {
+            logger.w("[TaskSummaryProvider] Permission denied - setting empty summary");
+            _summary = const TaskSummary();
+            _setState(TaskSummaryState.loaded);
+          } else {
+            _errorMessage = "Failed to load tasks: $error";
+            _setState(TaskSummaryState.error);
+          }
+        },
+        onDone: () {
+          logger.d("[TaskSummaryProvider] Task stream completed");
+          // If we haven't received any data and the stream is done, set empty summary
+          if (!hasReceivedData) {
+            logger.d("[TaskSummaryProvider] Stream completed without data - setting empty summary");
+            _summary = const TaskSummary();
+            _setState(TaskSummaryState.loaded);
+          }
+        },
       );
-      _state = TaskSummaryState.error;
-      _errorMessage = "Error setting up task stream: $e";
-      notifyListeners();
+
+      logger.d("[TaskSummaryProvider] Task stream subscription set up successfully");
+    } catch (e, s) {
+      logger.e("[TaskSummaryProvider] Failed to set up task stream: $e", error: e, stackTrace: s);
+      
+      // Handle permission errors gracefully
+      if (e.toString().contains('permission-denied') || 
+          e.toString().contains('PERMISSION_DENIED')) {
+        logger.w("[TaskSummaryProvider] Permission denied during setup - setting empty summary");
+        _summary = const TaskSummary();
+        _setState(TaskSummaryState.loaded);
+      } else {
+        _errorMessage = "Failed to set up task stream: $e";
+        _setState(TaskSummaryState.error);
+      }
+    }
+  }
+
+  void _setState(TaskSummaryState newState) {
+    logger.d("[TaskSummaryProvider] State changing from $_state to $newState");
+    _state = newState;
+    notifyListeners();
+  }
+
+  /// Fallback method to fetch tasks using regular method when stream times out
+  Future<void> _fetchTasksAsFallback({
+    required String familyId,
+    required String userId,
+  }) async {
+    logger.i("[TaskSummaryProvider] Attempting fallback fetch for user $userId in family $familyId");
+    try {
+      logger.d("[TaskSummaryProvider] Calling _taskService.getTasksForFamily...");
+      final tasks = await _taskService.getTasksForFamily(familyId: familyId);
+      logger.d("[TaskSummaryProvider] Fallback fetch successful, got ${tasks.length} tasks");
+      
+      if (tasks.isNotEmpty) {
+        logger.d("[TaskSummaryProvider] Processing ${tasks.length} tasks from fallback fetch");
+        // Calculate summary from tasks
+        final totalTasks = tasks.length;
+        final totalCompleted = tasks
+            .where((task) => task.status == TaskStatus.completed)
+            .length;
+        final waitingOverall = tasks
+            .where((task) => task.status == TaskStatus.assigned)
+            .length;
+        final waitingAssigned = tasks
+            .where((task) =>
+                task.status == TaskStatus.assigned &&
+                task.assignedTo?.id == userId)
+            .length;
+        final availableTasks = tasks
+            .where((task) => task.status == TaskStatus.available)
+            .length;
+        final needsRevisionTasks = tasks
+            .where((task) => task.status == TaskStatus.needsRevision)
+            .length;
+
+        final newSummary = TaskSummary(
+          totalTasks: totalTasks,
+          completedTasks: totalCompleted,
+          pendingTasks: waitingOverall,
+          availableTasks: availableTasks,
+          needsRevisionTasks: needsRevisionTasks,
+          assignedTasks: waitingAssigned,
+        );
+
+        logger.d("[TaskSummaryProvider] Updated summary from fallback: $newSummary");
+        _summary = newSummary;
+        _setState(TaskSummaryState.loaded);
+        logger.i("[TaskSummaryProvider] Successfully updated summary from fallback fetch");
+      } else {
+        logger.w("[TaskSummaryProvider] Fallback fetch returned empty task list");
+      }
+    } catch (e, s) {
+      logger.e("[TaskSummaryProvider] Fallback fetch failed: $e", error: e, stackTrace: s);
     }
   }
 
   Future<void> updateTaskStatus({
-    required String familyId,
     required String taskId,
     required TaskStatus newStatus,
   }) async {
-    logger.i(
-      "TaskSummaryProvider: Updating status for task $taskId to $newStatus.",
-    );
+    logger.i("[TaskSummaryProvider] Updating status for task $taskId to $newStatus");
     try {
-      await _taskService.updateTaskStatus(
-        familyId: familyId,
-        taskId: taskId,
-        newStatus: newStatus,
-      );
-      logger.d(
-        "Task $taskId status updated successfully by TaskSummaryProvider.",
-      );
+      await _taskService.updateTaskStatus(taskId: taskId, status: newStatus);
+      logger.d("[TaskSummaryProvider] Task $taskId status updated successfully");
     } catch (e, s) {
       _errorMessage = 'Failed to update task status: $e';
+      logger.e("[TaskSummaryProvider] Error updating task status $taskId: $e", error: e, stackTrace: s);
       notifyListeners();
-      logger.e(
-        "Error updating task status $taskId from TaskSummaryProvider: $e",
-        error: e,
-        stackTrace: s,
-      );
     }
   }
 }

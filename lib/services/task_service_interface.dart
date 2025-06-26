@@ -1,6 +1,5 @@
 // lib/services/task_service_interface.dart
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
 
 abstract class TaskServiceInterface {
   Stream<List<Task>> streamMyTasks({

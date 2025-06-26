@@ -10,11 +10,14 @@ class MockTaskSummaryService implements TaskSummaryServiceInterface {
 
     // Return hardcoded mock data
     return TaskSummary(
-      totalCompleted: 153,
+      id: 'summary',
+      totalTasks: 164,
+      completedTasks: 153,
+      pendingTasks: 8,
+      availableTasks: 3,
+      needsRevisionTasks: 0,
+      assignedTasks: 5,
       dueToday: 3,
-      waitingOverall: 8,
-      waitingAssigned: 5,
-      waitingUnassigned: 3,
     );
   }
 }

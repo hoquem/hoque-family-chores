@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class FamilySetupScreen extends StatefulWidget {
   const FamilySetupScreen({super.key});
@@ -12,6 +12,7 @@ class FamilySetupScreen extends StatefulWidget {
 
 class _FamilySetupScreenState extends State<FamilySetupScreen> {
   final _familyNameController = TextEditingController();
+  final _logger = AppLogger();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -51,14 +52,13 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
       // Call AuthProvider's method to create family and update user profile
       await authProvider.createFamilyAndSetProfile(
         familyName: _familyNameController.text.trim(),
-        creatorUserId: currentUserId,
-        creatorEmail: currentUserEmail,
-        creatorName: currentUserName,
+        familyDescription: 'Family created by ${currentUserName ?? 'user'}',
+        creatorEmail: currentUserEmail ?? '',
       );
 
       // Check if family creation was successful and user profile updated
       if (authProvider.userFamilyId != null) {
-        logger.i(
+        _logger.i(
           "Family '${_familyNameController.text.trim()}' created and user profile updated.",
         );
         if (mounted) {
@@ -74,7 +74,7 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
         });
       }
     } catch (e, s) {
-      logger.e("Error creating family: $e", error: e, stackTrace: s);
+      _logger.e("Error creating family: $e", error: e, stackTrace: s);
       setState(() {
         _errorMessage =
             "An error occurred: ${e.toString().split('] ').last}"; // Extract Firebase error message

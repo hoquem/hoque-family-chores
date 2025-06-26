@@ -1,17 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/services/family_service.dart';
-import 'package:hoque_family_chores/services/logging_service.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:hoque_family_chores/services/interfaces/family_service_interface.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class FamilyProvider extends ChangeNotifier {
-  final FamilyService _familyService;
-  List<UserProfile> _familyMembers = [];
+  final FamilyServiceInterface _familyService;
+  final _logger = AppLogger();
+  List<FamilyMember> _familyMembers = [];
   bool _isLoading = false;
   String? _error;
 
   FamilyProvider(this._familyService);
 
-  List<UserProfile> get familyMembers => _familyMembers;
+  List<FamilyMember> get familyMembers => _familyMembers;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -21,10 +22,12 @@ class FamilyProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _familyMembers = await _familyService.getFamilyMembers(familyId);
+      _familyMembers = await _familyService.getFamilyMembers(
+        familyId: familyId,
+      );
       _error = null;
     } catch (e, s) {
-      logger.e('Error loading family members: $e', error: e, stackTrace: s);
+      _logger.e('Error loading family members: $e', error: e, stackTrace: s);
       _error = 'Failed to load family members';
     } finally {
       _isLoading = false;

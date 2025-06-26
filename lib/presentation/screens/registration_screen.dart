@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // <--- CRITICAL: Ensure this import is here
-import '../providers/auth_provider.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // <--- CRITICAL: Ensure this import is here for AuthStatus
+import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:hoque_family_chores/models/shared_enums.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});

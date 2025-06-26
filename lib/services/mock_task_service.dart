@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
+import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/services/task_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/test_data/mock_data.dart'; // Import MockData
@@ -113,7 +113,16 @@ class MockTaskService implements TaskServiceInterface {
     );
     if (index != -1) {
       _tasks[index] = _tasks[index].copyWith(
-        assigneeId: assigneeId,
+        assignedTo: FamilyMember(
+          id: assigneeId,
+          userId: assigneeId,
+          familyId: familyId,
+          name: 'Unknown User',
+          role: FamilyRole.child,
+          points: 0,
+          joinedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
         status: TaskStatus.assigned,
       );
       _taskStreamController.add(List.from(_tasks)); // Notify listeners
@@ -278,7 +287,16 @@ class MockTaskService implements TaskServiceInterface {
     );
     if (index != -1) {
       _tasks[index] = _tasks[index].copyWith(
-        assigneeId: userId,
+        assignedTo: FamilyMember(
+          id: userId,
+          userId: userId,
+          familyId: familyId,
+          name: 'Unknown User',
+          role: FamilyRole.child,
+          points: 0,
+          joinedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
         status: TaskStatus.assigned,
       );
       _taskStreamController.add(List.from(_tasks)); // Notify listeners

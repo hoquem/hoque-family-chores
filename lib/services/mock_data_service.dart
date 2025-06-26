@@ -6,8 +6,7 @@ import 'package:hoque_family_chores/models/achievement.dart';
 import 'package:hoque_family_chores/models/notification.dart'
     as app_notification;
 import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/enums.dart'; // For TaskStatus
-import 'package:hoque_family_chores/models/family.dart'; // <--- Ensure this import is here
+import 'package:hoque_family_chores/models/family.dart';
 import 'package:hoque_family_chores/services/data_service_interface.dart';
 import 'package:hoque_family_chores/services/logging_service.dart';
 import 'package:hoque_family_chores/test_data/mock_data.dart'; // For initial data
@@ -20,7 +19,7 @@ class MockDataService implements DataServiceInterface {
   };
 
   final Map<String, Family> _families = {
-    MockData.familyId: Family.fromMap(MockData.family, MockData.familyId),
+    MockData.familyId: Family.fromMap(MockData.family),
   };
 
   final Map<String, List<Badge>> _userBadges = {
@@ -86,8 +85,17 @@ class MockDataService implements DataServiceInterface {
     );
     _familyMembersStreamController.add(
       _userProfiles.values
-          .where((p) => p.familyId != null)
-          .map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id))
+          .map((p) => FamilyMember(
+            id: p.member.id,
+            userId: p.member.userId,
+            familyId: p.member.familyId,
+            name: p.member.name,
+            photoUrl: p.member.photoUrl,
+            role: p.member.role,
+            points: p.member.points,
+            joinedAt: p.member.joinedAt,
+            updatedAt: p.member.updatedAt,
+          ))
           .toList(),
     );
     logger.i(
@@ -119,8 +127,17 @@ class MockDataService implements DataServiceInterface {
     if (userProfile.familyId != null) {
       _familyMembersStreamController.add(
         _userProfiles.values
-            .where((p) => p.familyId == userProfile.familyId)
-            .map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id))
+            .map((p) => FamilyMember(
+              id: p.member.id,
+              userId: p.member.userId,
+              familyId: p.member.familyId,
+              name: p.member.name,
+              photoUrl: p.member.photoUrl,
+              role: p.member.role,
+              points: p.member.points,
+              joinedAt: p.member.joinedAt,
+              updatedAt: p.member.updatedAt,
+            ))
             .toList(),
       );
     }
@@ -134,8 +151,17 @@ class MockDataService implements DataServiceInterface {
     if (user.familyId != null) {
       _familyMembersStreamController.add(
         _userProfiles.values
-            .where((p) => p.familyId == user.familyId)
-            .map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id))
+            .map((p) => FamilyMember(
+              id: p.member.id,
+              userId: p.member.userId,
+              familyId: p.member.familyId,
+              name: p.member.name,
+              photoUrl: p.member.photoUrl,
+              role: p.member.role,
+              points: p.member.points,
+              joinedAt: p.member.joinedAt,
+              updatedAt: p.member.updatedAt,
+            ))
             .toList(),
       );
     }
@@ -148,8 +174,17 @@ class MockDataService implements DataServiceInterface {
     _userProfileStreamController.add(null);
     _familyMembersStreamController.add(
       _userProfiles.values
-          .where((p) => p.familyId != null)
-          .map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id))
+          .map((p) => FamilyMember(
+            id: p.member.id,
+            userId: p.member.userId,
+            familyId: p.member.familyId,
+            name: p.member.name,
+            photoUrl: p.member.photoUrl,
+            role: p.member.role,
+            points: p.member.points,
+            joinedAt: p.member.joinedAt,
+            updatedAt: p.member.updatedAt,
+          ))
           .toList(),
     );
   }
@@ -163,7 +198,7 @@ class MockDataService implements DataServiceInterface {
     final currentUserProfile = _userProfiles[userId];
     if (currentUserProfile != null) {
       _userProfiles[userId] = currentUserProfile.copyWith(
-        totalPoints: currentUserProfile.totalPoints + points,
+        points: currentUserProfile.points + points,
       );
       _userProfileStreamController.add(_userProfiles[userId]);
     } else {
@@ -179,8 +214,17 @@ class MockDataService implements DataServiceInterface {
     if (family.memberUserIds.isNotEmpty) {
       _familyMembersStreamController.add(
         _userProfiles.values
-            .where((p) => p.familyId == family.id)
-            .map((p) => FamilyMember.fromMap(p.toJson()..['id'] = p.id))
+            .map((p) => FamilyMember(
+              id: p.member.id,
+              userId: p.member.userId,
+              familyId: p.member.familyId,
+              name: p.member.name,
+              photoUrl: p.member.photoUrl,
+              role: p.member.role,
+              points: p.member.points,
+              joinedAt: p.member.joinedAt,
+              updatedAt: p.member.updatedAt,
+            ))
             .toList(),
       );
     }
@@ -208,7 +252,6 @@ class MockDataService implements DataServiceInterface {
     logger.d("Mock: Getting family members for family ID: $familyId.");
     await Future.delayed(const Duration(milliseconds: 50));
     return _userProfiles.values
-        .where((profile) => profile.familyId == familyId)
         .map(
           (profile) =>
               FamilyMember.fromMap(profile.toJson()..['id'] = profile.id),
@@ -270,7 +313,7 @@ class MockDataService implements DataServiceInterface {
     _notifications.forEach((userId, notificationList) {
       final index = notificationList.indexWhere((n) => n.id == notificationId);
       if (index != -1) {
-        notificationList[index] = notificationList[index].copyWith(read: true);
+        notificationList[index] = notificationList[index].copyWith(isRead: true);
         updated = true;
       }
     });
@@ -349,8 +392,21 @@ class MockDataService implements DataServiceInterface {
       (t) => t.id == taskId && t.familyId == familyId,
     );
     if (index != -1) {
+      // Create a mock FamilyMember for the assignee
+      final assignee = FamilyMember(
+        id: assigneeId,
+        userId: assigneeId,
+        familyId: familyId,
+        name: 'Mock User $assigneeId',
+        photoUrl: null,
+        role: FamilyRole.child,
+        points: 0,
+        joinedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
       _tasks[index] = _tasks[index].copyWith(
-        assigneeId: assigneeId,
+        assignedTo: assignee,
         status: TaskStatus.assigned,
       );
     }
@@ -420,8 +476,21 @@ class MockDataService implements DataServiceInterface {
       (t) => t.id == taskId && t.familyId == familyId,
     );
     if (index != -1) {
+      // Create a mock FamilyMember for the user
+      final user = FamilyMember(
+        id: userId,
+        userId: userId,
+        familyId: familyId,
+        name: 'Mock User $userId',
+        photoUrl: null,
+        role: FamilyRole.child,
+        points: 0,
+        joinedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
       _tasks[index] = _tasks[index].copyWith(
-        assigneeId: userId,
+        assignedTo: user,
         status: TaskStatus.assigned,
       );
     }

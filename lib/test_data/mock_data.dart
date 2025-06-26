@@ -1,6 +1,10 @@
 // lib/test_data/mock_data.dart
 
-import 'package:hoque_family_chores/models/enums.dart';
+// import 'package:hoque_family_chores/models/enums.dart';
+import 'package:hoque_family_chores/models/task.dart';
+import 'package:hoque_family_chores/models/badge.dart';
+import 'package:hoque_family_chores/models/reward.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 
 /// Provides a rich and comprehensive set of mock data for testing and development.
 /// This data simulates what would be stored in a Firestore database.
@@ -13,7 +17,7 @@ class MockData {
   static const String childUserId1 = 'user_child_1';
   static const String childUserId2 = 'user_child_2';
   static const String childUserId3 = 'user_child_3';
-  
+
   // Family ID
   static const String familyId = 'family_hoque_1';
 
@@ -22,7 +26,7 @@ class MockData {
   static const String badgeTaskMaster = 'badge_task_master';
   static const String badgeTeamPlayer = 'badge_team_player';
   static const String badgeConsistent = 'badge_consistent';
-  
+
   // Achievement IDs
   static const String achievementTaskStreak = 'achievement_task_streak';
   static const String achievementVarietyKing = 'achievement_variety_king';
@@ -41,8 +45,10 @@ class MockData {
       'familyId': familyId,
       'points': 1500,
       'level': 5,
-      'createdAt': DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
-      'lastActive': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+      'createdAt':
+          DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
+      'lastActive':
+          DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
     },
     {
       'id': parentUserId2,
@@ -53,8 +59,10 @@ class MockData {
       'familyId': familyId,
       'points': 1350,
       'level': 4,
-      'createdAt': DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
-      'lastActive': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
+      'createdAt':
+          DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
+      'lastActive':
+          DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
     },
     {
       'id': childUserId1,
@@ -65,8 +73,10 @@ class MockData {
       'familyId': familyId,
       'points': 850,
       'level': 3,
-      'createdAt': DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
-      'lastActive': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+      'createdAt':
+          DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
+      'lastActive':
+          DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
     },
     {
       'id': childUserId2,
@@ -77,8 +87,10 @@ class MockData {
       'familyId': familyId,
       'points': 920,
       'level': 3,
-      'createdAt': DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
-      'lastActive': DateTime.now().subtract(const Duration(hours: 6)).toIso8601String(),
+      'createdAt':
+          DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
+      'lastActive':
+          DateTime.now().subtract(const Duration(hours: 6)).toIso8601String(),
     },
     {
       'id': childUserId3,
@@ -89,8 +101,10 @@ class MockData {
       'familyId': familyId,
       'points': 1100,
       'level': 4,
-      'createdAt': DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
-      'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+      'createdAt':
+          DateTime.now().subtract(const Duration(days: 150)).toIso8601String(),
+      'lastActive':
+          DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
     },
   ];
 
@@ -101,7 +115,8 @@ class MockData {
     'description': 'Working together to keep our home happy and tidy!',
     'photoUrl': 'https://example.com/families/hoque.jpg',
     'creatorUserId': parentUserId1,
-    'createdAt': DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
+    'createdAt':
+        DateTime.now().subtract(const Duration(days: 180)).toIso8601String(),
     'memberCount': 5,
   };
 
@@ -182,7 +197,7 @@ class MockData {
       'assigneeId': childUserId1,
       'assigneeName': 'Zahra Hoque',
       'creatorId': parentUserId1,
-      'status': TaskStatus.needsRevision.name, 
+      'status': TaskStatus.needsRevision.name,
       'points': 30,
       'createdAt': DateTime.now().subtract(const Duration(days: 3)),
       'revisionComments': 'You missed dusting the coffee table. Please fix!',
