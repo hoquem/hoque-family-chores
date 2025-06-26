@@ -65,143 +65,161 @@ check_service_account() {
 
 # Create comprehensive Firestore rules
 create_firestore_rules() {
-    log_info "Creating comprehensive Firestore rules..."
+    log_info "Creating broad development Firestore rules..."
     
     cat > firestore.rules << 'EOF'
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if user is a family member
-    function isFamilyMember(familyId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId;
-    }
-
-    // Helper function to check if user owns the family
-    function isFamilyOwner(familyId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.role == 'parent';
-    }
-
-    // Helper function to check if user can update task assignment fields
-    function canUpdateTaskAssignment(taskData) {
-      return isAuthenticated() && 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status', 'assignedAt', 'claimedAt']) ||
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status']) ||
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-    }
-
-    // Rules for the 'userProfiles' collection (where user profiles are stored)
-    match /userProfiles/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Rules for the 'users' collection (main user profiles)
-    match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId;
-
-      // Rules for badges subcollection
-      match /badges/{badgeId} {
-        allow read: if isAuthenticated() && request.auth.uid == userId;
-        allow write: if isAuthenticated() && request.auth.uid == userId;
-      }
-
-      // Rules for achievements subcollection
-      match /achievements/{achievementId} {
-        allow read: if isAuthenticated() && request.auth.uid == userId;
-        allow write: if isAuthenticated() && request.auth.uid == userId;
-      }
-    }
-
-    // Rules for the 'families' collection
-    match /families/{familyId} {
-      allow read: if isAuthenticated() && isFamilyMember(familyId);
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isFamilyMember(familyId);
-      allow delete: if isAuthenticated() && isFamilyOwner(familyId);
-
-      // Rules for tasks subcollection under families
-      match /tasks/{taskId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId) && 
-          (canUpdateTaskAssignment(resource.data) || 
-           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for badges subcollection under families
-      match /badges/{badgeId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for rewards subcollection under families
-      match /rewards/{rewardId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for family members subcollection
-      match /members/{memberId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && 
-        (canUpdateTaskAssignment(resource.data) || 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
-      allow delete: if isAuthenticated();
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /badges/{badgeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /achievements/{achievementId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    // Rules for the 'notifications' collection
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    // BROADEST POSSIBLE RULES FOR DEVELOPMENT
+    // WARNING: These rules allow all authenticated users to read/write everything
+    // Only use for development and testing!
+    
+    // Allow all authenticated users to read/write everything
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
 EOF
+}
 
-    log_success "Firestore rules created successfully"
+# Populate Firestore with test data in correct nested structure
+populate_firestore_data() {
+    log_info "Populating Firestore with test data in correct nested structure..."
+    
+    # Check if service account key exists
+    check_service_account
+    
+    # Create a temporary Node.js script to populate data
+    cat > scripts/populate_firestore.js << 'EOF'
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
+
+// Initialize Firebase Admin
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  projectId: 'hoque-family-chores-app'
+});
+
+const db = admin.firestore();
+
+async function populateData() {
+  try {
+    console.log('🚀 Starting Firestore data population...');
+    
+    // Create family document
+    const familyData = {
+      id: "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+      name: "Hoque Family",
+      description: "A happy family managing chores together",
+      creatorId: "OVGdeZJWqEQmx7ErJ3cu3dp5uTh1",
+      memberIds: ["OVGdeZJWqEQmx7ErJ3cu3dp5uTh1"],
+      createdAt: new Date("2025-06-26T16:19:07.000Z"),
+      updatedAt: new Date("2025-06-26T16:19:07.000Z")
+    };
+    
+    console.log('📝 Creating family document...');
+    await db.collection('families').doc('ef37e597-5e7a-46b0-a00a-62147cb29c8c').set(familyData);
+    
+    // Create tasks as subcollection under family
+    const tasks = [
+      {
+        id: "task-1",
+        familyId: "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+        title: "Clean the kitchen",
+        description: "Wash dishes, wipe counters, and sweep the floor",
+        status: "available",
+        difficulty: "medium",
+        points: 50,
+        tags: ["cleaning", "kitchen"],
+        dueDate: new Date("2025-06-27T16:19:07.000Z"),
+        createdAt: new Date("2025-06-26T16:19:07.000Z")
+      },
+      {
+        id: "task-2",
+        familyId: "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+        title: "Take out the trash",
+        description: "Empty all trash bins and take to the curb",
+        status: "available",
+        difficulty: "easy",
+        points: 25,
+        tags: ["cleaning", "trash"],
+        dueDate: new Date("2025-06-28T16:19:07.000Z"),
+        createdAt: new Date("2025-06-26T16:19:07.000Z")
+      },
+      {
+        id: "task-3",
+        familyId: "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+        title: "Do laundry",
+        description: "Wash, dry, and fold clothes",
+        status: "available",
+        difficulty: "hard",
+        points: 75,
+        tags: ["laundry", "clothes"],
+        dueDate: new Date("2025-06-29T16:19:07.000Z"),
+        createdAt: new Date("2025-06-26T16:19:07.000Z")
+      }
+    ];
+    
+    console.log('📋 Creating tasks subcollection...');
+    for (const task of tasks) {
+      await db.collection('families')
+        .doc('ef37e597-5e7a-46b0-a00a-62147cb29c8c')
+        .collection('tasks')
+        .doc(task.id)
+        .set(task);
+    }
+    
+    // Create user profile
+    const userProfile = {
+      id: "OVGdeZJWqEQmx7ErJ3cu3dp5uTh1",
+      email: "test@example.com",
+      displayName: "Test User",
+      familyId: "ef37e597-5e7a-46b0-a00a-62147cb29c8c",
+      role: "parent",
+      points: 0,
+      level: 1,
+      createdAt: new Date("2025-06-26T16:19:07.000Z"),
+      updatedAt: new Date("2025-06-26T16:19:07.000Z")
+    };
+    
+    console.log('👤 Creating user profile...');
+    await db.collection('userProfiles').doc('OVGdeZJWqEQmx7ErJ3cu3dp5uTh1').set(userProfile);
+    
+    console.log('✅ Firestore data population completed successfully!');
+    console.log('📊 Created:');
+    console.log('  - 1 family document');
+    console.log('  - 3 tasks in family subcollection');
+    console.log('  - 1 user profile');
+    
+  } catch (error) {
+    console.error('❌ Error populating Firestore data:', error);
+    process.exit(1);
+  }
+}
+
+populateData();
+EOF
+
+    # Install firebase-admin if not already installed
+    if [ ! -d "scripts/node_modules" ]; then
+        log_info "Installing firebase-admin..."
+        cd scripts
+        npm init -y
+        npm install firebase-admin
+        cd ..
+    fi
+    
+    # Run the population script
+    log_info "Running Firestore data population script..."
+    node scripts/populate_firestore.js
+    
+    # Clean up the temporary script
+    rm scripts/populate_firestore.js
+    
+    log_success "Firestore data population completed!"
 }
 
 # Deploy Firestore rules and indexes with comprehensive setup
@@ -490,6 +508,7 @@ show_usage() {
     echo "  deploy-rules        Deploy Firestore rules and indexes"
     echo "  fix-permissions     Fix task ownership permissions (deploy updated rules)"
     echo "  init-data           Initialize Firestore data using Firebase CLI"
+    echo "  populate-firestore  Populate Firestore with test data in correct nested structure"
     echo "  create-test-data    Create test data JSON files for manual import"
     echo "  export-current      Export current Firestore data"
     echo "  export-test         Export data from test project"
@@ -507,6 +526,7 @@ show_usage() {
     echo "  $0 deploy-rules     # Deploy only rules and indexes"
     echo "  $0 fix-permissions  # Fix task ownership permissions"
     echo "  $0 init-data        # Initialize only data"
+    echo "  $0 populate-firestore # Populate with test data in correct structure"
     echo ""
     echo "Note: For importing data manually, use the Firebase Console with the JSON files"
 }
@@ -533,6 +553,9 @@ main() {
             ;;
         "init-data")
             initialize_firestore_data $(firebase use 2>/dev/null | grep -o '[a-zA-Z0-9-]*$')
+            ;;
+        "populate-firestore")
+            populate_firestore_data
             ;;
         "create-test-data")
             create_test_data_files

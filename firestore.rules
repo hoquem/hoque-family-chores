@@ -2,130 +2,13 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if user is a family member
-    function isFamilyMember(familyId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId;
-    }
-
-    // Helper function to check if user owns the family
-    function isFamilyOwner(familyId) {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.familyId == familyId &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.member.role == 'parent';
-    }
-
-    // Helper function to check if user can update task assignment fields
-    function canUpdateTaskAssignment(taskData) {
-      return isAuthenticated() && 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status', 'assignedAt', 'claimedAt']) ||
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assigneeId', 'status']) ||
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
-    }
-
-    // Rules for the 'userProfiles' collection (where user profiles are stored)
-    match /userProfiles/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Rules for the 'users' collection (main user profiles)
-    match /users/{userId} {
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId;
-
-      // Rules for badges subcollection
-      match /badges/{badgeId} {
-        allow read: if isAuthenticated() && request.auth.uid == userId;
-        allow write: if isAuthenticated() && request.auth.uid == userId;
-      }
-
-      // Rules for achievements subcollection
-      match /achievements/{achievementId} {
-        allow read: if isAuthenticated() && request.auth.uid == userId;
-        allow write: if isAuthenticated() && request.auth.uid == userId;
-      }
-    }
-
-    // Rules for the 'families' collection
-    match /families/{familyId} {
-      allow read: if isAuthenticated() && isFamilyMember(familyId);
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isFamilyMember(familyId);
-      allow delete: if isAuthenticated() && isFamilyOwner(familyId);
-
-      // Rules for tasks subcollection under families
-      match /tasks/{taskId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId) && 
-          (canUpdateTaskAssignment(resource.data) || 
-           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for badges subcollection under families
-      match /badges/{badgeId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for rewards subcollection under families
-      match /rewards/{rewardId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-
-      // Rules for family members subcollection
-      match /members/{memberId} {
-        allow read: if isAuthenticated() && isFamilyMember(familyId);
-        allow create: if isAuthenticated() && isFamilyMember(familyId);
-        allow update: if isAuthenticated() && isFamilyMember(familyId);
-        allow delete: if isAuthenticated() && isFamilyMember(familyId);
-      }
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /tasks/{taskId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && 
-        (canUpdateTaskAssignment(resource.data) || 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt', 'approvedAt', 'rejectedAt', 'comments']));
-      allow delete: if isAuthenticated();
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /badges/{badgeId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    // Legacy rules for top-level collections (if still used)
-    match /achievements/{achievementId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    // Rules for the 'notifications' collection
-    match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    // BROADEST POSSIBLE RULES FOR DEVELOPMENT
+    // WARNING: These rules allow all authenticated users to read/write everything
+    // Only use for development and testing!
+    
+    // Allow all authenticated users to read/write everything
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

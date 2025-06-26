@@ -20,6 +20,38 @@ class TaskListProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   TaskFilterType get currentFilter => _currentFilter;
 
+  /// Get filtered tasks based on current filter
+  List<Task> get filteredTasks {
+    _logger.d('filteredTasks: currentFilter=$_currentFilter');
+    switch (_currentFilter) {
+      case TaskFilterType.all:
+        _logger.d('filteredTasks: returning all tasks: count=${_tasks.length}');
+        return _tasks;
+      case TaskFilterType.myTasks:
+        final currentUserId = _authProvider.currentUserId;
+        _logger.d('filteredTasks: myTasks for userId=$currentUserId');
+        if (currentUserId == null) return [];
+        final filtered = _tasks.where((task) {
+          final assignedToId = task.assignedTo?.id;
+          final assigneeId = task.assigneeId;
+          final isMine = assignedToId == currentUserId || assigneeId == currentUserId;
+          final include = isMine && task.status != TaskStatus.available;
+          _logger.d('filteredTasks: taskId=${task.id}, assignedToId=$assignedToId, assigneeId=$assigneeId, status=${task.status}, isMine=$isMine, include=$include');
+          return include;
+        }).toList();
+        _logger.d('filteredTasks: myTasks result count=${filtered.length}');
+        return filtered;
+      case TaskFilterType.available:
+        final filtered = _tasks.where((task) => task.status == TaskStatus.available).toList();
+        _logger.d('filteredTasks: available tasks count=${filtered.length}');
+        return filtered;
+      case TaskFilterType.completed:
+        final filtered = _tasks.where((task) => task.status == TaskStatus.completed).toList();
+        _logger.d('filteredTasks: completed tasks count=${filtered.length}');
+        return filtered;
+    }
+  }
+
   TaskListProvider({
     required TaskServiceInterface taskService,
     required AuthProvider authProvider,
@@ -172,11 +204,7 @@ class TaskListProvider with ChangeNotifier {
     try {
       await _taskService.updateTaskStatus(taskId: taskId, status: newStatus);
       // Refresh the task list after status update
-      final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
-      if (taskIndex != -1) {
-        _tasks[taskIndex] = _tasks[taskIndex].copyWith(status: newStatus);
-        notifyListeners();
-      }
+      await fetchTasks(familyId: familyId, userId: _authProvider.currentUserProfile?.member.id ?? '');
     } catch (e, s) {
       _logger.e(
         "TaskListProvider: Error updating task status: $e",
@@ -185,6 +213,16 @@ class TaskListProvider with ChangeNotifier {
       );
       _errorMessage = e.toString();
       notifyListeners();
+    }
+  }
+
+  /// Refresh tasks after a task is claimed or status changes
+  Future<void> refreshTasks() async {
+    if (_authProvider.currentUserProfile != null && _authProvider.userFamilyId != null) {
+      await fetchTasks(
+        familyId: _authProvider.userFamilyId!,
+        userId: _authProvider.currentUserProfile!.member.id,
+      );
     }
   }
 

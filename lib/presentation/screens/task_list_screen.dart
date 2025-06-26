@@ -91,7 +91,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         context.watch<app_task_list_provider.TaskListProvider>();
     final authProvider = context.read<AuthProvider>();
 
-    if (taskListProvider.isLoading && taskListProvider.tasks.isEmpty) {
+    if (taskListProvider.isLoading && taskListProvider.filteredTasks.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -136,12 +136,29 @@ class _TaskListScreenState extends State<TaskListScreen> {
       );
     }
 
-    if (taskListProvider.tasks.isEmpty) {
+    if (taskListProvider.filteredTasks.isEmpty) {
+      String emptyMessage;
+      switch (taskListProvider.currentFilter) {
+        case TaskFilterType.available:
+          emptyMessage = 'No available tasks found!';
+          break;
+        case TaskFilterType.myTasks:
+          emptyMessage = 'No tasks assigned to you!';
+          break;
+        case TaskFilterType.completed:
+          emptyMessage = 'No completed tasks found!';
+          break;
+        case TaskFilterType.all:
+        default:
+          emptyMessage = 'No tasks found for you in this family!';
+          break;
+      }
+      
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('No tasks found for you in this family!'),
+            Text(emptyMessage),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _refreshData,
@@ -155,9 +172,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return RefreshIndicator(
       onRefresh: _refreshData,
       child: ListView.builder(
-        itemCount: taskListProvider.tasks.length,
+        itemCount: taskListProvider.filteredTasks.length,
         itemBuilder: (context, index) {
-          final task = taskListProvider.tasks[index];
+          final task = taskListProvider.filteredTasks[index];
           final UserProfile? assignedUserProfile =
               authProvider.currentUserProfile;
 
@@ -201,6 +218,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 );
                 _handleTaskStatusUpdate(task.id, newStatus);
               }
+            },
+            onReturnToAvailable: () {
+              _logger.d(
+                'TaskListScreen: Returning task ${task.id} to available status',
+              );
+              _handleTaskStatusUpdate(task.id, TaskStatus.available);
             },
           );
         },

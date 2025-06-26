@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hoque_family_chores/models/family_member.dart';
 import 'package:hoque_family_chores/models/task.dart';
 import 'package:hoque_family_chores/services/interfaces/task_service_interface.dart';
 import 'package:hoque_family_chores/services/utils/service_utils.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 class FirebaseTaskService implements TaskServiceInterface {
   final FirebaseFirestore _firestore;
+  final AppLogger _logger = AppLogger();
 
   FirebaseTaskService({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -420,16 +423,42 @@ class FirebaseTaskService implements TaskServiceInterface {
           final familyId = familyDoc.id;
           final task = await getTask(familyId: familyId, taskId: taskId);
           if (task != null) {
+            // Get the user's family member data
+            final userProfileDoc = await _firestore
+                .collection('userProfiles')
+                .doc(userId)
+                .get();
+            
+            FamilyMember? assignedToMember;
+            if (userProfileDoc.exists) {
+              final userData = userProfileDoc.data()!;
+              assignedToMember = FamilyMember.fromJson({
+                'id': userId,
+                'userId': userId,
+                'familyId': familyId,
+                'name': userData['name'] ?? 'Unknown User',
+                'role': userData['role'] ?? 'child',
+                'points': userData['points'] ?? 0,
+                'joinedAt': userData['joinedAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+                'updatedAt': userData['updatedAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+              });
+            }
+
+            final updateData = {
+              'assignedTo': assignedToMember?.toJson(),
+              'assigneeId': userId,
+              'status': TaskStatus.assigned.name,
+              'claimedAt': FieldValue.serverTimestamp(),
+            };
+            _logger.d('claimTask: Updating task $taskId in family $familyId for user $userId with data: '
+              '${updateData.map((k, v) => MapEntry(k, v is Map ? v.toString() : v))}');
             await _firestore
                 .collection('families')
                 .doc(familyId)
                 .collection('tasks')
                 .doc(taskId)
-                .update({
-                  'assigneeId': userId,
-                  'status': TaskStatus.assigned.name,
-                  'claimedAt': FieldValue.serverTimestamp(),
-                });
+                .update(updateData);
+            _logger.d('claimTask: Update complete for task $taskId in family $familyId');
             return;
           }
         }

@@ -15,6 +15,7 @@ class AvailableTasksProvider with ChangeNotifier {
   final AuthProvider _authProvider;
   final _logger = AppLogger();
   StreamSubscription? _taskStreamSubscription;
+  VoidCallback? _onTaskClaimed; // Callback to refresh task list
 
   List<Task> _availableTasks = [];
   AvailableTasksState _state = AvailableTasksState.loading;
@@ -194,6 +195,9 @@ class AvailableTasksProvider with ChangeNotifier {
     try {
       await _taskService.claimTask(taskId: taskId, userId: currentUserId);
       _logger.i("AvailableTasksProvider: Successfully claimed task $taskId");
+      
+      // Call the callback to refresh the task list
+      _onTaskClaimed?.call();
     } catch (e, s) {
       _logger.e(
         "AvailableTasksProvider: Error claiming task $taskId: $e",
@@ -205,5 +209,10 @@ class AvailableTasksProvider with ChangeNotifier {
       _isClaiming = false;
       notifyListeners();
     }
+  }
+
+  /// Set callback to be called when a task is claimed
+  void setOnTaskClaimedCallback(VoidCallback callback) {
+    _onTaskClaimed = callback;
   }
 }

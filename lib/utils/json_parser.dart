@@ -82,6 +82,19 @@ class JsonParser {
       if (value is int) {
         return DateTime.fromMillisecondsSinceEpoch(value);
       }
+      // Handle Firestore Timestamp objects
+      if (value.runtimeType.toString().contains('Timestamp')) {
+        try {
+          // Try to access seconds and nanoseconds properties
+          final seconds = value.seconds as int?;
+          final nanoseconds = value.nanoseconds as int?;
+          if (seconds != null) {
+            return DateTime.fromMillisecondsSinceEpoch(seconds * 1000 + (nanoseconds ?? 0) ~/ 1000000);
+          }
+        } catch (e) {
+          _logger.w('JSON parsing: Failed to convert Timestamp to DateTime for key "$key": $e');
+        }
+      }
       _logger.w('JSON parsing: Key "$key" cannot be converted to DateTime (type: ${value.runtimeType}), using default: $defaultValue');
       return defaultValue;
     } catch (e) {
