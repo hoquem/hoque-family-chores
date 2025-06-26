@@ -53,19 +53,6 @@ check_firebase_auth() {
     fi
 }
 
-# Check if Node.js and npm are available
-check_node_environment() {
-    if ! command -v node &> /dev/null; then
-        log_error "Node.js is not installed. Please install it first."
-        exit 1
-    fi
-    
-    if ! command -v npm &> /dev/null; then
-        log_error "npm is not installed. Please install it first."
-        exit 1
-    fi
-}
-
 # Check if service account key exists
 check_service_account() {
     local key_path="scripts/serviceAccountKey.json"
@@ -101,35 +88,65 @@ deploy_firestore_config() {
     fi
 }
 
-# Initialize Firestore data using Node.js script
+# Initialize Firestore data using Firebase CLI
 initialize_firestore_data() {
     local project_id=$1
     log_info "Initializing Firestore data for project: $project_id"
     
-    # Check if Node.js script exists
-    local script_path="scripts/init_firestore.js"
-    if [ ! -f "$script_path" ]; then
-        log_error "Firestore initialization script not found at $script_path"
-        return 1
-    fi
+    # Switch to the project
+    firebase use $project_id
     
-    # Check if package.json exists and install dependencies
-    local package_path="scripts/package.json"
-    if [ -f "$package_path" ]; then
-        log_info "Installing Node.js dependencies..."
-        cd scripts && npm install && cd ..
-    fi
+    # Create test data using Firebase CLI
+    log_info "Creating test data using Firebase CLI..."
     
-    # Set environment variable for service account
-    export GOOGLE_APPLICATION_CREDENTIALS="$(pwd)/scripts/serviceAccountKey.json"
+    # Get current timestamp in ISO format (macOS compatible)
+    CURRENT_TIME=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
+    TOMORROW=$(date -u -v+1d +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u -d '+1 day' +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%S.000Z)
+    DAY_AFTER_TOMORROW=$(date -u -v+2d +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u -d '+2 days' +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%S.000Z)
+    THREE_DAYS=$(date -u -v+3d +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u -d '+3 days' +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%S.000Z)
     
-    # Run the initialization script
-    if node "$script_path"; then
-        log_success "Firestore data initialized successfully"
-    else
-        log_error "Failed to initialize Firestore data"
-        return 1
-    fi
+    # Create family document
+    log_info "Creating family document..."
+    firebase firestore:set families/$FAMILY_ID \
+        "id=$FAMILY_ID,name='Hoque Family',description='A happy family managing chores together',creatorId=$USER_ID,memberIds=[$USER_ID],createdAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME" \
+        --project $project_id
+    
+    # Create family member document
+    log_info "Creating family member document..."
+    firebase firestore:set families/$FAMILY_ID/members/$USER_ID \
+        "id=$USER_ID,userId=$USER_ID,familyId=$FAMILY_ID,name='Mahmud Hoque',role='parent',points=0,joinedAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME" \
+        --project $project_id
+    
+    # Create sample tasks
+    log_info "Creating sample tasks..."
+    
+    # Task 1
+    firebase firestore:set families/$FAMILY_ID/tasks/task-1 \
+        "id='task-1',familyId=$FAMILY_ID,title='Clean the kitchen',description='Wash dishes, wipe counters, and sweep the floor',status='available',difficulty='medium',points=50,tags=['cleaning','kitchen'],dueDate=$TOMORROW,createdAt=$CURRENT_TIME" \
+        --project $project_id
+    
+    # Task 2
+    firebase firestore:set families/$FAMILY_ID/tasks/task-2 \
+        "id='task-2',familyId=$FAMILY_ID,title='Take out the trash',description='Empty all trash bins and take to the curb',status='available',difficulty='easy',points=25,tags=['cleaning','trash'],dueDate=$DAY_AFTER_TOMORROW,createdAt=$CURRENT_TIME" \
+        --project $project_id
+    
+    # Task 3
+    firebase firestore:set families/$FAMILY_ID/tasks/task-3 \
+        "id='task-3',familyId=$FAMILY_ID,title='Do laundry',description='Wash, dry, and fold clothes',status='available',difficulty='hard',points=75,tags=['laundry','clothes'],dueDate=$THREE_DAYS,createdAt=$CURRENT_TIME" \
+        --project $project_id
+    
+    # Create user profile in users collection
+    log_info "Creating user profile document..."
+    firebase firestore:set users/$USER_ID \
+        "id=$USER_ID,member={id=$USER_ID,userId=$USER_ID,familyId=$FAMILY_ID,name='Mahmud Hoque',role='parent',points=0,joinedAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME},points=0,badges=[],achievements=[],createdAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME,completedTasks=[],inProgressTasks=[],availableTasks=[],preferences={notifications=true,theme='light',language='en'},statistics={totalPoints=0,tasksCompleted=0,currentStreak=0,longestStreak=0}" \
+        --project $project_id
+    
+    # Also create in userProfiles collection for compatibility
+    firebase firestore:set userProfiles/$USER_ID \
+        "id=$USER_ID,member={id=$USER_ID,userId=$USER_ID,familyId=$FAMILY_ID,name='Mahmud Hoque',role='parent',points=0,joinedAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME},points=0,badges=[],achievements=[],createdAt=$CURRENT_TIME,updatedAt=$CURRENT_TIME,completedTasks=[],inProgressTasks=[],availableTasks=[],preferences={notifications=true,theme='light',language='en'},statistics={totalPoints=0,tasksCompleted=0,currentStreak=0,longestStreak=0}" \
+        --project $project_id
+    
+    log_success "Firestore data initialized successfully"
 }
 
 # Complete setup for a project (rules + data)
@@ -327,7 +344,7 @@ show_usage() {
     echo "  setup-prod          Complete setup for production project (rules + data)"
     echo "  setup-test          Complete setup for test project (rules + data)"
     echo "  deploy-rules        Deploy Firestore rules and indexes"
-    echo "  init-data           Initialize Firestore data using Node.js script"
+    echo "  init-data           Initialize Firestore data using Firebase CLI"
     echo "  create-test-data    Create test data JSON files for manual import"
     echo "  export-current      Export current Firestore data"
     echo "  export-test         Export data from test project"
@@ -355,21 +372,15 @@ main() {
     
     case "${1:-help}" in
         "setup-prod")
-            check_node_environment
-            check_service_account
             setup_project $PROJECT_ID
             ;;
         "setup-test")
-            check_node_environment
-            check_service_account
             setup_project $TEST_PROJECT_ID
             ;;
         "deploy-rules")
             deploy_firestore_config $(firebase use 2>/dev/null | grep -o '[a-zA-Z0-9-]*$')
             ;;
         "init-data")
-            check_node_environment
-            check_service_account
             initialize_firestore_data $(firebase use 2>/dev/null | grep -o '[a-zA-Z0-9-]*$')
             ;;
         "create-test-data")
