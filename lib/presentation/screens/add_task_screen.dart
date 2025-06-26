@@ -20,7 +20,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _pointsController = TextEditingController();
   DateTime? _dueDate;
   FamilyMember? _selectedAssignee;
   TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
@@ -37,7 +36,6 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _pointsController.dispose();
     super.dispose();
   }
 
@@ -80,7 +78,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         id: '', // Will be set by Firestore
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        points: int.parse(_pointsController.text),
+        points: _selectedDifficulty == TaskDifficulty.easy ? 10 :
+                _selectedDifficulty == TaskDifficulty.medium ? 25 :
+                _selectedDifficulty == TaskDifficulty.hard ? 50 : 100,
         difficulty: _selectedDifficulty,
         status: TaskStatus.available,
         familyId: familyId,
@@ -183,58 +183,43 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _pointsController,
-              decoration: const InputDecoration(
-                labelText: 'Points (Effort Size)',
-                border: OutlineInputBorder(),
-                helperText: 'Points earned for completing this task (typically 5-50)',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter points';
-                }
-                final points = int.tryParse(value);
-                if (points == null || points <= 0) {
-                  return 'Please enter a valid number of points';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
             DropdownButtonFormField<TaskDifficulty>(
               decoration: const InputDecoration(
-                labelText: 'Difficulty Level',
+                labelText: 'Effort Size',
                 border: OutlineInputBorder(),
-                helperText: 'Select the effort size for this task',
+                helperText: 'Select the effort size - points are automatically set',
               ),
               value: _selectedDifficulty,
               items: TaskDifficulty.values.map((difficulty) {
                 String description;
+                int points;
                 switch (difficulty) {
                   case TaskDifficulty.easy:
-                    description = 'Easy (S) - Quick tasks, 5-15 minutes';
+                    description = 'Small (S) - Quick tasks, 5-15 minutes';
+                    points = 10;
                     break;
                   case TaskDifficulty.medium:
                     description = 'Medium (M) - Moderate tasks, 15-30 minutes';
+                    points = 25;
                     break;
                   case TaskDifficulty.hard:
-                    description = 'Hard (L) - Complex tasks, 30-60 minutes';
+                    description = 'Large (L) - Complex tasks, 30-60 minutes';
+                    points = 50;
                     break;
                   case TaskDifficulty.challenging:
-                    description = 'Challenging (XL) - Major tasks, 1+ hours';
+                    description = 'Extra Large (XL) - Major tasks, 60+ minutes';
+                    points = 100;
                     break;
                 }
                 return DropdownMenuItem<TaskDifficulty>(
                   value: difficulty,
-                  child: Text(description),
+                  child: Text('$description ($points points)'),
                 );
               }).toList(),
-              onChanged: (value) {
-                if (value != null) {
+              onChanged: (TaskDifficulty? newValue) {
+                if (newValue != null) {
                   setState(() {
-                    _selectedDifficulty = value;
+                    _selectedDifficulty = newValue;
                   });
                 }
               },
