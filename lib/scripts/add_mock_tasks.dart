@@ -3,6 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import '../firebase_options.dart';
 import 'dart:async';
 
+// lib/scripts/add_mock_tasks.dart
+// This script adds mock tasks directly to Firestore for testing purposes.
+// It does not use any legacy model files.
+
 Future<void> main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);

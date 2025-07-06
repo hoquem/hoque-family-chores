@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
-import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class FamilySetupScreen extends StatefulWidget {
+class FamilySetupScreen extends ConsumerStatefulWidget {
   const FamilySetupScreen({super.key});
 
   @override
-  State<FamilySetupScreen> createState() => _FamilySetupScreenState();
+  ConsumerState<FamilySetupScreen> createState() => _FamilySetupScreenState();
 }
 
-class _FamilySetupScreenState extends State<FamilySetupScreen> {
+class _FamilySetupScreenState extends ConsumerState<FamilySetupScreen> {
   final _familyNameController = TextEditingController();
   final _logger = AppLogger();
-  bool _isLoading = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -26,70 +24,52 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
 
   Future<void> _createFamily() async {
     if (_familyNameController.text.trim().isEmpty) {
-      setState(() {
-        _errorMessage = "Family name cannot be empty.";
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Family name cannot be empty.")),
+      );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
     try {
-      final authProvider = Provider.of<AuthProviderBase>(context, listen: false);
-      final currentUserId = authProvider.currentUserId;
-      final currentUserEmail = authProvider.userEmail;
-      final currentUserName = authProvider.displayName;
+      final authState = ref.read(authNotifierProvider);
+      final currentUser = authState.user;
 
-      if (currentUserId == null) {
-        setState(() {
-          _errorMessage = "User not logged in. Please re-authenticate.";
-          _isLoading = false;
-        });
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("User not logged in. Please re-authenticate.")),
+        );
         return;
       }
 
-      // Call AuthProvider's method to create family and update user profile
-      await authProvider.createFamilyAndSetProfile(
-        familyName: _familyNameController.text.trim(),
-        familyDescription: 'Family created by ${currentUserName ?? 'user'}',
-        creatorEmail: currentUserEmail ?? '',
+      // Create family using the family notifier
+      await ref.read(familyNotifierProvider(currentUser.familyId).notifier).createFamily(
+        name: _familyNameController.text.trim(),
+        description: 'Family created by ${currentUser.name}',
+        creatorId: currentUser.id,
       );
 
-      // Check if family creation was successful and user profile updated
-      if (authProvider.userFamilyId != null) {
-        _logger.i(
-          "Family '${_familyNameController.text.trim()}' created and user profile updated.",
+      _logger.i("Family '${_familyNameController.text.trim()}' created successfully.");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Family created successfully!")),
         );
-        if (mounted) {
-          // No explicit navigation needed here. AuthWrapper will react to userFamilyId change.
-          // Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const DashboardScreen()));
-        }
-      } else {
-        // This case should ideally be caught by AuthProvider's error messages
-        setState(() {
-          _errorMessage =
-              authProvider.errorMessage ??
-              "Failed to create family: Unknown error.";
-        });
       }
     } catch (e, s) {
       _logger.e("Error creating family: $e", error: e, stackTrace: s);
-      setState(() {
-        _errorMessage =
-            "An error occurred: ${e.toString().split('] ').last}"; // Extract Firebase error message
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to create family: $e")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.isLoading;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Setup Your Family')),
       body: Center(
@@ -113,22 +93,20 @@ class _FamilySetupScreenState extends State<FamilySetupScreen> {
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: 20),
-              if (_errorMessage != null)
+              if (authState.errorMessage != null)
                 Text(
-                  _errorMessage!,
+                  authState.errorMessage!,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 20),
-              _isLoading
+              isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                     onPressed: _createFamily,
                     child: const Text('Create Family'),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(
-                        50,
-                      ), // Make button full width
+                      minimumSize: const Size.fromHeight(50), // Make button full width
                     ),
                   ),
             ],

@@ -1,24 +1,25 @@
 // lib/presentation/screens/gamification_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/badge_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/reward_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/gamification_provider.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/badge_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/reward_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/gamification_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_level_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/badges_widget.dart';
+import 'package:hoque_family_chores/presentation/widgets/rewards_store_widget.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 
-class GamificationScreen extends StatefulWidget {
+class GamificationScreen extends ConsumerStatefulWidget {
   const GamificationScreen({super.key});
 
   @override
-  State<GamificationScreen> createState() => _GamificationScreenState();
+  ConsumerState<GamificationScreen> createState() => _GamificationScreenState();
 }
 
-class _GamificationScreenState extends State<GamificationScreen>
+class _GamificationScreenState extends ConsumerState<GamificationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -30,13 +31,12 @@ class _GamificationScreenState extends State<GamificationScreen>
   }
 
   Future<void> _loadData() async {
-    final authProvider = context.read<AuthProviderBase>();
-    final badgeProvider = context.read<BadgeProvider>();
-    final rewardProvider = context.read<RewardProvider>();
-    final familyId = authProvider.userFamilyId;
-    if (familyId != null) {
-      await badgeProvider.fetchBadges(familyId);
-      await rewardProvider.fetchRewards(familyId);
+    final authState = ref.read(authNotifierProvider);
+    final currentUser = authState.user;
+    
+    if (currentUser != null) {
+      // The providers will automatically load data when watched
+      _logger.d('GamificationScreen: Data will be loaded by providers');
     }
   }
 
@@ -48,12 +48,10 @@ class _GamificationScreenState extends State<GamificationScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProviderBase>();
-    final userProfile = authProvider.currentUserProfile;
-    final badgeProvider = context.watch<BadgeProvider>();
-    final rewardProvider = context.watch<RewardProvider>();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-    if (userProfile == null) {
+    if (currentUser == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -71,19 +69,19 @@ class _GamificationScreenState extends State<GamificationScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildProgressTab(userProfile),
-          _buildBadgesTab(userProfile, badgeProvider),
-          _buildRewardsTab(userProfile, rewardProvider),
+          _buildProgressTab(currentUser),
+          _buildBadgesTab(currentUser),
+          _buildRewardsTab(currentUser),
         ],
       ),
     );
   }
 
-  Widget _buildProgressTab(UserProfile userProfile) {
-    final level = UserProfile.calculateLevelFromPoints(userProfile.points);
-    final pointsInCurrentLevel = userProfile.pointsInCurrentLevel;
-    final pointsNeededForNextLevel = userProfile.pointsNeededForNextLevel;
-    final progressToNextLevel = userProfile.progressToNextLevel;
+  Widget _buildProgressTab(User currentUser) {
+    final level = (currentUser.points.value / 100).floor() + 1;
+    final pointsInCurrentLevel = currentUser.points.value % 100;
+    final pointsNeededForNextLevel = 100;
+    final progressToNextLevel = pointsInCurrentLevel / pointsNeededForNextLevel;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -140,25 +138,25 @@ class _GamificationScreenState extends State<GamificationScreen>
             children: [
               _buildStatCard(
                 'Total Points',
-                userProfile.points.toString(),
+                currentUser.points.value.toString(),
                 Icons.attach_money,
                 Colors.green,
               ),
               _buildStatCard(
                 'Tasks Completed',
-                userProfile.completedTasks.length.toString(),
+                '0', // TODO: Get from task repository
                 Icons.check_circle,
                 Colors.blue,
               ),
               _buildStatCard(
                 'Current Streak',
-                userProfile.isOnStreak ? 'Active' : 'Inactive',
+                'Active', // TODO: Get from user profile
                 Icons.local_fire_department,
                 Colors.orange,
               ),
               _buildStatCard(
                 'Achievements',
-                userProfile.achievements.length.toString(),
+                '0', // TODO: Get from achievements
                 Icons.emoji_events,
                 Colors.purple,
               ),
@@ -204,153 +202,24 @@ class _GamificationScreenState extends State<GamificationScreen>
     );
   }
 
-  Widget _buildBadgesTab(UserProfile userProfile, BadgeProvider badgeProvider) {
-    if (badgeProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (badgeProvider.errorMessage != null) {
-      return Center(
-        child: Text(
-          'Error: ${badgeProvider.errorMessage}',
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
-    }
-
-    final badges = badgeProvider.badges;
-    final userBadgeIds = userProfile.badges;
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16.0),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: badges.length,
-      itemBuilder: (context, index) {
-        final badge = badges[index];
-        final isUnlocked = userBadgeIds.contains(badge.id);
-
-        return Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          color: isUnlocked ? null : Colors.grey[200],
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _getIconFromName(badge.iconName),
-                  size: 48,
-                  color: isUnlocked ? badge.rarity.color : Colors.grey,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  badge.name,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: isUnlocked ? null : Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  badge.description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isUnlocked ? null : Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  Widget _buildBadgesTab(User currentUser) {
+    // TODO: Implement badges tab with new badge notifier
+    return const Center(
+      child: Text('Badges coming soon!'),
     );
   }
 
-  Widget _buildRewardsTab(
-    UserProfile userProfile,
-    RewardProvider rewardProvider,
-  ) {
-    if (rewardProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (rewardProvider.errorMessage != null) {
-      return Center(
-        child: Text(
-          'Error: ${rewardProvider.errorMessage}',
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
-    }
-
-    final rewards = rewardProvider.rewards;
-    final userPoints = userProfile.points;
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: rewards.length,
-      itemBuilder: (context, index) {
-        final reward = rewards[index];
-        final canAfford = userPoints >= reward.pointsCost;
-
-        return Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ListTile(
-            leading: Icon(
-              _getIconFromName(reward.iconName),
-              size: 32,
-              color: canAfford ? reward.rarity.color : Colors.grey,
-            ),
-            title: Text(
-              reward.name,
-              style: TextStyle(color: canAfford ? null : Colors.grey),
-            ),
-            subtitle: Text(
-              reward.description,
-              style: TextStyle(color: canAfford ? null : Colors.grey),
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${reward.pointsCost} points',
-                  style: TextStyle(
-                    color: canAfford ? Colors.green : Colors.grey,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (canAfford)
-                  TextButton(
-                    onPressed: () => _redeemReward(context, reward.id),
-                    child: const Text('Redeem'),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+  Widget _buildRewardsTab(User currentUser) {
+    // TODO: Implement rewards tab with new reward notifier
+    return const Center(
+      child: Text('Rewards coming soon!'),
     );
   }
 
   /// Helper method to redeem a reward
   Future<void> _redeemReward(BuildContext context, String rewardId) async {
-    final gamificationProvider = context.read<GamificationProvider>();
-    
     try {
-      await gamificationProvider.redeemReward(rewardId);
+      await ref.read(gamificationNotifierProvider.notifier).redeemReward(rewardId);
       
       // Show success message
       if (context.mounted) {

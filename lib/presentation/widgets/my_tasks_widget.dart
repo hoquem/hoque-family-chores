@@ -1,80 +1,68 @@
 // lib/presentation/widgets/my_tasks_widget.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/my_tasks_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart'; // For navigation
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class MyTasksWidget extends StatefulWidget {
+class MyTasksWidget extends ConsumerWidget {
   const MyTasksWidget({super.key});
 
   @override
-  State<MyTasksWidget> createState() => _MyTasksWidgetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _logger = AppLogger();
+    final myTasksState = ref.watch(myTasksNotifierProvider);
 
-class _MyTasksWidgetState extends State<MyTasksWidget> {
-  final _logger = AppLogger();
+    Future<void> _refreshData() async {
+      _logger.d('MyTasksWidget: Refreshing data');
+      ref.read(myTasksNotifierProvider.notifier).refresh();
+    }
 
-  Future<void> _refreshData() async {
-    _logger.d('MyTasksWidget: Refreshing data');
-    final provider = context.read<MyTasksProvider>();
-    provider.refresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     _logger.d('MyTasksWidget: build() called');
     return Card(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Consumer<MyTasksProvider>(
-          builder: (context, provider, child) {
-            _logger.d('MyTasksWidget: Consumer builder called with state: ${provider.state}, tasks count: ${provider.tasks.length}');
-            return RefreshIndicator(
-              onRefresh: _refreshData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: IntrinsicHeight(
-                  child: switch (provider.state) {
-                    MyTasksState.loading => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    MyTasksState.error => Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Error: ${provider.errorMessage}',
-                            style: const TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8.0),
-                          ElevatedButton(
-                            onPressed: _refreshData,
-                            child: const Text('Retry'),
-                          ),
-                        ],
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: IntrinsicHeight(
+              child: myTasksState.when(
+                data: (tasks) => _buildTasksList(tasks),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Error: $error',
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    MyTasksState.loaded => _buildTasksList(provider),
-                    MyTasksState.initial => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  },
+                      const SizedBox(height: 8.0),
+                      ElevatedButton(
+                        onPressed: _refreshData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTasksList(MyTasksProvider provider) {
-    _logger.d('MyTasksWidget: _buildTasksList called with ${provider.tasks.length} tasks');
+  Widget _buildTasksList(List<dynamic> tasks) {
+    final _logger = AppLogger();
+    _logger.d('MyTasksWidget: _buildTasksList called with ${tasks.length} tasks');
     
-    if (provider.tasks.isEmpty) {
+    if (tasks.isEmpty) {
       _logger.d('MyTasksWidget: No tasks found - showing empty state');
       return const Center(
         child: ListTile(
@@ -85,16 +73,16 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
       );
     }
 
-    _logger.d('MyTasksWidget: Building task list with ${provider.tasks.length} tasks');
+    _logger.d('MyTasksWidget: Building task list with ${tasks.length} tasks');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: provider.tasks.length > 3 ? 3 : provider.tasks.length,
+          itemCount: tasks.length > 3 ? 3 : tasks.length,
           itemBuilder: (context, index) {
-            final task = provider.tasks[index];
+            final task = tasks[index];
             _logger.d('MyTasksWidget: Building task item $index: ${task.title}');
             return ListTile(
               leading: Icon(
@@ -106,13 +94,13 @@ class _MyTasksWidgetState extends State<MyTasksWidget> {
                 style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
-                '${task.points} points',
+                '${task.points.value} points',
                 style: TextStyle(color: Colors.grey[600], fontSize: 12.0),
               ),
             );
           },
         ),
-        if (provider.tasks.length > 3)
+        if (tasks.length > 3)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Align(

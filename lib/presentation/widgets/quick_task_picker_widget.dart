@@ -1,133 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/shared_enums.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class QuickTaskPickerWidget extends StatefulWidget {
+class QuickTaskPickerWidget extends ConsumerWidget {
   const QuickTaskPickerWidget({super.key});
 
-  @override
-  State<QuickTaskPickerWidget> createState() => _QuickTaskPickerWidgetState();
-}
-
-class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
-  final _logger = AppLogger();
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _logger.d('QuickTaskPickerWidget: initState called');
-    // Schedule the load after the first frame to avoid setState during build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _loadQuickTasks();
-      }
-    });
-  }
-
-  Future<void> _loadQuickTasks() async {
-    _logger.d('QuickTaskPickerWidget: Loading quick tasks');
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _handleTaskSelection(WidgetRef ref, Task task) async {
+    final logger = AppLogger();
+    logger.d('QuickTaskPickerWidget: Task selected: ${task.id}');
 
     try {
-      final userProfile = context.read<AuthProviderBase>().currentUserProfile;
-      final familyId = context.read<AuthProviderBase>().userFamilyId;
-
-      if (userProfile != null && familyId != null) {
-        _logger.d(
-          'QuickTaskPickerWidget: Fetching quick tasks for user ${userProfile.member.id} in family $familyId',
-        );
-        await context.read<TaskProvider>().fetchQuickTasks(
-          familyId: familyId,
-          userId: userProfile.member.id,
-        );
-      } else {
-        _logger.w(
-          'QuickTaskPickerWidget: Cannot fetch quick tasks - missing user profile or family ID',
-        );
-      }
-    } catch (e, stackTrace) {
-      _logger.e(
-        'QuickTaskPickerWidget: Error loading quick tasks',
-        error: e,
-        stackTrace: stackTrace,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _handleTaskSelection(Task task) async {
-    _logger.d('QuickTaskPickerWidget: Task selected: ${task.id}');
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final userProfile = context.read<AuthProviderBase>().currentUserProfile;
-      final familyId = context.read<AuthProviderBase>().userFamilyId;
+      final authState = ref.read(authNotifierProvider);
+      final currentUser = authState.user;
       
-      if (userProfile != null && familyId != null) {
-        _logger.d(
-          'QuickTaskPickerWidget: Assigning task ${task.id} to user ${userProfile.member.id} in family $familyId',
+      if (currentUser != null) {
+        logger.d(
+          'QuickTaskPickerWidget: Claiming task ${task.id} for user ${currentUser.id}',
         );
-        await context.read<TaskProvider>().assignTask(
-          taskId: task.id,
-          userId: userProfile.member.id,
-          familyId: familyId,
+        await ref.read(availableTasksNotifierProvider(task.familyId).notifier).claimTask(
+          task.id.value,
+          currentUser.id,
         );
-        _logger.d('QuickTaskPickerWidget: Task assigned successfully');
+        logger.d('QuickTaskPickerWidget: Task claimed successfully');
       } else {
-        _logger.w(
-          'QuickTaskPickerWidget: Cannot assign task - missing user profile or family ID',
+        logger.w(
+          'QuickTaskPickerWidget: Cannot claim task - missing user profile',
         );
       }
     } catch (e, stackTrace) {
-      _logger.e(
-        'QuickTaskPickerWidget: Error assigning task',
+      logger.e(
+        'QuickTaskPickerWidget: Error claiming task',
         error: e,
         stackTrace: stackTrace,
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    _logger.d('QuickTaskPickerWidget: build called');
-    return Consumer<TaskProvider>(
-      builder: (context, provider, child) {
-        _logger.d(
-          'QuickTaskPickerWidget: Consumer builder called with state: ${provider.state}',
-        );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logger = AppLogger();
+    logger.d('QuickTaskPickerWidget: build called');
+    
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
+    final familyId = currentUser?.familyId;
 
-        if (_isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (currentUser == null || familyId == null) {
+      logger.w('QuickTaskPickerWidget: Cannot build widget - missing user or family ID');
+      return const Center(child: Text('Please log in to view quick tasks'));
+    }
 
-        final quickTasks = provider.quickTasks;
-        if (quickTasks.isEmpty) {
+    final availableTasksAsync = ref.watch(availableTasksNotifierProvider(familyId));
+
+    return availableTasksAsync.when(
+      data: (availableTasks) {
+        logger.d('QuickTaskPickerWidget: Consumer builder called with ${availableTasks.length} tasks');
+
+        if (availableTasks.isEmpty) {
           return const Center(child: Text('No quick tasks available'));
         }
+
+        // Get only the first few tasks as "quick tasks"
+        final quickTasks = availableTasks.take(5).toList();
 
         return ListView.builder(
           shrinkWrap: true,
@@ -140,12 +78,27 @@ class _QuickTaskPickerWidgetState extends State<QuickTaskPickerWidget> {
               subtitle: Text(task.description),
               trailing: IconButton(
                 icon: const Icon(Icons.add_task),
-                onPressed: () => _handleTaskSelection(task),
+                onPressed: () => _handleTaskSelection(ref, task),
               ),
             );
           },
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Error: ${error.toString()}',
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

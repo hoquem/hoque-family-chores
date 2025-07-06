@@ -1,16 +1,15 @@
 // lib/presentation/widgets/task_list_tile.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/presentation/providers/available_tasks_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
 
-class TaskListTile extends StatefulWidget {
+class TaskListTile extends ConsumerStatefulWidget {
   final Task task;
-  final UserProfile user;
+  final User user;
   final ValueChanged<bool?> onToggleStatus;
   final VoidCallback? onReturnToAvailable;
   final bool isUpdating;
@@ -25,10 +24,10 @@ class TaskListTile extends StatefulWidget {
   });
 
   @override
-  State<TaskListTile> createState() => _TaskListTileState();
+  ConsumerState<TaskListTile> createState() => _TaskListTileState();
 }
 
-class _TaskListTileState extends State<TaskListTile> {
+class _TaskListTileState extends ConsumerState<TaskListTile> {
   bool _isError = false;
   String? _errorMessage;
   final _logger = AppLogger();
@@ -61,15 +60,14 @@ class _TaskListTileState extends State<TaskListTile> {
     });
 
     try {
-      final availableTasksProvider = context.read<AvailableTasksProvider>();
-      final taskListProvider = context.read<app_task_list_provider.TaskListProvider>();
+      final availableTasksNotifier = ref.read(availableTasksNotifierProvider.notifier);
+      final taskListNotifier = ref.read(taskListNotifierProvider.notifier);
       
-      // Set up callback to refresh task list after claiming
-      availableTasksProvider.setOnTaskClaimedCallback(() {
-        taskListProvider.refreshTasks();
-      });
+      await availableTasksNotifier.claimTask(widget.task.id);
       
-      await availableTasksProvider.claimTask(widget.task.id);
+      // Refresh task list after claiming
+      taskListNotifier.refresh();
+      
       _logger.i('TaskListTile: Successfully took ownership of task ${widget.task.id}');
     } catch (e) {
       _logger.e('TaskListTile: Error taking ownership of task: $e');
@@ -245,10 +243,10 @@ class _TaskListTileState extends State<TaskListTile> {
                           ),
                         ],
                       ),
-                      if (widget.task.assignedTo != null) ...[
+                      if (widget.task.assignedToId != null) ...[
                         const SizedBox(height: 4.0),
                         Text(
-                          'Assigned to: ${widget.user.member.name} (Lvl ${UserProfile.calculateLevelFromPoints(widget.user.points)})',
+                          'Assigned to: ${widget.user.name}',
                           style: TextStyle(
                             fontSize: 14.0,
                             color: Colors.grey[600],

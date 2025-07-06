@@ -1,188 +1,152 @@
 // lib/presentation/screens/family_list_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
-import 'package:hoque_family_chores/models/family.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/services/interfaces/family_service_interface.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/family.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class FamilyListScreen extends StatefulWidget {
+class FamilyListScreen extends ConsumerWidget {
   const FamilyListScreen({super.key});
 
   @override
-  State<FamilyListScreen> createState() => _FamilyListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
+    final _logger = AppLogger();
 
-class _FamilyListScreenState extends State<FamilyListScreen> {
-  final _logger = AppLogger();
-  Future<List<FamilyMember>>? _familyMembersFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFamilyMembers();
-  }
-
-  Future<void> _loadFamilyMembers() async {
-    final authProvider = Provider.of<AuthProviderBase>(context, listen: false);
-    final familyService = Provider.of<FamilyServiceInterface>(
-      context,
-      listen: false,
-    );
-
-    if (authProvider.userFamilyId == null) {
-      _logger.w("No family ID available in AuthProvider");
-      return;
-    }
-
-    setState(() {
-      _familyMembersFuture = familyService.getFamilyMembers(
-        familyId: authProvider.userFamilyId!,
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_familyMembersFuture == null) {
+    if (currentUser == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Watch family members
+    final familyMembersAsync = ref.watch(familyMembersNotifierProvider(currentUser.familyId));
+
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _loadFamilyMembers,
-        child: FutureBuilder<List<FamilyMember>>(
-          future: _familyMembersFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              _logger.e(
-                "Error loading family members: ${snapshot.error}",
-                error: snapshot.error,
-                stackTrace: snapshot.stackTrace,
-              );
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        onRefresh: () async {
+          ref.invalidate(familyMembersNotifierProvider(currentUser.familyId));
+        },
+        child: familyMembersAsync.when(
+          data: (familyMembers) {
+            if (familyMembers.isEmpty) {
               return const Center(child: Text('No family members found.'));
-            } else {
-              final familyMembers = snapshot.data!;
-              return ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: familyMembers.length,
-                itemBuilder: (context, index) {
-                  final member = familyMembers[index];
-                  return Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 30,
-                                backgroundColor:
-                                    Theme.of(context).primaryColorLight,
-                                backgroundImage:
-                                    member.photoUrl != null &&
-                                            member.photoUrl!.isNotEmpty
-                                        ? NetworkImage(member.photoUrl!)
-                                        : null,
-                                child:
-                                    member.photoUrl == null ||
-                                            member.photoUrl!.isEmpty
-                                        ? Text(
-                                          member.name
-                                              .substring(0, 1)
-                                              .toUpperCase(),
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        )
-                                        : null,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      member.name,
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: familyMembers.length,
+              itemBuilder: (context, index) {
+                final member = familyMembers[index];
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Theme.of(context).primaryColorLight,
+                              backgroundImage: member.photoUrl != null && member.photoUrl!.isNotEmpty
+                                  ? NetworkImage(member.photoUrl!)
+                                  : null,
+                              child: member.photoUrl == null || member.photoUrl!.isEmpty
+                                  ? Text(
+                                      member.name.substring(0, 1).toUpperCase(),
                                       style: const TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 24,
                                         fontWeight: FontWeight.bold,
                                       ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    member.name,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).primaryColor.withAlpha(26),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        member.role.name,
-                                        style: TextStyle(
-                                          color: Theme.of(context).primaryColor,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withAlpha(26),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      member.role.name,
+                                      style: TextStyle(
+                                        color: Theme.of(context).primaryColor,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildStatItem(
-                                context,
-                                Icons.star,
-                                'Points',
-                                '${member.points}',
-                                Colors.amber,
-                              ),
-                              _buildStatItem(
-                                context,
-                                Icons.calendar_today,
-                                'Joined',
-                                '${member.joinedAt.day}/${member.joinedAt.month}/${member.joinedAt.year}',
-                                Colors.blue,
-                              ),
-                              _buildStatItem(
-                                context,
-                                Icons.update,
-                                'Updated',
-                                '${member.updatedAt.day}/${member.updatedAt.month}/${member.updatedAt.year}',
-                                Colors.green,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              context,
+                              Icons.star,
+                              'Points',
+                              '${member.points.value}',
+                              Colors.amber,
+                            ),
+                            _buildStatItem(
+                              context,
+                              Icons.calendar_today,
+                              'Joined',
+                              '${member.joinedAt.day}/${member.joinedAt.month}/${member.joinedAt.year}',
+                              Colors.blue,
+                            ),
+                            _buildStatItem(
+                              context,
+                              Icons.update,
+                              'Updated',
+                              '${member.updatedAt.day}/${member.updatedAt.month}/${member.updatedAt.year}',
+                              Colors.green,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  );
-                },
-              );
-            }
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) {
+            _logger.e(
+              "Error loading family members: $error",
+              error: error,
+              stackTrace: stack,
+            );
+            return Center(child: Text('Error: $error'));
           },
         ),
       ),

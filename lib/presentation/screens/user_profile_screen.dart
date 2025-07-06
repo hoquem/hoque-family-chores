@@ -1,19 +1,27 @@
 // lib/presentation/screens/user_profile_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProviderBase>(context);
-    final displayName = authProvider.displayName ?? 'Family Member';
-    final email = authProvider.userEmail ?? 'No email';
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
+    
+    if (currentUser == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final displayName = currentUser.name;
+    final email = currentUser.email.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -30,11 +38,11 @@ class UserProfileScreen extends StatelessWidget {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: Theme.of(context).primaryColorLight,
-                  child: authProvider.photoUrl != null && authProvider.photoUrl!.isNotEmpty
+                  child: currentUser.photoUrl != null && currentUser.photoUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(50),
                           child: Image.network(
-                            authProvider.photoUrl!,
+                            currentUser.photoUrl!,
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
@@ -111,7 +119,7 @@ class UserProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {
-                await authProvider.signOut();
+                await ref.read(authNotifierProvider.notifier).signOut();
                 if (context.mounted) {
                    Navigator.of(context).popUntil((route) => route.isFirst);
                 }

@@ -1,110 +1,80 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart'; // Needed for authProvider
-import 'package:hoque_family_chores/presentation/providers/task_summary_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_summary_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/task_summary.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class TaskSummaryWidget extends StatefulWidget {
+class TaskSummaryWidget extends ConsumerWidget {
   const TaskSummaryWidget({super.key});
 
-  @override
-  State<TaskSummaryWidget> createState() => _TaskSummaryWidgetState();
-}
-
-class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
-  @override
-  void initState() {
-    super.initState();
-    logger.i("[TaskSummaryWidget] initState called");
-    // Schedule the fetch after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      logger.d("[TaskSummaryWidget] Post frame callback executing");
-      if (mounted) {
-        final userProfile = context.read<AuthProviderBase>().currentUserProfile;
-        final familyId = context.read<AuthProviderBase>().userFamilyId;
-        logger.d("[TaskSummaryWidget] User profile: ${userProfile?.member.id}, Family ID: $familyId");
-        
-        if (userProfile != null && familyId != null) {
-          logger.i("[TaskSummaryWidget] Fetching summary for user ${userProfile.member.id} in family $familyId");
-          try {
-            context.read<TaskSummaryProvider>().refreshSummary(
-              familyId: familyId,
-              userId: userProfile.member.id,
-            );
-          } catch (e, s) {
-            logger.e("[TaskSummaryWidget] Error fetching summary: $e", error: e, stackTrace: s);
-          }
-        } else {
-          logger.w("[TaskSummaryWidget] Cannot fetch summary - missing user profile or family ID. UserProfile: $userProfile, FamilyId: $familyId");
-        }
-      } else {
-        logger.w("[TaskSummaryWidget] Widget not mounted during post frame callback");
-      }
-    });
-  }
-
-  Future<void> _refreshData() async {
+  Future<void> _refreshData(WidgetRef ref) async {
     logger.i("[TaskSummaryWidget] Refreshing data");
-    final userProfile = context.read<AuthProviderBase>().currentUserProfile;
-    final familyId = context.read<AuthProviderBase>().userFamilyId;
+    final authState = ref.read(authNotifierProvider);
+    final currentUser = authState.user;
+    final familyId = currentUser?.familyId;
     
-    if (userProfile != null && familyId != null) {
-      logger.d("[TaskSummaryWidget] Refreshing summary for user ${userProfile.member.id} in family $familyId");
+    if (currentUser != null && familyId != null) {
+      logger.d("[TaskSummaryWidget] Refreshing summary for user ${currentUser.id} in family $familyId");
       try {
-        await context.read<TaskSummaryProvider>().refreshSummary(
-          familyId: familyId,
-          userId: userProfile.member.id,
-        );
+        await ref.read(taskSummaryNotifierProvider(familyId).notifier).refresh();
         logger.i("[TaskSummaryWidget] Data refresh completed successfully");
       } catch (e, s) {
         logger.e("[TaskSummaryWidget] Error refreshing data: $e", error: e, stackTrace: s);
       }
     } else {
-      logger.w("[TaskSummaryWidget] Cannot refresh data - missing user profile or family ID. UserProfile: $userProfile, FamilyId: $familyId");
+      logger.w("[TaskSummaryWidget] Cannot refresh data - missing user profile or family ID. User: $currentUser, FamilyId: $familyId");
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     logger.d("[TaskSummaryWidget] Building widget");
-    return Consumer<TaskSummaryProvider>(
-      builder: (context, provider, child) {
-        logger.d("[TaskSummaryWidget] Consumer builder called with state: ${provider.state}");
-        return RefreshIndicator(
-          onRefresh: _refreshData,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: IntrinsicHeight(
-              child: switch (provider.state) {
-                TaskSummaryState.loading => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                TaskSummaryState.error => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.red,
-                        size: 48,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error: ${provider.errorMessage ?? 'Unknown error'}',
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+    
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
+    final familyId = currentUser?.familyId;
+
+    if (currentUser == null || familyId == null) {
+      logger.w("[TaskSummaryWidget] Cannot build widget - missing user or family ID");
+      return const Center(
+        child: Text('Please log in to view task summary'),
+      );
+    }
+
+    final summaryAsync = ref.watch(taskSummaryNotifierProvider(familyId));
+
+    return RefreshIndicator(
+      onRefresh: () => _refreshData(ref),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: IntrinsicHeight(
+          child: summaryAsync.when(
+            data: (summary) => _buildSummaryContent(summary),
+            loading: () => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 48,
                   ),
-                ),
-                TaskSummaryState.loaded => _buildSummaryContent(
-                  provider.summary,
-                ),
-              },
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${error.toString()}',
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -155,19 +125,19 @@ class _TaskSummaryWidgetState extends State<TaskSummaryWidget> {
             ),
             const SizedBox(height: 16.0),
             _buildSummaryRow('Total Tasks', summary.totalTasks.toString()),
-            _buildSummaryRow('Completed', summary.totalCompleted.toString()),
+            _buildSummaryRow('Completed', summary.completedTasks.toString()),
             _buildSummaryRow(
-              'Waiting Overall',
-              summary.waitingOverall.toString(),
+              'Pending',
+              summary.pendingTasks.toString(),
             ),
             _buildSummaryRow(
-              'Waiting Assigned',
-              summary.waitingAssigned.toString(),
+              'Available',
+              summary.availableTasks.toString(),
             ),
-            _buildSummaryRow('Available', summary.availableTasks.toString()),
+            _buildSummaryRow('Assigned', summary.assignedTasks.toString()),
             _buildSummaryRow(
-              'Needs Revision',
-              summary.needsRevisionTasks.toString(),
+              'Completion Rate',
+              '${summary.completionPercentage}%',
             ),
           ],
         ),

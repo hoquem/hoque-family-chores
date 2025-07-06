@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart' as app_task_list_provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
 // Import all screens that will be part of the bottom navigation
 import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
@@ -11,14 +11,14 @@ import 'package:hoque_family_chores/presentation/screens/gamification_screen.dar
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart'; // For modal display
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   final _logger = AppLogger();
   int _selectedIndex = 0; // Set initial index to 0 for the Home tab
 
@@ -46,7 +46,8 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProviderBase>(context);
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,13 +59,8 @@ class _AppShellState extends State<AppShell> {
               icon: const Icon(Icons.filter_list),
               onSelected: (filter) {
                 _logger.d('AppShell: Setting task filter to $filter');
-                // Find the TaskListProvider and set the filter
-                try {
-                  final taskListProvider = context.read<app_task_list_provider.TaskListProvider>();
-                  taskListProvider.setFilter(filter);
-                } catch (e) {
-                  _logger.w('AppShell: Could not find TaskListProvider: $e');
-                }
+                // Set the filter using the task list notifier
+                ref.read(taskListNotifierProvider.notifier).setFilter(filter);
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -87,21 +83,14 @@ class _AppShellState extends State<AppShell> {
             ),
           IconButton(
             icon: CircleAvatar(
-              backgroundImage:
-                  authProvider.photoUrl != null &&
-                          authProvider.photoUrl!.isNotEmpty
-                      ? NetworkImage(authProvider.photoUrl!)
-                      : null,
-              child:
-                  authProvider.photoUrl == null ||
-                          authProvider.photoUrl!.isEmpty
-                      ? Text(
-                        authProvider.displayName
-                                ?.substring(0, 1)
-                                .toUpperCase() ??
-                            '',
-                      )
-                      : null,
+              backgroundImage: currentUser?.photoUrl != null && currentUser!.photoUrl!.isNotEmpty
+                  ? NetworkImage(currentUser.photoUrl!)
+                  : null,
+              child: currentUser?.photoUrl == null || currentUser!.photoUrl!.isEmpty
+                  ? Text(
+                      currentUser?.name.substring(0, 1).toUpperCase() ?? '',
+                    )
+                  : null,
             ),
             onPressed: () {
               _logger.i("Navigating to User Profile Screen (Modal).");

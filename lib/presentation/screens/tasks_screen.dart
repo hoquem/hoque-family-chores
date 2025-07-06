@@ -1,27 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
-import 'package:hoque_family_chores/presentation/providers/my_tasks_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/my_tasks_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class TasksScreen extends StatefulWidget {
+class TasksScreen extends ConsumerWidget {
   const TasksScreen({super.key});
 
   @override
-  State<TasksScreen> createState() => _TasksScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _logger = AppLogger();
 
-class _TasksScreenState extends State<TasksScreen> {
-  final _logger = AppLogger();
+    Future<void> _refreshData() async {
+      _logger.d('TasksScreen: Refreshing data');
+      ref.read(myTasksNotifierProvider.notifier).refresh();
+    }
 
-  Future<void> _refreshData() async {
-    _logger.d('TasksScreen: Refreshing data');
-    final myTasksProvider = context.read<MyTasksProvider>();
-    myTasksProvider.refresh();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     _logger.d('TasksScreen: Building screen');
     return Scaffold(
       appBar: AppBar(title: const Text('My Tasks')),

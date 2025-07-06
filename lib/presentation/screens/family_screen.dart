@@ -1,65 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
-import 'package:hoque_family_chores/presentation/providers/leaderboard_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:provider/provider.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/leaderboard_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class FamilyScreen extends StatefulWidget {
+class FamilyScreen extends ConsumerWidget {
   const FamilyScreen({super.key});
 
   @override
-  State<FamilyScreen> createState() => _FamilyScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _logger = AppLogger();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-class _FamilyScreenState extends State<FamilyScreen> {
-  final _logger = AppLogger();
-
-  @override
-  void initState() {
-    super.initState();
-    _logger.i('FamilyScreen: initState called');
-    // Don't call _refreshData here as context might not be ready
-    _logger.d('FamilyScreen: initState completed');
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _logger.d('FamilyScreen: didChangeDependencies called');
-    // Call refresh here when context is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _logger.d('FamilyScreen: Post frame callback - calling refresh');
-      _refreshData();
-    });
-  }
-
-  Future<void> _refreshData() async {
-    _logger.d('FamilyScreen: Refreshing data');
-    
-    try {
-      final leaderboardProvider = context.read<LeaderboardProvider>();
-      final authProvider = context.read<AuthProviderBase>();
-      final familyId = authProvider.userFamilyId;
-
-      _logger.d('FamilyScreen: Got familyId: $familyId');
-      _logger.d('FamilyScreen: LeaderboardProvider state: ${leaderboardProvider.state}');
-      _logger.d('FamilyScreen: AuthProvider type: ${authProvider.runtimeType}');
-
-      if (familyId != null) {
-        _logger.d('FamilyScreen: Calling fetchLeaderboard with familyId: $familyId');
-        await leaderboardProvider.fetchLeaderboard(familyId: familyId);
-        _logger.d('FamilyScreen: fetchLeaderboard completed');
-      } else {
-        _logger.w('FamilyScreen: familyId is null, cannot fetch leaderboard');
+    Future<void> _refreshData() async {
+      _logger.d('FamilyScreen: Refreshing data');
+      
+      try {
+        if (currentUser != null) {
+          _logger.d('FamilyScreen: Refreshing leaderboard for familyId: ${currentUser.familyId.value}');
+          ref.invalidate(leaderboardNotifierProvider(currentUser.familyId));
+          _logger.d('FamilyScreen: Leaderboard refresh completed');
+        } else {
+          _logger.w('FamilyScreen: currentUser is null, cannot refresh leaderboard');
+        }
+      } catch (e, stackTrace) {
+        _logger.e('FamilyScreen: Error in _refreshData: $e', error: e, stackTrace: stackTrace);
       }
-    } catch (e, stackTrace) {
-      _logger.e('FamilyScreen: Error in _refreshData: $e', error: e, stackTrace: stackTrace);
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     _logger.d('FamilyScreen: Building screen');
     
     return Scaffold(

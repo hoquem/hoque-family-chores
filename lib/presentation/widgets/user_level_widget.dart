@@ -1,16 +1,17 @@
 // lib/presentation/widgets/user_level_widget.dart
 import 'package:flutter/material.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'dart:math' as math;
 
 class UserLevelWidget extends StatefulWidget {
-  final UserProfile userProfile;
+  final User user;
   final bool showLevelUpAnimation;
   final VoidCallback? onAnimationComplete;
 
   const UserLevelWidget({
     Key? key,
-    required this.userProfile,
+    required this.user,
     this.showLevelUpAnimation = false,
     this.onAnimationComplete,
   }) : super(key: key);
@@ -27,6 +28,10 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
   late Animation<double> _rotateAnimation;
   late Animation<double> _opacityAnimation;
 
+  // Level calculation constants
+  static const int _basePointsPerLevel = 100;
+  static const double _pointsMultiplier = 1.5;
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +42,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
 
     _progressAnimation = Tween<double>(
       begin: 0,
-      end: widget.userProfile.progressToNextLevel,
+      end: _calculateProgressToNextLevel(),
     ).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -79,13 +84,13 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
     super.didUpdateWidget(oldWidget);
 
     // If the level changed or we're showing the level up animation, restart the animation
-    if (UserProfile.calculateLevelFromPoints(oldWidget.userProfile.points) !=
-            UserProfile.calculateLevelFromPoints(widget.userProfile.points) ||
+    if (_calculateLevelFromPoints(oldWidget.user.points) !=
+            _calculateLevelFromPoints(widget.user.points) ||
         widget.showLevelUpAnimation) {
       _animationController.reset();
       _progressAnimation = Tween<double>(
         begin: 0,
-        end: widget.userProfile.progressToNextLevel,
+        end: _calculateProgressToNextLevel(),
       ).animate(
         CurvedAnimation(
           parent: _animationController,
@@ -106,11 +111,56 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
     super.dispose();
   }
 
+  // Calculate user level from points
+  int _calculateLevelFromPoints(Points points) {
+    final totalPoints = points.value;
+    int level = 0;
+    int pointsNeeded = _basePointsPerLevel;
+    
+    while (totalPoints >= pointsNeeded) {
+      totalPoints -= pointsNeeded;
+      level++;
+      pointsNeeded = (_basePointsPerLevel * math.pow(_pointsMultiplier, level)).round();
+    }
+    
+    return level;
+  }
+
+  // Calculate points needed for next level
+  int _calculatePointsNeededForNextLevel() {
+    final currentLevel = _calculateLevelFromPoints(widget.user.points);
+    return (_basePointsPerLevel * math.pow(_pointsMultiplier, currentLevel)).round();
+  }
+
+  // Calculate points in current level
+  int _calculatePointsInCurrentLevel() {
+    final totalPoints = widget.user.points.value;
+    int level = 0;
+    int pointsNeeded = _basePointsPerLevel;
+    int pointsUsed = 0;
+    
+    while (totalPoints >= pointsNeeded) {
+      totalPoints -= pointsNeeded;
+      pointsUsed += pointsNeeded;
+      level++;
+      pointsNeeded = (_basePointsPerLevel * math.pow(_pointsMultiplier, level)).round();
+    }
+    
+    return widget.user.points.value - pointsUsed;
+  }
+
+  // Calculate progress to next level (0.0 to 1.0)
+  double _calculateProgressToNextLevel() {
+    final pointsInCurrentLevel = _calculatePointsInCurrentLevel();
+    final pointsNeededForNextLevel = _calculatePointsNeededForNextLevel();
+    
+    if (pointsNeededForNextLevel == 0) return 1.0;
+    return pointsInCurrentLevel / pointsNeededForNextLevel;
+  }
+
   // Get gradient colors based on user level
   List<Color> _getLevelGradient() {
-    final level = UserProfile.calculateLevelFromPoints(
-      widget.userProfile.points,
-    );
+    final level = _calculateLevelFromPoints(widget.user.points);
     switch (level) {
       case 0:
         return [Colors.grey.shade300, Colors.grey.shade500];
@@ -139,9 +189,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
   @override
   Widget build(BuildContext context) {
     final levelGradient = _getLevelGradient();
-    final level = UserProfile.calculateLevelFromPoints(
-      widget.userProfile.points,
-    );
+    final level = _calculateLevelFromPoints(widget.user.points);
 
     return Card(
       elevation: 4,
@@ -159,7 +207,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${widget.userProfile.points} points',
+                  '${widget.user.points.value} points',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[700],
@@ -270,7 +318,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${widget.userProfile.pointsInCurrentLevel} / ${widget.userProfile.pointsNeededForNextLevel} points to next level',
+                                '${_calculatePointsInCurrentLevel()} / ${_calculatePointsNeededForNextLevel()} points to next level',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart'
     hide Badge; // Hide Flutter's Badge widget to prevent ambiguity
-import 'package:hoque_family_chores/models/badge.dart'; // Import your Badge model
+import 'package:hoque_family_chores/domain/entities/badge.dart'; // Import domain Badge entity
 
 class BadgesWidget extends StatelessWidget {
   final List<Badge> badges;
@@ -91,8 +91,8 @@ class BadgesWidget extends StatelessWidget {
           elevation: 2.0,
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: badge.rarity.color.withValues(alpha: 0.2),
-              child: Icon(Icons.emoji_events, color: badge.rarity.color),
+              backgroundColor: _getBadgeColor(badge.rarity).withOpacity(0.2),
+              child: Icon(Icons.emoji_events, color: _getBadgeColor(badge.rarity)),
             ),
             title: Text(
               badge.name,
@@ -103,9 +103,9 @@ class BadgesWidget extends StatelessWidget {
               style: TextStyle(color: Colors.grey[600]),
             ),
             trailing: Text(
-              '${badge.requiredPoints} pts',
+              '${badge.requiredPoints.value} pts',
               style: TextStyle(
-                color: badge.rarity.color,
+                color: _getBadgeColor(badge.rarity),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -113,5 +113,20 @@ class BadgesWidget extends StatelessWidget {
         );
       },
     );
+  }
+
+  Color _getBadgeColor(BadgeRarity rarity) {
+    switch (rarity) {
+      case BadgeRarity.common:
+        return Colors.grey;
+      case BadgeRarity.uncommon:
+        return Colors.green;
+      case BadgeRarity.rare:
+        return Colors.blue;
+      case BadgeRarity.epic:
+        return Colors.purple;
+      case BadgeRarity.legendary:
+        return Colors.orange;
+    }
   }
 }

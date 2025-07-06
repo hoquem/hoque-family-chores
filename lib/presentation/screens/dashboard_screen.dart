@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 // For logging
 
 // This screen now represents the content for the 'Home' tab in the AppShell
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  int _calculateLevelFromPoints(int points) {
+    // Simple level calculation: every 100 points = 1 level
+    return (points / 100).floor() + 1;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Watch AuthProvider for user profile details
-    final authProvider = context.watch<AuthProviderBase>();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-    // Retrieve user profile for display
-    final currentUserProfile = authProvider.currentUserProfile;
-
-    if (currentUserProfile == null) {
+    if (currentUser == null) {
       // Handle case where profile is not yet loaded or user is not fully set up (should be handled by AuthWrapper)
       return const Center(child: CircularProgressIndicator());
     }
@@ -34,17 +39,15 @@ class DashboardScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundImage:
-                    (currentUserProfile.avatarUrl?.isNotEmpty ?? false)
-                        ? NetworkImage(currentUserProfile.avatarUrl!)
-                        : null,
-                child:
-                    (currentUserProfile.avatarUrl?.isEmpty ?? true)
-                        ? Text(
-                            currentUserProfile.name.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(fontSize: 30),
-                          )
-                        : null,
+                backgroundImage: (currentUser.photoUrl?.isNotEmpty ?? false)
+                    ? NetworkImage(currentUser.photoUrl!)
+                    : null,
+                child: (currentUser.photoUrl?.isEmpty ?? true)
+                    ? Text(
+                        currentUser.name.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(fontSize: 30),
+                      )
+                    : null,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -52,15 +55,14 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currentUserProfile.name, // Display user's name
+                      currentUser.name, // Display user's name
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      currentUserProfile.email ??
-                          'No Email', // Display user's email
+                      currentUser.email.value, // Display user's email
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
@@ -69,16 +71,16 @@ class DashboardScreen extends StatelessWidget {
                         const Icon(
                           Icons.star,
                           color: Colors.amber,
-                        ), // This was missing const
+                        ),
                         Text(
-                          'Level ${currentUserProfile.currentLevel}',
+                          'Level ${_calculateLevelFromPoints(currentUser.points.value)}',
                         ), // Display user's level
-                        const SizedBox(width: 10), // This was missing const
+                        const SizedBox(width: 10),
                         const Icon(
                           Icons.attach_money,
-                        ), // This was missing const
+                        ),
                         Text(
-                          '${currentUserProfile.totalPoints} Points',
+                          '${currentUser.points.value} Points',
                         ), // Display user's total points
                       ],
                     ),
@@ -95,11 +97,8 @@ class DashboardScreen extends StatelessWidget {
 
           // Quick Task Picker Widget
           SizedBox(
-            // <--- REMOVED const HERE
-            height:
-                200, // Give a fixed height or wrap in Expanded in a Column with other widgets
-            child:
-                QuickTaskPickerWidget(), // Not const, so parent SizedBox cannot be const
+            height: 200, // Give a fixed height or wrap in Expanded in a Column with other widgets
+            child: const QuickTaskPickerWidget(),
           ),
           const SizedBox(height: 50), // Spacer at the bottom
         ],

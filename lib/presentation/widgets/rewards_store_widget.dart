@@ -1,11 +1,13 @@
 // lib/presentation/widgets/rewards_store_widget.dart
 
 import 'package:flutter/material.dart';
-import 'package:hoque_family_chores/models/reward.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/domain/entities/reward.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 
 class RewardsStoreWidget extends StatefulWidget {
-  final UserProfile userProfile;
+  final User user;
 
   // These properties were in your gamification screen; they can be passed here if needed
   final List<Reward> availableRewards;
@@ -16,7 +18,7 @@ class RewardsStoreWidget extends StatefulWidget {
 
   const RewardsStoreWidget({
     super.key,
-    required this.userProfile,
+    required this.user,
     required this.availableRewards,
     required this.redeemedRewards,
     this.showPurchaseAnimation = false,
@@ -52,7 +54,7 @@ class _RewardsStoreWidgetState extends State<RewardsStoreWidget> {
       itemBuilder: (context, index) {
         final reward = widget.availableRewards[index];
         final isRedeemed = widget.redeemedRewards.any((r) => r.id == reward.id);
-        final canAfford = widget.userProfile.points >= reward.pointsCost;
+        final canAfford = widget.user.points.value >= reward.pointsCost.value;
 
         return RewardTile(
           reward: reward,
@@ -98,8 +100,8 @@ class RewardTile extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: reward.rarity.color.withAlpha((255 * 0.2).round()),
-              child: Icon(Icons.star, color: reward.rarity.color), // Placeholder icon
+              backgroundColor: Colors.blue.withAlpha((255 * 0.2).round()),
+              child: const Icon(Icons.star, color: Colors.blue), // Placeholder icon
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -107,7 +109,7 @@ class RewardTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    reward.title,
+                    reward.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       decoration: isRedeemed ? TextDecoration.lineThrough : null,
@@ -127,7 +129,7 @@ class RewardTile extends StatelessWidget {
             ElevatedButton(
               onPressed: isActionable ? onRedeemPressed : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isActionable ? reward.rarity.color : Colors.grey,
+                backgroundColor: isActionable ? Colors.blue : Colors.grey,
                 disabledBackgroundColor: Colors.grey.shade300,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -136,7 +138,7 @@ class RewardTile extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    isRedeemed ? 'Claimed' : '${reward.pointsCost}',
+                    isRedeemed ? 'Claimed' : '${reward.pointsCost.value}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

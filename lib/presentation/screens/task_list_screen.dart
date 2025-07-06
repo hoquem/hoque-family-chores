@@ -1,98 +1,135 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/models/user_profile.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart'
-    as app_task_list_provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class TaskListScreen extends StatefulWidget {
+class TaskListScreen extends ConsumerWidget {
   const TaskListScreen({super.key});
 
-  @override
-  State<TaskListScreen> createState() => _TaskListScreenState();
-}
-
-class _TaskListScreenState extends State<TaskListScreen> {
-  final _logger = AppLogger();
-
-  Future<void> _refreshData() async {
-    _logger.d('TaskListScreen: Refreshing tasks');
-    final taskListProvider =
-        context.read<app_task_list_provider.TaskListProvider>();
-    final authProvider = context.read<AuthProviderBase>();
-
-    final currentUserId = authProvider.currentUserId;
-    final userFamilyId = authProvider.userFamilyId;
-
-    if (currentUserId == null || userFamilyId == null) {
-      _logger.w(
-        'TaskListScreen: Cannot refresh - User ID or Family ID is null',
+  Future<void> _refreshData(WidgetRef ref, FamilyId familyId) async {
+    final logger = AppLogger();
+    logger.d('TaskListScreen: Refreshing tasks');
+    
+    try {
+      await ref.read(taskListNotifierProvider(familyId).notifier).refresh();
+      logger.i('TaskListScreen: Tasks refreshed successfully');
+    } catch (e, s) {
+      logger.e(
+        'TaskListScreen: Error refreshing tasks',
+        error: e,
+        stackTrace: s,
       );
-      return;
     }
-
-    await taskListProvider.fetchTasks(
-      familyId: userFamilyId,
-      userId: currentUserId,
-    );
   }
 
   Future<void> _handleTaskStatusUpdate(
+    WidgetRef ref,
+    FamilyId familyId,
     String taskId,
     TaskStatus newStatus,
   ) async {
+    final logger = AppLogger();
     try {
-      final taskListProvider =
-          context.read<app_task_list_provider.TaskListProvider>();
-      final authProvider = context.read<AuthProviderBase>();
-      final familyId = authProvider.userFamilyId;
-
-      if (familyId == null) {
-        _logger.e('TaskListScreen: Cannot update task status - No family ID');
-        return;
+      final notifier = ref.read(taskListNotifierProvider(familyId).notifier);
+      
+      switch (newStatus) {
+        case TaskStatus.completed:
+          await notifier.completeTask(taskId);
+          break;
+        case TaskStatus.available:
+          await notifier.unassignTask(taskId);
+          break;
+        case TaskStatus.assigned:
+          // This would need to be handled differently - need user ID
+          break;
+        default:
+          logger.w('TaskListScreen: Unhandled status update: $newStatus');
       }
-
-      await taskListProvider.updateTaskStatus(
-        familyId: familyId,
-        taskId: taskId,
-        newStatus: newStatus,
-      );
-      _logger.i('TaskListScreen: Task status updated successfully');
+      
+      logger.i('TaskListScreen: Task status updated successfully');
     } catch (e, s) {
-      _logger.e(
+      logger.e(
         'TaskListScreen: Error updating task status',
         error: e,
         stackTrace: s,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update task status. Please try again.'),
-          ),
-        );
-      }
     }
   }
 
-  void _navigateToAddTask() {
-    _logger.i('TaskListScreen: Navigating to Add New Task screen');
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const AddTaskScreen()));
+  void _navigateToAddTask(BuildContext context) {
+    final logger = AppLogger();
+    logger.i('TaskListScreen: Navigating to Add New Task screen');
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+    );
   }
 
-  Widget _buildTaskList() {
-    final taskListProvider =
-        context.watch<app_task_list_provider.TaskListProvider>();
-    final authProvider = context.read<AuthProviderBase>();
+  Widget _buildTaskList(BuildContext context, WidgetRef ref, FamilyId familyId) {
+    final logger = AppLogger();
+    final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-    if (taskListProvider.isLoading && taskListProvider.filteredTasks.isEmpty) {
-      return const Center(
+    return tasksAsync.when(
+      data: (tasks) {
+        if (tasks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('No tasks found for you in this family!'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => _refreshData(ref, familyId),
+                  child: const Text('Retry Loading Tasks'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => _refreshData(ref, familyId),
+          child: ListView.builder(
+            itemCount: tasks.length,
+            itemBuilder: (context, index) {
+              final task = tasks[index];
+
+              return TaskListTile(
+                key: ValueKey(task.id.value),
+                task: task,
+                user: currentUser,
+                onToggleStatus: (bool? newValue) {
+                  if (newValue != null) {
+                    final newStatus = newValue 
+                        ? TaskStatus.completed 
+                        : TaskStatus.assigned;
+                    logger.d(
+                      'TaskListScreen: Toggling status for task ${task.id} to $newStatus',
+                    );
+                    _handleTaskStatusUpdate(ref, familyId, task.id.value, newStatus);
+                  }
+                },
+                onReturnToAvailable: () {
+                  logger.d(
+                    'TaskListScreen: Returning task ${task.id} to available status',
+                  );
+                  _handleTaskStatusUpdate(ref, familyId, task.id.value, TaskStatus.available);
+                },
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -101,11 +138,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
             Text('Loading tasks...'),
           ],
         ),
-      );
-    }
-
-    if (taskListProvider.errorMessage != null) {
-      return Center(
+      ),
+      error: (error, stack) => Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -115,132 +149,37 @@ class _TaskListScreenState extends State<TaskListScreen> {
               const SizedBox(height: 16),
               Text(
                 'Error loading tasks:',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(color: Colors.red),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.red),
               ),
               const SizedBox(height: 8),
               Text(
-                taskListProvider.errorMessage!,
+                error.toString(),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _refreshData,
+                onPressed: () => _refreshData(ref, familyId),
                 child: const Text('Retry'),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    if (taskListProvider.filteredTasks.isEmpty) {
-      String emptyMessage;
-      switch (taskListProvider.currentFilter) {
-        case TaskFilterType.available:
-          emptyMessage = 'No available tasks found!';
-          break;
-        case TaskFilterType.myTasks:
-          emptyMessage = 'No tasks assigned to you!';
-          break;
-        case TaskFilterType.completed:
-          emptyMessage = 'No completed tasks found!';
-          break;
-        case TaskFilterType.all:
-        default:
-          emptyMessage = 'No tasks found for you in this family!';
-          break;
-      }
-      
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emptyMessage),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _refreshData,
-              child: const Text('Retry Loading Tasks'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _refreshData,
-      child: ListView.builder(
-        itemCount: taskListProvider.filteredTasks.length,
-        itemBuilder: (context, index) {
-          final task = taskListProvider.filteredTasks[index];
-          final UserProfile? assignedUserProfile =
-              authProvider.currentUserProfile;
-
-          final String assignedToId = task.assignedTo?.toString() ?? 'unknown';
-          final UserProfile displayUserProfile =
-              assignedUserProfile ??
-              UserProfile(
-                id: assignedToId,
-                member: FamilyMember(
-                  id: assignedToId,
-                  userId: assignedToId,
-                  familyId: task.familyId,
-                  name: 'Unknown User',
-                  role: FamilyRole.child,
-                  points: 0,
-                  joinedAt: DateTime(2000),
-                  updatedAt: DateTime(2000),
-                ),
-                points: 0,
-                badges: [],
-                achievements: [],
-                createdAt: DateTime(2000),
-                updatedAt: DateTime(2000),
-                completedTasks: [],
-                inProgressTasks: [],
-                availableTasks: [],
-                preferences: {},
-                statistics: {},
-              );
-
-          return TaskListTile(
-            key: ValueKey(task.id),
-            task: task,
-            user: displayUserProfile,
-            onToggleStatus: (bool? newValue) {
-              if (newValue != null) {
-                final newStatus =
-                    newValue ? TaskStatus.pendingApproval : TaskStatus.assigned;
-                _logger.d(
-                  'TaskListScreen: Toggling status for task ${task.id} to $newStatus',
-                );
-                _handleTaskStatusUpdate(task.id, newStatus);
-              }
-            },
-            onReturnToAvailable: () {
-              _logger.d(
-                'TaskListScreen: Returning task ${task.id} to available status',
-              );
-              _handleTaskStatusUpdate(task.id, TaskStatus.available);
-            },
-          );
-        },
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    _logger.d('TaskListScreen: Building screen');
-    final authProvider = context.read<AuthProviderBase>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logger = AppLogger();
+    logger.d('TaskListScreen: Building screen');
+    
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
+    final familyId = currentUser?.familyId;
 
-    final currentUserId = authProvider.currentUserId;
-    final userFamilyId = authProvider.userFamilyId;
-
-    if (currentUserId == null || userFamilyId == null) {
-      _logger.w(
+    if (currentUser == null || familyId == null) {
+      logger.w(
         'TaskListScreen: User ID or Family ID is null, cannot display tasks',
       );
       return const Scaffold(
@@ -251,9 +190,41 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
 
     return Scaffold(
-      body: _buildTaskList(),
+      appBar: AppBar(
+        title: const Text('Tasks'),
+        actions: [
+          PopupMenuButton<TaskFilterType>(
+            onSelected: (TaskFilterType filter) {
+              ref.read(taskFilterNotifierProvider.notifier).setFilter(filter);
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: TaskFilterType.all,
+                child: Text('All Tasks'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.available,
+                child: Text('Available'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.assigned,
+                child: Text('Assigned'),
+              ),
+              const PopupMenuItem(
+                value: TaskFilterType.completed,
+                child: Text('Completed'),
+              ),
+            ],
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(Icons.filter_list),
+            ),
+          ),
+        ],
+      ),
+      body: _buildTaskList(context, ref, familyId),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddTask,
+        onPressed: () => _navigateToAddTask(context),
         child: const Icon(Icons.add),
         tooltip: 'Add New Task',
       ),

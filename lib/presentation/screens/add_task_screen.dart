@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:hoque_family_chores/presentation/providers/auth_provider_base.dart';
-import 'package:hoque_family_chores/presentation/providers/task_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/task_list_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/family_provider.dart';
-import 'package:hoque_family_chores/models/task.dart';
-import 'package:hoque_family_chores/models/family_member.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_creation_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import for TimeoutException
 
-class AddTaskScreen extends StatefulWidget {
+class AddTaskScreen extends ConsumerStatefulWidget {
   const AddTaskScreen({super.key});
 
   @override
-  State<AddTaskScreen> createState() => _AddTaskScreenState();
+  ConsumerState<AddTaskScreen> createState() => _AddTaskScreenState();
 }
 
-class _AddTaskScreenState extends State<AddTaskScreen> {
+class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   DateTime? _dueDate;
-  FamilyMember? _selectedAssignee;
+  User? _selectedAssignee;
   TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
-  bool _isLoading = false;
   final _logger = AppLogger();
 
   @override
@@ -59,65 +59,47 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    final authState = ref.read(authNotifierProvider);
+    final currentUser = authState.user;
+
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not properly authenticated'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     try {
-      final authProvider = context.read<AuthProviderBase>();
-      final taskListProvider = context.read<TaskListProvider>();
-      final familyId = authProvider.userFamilyId;
-      final creatorId = authProvider.currentUserId;
+      _logger.i('Creating new task for family ${currentUser.familyId.value} by user ${currentUser.id.value}');
 
-      if (familyId == null || creatorId == null) {
-        throw Exception('User not properly authenticated');
-      }
+      // Convert TaskDifficulty to domain TaskDifficulty
+      final domainDifficulty = switch (_selectedDifficulty) {
+        TaskDifficulty.easy => domain.TaskDifficulty.easy,
+        TaskDifficulty.medium => domain.TaskDifficulty.medium,
+        TaskDifficulty.hard => domain.TaskDifficulty.hard,
+        TaskDifficulty.challenging => domain.TaskDifficulty.challenging,
+      };
 
-      _logger.i('Creating new task for family $familyId by user $creatorId');
-
-      final task = Task(
-        id: '', // Will be set by Firestore
+      await ref.read(taskCreationNotifierProvider.notifier).createTask(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        points: _selectedDifficulty == TaskDifficulty.easy ? 10 :
-                _selectedDifficulty == TaskDifficulty.medium ? 25 :
-                _selectedDifficulty == TaskDifficulty.hard ? 50 : 100,
-        difficulty: _selectedDifficulty,
-        status: TaskStatus.available,
-        familyId: familyId,
+        difficulty: domainDifficulty,
+        familyId: currentUser.familyId,
+        creatorId: currentUser.id,
         assignedTo: _selectedAssignee,
-        createdAt: DateTime.now(),
-        dueDate: _dueDate ?? DateTime.now(),
-        tags: const [],
+        dueDate: _dueDate,
       );
-
-      _logger.d('Task object created: ${task.toJson()}');
-
-      // Add timeout to task creation
-      await Future.any([
-        taskListProvider.createTask(familyId: familyId, task: task),
-        Future.delayed(const Duration(seconds: 10)).then((_) {
-          throw TimeoutException('Task creation timed out after 10 seconds');
-        }),
-      ]);
 
       _logger.i('Task created successfully');
 
       if (mounted) {
         Navigator.of(context).pop();
       }
-    } on TimeoutException catch (e) {
-      _logger.e('Task creation timed out: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Task creation timed out. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e, s) {
-      _logger.e('Error creating task: $e', error: e, stackTrace: s);
+    } catch (e) {
+      _logger.e('Error creating task: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -126,31 +108,29 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
 
   Future<void> _loadFamilyMembers() async {
-    final authProvider = context.read<AuthProviderBase>();
-    final familyProvider = context.read<FamilyProvider>();
-    final familyId = authProvider.userFamilyId;
+    final authState = ref.read(authNotifierProvider);
+    final currentUser = authState.user;
 
-    if (familyId != null) {
-      await familyProvider.loadFamilyMembers(familyId);
+    if (currentUser != null) {
+      // The family members will be loaded automatically by the provider
+      _logger.i('Family members will be loaded by provider for family: ${currentUser.familyId.value}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProviderBase>();
-    final familyProvider = context.watch<FamilyProvider>();
-    final familyMembers = familyProvider.familyMembers;
-    final currentUser = authProvider.currentUser;
+    final authState = ref.watch(authNotifierProvider);
+    final taskCreationState = ref.watch(taskCreationNotifierProvider);
+    final currentUser = authState.user;
+
+    // Watch family members if we have a family ID
+    final familyMembersAsync = currentUser != null 
+        ? ref.watch(familyMembersNotifierProvider(currentUser.familyId))
+        : null;
 
     _logger.i("Navigating to Add New Task screen.");
 
@@ -226,36 +206,69 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<FamilyMember?>(
-              decoration: const InputDecoration(
-                labelText: 'Assign To (Optional)',
-                border: OutlineInputBorder(),
-              ),
-              value: _selectedAssignee,
-              items: [
-                const DropdownMenuItem<FamilyMember?>(
-                  value: null,
-                  child: Text('Leave Unassigned'),
-                ),
-                if (currentUser != null)
-                  DropdownMenuItem<FamilyMember?>(
-                    value: currentUser.member,
-                    child: Text('Me (${currentUser.member.name})'),
+            // Family members dropdown
+            if (familyMembersAsync != null) ...[
+              familyMembersAsync.when(
+                data: (familyMembers) => DropdownButtonFormField<User?>(
+                  decoration: const InputDecoration(
+                    labelText: 'Assign To (Optional)',
+                    border: OutlineInputBorder(),
                   ),
-                ...familyMembers
-                    .where((member) => member.id != currentUser?.member.id)
-                    .map((member) => DropdownMenuItem<FamilyMember?>(
-                          value: member,
-                          child: Text(member.name),
-                        ))
-                    .toList(),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedAssignee = value;
-                });
-              },
-            ),
+                  value: _selectedAssignee,
+                  items: [
+                    const DropdownMenuItem<User?>(
+                      value: null,
+                      child: Text('Leave Unassigned'),
+                    ),
+                    if (currentUser != null)
+                      DropdownMenuItem<User?>(
+                        value: currentUser,
+                        child: Text('Me (${currentUser.name})'),
+                      ),
+                    ...familyMembers
+                        .where((member) => member.id.value != currentUser?.id.value)
+                        .map((member) => DropdownMenuItem<User?>(
+                              value: member,
+                              child: Text(member.name),
+                            ))
+                        .toList(),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedAssignee = value;
+                    });
+                  },
+                ),
+                loading: () => DropdownButtonFormField<User?>(
+                  decoration: const InputDecoration(
+                    labelText: 'Assign To (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: null,
+                  items: const [],
+                  onChanged: null,
+                ),
+                error: (error, stack) => DropdownButtonFormField<User?>(
+                  decoration: const InputDecoration(
+                    labelText: 'Assign To (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: null,
+                  items: const [],
+                  onChanged: null,
+                ),
+              ),
+            ] else ...[
+              DropdownButtonFormField<User?>(
+                decoration: const InputDecoration(
+                  labelText: 'Assign To (Optional)',
+                  border: OutlineInputBorder(),
+                ),
+                value: null,
+                items: const [],
+                onChanged: null,
+              ),
+            ],
             const SizedBox(height: 16),
             InkWell(
               onTap: () => _selectDate(context),
@@ -274,15 +287,30 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _isLoading ? null : _submitTask,
+              onPressed: taskCreationState.isLoading ? null : _submitTask,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
               ),
-              child:
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('Create Task'),
+              child: taskCreationState.isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Create Task'),
             ),
+            // Show error if any
+            if (taskCreationState.error != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  taskCreationState.error!,
+                  style: TextStyle(color: Colors.red.shade700),
+                ),
+              ),
+            ],
           ],
         ),
       ),
