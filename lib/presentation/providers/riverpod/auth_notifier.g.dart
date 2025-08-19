@@ -6,18 +6,18 @@ part of 'auth_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$authNotifierHash() => r'b5ef9fd9da9d0bac893ea45e4d79c69a05aab999';
+String _$authNotifierHash() => r'7c2fbc05414d18986c61a72ace59312c01e7f7b7';
 
 /// Manages authentication state and user profile.
 ///
-/// This notifier handles sign in, sign up, sign out, and user profile management.
+/// This notifier handles sign in, sign out, and user profile management.
 /// It automatically streams user profile changes and maintains authentication state.
 ///
 /// Example:
 /// ```dart
 /// final authState = ref.watch(authNotifierProvider);
 /// final notifier = ref.read(authNotifierProvider.notifier);
-/// await notifier.signIn(email: 'user@example.com', password: 'password');
+/// await notifier.signInWithGoogle();
 /// ```
 ///
 /// Copied from [AuthNotifier].

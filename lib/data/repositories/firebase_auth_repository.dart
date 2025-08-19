@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/value_objects/email.dart';
 import '../../core/error/exceptions.dart';
@@ -6,42 +7,38 @@ import '../../core/error/exceptions.dart';
 /// Firebase implementation of AuthRepository
 class FirebaseAuthRepository implements AuthRepository {
   final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
 
-  FirebaseAuthRepository({FirebaseAuth? auth}) 
-      : _auth = auth ?? FirebaseAuth.instance;
+  FirebaseAuthRepository({FirebaseAuth? auth, GoogleSignIn? googleSignIn}) 
+      : _auth = auth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   @override
   dynamic get currentUser => _auth.currentUser;
 
   @override
-  Future<dynamic> signInWithEmailAndPassword(Email email, String password) async {
+  Future<dynamic> signInWithGoogle() async {
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email.value,
-        password: password,
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        throw AuthException('Google sign in was cancelled', code: 'SIGN_IN_CANCELLED');
+      }
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
+      final userCredential = await _auth.signInWithCredential(credential);
       return userCredential.user!;
     } catch (e) {
-      throw AuthException('Failed to sign in: $e', code: 'SIGN_IN_ERROR');
-    }
-  }
-
-  @override
-  Future<dynamic> createUserWithEmailAndPassword(Email email, String password) async {
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.value,
-        password: password,
-      );
-      return userCredential.user!;
-    } catch (e) {
-      throw AuthException('Failed to create user: $e', code: 'SIGN_UP_ERROR');
+      throw AuthException('Failed to sign in with Google: $e', code: 'SIGN_IN_ERROR');
     }
   }
 
   @override
   Future<void> signOut() async {
     try {
+      await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
       throw AuthException('Failed to sign out: $e', code: 'SIGN_OUT_ERROR');

@@ -9,38 +9,20 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 24),
             authState.isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: () async {
-                      await ref.read(authNotifierProvider.notifier).signIn(
-                        email: emailController.text,
-                        password: passwordController.text,
-                      );
+                      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
                     },
-                    child: const Text('Sign In'),
+                    child: const Text('Sign in with Google'),
                   ),
             if (authState.errorMessage != null && authState.errorMessage!.isNotEmpty)
               Padding(
@@ -51,13 +33,6 @@ class LoginScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-            TextButton(
-              onPressed: () {
-                ref.read(authNotifierProvider.notifier).resetPassword(email: emailController.text);
-              },
-              child: const Text('Forgot Password?'),
-            ),
-            // ... other UI elements
           ],
         ),
       ),
