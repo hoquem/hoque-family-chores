@@ -340,42 +340,27 @@ final getTasksUseCaseProvider = AutoDisposeProvider<GetTasksUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTasksUseCaseRef = AutoDisposeProviderRef<GetTasksUseCase>;
-String _$signInUseCaseHash() => r'8a7eba9c6bde77a8f714110befd1267e0de21012';
+String _$signInWithGoogleUseCaseHash() =>
+    r'9407e902ea3d090a2c6af3f9e0cdee315b7e332a';
 
-/// See also [signInUseCase].
-@ProviderFor(signInUseCase)
-final signInUseCaseProvider = AutoDisposeProvider<SignInUseCase>.internal(
-  signInUseCase,
-  name: r'signInUseCaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$signInUseCaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef SignInUseCaseRef = AutoDisposeProviderRef<SignInUseCase>;
-String _$signUpUseCaseHash() => r'cd9dac97711a08a8a6707b9887af6795d6239980';
-
-/// See also [signUpUseCase].
-@ProviderFor(signUpUseCase)
-final signUpUseCaseProvider = AutoDisposeProvider<SignUpUseCase>.internal(
-  signUpUseCase,
-  name: r'signUpUseCaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$signUpUseCaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+/// See also [signInWithGoogleUseCase].
+@ProviderFor(signInWithGoogleUseCase)
+final signInWithGoogleUseCaseProvider =
+    AutoDisposeProvider<SignInWithGoogleUseCase>.internal(
+      signInWithGoogleUseCase,
+      name: r'signInWithGoogleUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$signInWithGoogleUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef SignUpUseCaseRef = AutoDisposeProviderRef<SignUpUseCase>;
+typedef SignInWithGoogleUseCaseRef =
+    AutoDisposeProviderRef<SignInWithGoogleUseCase>;
 String _$createFamilyUseCaseHash() =>
     r'1b8d3e9139eba53b97e8af1cd9e948e96c6a6361';
 
@@ -1119,25 +1104,5 @@ final streamNotificationsUseCaseProvider =
 // ignore: unused_element
 typedef StreamNotificationsUseCaseRef =
     AutoDisposeProviderRef<StreamNotificationsUseCase>;
-String _$resetPasswordUseCaseHash() =>
-    r'e96916aed879d8c1d7a7fdebc266ba0c7a8e22f3';
-
-/// See also [resetPasswordUseCase].
-@ProviderFor(resetPasswordUseCase)
-final resetPasswordUseCaseProvider =
-    AutoDisposeProvider<ResetPasswordUseCase>.internal(
-      resetPasswordUseCase,
-      name: r'resetPasswordUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$resetPasswordUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

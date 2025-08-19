@@ -12,23 +12,14 @@ class MockAuthRepository implements AuthRepository {
   dynamic get currentUser => _isAuthenticated ? _currentUser : null;
 
   @override
-  Future<dynamic> signInWithEmailAndPassword(Email email, String password) async {
+  Future<dynamic> signInWithGoogle() async {
     try {
       await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
       
-      // Simple mock validation
-      if (email.value.isEmpty || password.isEmpty) {
-        throw AuthException('Email and password cannot be empty', code: 'INVALID_CREDENTIALS');
-      }
-      
-      if (password.length < 6) {
-        throw AuthException('Password must be at least 6 characters', code: 'WEAK_PASSWORD');
-      }
-      
       // Mock successful authentication
       _currentUser = MockUser(
-        uid: 'mock_user_${email.value.hashCode}',
-        email: email.value,
+        uid: 'mock_user_google',
+        email: 'mock.user@google.com',
         displayName: 'Mock User',
       );
       _isAuthenticated = true;
@@ -36,36 +27,7 @@ class MockAuthRepository implements AuthRepository {
       return _currentUser;
     } catch (e) {
       if (e is AuthException) rethrow;
-      throw AuthException('Failed to sign in: $e', code: 'SIGN_IN_ERROR');
-    }
-  }
-
-  @override
-  Future<dynamic> createUserWithEmailAndPassword(Email email, String password) async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
-      
-      // Simple mock validation
-      if (email.value.isEmpty || password.isEmpty) {
-        throw AuthException('Email and password cannot be empty', code: 'INVALID_CREDENTIALS');
-      }
-      
-      if (password.length < 6) {
-        throw AuthException('Password must be at least 6 characters', code: 'WEAK_PASSWORD');
-      }
-      
-      // Mock successful user creation
-      _currentUser = MockUser(
-        uid: 'mock_user_${email.value.hashCode}',
-        email: email.value,
-        displayName: 'New User',
-      );
-      _isAuthenticated = true;
-      
-      return _currentUser;
-    } catch (e) {
-      if (e is AuthException) rethrow;
-      throw AuthException('Failed to create user: $e', code: 'SIGN_UP_ERROR');
+      throw AuthException('Failed to sign in with Google: $e', code: 'SIGN_IN_ERROR');
     }
   }
 

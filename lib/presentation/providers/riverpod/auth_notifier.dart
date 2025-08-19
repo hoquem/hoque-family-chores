@@ -2,10 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
-import 'package:hoque_family_chores/domain/value_objects/email.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/sign_in_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/sign_up_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/reset_password_usecase.dart';
+import 'package:hoque_family_chores/domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'package:hoque_family_chores/domain/usecases/user/get_user_profile_usecase.dart';
 import 'package:hoque_family_chores/domain/usecases/user/stream_user_profile_usecase.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
@@ -28,14 +25,14 @@ abstract class AuthState with _$AuthState {
 
 /// Manages authentication state and user profile.
 /// 
-/// This notifier handles sign in, sign up, sign out, and user profile management.
+/// This notifier handles sign in, sign out, and user profile management.
 /// It automatically streams user profile changes and maintains authentication state.
 /// 
 /// Example:
 /// ```dart
 /// final authState = ref.watch(authNotifierProvider);
 /// final notifier = ref.read(authNotifierProvider.notifier);
-/// await notifier.signIn(email: 'user@example.com', password: 'password');
+/// await notifier.signInWithGoogle();
 /// ```
 @riverpod
 class AuthNotifier extends _$AuthNotifier {
@@ -54,12 +51,9 @@ class AuthNotifier extends _$AuthNotifier {
     // For now, we'll handle it in the signIn method
   }
 
-  /// Signs in a user with email and password.
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
-    _logger.d('AuthNotifier: Signing in user $email');
+  /// Signs in a user with Google.
+  Future<void> signInWithGoogle() async {
+    _logger.d('AuthNotifier: Signing in user with Google');
     
     state = state.copyWith(
       isLoading: true,
@@ -68,15 +62,12 @@ class AuthNotifier extends _$AuthNotifier {
     );
 
     try {
-      final signInUseCase = ref.read(signInUseCaseProvider);
-      final result = await signInUseCase.call(
-        email: email,
-        password: password,
-      );
+      final signInWithGoogleUseCase = ref.read(signInWithGoogleUseCaseProvider);
+      final result = await signInWithGoogleUseCase.call();
 
       result.fold(
         (failure) {
-          _logger.e('AuthNotifier: Sign in failed', error: failure.message);
+          _logger.e('AuthNotifier: Sign in with Google failed', error: failure.message);
           state = state.copyWith(
             isLoading: false,
             errorMessage: failure.message,
@@ -84,7 +75,7 @@ class AuthNotifier extends _$AuthNotifier {
           );
         },
         (user) {
-          _logger.d('AuthNotifier: Sign in successful for user ${user.id}');
+          _logger.d('AuthNotifier: Sign in with Google successful for user ${user.id}');
           _startUserProfileStream(user.id);
           state = state.copyWith(
             isLoading: false,
@@ -94,58 +85,7 @@ class AuthNotifier extends _$AuthNotifier {
         },
       );
     } catch (e) {
-      _logger.e('AuthNotifier: Unexpected error during sign in', error: e);
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'An unexpected error occurred: $e',
-        status: AuthStatus.error,
-      );
-    }
-  }
-
-  /// Signs up a new user.
-  Future<void> signUp({
-    required String email,
-    required String password,
-    String? displayName,
-  }) async {
-    _logger.d('AuthNotifier: Signing up user $email');
-    
-    state = state.copyWith(
-      isLoading: true,
-      errorMessage: null,
-      status: AuthStatus.authenticating,
-    );
-
-    try {
-      final signUpUseCase = ref.read(signUpUseCaseProvider);
-      final result = await signUpUseCase.call(
-        email: email,
-        password: password,
-        displayName: displayName,
-      );
-
-      result.fold(
-        (failure) {
-          _logger.e('AuthNotifier: Sign up failed', error: failure.message);
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: failure.message,
-            status: AuthStatus.error,
-          );
-        },
-        (user) {
-          _logger.d('AuthNotifier: Sign up successful for user ${user.id}');
-          _startUserProfileStream(user.id);
-          state = state.copyWith(
-            isLoading: false,
-            user: user,
-            status: AuthStatus.authenticated,
-          );
-        },
-      );
-    } catch (e) {
-      _logger.e('AuthNotifier: Unexpected error during sign up', error: e);
+      _logger.e('AuthNotifier: Unexpected error during sign in with Google', error: e);
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'An unexpected error occurred: $e',
@@ -302,42 +242,4 @@ class AuthNotifier extends _$AuthNotifier {
 
   /// Gets the current user profile.
   User? get currentUserProfile => state.user;
-
-  /// Resets password for the given email.
-  Future<void> resetPassword(String email) async {
-    _logger.d('AuthNotifier: Resetting password for $email');
-    
-    state = state.copyWith(
-      isLoading: true,
-      errorMessage: null,
-    );
-
-    try {
-      final resetPasswordUseCase = ref.read(resetPasswordUseCaseProvider);
-      final result = await resetPasswordUseCase.call(email: email);
-
-      result.fold(
-        (failure) {
-          _logger.e('AuthNotifier: Password reset failed', error: failure.message);
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: failure.message,
-          );
-        },
-        (_) {
-          _logger.d('AuthNotifier: Password reset successful');
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: null,
-          );
-        },
-      );
-    } catch (e) {
-      _logger.e('AuthNotifier: Unexpected error during password reset', error: e);
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'An unexpected error occurred: $e',
-      );
-    }
-  }
 } 

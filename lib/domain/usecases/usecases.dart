@@ -17,9 +17,7 @@ export 'task/stream_available_tasks_usecase.dart';
 export 'task/stream_tasks_by_assignee_usecase.dart';
 
 // Authentication Use Cases
-export 'auth/sign_in_usecase.dart';
-export 'auth/sign_up_usecase.dart';
-export 'auth/reset_password_usecase.dart';
+export 'auth/sign_in_with_google_usecase.dart';
 
 // Family Use Cases
 export 'family/create_family_usecase.dart';

@@ -37,6 +37,7 @@ import '../data/repositories/mock_user_repository.dart';
 import '../data/repositories/repository_factory.dart';
 
 // Use cases
+import '../domain/usecases/auth/sign_in_with_google_usecase.dart';
 import '../domain/usecases/usecases.dart';
 
 part 'riverpod_container.g.dart';
@@ -157,15 +158,9 @@ GetTasksUseCase getTasksUseCase(GetTasksUseCaseRef ref) {
 }
 
 @riverpod
-SignInUseCase signInUseCase(SignInUseCaseRef ref) {
+SignInWithGoogleUseCase signInWithGoogleUseCase(SignInWithGoogleUseCaseRef ref) {
   final authRepository = ref.watch(authRepositoryProvider);
-  return SignInUseCase(authRepository);
-}
-
-@riverpod
-SignUpUseCase signUpUseCase(SignUpUseCaseRef ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return SignUpUseCase(authRepository);
+  return SignInWithGoogleUseCase(authRepository);
 }
 
 @riverpod
@@ -397,10 +392,4 @@ DeleteNotificationUseCase deleteNotificationUseCase(DeleteNotificationUseCaseRef
 StreamNotificationsUseCase streamNotificationsUseCase(StreamNotificationsUseCaseRef ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return StreamNotificationsUseCase(notificationRepository);
-}
-
-@riverpod
-ResetPasswordUseCase resetPasswordUseCase(ResetPasswordUseCaseRef ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return ResetPasswordUseCase(authRepository);
 } 

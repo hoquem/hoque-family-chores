@@ -7,11 +7,8 @@ abstract class AuthRepository {
   /// Get current user
   dynamic get currentUser;
 
-  /// Sign in with email and password
-  Future<dynamic> signInWithEmailAndPassword(Email email, String password);
-
-  /// Create user with email and password
-  Future<dynamic> createUserWithEmailAndPassword(Email email, String password);
+  /// Sign in with Google
+  Future<dynamic> signInWithGoogle();
 
   /// Sign out
   Future<void> signOut();
