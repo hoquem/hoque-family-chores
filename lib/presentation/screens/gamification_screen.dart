@@ -22,6 +22,7 @@ class GamificationScreen extends ConsumerStatefulWidget {
 class _GamificationScreenState extends ConsumerState<GamificationScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _logger = AppLogger();
 
   @override
   void initState() {
@@ -219,7 +220,14 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen>
   /// Helper method to redeem a reward
   Future<void> _redeemReward(BuildContext context, String rewardId) async {
     try {
-      await ref.read(gamificationNotifierProvider.notifier).redeemReward(rewardId);
+      final authState = ref.read(authNotifierProvider);
+      final currentUser = authState.user;
+      if (currentUser == null) return;
+      await ref.read(gamificationNotifierProvider(currentUser.id).notifier).redeemReward(
+        currentUser.id,
+        rewardId,
+        currentUser.familyId,
+      );
       
       // Show success message
       if (context.mounted) {

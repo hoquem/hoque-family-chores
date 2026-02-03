@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/achievement.dart';
-import 'package:hoque_family_chores/domain/entities/badge.dart';
+import 'package:hoque_family_chores/domain/entities/badge.dart' show Badge, BadgeType;
 import 'package:hoque_family_chores/domain/entities/reward.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
@@ -10,8 +10,8 @@ import 'package:hoque_family_chores/domain/usecases/gamification/award_points_us
 import 'package:hoque_family_chores/domain/usecases/gamification/redeem_reward_usecase.dart';
 import 'package:hoque_family_chores/domain/usecases/gamification/award_badge_usecase.dart';
 import 'package:hoque_family_chores/domain/usecases/gamification/grant_achievement_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/badge/get_badges_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/reward/get_rewards_usecase.dart';
+import 'package:hoque_family_chores/domain/usecases/gamification/get_badges_usecase.dart';
+import 'package:hoque_family_chores/domain/usecases/gamification/get_rewards_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
@@ -37,11 +37,15 @@ class GamificationNotifier extends _$GamificationNotifier {
     _logger.d('GamificationNotifier: Building for user $userId');
     
     try {
+      // Load user profile first to get familyId
+      final userProfile = await _loadUserProfile(userId);
+      final userFamilyId = userProfile?.familyId ?? FamilyId('default');
+      
       // Load all gamification data in parallel
       final futures = await Future.wait([
-        _loadUserProfile(userId),
-        _loadBadges(userId.familyId),
-        _loadRewards(userId.familyId),
+        Future.value(userProfile),
+        _loadBadges(userFamilyId),
+        _loadRewards(userFamilyId),
         _loadUserAchievements(userId),
         _loadUserBadges(userId),
         _loadRedeemedRewards(userId),
@@ -159,7 +163,7 @@ class GamificationNotifier extends _$GamificationNotifier {
       final awardPointsUseCase = ref.read(awardPointsUseCaseProvider);
       final result = await awardPointsUseCase.call(
         userId: userId,
-        points: Points(points),
+        points: points,
       );
       
       result.fold(
@@ -206,10 +210,19 @@ class GamificationNotifier extends _$GamificationNotifier {
     
     try {
       final grantAchievementUseCase = ref.read(grantAchievementUseCaseProvider);
+      // TODO: This should accept an Achievement entity; for now, create a minimal one
+      final achievement = Achievement(
+        id: achievementId,
+        title: 'Achievement $achievementId',
+        description: '',
+        points: Points(0),
+        icon: '',
+        type: BadgeType.special,
+        createdAt: DateTime.now(),
+      );
       final result = await grantAchievementUseCase.call(
         userId: userId,
-        achievementId: achievementId,
-        familyId: familyId,
+        achievement: achievement,
       );
       
       result.fold(

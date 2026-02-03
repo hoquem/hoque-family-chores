@@ -24,6 +24,7 @@ class QuickTaskPickerWidget extends ConsumerWidget {
         await ref.read(availableTasksNotifierProvider(task.familyId).notifier).claimTask(
           task.id.value,
           currentUser.id,
+          task.familyId,
         );
         logger.d('QuickTaskPickerWidget: Task claimed successfully');
       } else {

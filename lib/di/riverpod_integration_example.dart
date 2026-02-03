@@ -42,9 +42,9 @@ class RiverpodIntegrationExample {
     final createTaskUseCase = helper.createTaskUseCase;
     final signInUseCase = helper.signInUseCase;
     
-    // Get old services (for backward compatibility)
-    final taskService = helper.taskService;
-    final authService = helper.authService;
+    // Access repositories directly (services removed in clean architecture migration)
+    // final taskService = helper.taskRepository;
+    // final authService = helper.authRepository;
     
     print('✅ Migration helper example completed');
   }

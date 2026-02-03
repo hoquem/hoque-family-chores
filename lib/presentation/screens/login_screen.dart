@@ -53,7 +53,7 @@ class LoginScreen extends ConsumerWidget {
               ),
             TextButton(
               onPressed: () {
-                ref.read(authNotifierProvider.notifier).resetPassword(email: emailController.text);
+                ref.read(authNotifierProvider.notifier).resetPassword(emailController.text);
               },
               child: const Text('Forgot Password?'),
             ),

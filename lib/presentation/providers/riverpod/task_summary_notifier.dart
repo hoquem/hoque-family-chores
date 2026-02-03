@@ -77,8 +77,7 @@ class TaskSummaryNotifier extends _$TaskSummaryNotifier {
   TaskSummary _computeSummary(List<Task> tasks) {
     final totalTasks = tasks.length;
     final completedTasks = tasks.where((task) => 
-      task.status == TaskStatus.completed || 
-      task.status == TaskStatus.approved
+      task.status == TaskStatus.completed
     ).length;
     final pendingTasks = tasks.where((task) => 
       task.status == TaskStatus.pendingApproval
@@ -93,8 +92,7 @@ class TaskSummaryNotifier extends _$TaskSummaryNotifier {
       task.status == TaskStatus.needsRevision
     ).length;
     final dueToday = tasks.where((task) => 
-      task.dueDate != null && 
-      task.dueDate!.isBefore(DateTime.now().add(const Duration(days: 1)))
+      task.dueDate.isBefore(DateTime.now().add(const Duration(days: 1)))
     ).length;
     
     // Calculate points (assuming 10 points per completed task)
@@ -140,28 +138,4 @@ class TaskSummaryNotifier extends _$TaskSummaryNotifier {
     return TaskSummaryStatus.loaded;
   }
 
-  /// Counts tasks by status.
-  void _countTasksByStatus(List<Task> tasks) {
-    _completedTasks = tasks.where((task) => 
-      task.status == TaskStatus.completed
-    ).length;
-    
-    _pendingTasks = tasks.where((task) => 
-      task.status == TaskStatus.pendingApproval
-    ).length;
-    
-    _availableTasks = tasks.where((task) => 
-      task.status == TaskStatus.available
-    ).length;
-    
-    _assignedTasks = tasks.where((task) => 
-      task.status == TaskStatus.assigned
-    ).length;
-  }
-
-  /// Calculates completion percentage.
-  double _calculateCompletionPercentage() {
-    if (_totalTasks == 0) return 0.0;
-    return (_completedTasks / _totalTasks) * 100;
-  }
 } 

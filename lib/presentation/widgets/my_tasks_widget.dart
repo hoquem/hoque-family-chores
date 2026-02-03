@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/my_tasks_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart'; // For navigation
+import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class MyTasksWidget extends ConsumerWidget {
@@ -10,26 +12,38 @@ class MyTasksWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _logger = AppLogger();
-    final myTasksState = ref.watch(myTasksNotifierProvider);
+    final logger = AppLogger();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-    Future<void> _refreshData() async {
-      _logger.d('MyTasksWidget: Refreshing data');
-      ref.read(myTasksNotifierProvider.notifier).refresh();
+    if (currentUser == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Center(child: Text('Please log in to see your tasks.')),
+        ),
+      );
     }
 
-    _logger.d('MyTasksWidget: build() called');
+    final myTasksState = ref.watch(myTasksNotifierProvider(currentUser.familyId, currentUser.id));
+
+    Future<void> refreshData() async {
+      logger.d('MyTasksWidget: Refreshing data');
+      ref.read(myTasksNotifierProvider(currentUser.familyId, currentUser.id).notifier).refresh();
+    }
+
+    logger.d('MyTasksWidget: build() called');
     return Card(
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: RefreshIndicator(
-          onRefresh: _refreshData,
+          onRefresh: refreshData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: IntrinsicHeight(
               child: myTasksState.when(
-                data: (tasks) => _buildTasksList(tasks),
+                data: (tasks) => _buildTasksList(context, tasks),
                 loading: () => const Center(
                   child: CircularProgressIndicator(),
                 ),
@@ -44,7 +58,7 @@ class MyTasksWidget extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8.0),
                       ElevatedButton(
-                        onPressed: _refreshData,
+                        onPressed: refreshData,
                         child: const Text('Retry'),
                       ),
                     ],
@@ -58,12 +72,12 @@ class MyTasksWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildTasksList(List<dynamic> tasks) {
-    final _logger = AppLogger();
-    _logger.d('MyTasksWidget: _buildTasksList called with ${tasks.length} tasks');
+  Widget _buildTasksList(BuildContext context, List<Task> tasks) {
+    final logger = AppLogger();
+    logger.d('MyTasksWidget: _buildTasksList called with ${tasks.length} tasks');
     
     if (tasks.isEmpty) {
-      _logger.d('MyTasksWidget: No tasks found - showing empty state');
+      logger.d('MyTasksWidget: No tasks found - showing empty state');
       return const Center(
         child: ListTile(
           leading: Icon(Icons.check_circle, color: Colors.green),
@@ -73,7 +87,7 @@ class MyTasksWidget extends ConsumerWidget {
       );
     }
 
-    _logger.d('MyTasksWidget: Building task list with ${tasks.length} tasks');
+    logger.d('MyTasksWidget: Building task list with ${tasks.length} tasks');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -83,7 +97,7 @@ class MyTasksWidget extends ConsumerWidget {
           itemCount: tasks.length > 3 ? 3 : tasks.length,
           itemBuilder: (context, index) {
             final task = tasks[index];
-            _logger.d('MyTasksWidget: Building task item $index: ${task.title}');
+            logger.d('MyTasksWidget: Building task item $index: ${task.title}');
             return ListTile(
               leading: Icon(
                 Icons.check_box_outline_blank,

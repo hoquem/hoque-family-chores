@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/family.dart';
 import 'package:hoque_family_chores/domain/entities/family_member.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/usecases/family/get_family_usecase.dart';
@@ -52,7 +53,7 @@ class FamilyNotifier extends _$FamilyNotifier {
   }
 
   /// Loads family data for the given family ID.
-  Future<Family> _loadFamily(FamilyId familyId) async {
+  Future<FamilyEntity> _loadFamily(FamilyId familyId) async {
     _logger.d('FamilyNotifier: Loading family $familyId');
     
     try {
@@ -98,7 +99,7 @@ class FamilyNotifier extends _$FamilyNotifier {
   }
 
   /// Updates family information.
-  Future<void> updateFamily(Family family) async {
+  Future<void> updateFamily(FamilyEntity family) async {
     _logger.d('FamilyNotifier: Updating family ${family.id}');
     
     try {
@@ -125,8 +126,8 @@ class FamilyNotifier extends _$FamilyNotifier {
     try {
       final addMemberUseCase = ref.read(addMemberUseCaseProvider);
       final result = await addMemberUseCase.call(
-        memberId: memberId,
-        role: role,
+        familyId: familyId,
+        userId: memberId,
       );
       
       result.fold(
@@ -148,7 +149,7 @@ class FamilyNotifier extends _$FamilyNotifier {
     
     try {
       final removeMemberUseCase = ref.read(removeMemberUseCaseProvider);
-      final result = await removeMemberUseCase.call(memberId: memberId);
+      final result = await removeMemberUseCase.call(familyId: familyId, userId: memberId);
       
       result.fold(
         (failure) => throw Exception(failure.message),
@@ -194,9 +195,18 @@ class FamilyMembersNotifier extends _$FamilyMembersNotifier {
       
       return result.fold(
         (failure) => throw Exception(failure.message),
-        (members) {
-          _logger.d('FamilyMembersNotifier: Loaded ${members.length} members');
-          return members;
+        (users) {
+          _logger.d('FamilyMembersNotifier: Loaded ${users.length} members');
+          // Convert User entities to FamilyMember entities
+          return users.map((user) => FamilyMember(
+            userId: user.id,
+            familyId: user.familyId,
+            name: user.name,
+            photoUrl: user.photoUrl,
+            role: _mapUserRoleToFamilyRole(user.role),
+            joinedAt: user.joinedAt,
+            isActive: true,
+          )).toList();
         },
       );
     } catch (e) {
@@ -243,5 +253,19 @@ class FamilyMembersNotifier extends _$FamilyMembersNotifier {
     final sortedMembers = List<FamilyMember>.from(members);
     sortedMembers.sort((a, b) => b.joinedAt.compareTo(a.joinedAt));
     return sortedMembers;
+  }
+
+  /// Maps UserRole to FamilyRole.
+  static FamilyRole _mapUserRoleToFamilyRole(UserRole role) {
+    switch (role) {
+      case UserRole.parent:
+        return FamilyRole.parent;
+      case UserRole.child:
+        return FamilyRole.child;
+      case UserRole.guardian:
+        return FamilyRole.guardian;
+      case UserRole.other:
+        return FamilyRole.other;
+    }
   }
 } 

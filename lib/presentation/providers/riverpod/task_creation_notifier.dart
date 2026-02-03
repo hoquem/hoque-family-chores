@@ -16,7 +16,7 @@ part 'task_creation_notifier.g.dart';
 part 'task_creation_notifier.freezed.dart';
 
 @freezed
-class TaskCreationState with _$TaskCreationState {
+abstract class TaskCreationState with _$TaskCreationState {
   const factory TaskCreationState({
     @Default(false) bool isLoading,
     String? error,

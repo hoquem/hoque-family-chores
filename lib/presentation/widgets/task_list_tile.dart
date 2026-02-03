@@ -60,10 +60,11 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     });
 
     try {
-      final availableTasksNotifier = ref.read(availableTasksNotifierProvider.notifier);
-      final taskListNotifier = ref.read(taskListNotifierProvider.notifier);
+      final familyId = widget.task.familyId;
+      final availableTasksNotifier = ref.read(availableTasksNotifierProvider(familyId).notifier);
+      final taskListNotifier = ref.read(taskListNotifierProvider(familyId).notifier);
       
-      await availableTasksNotifier.claimTask(widget.task.id);
+      await availableTasksNotifier.claimTask(widget.task.id.value, widget.user.id, familyId);
       
       // Refresh task list after claiming
       taskListNotifier.refresh();

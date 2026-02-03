@@ -5,8 +5,11 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_creatio
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/entities/family_member.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/email.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import for TimeoutException
@@ -31,6 +34,21 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   void initState() {
     super.initState();
     _loadFamilyMembers();
+  }
+
+  /// Creates a minimal User from a FamilyMember for assignment purposes.
+  User _familyMemberToUser(FamilyMember member) {
+    return User(
+      id: member.userId,
+      name: member.name,
+      email: Email('placeholder@example.com'),
+      familyId: member.familyId,
+      role: UserRole.child,
+      points: Points.zero,
+      joinedAt: member.joinedAt,
+      updatedAt: member.joinedAt,
+      photoUrl: member.photoUrl,
+    );
   }
 
   @override
@@ -75,18 +93,10 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     try {
       _logger.i('Creating new task for family ${currentUser.familyId.value} by user ${currentUser.id.value}');
 
-      // Convert TaskDifficulty to domain TaskDifficulty
-      final domainDifficulty = switch (_selectedDifficulty) {
-        TaskDifficulty.easy => domain.TaskDifficulty.easy,
-        TaskDifficulty.medium => domain.TaskDifficulty.medium,
-        TaskDifficulty.hard => domain.TaskDifficulty.hard,
-        TaskDifficulty.challenging => domain.TaskDifficulty.challenging,
-      };
-
       await ref.read(taskCreationNotifierProvider.notifier).createTask(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        difficulty: domainDifficulty,
+        difficulty: _selectedDifficulty,
         familyId: currentUser.familyId,
         creatorId: currentUser.id,
         assignedTo: _selectedAssignee,
@@ -225,12 +235,16 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                         value: currentUser,
                         child: Text('Me (${currentUser.name})'),
                       ),
+                    // FamilyMember items - we store a sentinel User with just the userId
                     ...familyMembers
-                        .where((member) => member.id.value != currentUser?.id.value)
-                        .map((member) => DropdownMenuItem<User?>(
-                              value: member,
-                              child: Text(member.name),
-                            ))
+                        .where((member) => member.userId.value != currentUser?.id.value)
+                        .map((member) {
+                          // Create a minimal User from FamilyMember for assignment purposes
+                          return DropdownMenuItem<User?>(
+                            value: _familyMemberToUser(member),
+                            child: Text(member.name),
+                          );
+                        })
                         .toList(),
                   ],
                   onChanged: (value) {

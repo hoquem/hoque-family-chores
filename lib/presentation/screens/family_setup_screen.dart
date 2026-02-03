@@ -43,9 +43,9 @@ class _FamilySetupScreenState extends ConsumerState<FamilySetupScreen> {
 
       // Create family using the family notifier
       await ref.read(familyNotifierProvider(currentUser.familyId).notifier).createFamily(
-        name: _familyNameController.text.trim(),
-        description: 'Family created by ${currentUser.name}',
-        creatorId: currentUser.id,
+        _familyNameController.text.trim(),
+        'Family created by ${currentUser.name}',
+        currentUser.id,
       );
 
       _logger.i("Family '${_familyNameController.text.trim()}' created successfully.");

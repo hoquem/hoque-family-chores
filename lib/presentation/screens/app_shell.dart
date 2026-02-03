@@ -59,8 +59,8 @@ class _AppShellState extends ConsumerState<AppShell> {
               icon: const Icon(Icons.filter_list),
               onSelected: (filter) {
                 _logger.d('AppShell: Setting task filter to $filter');
-                // Set the filter using the task list notifier
-                ref.read(taskListNotifierProvider.notifier).setFilter(filter);
+                // Set the filter using the task filter notifier
+                ref.read(taskFilterNotifierProvider.notifier).setFilter(filter);
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(

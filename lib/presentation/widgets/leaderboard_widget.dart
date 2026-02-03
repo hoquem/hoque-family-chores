@@ -38,7 +38,7 @@ class LeaderboardWidget extends ConsumerWidget {
           child: leaderboardAsync.when(
             data: (entries) => _buildLeaderboard(entries),
             loading: () => _buildLoadingState(),
-            error: (error, stack) => _buildErrorState(error),
+            error: (error, stack) => _buildErrorState(error.toString()),
           ),
         ),
       ),

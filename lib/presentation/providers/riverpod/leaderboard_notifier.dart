@@ -1,8 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/leaderboard_entry.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/usecases/leaderboard/get_leaderboard_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 
 part 'leaderboard_notifier.g.dart';
 
@@ -31,8 +34,20 @@ class LeaderboardNotifier extends _$LeaderboardNotifier {
       
       return result.fold(
         (failure) => throw Exception(failure.message),
-        (entries) {
-          _logger.d('LeaderboardNotifier: Loaded ${entries.length} leaderboard entries');
+        (users) {
+          _logger.d('LeaderboardNotifier: Loaded ${users.length} leaderboard entries');
+          // Convert User entities to LeaderboardEntry
+          final entries = users.asMap().entries.map((entry) {
+            final user = entry.value;
+            return LeaderboardEntry(
+              userId: user.id,
+              userName: user.name,
+              userPhotoUrl: user.photoUrl,
+              points: user.points,
+              completedTasks: 0, // TODO: Get actual completed tasks count
+              rank: entry.key + 1,
+            );
+          }).toList();
           return _sortEntries(entries);
         },
       );
@@ -54,9 +69,17 @@ class LeaderboardNotifier extends _$LeaderboardNotifier {
       return b.completedTasks.compareTo(a.completedTasks);
     });
     
-    // Add rank to each entry
+    // Rebuild entries with correct rank
     for (int i = 0; i < sortedEntries.length; i++) {
-      sortedEntries[i] = sortedEntries[i].copyWith(rank: i + 1);
+      final entry = sortedEntries[i];
+      sortedEntries[i] = LeaderboardEntry(
+        userId: entry.userId,
+        userName: entry.userName,
+        userPhotoUrl: entry.userPhotoUrl,
+        points: entry.points,
+        completedTasks: entry.completedTasks,
+        rank: i + 1,
+      );
     }
     
     return sortedEntries;
@@ -151,9 +174,8 @@ class LeaderboardNotifier extends _$LeaderboardNotifier {
   /// Gets entries for a specific rank range.
   List<LeaderboardEntry> getEntriesInRankRange(int startRank, int endRank) {
     return entries.where((entry) => 
-      entry.rank != null && 
-      entry.rank! >= startRank && 
-      entry.rank! <= endRank
+      entry.rank >= startRank && 
+      entry.rank <= endRank
     ).toList();
   }
 

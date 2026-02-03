@@ -40,9 +40,14 @@ class TaskListScreen extends ConsumerWidget {
     try {
       final notifier = ref.read(taskListNotifierProvider(familyId).notifier);
       
+      final authState = ref.read(authNotifierProvider);
+      final currentUser = authState.user;
+      
       switch (newStatus) {
         case TaskStatus.completed:
-          await notifier.completeTask(taskId);
+          if (currentUser != null) {
+            await notifier.completeTask(taskId, currentUser.id, familyId);
+          }
           break;
         case TaskStatus.available:
           await notifier.unassignTask(taskId);
@@ -106,7 +111,7 @@ class TaskListScreen extends ConsumerWidget {
               return TaskListTile(
                 key: ValueKey(task.id.value),
                 task: task,
-                user: currentUser,
+                user: currentUser!,
                 onToggleStatus: (bool? newValue) {
                   if (newValue != null) {
                     final newStatus = newValue 
@@ -207,8 +212,8 @@ class TaskListScreen extends ConsumerWidget {
                 child: Text('Available'),
               ),
               const PopupMenuItem(
-                value: TaskFilterType.assigned,
-                child: Text('Assigned'),
+                value: TaskFilterType.myTasks,
+                child: Text('My Tasks'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.completed,

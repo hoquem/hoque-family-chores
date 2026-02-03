@@ -240,12 +240,14 @@ class AuthNotifier extends _$AuthNotifier {
               );
             },
             (user) {
-              _logger.d('AuthNotifier: User profile updated for user ${user.id}');
-              state = state.copyWith(
-                user: user,
-                errorMessage: null,
-                status: AuthStatus.authenticated,
-              );
+              if (user != null) {
+                _logger.d('AuthNotifier: User profile updated for user ${user.id}');
+                state = state.copyWith(
+                  user: user,
+                  errorMessage: null,
+                  status: AuthStatus.authenticated,
+                );
+              }
             },
           );
         },
@@ -277,7 +279,7 @@ class AuthNotifier extends _$AuthNotifier {
   String? get currentUserId => state.user?.id.value;
 
   /// Gets the current user's family ID.
-  String? get userFamilyId => state.user?.familyId?.value;
+  String? get userFamilyId => state.user?.familyId.value;
 
   /// Gets the display name of the current user.
   String? get displayName => state.user?.name;
@@ -314,7 +316,7 @@ class AuthNotifier extends _$AuthNotifier {
 
     try {
       final resetPasswordUseCase = ref.read(resetPasswordUseCaseProvider);
-      final result = await resetPasswordUseCase.call(email: email);
+      final result = await resetPasswordUseCase.call(Email(email));
 
       result.fold(
         (failure) {

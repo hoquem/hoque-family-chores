@@ -66,7 +66,7 @@ class TaskListNotifier extends _$TaskListNotifier {
         description: task.description,
         difficulty: task.difficulty,
         dueDate: task.dueDate,
-        points: task.points,
+        points: task.points.value,
         tags: task.tags,
         familyId: task.familyId,
         createdById: task.createdById ?? UserId(''),
@@ -298,8 +298,8 @@ class TaskListNotifier extends _$TaskListNotifier {
   /// Sets the current filter for tasks.
   void setFilter(TaskFilterType filter) {
     _logger.d('TaskListNotifier: Setting filter to $filter');
-    _currentFilter = filter;
-    ref.invalidateSelf();
+    // Filter state is now managed by TaskFilterNotifier
+    ref.read(taskFilterNotifierProvider.notifier).setFilter(filter);
   }
 }
 

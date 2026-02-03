@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/widgets/my_tasks_widget.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/my_tasks_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TasksScreen extends ConsumerWidget {
@@ -9,18 +10,22 @@ class TasksScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _logger = AppLogger();
+    final logger = AppLogger();
+    final authState = ref.watch(authNotifierProvider);
+    final currentUser = authState.user;
 
-    Future<void> _refreshData() async {
-      _logger.d('TasksScreen: Refreshing data');
-      ref.read(myTasksNotifierProvider.notifier).refresh();
+    Future<void> refreshData() async {
+      logger.d('TasksScreen: Refreshing data');
+      if (currentUser != null) {
+        ref.read(myTasksNotifierProvider(currentUser.familyId, currentUser.id).notifier).refresh();
+      }
     }
 
-    _logger.d('TasksScreen: Building screen');
+    logger.d('TasksScreen: Building screen');
     return Scaffold(
       appBar: AppBar(title: const Text('My Tasks')),
       body: RefreshIndicator(
-        onRefresh: _refreshData,
+        onRefresh: refreshData,
         child: const Padding(
           padding: EdgeInsets.all(16.0),
           child: MyTasksWidget(),

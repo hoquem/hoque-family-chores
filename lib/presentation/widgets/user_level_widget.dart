@@ -113,7 +113,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
 
   // Calculate user level from points
   int _calculateLevelFromPoints(Points points) {
-    final totalPoints = points.value;
+    int totalPoints = points.value;
     int level = 0;
     int pointsNeeded = _basePointsPerLevel;
     
@@ -134,7 +134,7 @@ class _UserLevelWidgetState extends State<UserLevelWidget>
 
   // Calculate points in current level
   int _calculatePointsInCurrentLevel() {
-    final totalPoints = widget.user.points.value;
+    int totalPoints = widget.user.points.value;
     int level = 0;
     int pointsNeeded = _basePointsPerLevel;
     int pointsUsed = 0;

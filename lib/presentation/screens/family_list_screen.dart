@@ -111,9 +111,9 @@ class FamilyListScreen extends ConsumerWidget {
                           children: [
                             _buildStatItem(
                               context,
-                              Icons.star,
-                              'Points',
-                              '${member.points.value}',
+                              Icons.person,
+                              'Role',
+                              member.role.name,
                               Colors.amber,
                             ),
                             _buildStatItem(
@@ -125,9 +125,9 @@ class FamilyListScreen extends ConsumerWidget {
                             ),
                             _buildStatItem(
                               context,
-                              Icons.update,
-                              'Updated',
-                              '${member.updatedAt.day}/${member.updatedAt.month}/${member.updatedAt.year}',
+                              Icons.check_circle,
+                              'Active',
+                              member.isActive ? 'Yes' : 'No',
                               Colors.green,
                             ),
                           ],

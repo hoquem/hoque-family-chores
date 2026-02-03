@@ -7,6 +7,7 @@ import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/domain/usecases/task/stream_tasks_by_assignee_usecase.dart';
 import 'package:hoque_family_chores/domain/usecases/task/get_tasks_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 
 part 'my_tasks_notifier.g.dart';
 
@@ -86,7 +87,7 @@ class MyTasksNotifier extends _$MyTasksNotifier {
   List<Task> get completedTasks => getTasksByStatus(TaskStatus.completed);
 
   /// Gets pending tasks.
-  List<Task> get pendingTasks => getTasksByStatus(TaskStatus.pending);
+  List<Task> get pendingTasks => getTasksByStatus(TaskStatus.pendingApproval);
 
   /// Gets assigned tasks.
   List<Task> get assignedTasks => getTasksByStatus(TaskStatus.assigned);
@@ -95,8 +96,7 @@ class MyTasksNotifier extends _$MyTasksNotifier {
   List<Task> get overdueTasks {
     final now = DateTime.now();
     return tasks.where((task) => 
-      task.dueDate != null && 
-      now.isAfter(task.dueDate!) &&
+      now.isAfter(task.dueDate) &&
       task.status != TaskStatus.completed
     ).toList();
   }
@@ -108,9 +108,8 @@ class MyTasksNotifier extends _$MyTasksNotifier {
     final tomorrow = today.add(const Duration(days: 1));
     
     return tasks.where((task) => 
-      task.dueDate != null && 
-      task.dueDate!.isAfter(today) &&
-      task.dueDate!.isBefore(tomorrow) &&
+      task.dueDate.isAfter(today) &&
+      task.dueDate.isBefore(tomorrow) &&
       task.status != TaskStatus.completed
     ).toList();
   }
@@ -122,9 +121,8 @@ class MyTasksNotifier extends _$MyTasksNotifier {
     final endOfWeek = today.add(const Duration(days: 7));
     
     return tasks.where((task) => 
-      task.dueDate != null && 
-      task.dueDate!.isAfter(today) &&
-      task.dueDate!.isBefore(endOfWeek) &&
+      task.dueDate.isAfter(today) &&
+      task.dueDate.isBefore(endOfWeek) &&
       task.status != TaskStatus.completed
     ).toList();
   }
