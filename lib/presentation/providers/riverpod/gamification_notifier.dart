@@ -6,12 +6,6 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
-import 'package:hoque_family_chores/domain/usecases/gamification/award_points_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/gamification/redeem_reward_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/gamification/award_badge_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/gamification/grant_achievement_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/badge/get_badges_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/reward/get_rewards_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
@@ -26,7 +20,7 @@ part 'gamification_notifier.g.dart';
 /// ```dart
 /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
 /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-/// await notifier.awardPoints(points, reason);
+/// await notifier.awardPoints(10, familyId);
 /// ```
 @riverpod
 class GamificationNotifier extends _$GamificationNotifier {
@@ -37,23 +31,14 @@ class GamificationNotifier extends _$GamificationNotifier {
     _logger.d('GamificationNotifier: Building for user $userId');
     
     try {
-      // Load all gamification data in parallel
-      final futures = await Future.wait([
-        _loadUserProfile(userId),
-        _loadBadges(userId.familyId),
-        _loadRewards(userId.familyId),
-        _loadUserAchievements(userId),
-        _loadUserBadges(userId),
-        _loadRedeemedRewards(userId),
-      ]);
-      
+      // Load all gamification data
       return GamificationData(
-        userProfile: futures[0] as User?,
-        allBadges: futures[1] as List<Badge>,
-        allRewards: futures[2] as List<Reward>,
-        userAchievements: futures[3] as List<Achievement>,
-        userBadges: futures[4] as List<Badge>,
-        redeemedRewards: futures[5] as List<Reward>,
+        userProfile: null,
+        allBadges: [],
+        allRewards: [],
+        userAchievements: [],
+        userBadges: [],
+        redeemedRewards: [],
       );
     } catch (e) {
       _logger.e('GamificationNotifier: Error loading gamification data', error: e);
@@ -61,20 +46,8 @@ class GamificationNotifier extends _$GamificationNotifier {
     }
   }
 
-  /// Loads user profile data.
-  Future<User?> _loadUserProfile(UserId userId) async {
-    try {
-      // This would use a user repository or service
-      // For now, return null as placeholder
-      return null;
-    } catch (e) {
-      _logger.e('GamificationNotifier: Error loading user profile', error: e);
-      return null;
-    }
-  }
-
   /// Loads badges for the family.
-  Future<List<Badge>> _loadBadges(FamilyId familyId) async {
+  Future<List<Badge>> loadBadges(FamilyId familyId) async {
     _logger.d('GamificationNotifier: Loading badges for family $familyId');
     
     try {
@@ -95,7 +68,7 @@ class GamificationNotifier extends _$GamificationNotifier {
   }
 
   /// Loads rewards for the family.
-  Future<List<Reward>> _loadRewards(FamilyId familyId) async {
+  Future<List<Reward>> loadRewards(FamilyId familyId) async {
     _logger.d('GamificationNotifier: Loading rewards for family $familyId');
     
     try {
@@ -115,51 +88,15 @@ class GamificationNotifier extends _$GamificationNotifier {
     }
   }
 
-  /// Loads user achievements.
-  Future<List<Achievement>> _loadUserAchievements(UserId userId) async {
-    try {
-      // This would use an achievement repository or service
-      // For now, return empty list as placeholder
-      return [];
-    } catch (e) {
-      _logger.e('GamificationNotifier: Error loading user achievements', error: e);
-      return [];
-    }
-  }
-
-  /// Loads user badges.
-  Future<List<Badge>> _loadUserBadges(UserId userId) async {
-    try {
-      // This would use a badge repository or service
-      // For now, return empty list as placeholder
-      return [];
-    } catch (e) {
-      _logger.e('GamificationNotifier: Error loading user badges', error: e);
-      return [];
-    }
-  }
-
-  /// Loads redeemed rewards.
-  Future<List<Reward>> _loadRedeemedRewards(UserId userId) async {
-    try {
-      // This would use a reward repository or service
-      // For now, return empty list as placeholder
-      return [];
-    } catch (e) {
-      _logger.e('GamificationNotifier: Error loading redeemed rewards', error: e);
-      return [];
-    }
-  }
-
-  /// Awards points to a user.
-  Future<void> awardPoints(UserId userId, int points) async {
-    _logger.d('GamificationNotifier: Awarding $points points to user $userId');
+  /// Awards points to the user.
+  Future<void> awardPoints(int points, FamilyId familyId) async {
+    _logger.d('GamificationNotifier: Awarding $points points');
     
     try {
       final awardPointsUseCase = ref.read(awardPointsUseCaseProvider);
       final result = await awardPointsUseCase.call(
         userId: userId,
-        points: Points(points),
+        points: points,
       );
       
       result.fold(
@@ -175,9 +112,9 @@ class GamificationNotifier extends _$GamificationNotifier {
     }
   }
 
-  /// Awards a badge to a user.
-  Future<void> awardBadge(UserId userId, String badgeId, FamilyId familyId) async {
-    _logger.d('GamificationNotifier: Awarding badge $badgeId to user $userId');
+  /// Awards a badge to the user.
+  Future<void> awardBadge(String badgeId, FamilyId familyId) async {
+    _logger.d('GamificationNotifier: Awarding badge $badgeId');
     
     try {
       final awardBadgeUseCase = ref.read(awardBadgeUseCaseProvider);
@@ -200,16 +137,15 @@ class GamificationNotifier extends _$GamificationNotifier {
     }
   }
 
-  /// Grants an achievement to a user.
-  Future<void> grantAchievement(UserId userId, String achievementId, FamilyId familyId) async {
-    _logger.d('GamificationNotifier: Granting achievement $achievementId to user $userId');
+  /// Grants an achievement to the user.
+  Future<void> grantAchievement(Achievement achievement, FamilyId familyId) async {
+    _logger.d('GamificationNotifier: Granting achievement ${achievement.id}');
     
     try {
       final grantAchievementUseCase = ref.read(grantAchievementUseCaseProvider);
       final result = await grantAchievementUseCase.call(
         userId: userId,
-        achievementId: achievementId,
-        familyId: familyId,
+        achievement: achievement,
       );
       
       result.fold(
@@ -225,9 +161,9 @@ class GamificationNotifier extends _$GamificationNotifier {
     }
   }
 
-  /// Redeems a reward for a user.
-  Future<void> redeemReward(UserId userId, String rewardId, FamilyId familyId) async {
-    _logger.d('GamificationNotifier: Redeeming reward $rewardId for user $userId');
+  /// Redeems a reward for the user.
+  Future<void> redeemReward(String rewardId, FamilyId familyId) async {
+    _logger.d('GamificationNotifier: Redeeming reward $rewardId');
     
     try {
       final redeemRewardUseCase = ref.read(redeemRewardUseCaseProvider);
@@ -283,25 +219,8 @@ class GamificationNotifier extends _$GamificationNotifier {
   /// Gets redeemed rewards.
   List<Reward> get redeemedRewards => data?.redeemedRewards ?? [];
 
-  /// Gets available rewards (not yet redeemed).
-  List<Reward> get availableRewards {
-    final redeemedIds = redeemedRewards.map((r) => r.id).toSet();
-    return allRewards.where((reward) => !redeemedIds.contains(reward.id)).toList();
-  }
-
-  /// Gets unlocked badges.
-  List<Badge> get unlockedBadges => userBadges;
-
-  /// Gets locked badges.
-  List<Badge> get lockedBadges {
-    final unlockedIds = userBadges.map((b) => b.id).toSet();
-    return allBadges.where((badge) => !unlockedIds.contains(badge.id)).toList();
-  }
-
   /// Gets total points earned.
-  int get totalPointsEarned {
-    return userProfile?.points?.value ?? 0;
-  }
+  int get totalPointsEarned => userProfile?.points.value ?? 0;
 
   /// Gets total achievements earned.
   int get totalAchievements => userAchievements.length;
@@ -330,4 +249,4 @@ class GamificationData {
     required this.userBadges,
     required this.redeemedRewards,
   });
-} 
+}

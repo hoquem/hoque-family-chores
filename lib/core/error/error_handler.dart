@@ -18,22 +18,22 @@ class ErrorHandler {
 
   /// Converts specific data exceptions to domain failures
   static Failure _convertDataExceptionToFailure(DataException exception) {
-    switch (exception.runtimeType) {
-      case ServerException:
+    switch (exception) {
+      case ServerException _:
         return ServerFailure(exception.message, code: exception.code);
-      case NetworkException:
+      case NetworkException _:
         return NetworkFailure(exception.message, code: exception.code);
-      case CacheException:
+      case CacheException _:
         return CacheFailure(exception.message, code: exception.code);
-      case AuthException:
+      case AuthException _:
         return AuthFailure(exception.message, code: exception.code);
-      case ValidationException:
+      case ValidationException _:
         return ValidationFailure(exception.message, code: exception.code);
-      case PermissionException:
+      case PermissionException _:
         return PermissionFailure(exception.message, code: exception.code);
-      case NotFoundException:
+      case NotFoundException _:
         return NotFoundFailure(exception.message, code: exception.code);
-      case FirebaseException:
+      case FirebaseException _:
         return ServerFailure(exception.message, code: exception.code);
       default:
         return ServerFailure(exception.message, code: exception.code);

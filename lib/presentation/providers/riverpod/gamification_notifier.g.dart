@@ -7,7 +7,7 @@ part of 'gamification_notifier.dart';
 // **************************************************************************
 
 String _$gamificationNotifierHash() =>
-    r'7b2e5945de656908144b90f18f6d78b0cb9bf529';
+    r'7a0fc88fda55581334d6770523f6c1da9fd2a2e7';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -46,7 +46,7 @@ abstract class _$GamificationNotifier
 /// ```dart
 /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
 /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-/// await notifier.awardPoints(points, reason);
+/// await notifier.awardPoints(10, familyId);
 /// ```
 ///
 /// Copied from [GamificationNotifier].
@@ -62,7 +62,7 @@ const gamificationNotifierProvider = GamificationNotifierFamily();
 /// ```dart
 /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
 /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-/// await notifier.awardPoints(points, reason);
+/// await notifier.awardPoints(10, familyId);
 /// ```
 ///
 /// Copied from [GamificationNotifier].
@@ -76,7 +76,7 @@ class GamificationNotifierFamily extends Family<AsyncValue<GamificationData>> {
   /// ```dart
   /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
   /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-  /// await notifier.awardPoints(points, reason);
+  /// await notifier.awardPoints(10, familyId);
   /// ```
   ///
   /// Copied from [GamificationNotifier].
@@ -91,7 +91,7 @@ class GamificationNotifierFamily extends Family<AsyncValue<GamificationData>> {
   /// ```dart
   /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
   /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-  /// await notifier.awardPoints(points, reason);
+  /// await notifier.awardPoints(10, familyId);
   /// ```
   ///
   /// Copied from [GamificationNotifier].
@@ -130,7 +130,7 @@ class GamificationNotifierFamily extends Family<AsyncValue<GamificationData>> {
 /// ```dart
 /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
 /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-/// await notifier.awardPoints(points, reason);
+/// await notifier.awardPoints(10, familyId);
 /// ```
 ///
 /// Copied from [GamificationNotifier].
@@ -149,7 +149,7 @@ class GamificationNotifierProvider
   /// ```dart
   /// final gamificationAsync = ref.watch(gamificationNotifierProvider(userId));
   /// final notifier = ref.read(gamificationNotifierProvider(userId).notifier);
-  /// await notifier.awardPoints(points, reason);
+  /// await notifier.awardPoints(10, familyId);
   /// ```
   ///
   /// Copied from [GamificationNotifier].

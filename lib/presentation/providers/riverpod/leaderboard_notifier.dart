@@ -1,8 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/leaderboard_entry.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/usecases/leaderboard/get_leaderboard_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 
 part 'leaderboard_notifier.g.dart';
 
@@ -31,8 +31,21 @@ class LeaderboardNotifier extends _$LeaderboardNotifier {
       
       return result.fold(
         (failure) => throw Exception(failure.message),
-        (entries) {
-          _logger.d('LeaderboardNotifier: Loaded ${entries.length} leaderboard entries');
+        (users) {
+          _logger.d('LeaderboardNotifier: Loaded ${users.length} users for leaderboard');
+          // Convert Users to LeaderboardEntries
+          final entries = users.asMap().entries.map((entry) {
+            final user = entry.value;
+            final rank = entry.key + 1;
+            return LeaderboardEntry(
+              userId: user.id,
+              userName: user.name,
+              userPhotoUrl: user.photoUrl,
+              points: user.points,
+              completedTasks: 0, // User entity doesn't have this field
+              rank: rank,
+            );
+          }).toList();
           return _sortEntries(entries);
         },
       );
@@ -151,9 +164,8 @@ class LeaderboardNotifier extends _$LeaderboardNotifier {
   /// Gets entries for a specific rank range.
   List<LeaderboardEntry> getEntriesInRankRange(int startRank, int endRank) {
     return entries.where((entry) => 
-      entry.rank != null && 
-      entry.rank! >= startRank && 
-      entry.rank! <= endRank
+      entry.rank >= startRank && 
+      entry.rank <= endRank
     ).toList();
   }
 

@@ -7,7 +7,7 @@ part of 'leaderboard_notifier.dart';
 // **************************************************************************
 
 String _$leaderboardNotifierHash() =>
-    r'e18de3c9b3ca115f776021177e1b4279603e53b7';
+    r'116f107a5082c204808bb74f2cdf2b6c25a2d148';
 
 /// Copied from Dart SDK
 class _SystemHash {

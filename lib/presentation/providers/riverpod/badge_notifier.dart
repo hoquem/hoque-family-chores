@@ -1,8 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/badge.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/usecases/gamification/get_badges_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 

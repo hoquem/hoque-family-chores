@@ -3,17 +3,6 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/usecases/task/create_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/update_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/delete_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/claim_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/complete_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/approve_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/assign_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/unassign_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/uncomplete_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/reject_task_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/task/get_tasks_usecase.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
@@ -66,7 +55,7 @@ class TaskListNotifier extends _$TaskListNotifier {
         description: task.description,
         difficulty: task.difficulty,
         dueDate: task.dueDate,
-        points: task.points,
+        points: task.points.value,
         tags: task.tags,
         familyId: task.familyId,
         createdById: task.createdById ?? UserId(''),
@@ -295,13 +284,8 @@ class TaskListNotifier extends _$TaskListNotifier {
     ref.invalidateSelf();
   }
 
-  /// Sets the current filter for tasks.
-  void setFilter(TaskFilterType filter) {
-    _logger.d('TaskListNotifier: Setting filter to $filter');
-    _currentFilter = filter;
-    ref.invalidateSelf();
-  }
 }
+
 
 /// Provider for task filtering state.
 @riverpod

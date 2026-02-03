@@ -158,7 +158,7 @@ class _FilteredTasksProviderElement
   FamilyId get familyId => (origin as FilteredTasksProvider).familyId;
 }
 
-String _$taskListNotifierHash() => r'687649169e72810ecb77f22d603ef32e20fafbe5';
+String _$taskListNotifierHash() => r'393ba02e479295eda80e5a6d4da09e69399461b9';
 
 abstract class _$TaskListNotifier
     extends BuildlessAutoDisposeAsyncNotifier<List<Task>> {

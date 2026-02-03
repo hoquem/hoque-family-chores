@@ -3,11 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/sign_in_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/sign_up_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/auth/reset_password_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/user/get_user_profile_usecase.dart';
-import 'package:hoque_family_chores/domain/usecases/user/stream_user_profile_usecase.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
@@ -304,8 +299,8 @@ class AuthNotifier extends _$AuthNotifier {
   User? get currentUserProfile => state.user;
 
   /// Resets password for the given email.
-  Future<void> resetPassword(String email) async {
-    _logger.d('AuthNotifier: Resetting password for $email');
+  Future<void> resetPassword(String emailStr) async {
+    _logger.d('AuthNotifier: Resetting password for $emailStr');
     
     state = state.copyWith(
       isLoading: true,
@@ -313,8 +308,9 @@ class AuthNotifier extends _$AuthNotifier {
     );
 
     try {
+      final email = Email(emailStr);
       final resetPasswordUseCase = ref.read(resetPasswordUseCaseProvider);
-      final result = await resetPasswordUseCase.call(email: email);
+      final result = await resetPasswordUseCase.call(email);
 
       result.fold(
         (failure) {

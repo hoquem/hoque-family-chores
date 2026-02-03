@@ -1,6 +1,6 @@
-import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 
 enum FamilyRole {
   parent,
@@ -16,6 +16,8 @@ class FamilyMember {
   final String? photoUrl;
   final FamilyRole role;
   final DateTime joinedAt;
+  final DateTime? updatedAt;
+  final Points points;
   final bool isActive;
 
   const FamilyMember({
@@ -25,8 +27,13 @@ class FamilyMember {
     this.photoUrl,
     required this.role,
     required this.joinedAt,
+    this.updatedAt,
+    this.points = Points.zero,
     this.isActive = true,
   });
+
+  /// Alias for userId for convenience
+  UserId get id => userId;
 
   @override
   bool operator ==(Object other) {
@@ -38,6 +45,8 @@ class FamilyMember {
         other.photoUrl == photoUrl &&
         other.role == role &&
         other.joinedAt == joinedAt &&
+        other.updatedAt == updatedAt &&
+        other.points == points &&
         other.isActive == isActive;
   }
 
@@ -49,11 +58,13 @@ class FamilyMember {
         photoUrl.hashCode ^
         role.hashCode ^
         joinedAt.hashCode ^
+        updatedAt.hashCode ^
+        points.hashCode ^
         isActive.hashCode;
   }
 
   @override
   String toString() {
-    return 'FamilyMember(userId: $userId, familyId: $familyId, name: $name, role: $role, joinedAt: $joinedAt, isActive: $isActive)';
+    return 'FamilyMember(userId: $userId, familyId: $familyId, name: $name, role: $role, points: $points, joinedAt: $joinedAt, isActive: $isActive)';
   }
 } 

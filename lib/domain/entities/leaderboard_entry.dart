@@ -1,4 +1,3 @@
-import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 
@@ -18,6 +17,25 @@ class LeaderboardEntry {
     required this.completedTasks,
     required this.rank,
   });
+
+  /// Creates a copy of this entry with optional new values.
+  LeaderboardEntry copyWith({
+    UserId? userId,
+    String? userName,
+    String? userPhotoUrl,
+    Points? points,
+    int? completedTasks,
+    int? rank,
+  }) {
+    return LeaderboardEntry(
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userPhotoUrl: userPhotoUrl ?? this.userPhotoUrl,
+      points: points ?? this.points,
+      completedTasks: completedTasks ?? this.completedTasks,
+      rank: rank ?? this.rank,
+    );
+  }
 
   @override
   bool operator ==(Object other) {

@@ -13,27 +13,7 @@ import '../domain/repositories/badge_repository.dart';
 import '../domain/repositories/reward_repository.dart';
 import '../domain/repositories/user_repository.dart';
 
-// Data repository implementations
-import '../data/repositories/firebase_auth_repository.dart';
-import '../data/repositories/firebase_family_repository.dart';
-import '../data/repositories/firebase_gamification_repository.dart';
-import '../data/repositories/firebase_leaderboard_repository.dart';
-import '../data/repositories/firebase_task_repository.dart';
-import '../data/repositories/firebase_notification_repository.dart';
-import '../data/repositories/firebase_achievement_repository.dart';
-import '../data/repositories/firebase_badge_repository.dart';
-import '../data/repositories/firebase_reward_repository.dart';
-import '../data/repositories/firebase_user_repository.dart';
-import '../data/repositories/mock_auth_repository.dart';
-import '../data/repositories/mock_family_repository.dart';
-import '../data/repositories/mock_gamification_repository.dart';
-import '../data/repositories/mock_leaderboard_repository.dart';
-import '../data/repositories/mock_task_repository.dart';
-import '../data/repositories/mock_notification_repository.dart';
-import '../data/repositories/mock_achievement_repository.dart';
-import '../data/repositories/mock_badge_repository.dart';
-import '../data/repositories/mock_reward_repository.dart';
-import '../data/repositories/mock_user_repository.dart';
+// Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
 
 // Use cases

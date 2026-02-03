@@ -6,7 +6,7 @@ part of 'family_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$familyNotifierHash() => r'e259f31020f8b1a1c783a94ad8cf99b40ebf2514';
+String _$familyNotifierHash() => r'5612bae4b5b8cb8e1db7b628d6a8b3e9a56d1b64';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -45,7 +45,7 @@ abstract class _$FamilyNotifier
 /// ```dart
 /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
 /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-/// await notifier.addMember(email, role);
+/// await notifier.addMember(userId, familyId, role);
 /// ```
 ///
 /// Copied from [FamilyNotifier].
@@ -61,7 +61,7 @@ const familyNotifierProvider = FamilyNotifierFamily();
 /// ```dart
 /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
 /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-/// await notifier.addMember(email, role);
+/// await notifier.addMember(userId, familyId, role);
 /// ```
 ///
 /// Copied from [FamilyNotifier].
@@ -75,7 +75,7 @@ class FamilyNotifierFamily extends Family<AsyncValue<FamilyEntity>> {
   /// ```dart
   /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
   /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-  /// await notifier.addMember(email, role);
+  /// await notifier.addMember(userId, familyId, role);
   /// ```
   ///
   /// Copied from [FamilyNotifier].
@@ -90,7 +90,7 @@ class FamilyNotifierFamily extends Family<AsyncValue<FamilyEntity>> {
   /// ```dart
   /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
   /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-  /// await notifier.addMember(email, role);
+  /// await notifier.addMember(userId, familyId, role);
   /// ```
   ///
   /// Copied from [FamilyNotifier].
@@ -129,7 +129,7 @@ class FamilyNotifierFamily extends Family<AsyncValue<FamilyEntity>> {
 /// ```dart
 /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
 /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-/// await notifier.addMember(email, role);
+/// await notifier.addMember(userId, familyId, role);
 /// ```
 ///
 /// Copied from [FamilyNotifier].
@@ -144,7 +144,7 @@ class FamilyNotifierProvider
   /// ```dart
   /// final familyAsync = ref.watch(familyNotifierProvider(familyId));
   /// final notifier = ref.read(familyNotifierProvider(familyId).notifier);
-  /// await notifier.addMember(email, role);
+  /// await notifier.addMember(userId, familyId, role);
   /// ```
   ///
   /// Copied from [FamilyNotifier].
@@ -234,13 +234,13 @@ class _FamilyNotifierProviderElement
 }
 
 String _$familyMembersNotifierHash() =>
-    r'1f6a0478716b5adb3466483e84c00fc3ac79a379';
+    r'5d18888807bf6523df0433c3ee8e94364e1e0a54';
 
 abstract class _$FamilyMembersNotifier
-    extends BuildlessAutoDisposeAsyncNotifier<List<FamilyMember>> {
+    extends BuildlessAutoDisposeAsyncNotifier<List<User>> {
   late final FamilyId familyId;
 
-  FutureOr<List<FamilyMember>> build(FamilyId familyId);
+  FutureOr<List<User>> build(FamilyId familyId);
 }
 
 /// Manages family members list.
@@ -252,8 +252,7 @@ const familyMembersNotifierProvider = FamilyMembersNotifierFamily();
 /// Manages family members list.
 ///
 /// Copied from [FamilyMembersNotifier].
-class FamilyMembersNotifierFamily
-    extends Family<AsyncValue<List<FamilyMember>>> {
+class FamilyMembersNotifierFamily extends Family<AsyncValue<List<User>>> {
   /// Manages family members list.
   ///
   /// Copied from [FamilyMembersNotifier].
@@ -295,7 +294,7 @@ class FamilyMembersNotifierProvider
     extends
         AutoDisposeAsyncNotifierProviderImpl<
           FamilyMembersNotifier,
-          List<FamilyMember>
+          List<User>
         > {
   /// Manages family members list.
   ///
@@ -328,7 +327,7 @@ class FamilyMembersNotifierProvider
   final FamilyId familyId;
 
   @override
-  FutureOr<List<FamilyMember>> runNotifierBuild(
+  FutureOr<List<User>> runNotifierBuild(
     covariant FamilyMembersNotifier notifier,
   ) {
     return notifier.build(familyId);
@@ -351,10 +350,7 @@ class FamilyMembersNotifierProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<
-    FamilyMembersNotifier,
-    List<FamilyMember>
-  >
+  AutoDisposeAsyncNotifierProviderElement<FamilyMembersNotifier, List<User>>
   createElement() {
     return _FamilyMembersNotifierProviderElement(this);
   }
@@ -376,7 +372,7 @@ class FamilyMembersNotifierProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin FamilyMembersNotifierRef
-    on AutoDisposeAsyncNotifierProviderRef<List<FamilyMember>> {
+    on AutoDisposeAsyncNotifierProviderRef<List<User>> {
   /// The parameter `familyId` of this provider.
   FamilyId get familyId;
 }
@@ -385,7 +381,7 @@ class _FamilyMembersNotifierProviderElement
     extends
         AutoDisposeAsyncNotifierProviderElement<
           FamilyMembersNotifier,
-          List<FamilyMember>
+          List<User>
         >
     with FamilyMembersNotifierRef {
   _FamilyMembersNotifierProviderElement(super.provider);

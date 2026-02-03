@@ -7,7 +7,7 @@ part of 'task_summary_notifier.dart';
 // **************************************************************************
 
 String _$taskSummaryNotifierHash() =>
-    r'1bb4c7aaa2e976ff457e436d95144e454ed3bd5f';
+    r'c5632ab9b176642b38c0db5b71b9575f7d5c7d73';
 
 /// Copied from Dart SDK
 class _SystemHash {

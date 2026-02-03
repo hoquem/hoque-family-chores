@@ -60,13 +60,18 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     });
 
     try {
-      final availableTasksNotifier = ref.read(availableTasksNotifierProvider.notifier);
-      final taskListNotifier = ref.read(taskListNotifierProvider.notifier);
+      final familyId = widget.task.familyId;
+      final availableTasksNotifier = ref.read(availableTasksNotifierProvider(familyId).notifier);
+      final taskListNotifier = ref.read(taskListNotifierProvider(familyId).notifier);
       
-      await availableTasksNotifier.claimTask(widget.task.id);
+      await availableTasksNotifier.claimTask(
+        widget.task.id.value,
+        widget.user.id,
+        familyId,
+      );
       
       // Refresh task list after claiming
-      taskListNotifier.refresh();
+      await taskListNotifier.refresh();
       
       _logger.i('TaskListTile: Successfully took ownership of task ${widget.task.id}');
     } catch (e) {
@@ -219,7 +224,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
                             decoration: BoxDecoration(
-                              color: _getStatusColor().withOpacity(0.1),
+                              color: _getStatusColor().withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12.0),
                               border: Border.all(color: _getStatusColor()),
                             ),
