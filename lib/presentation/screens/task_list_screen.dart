@@ -4,7 +4,6 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
-import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
@@ -35,6 +34,7 @@ class TaskListScreen extends ConsumerWidget {
     FamilyId familyId,
     String taskId,
     TaskStatus newStatus,
+    UserId userId,
   ) async {
     final logger = AppLogger();
     try {
@@ -42,7 +42,7 @@ class TaskListScreen extends ConsumerWidget {
       
       switch (newStatus) {
         case TaskStatus.completed:
-          await notifier.completeTask(taskId);
+          await notifier.completeTask(taskId, userId, familyId);
           break;
         case TaskStatus.available:
           await notifier.unassignTask(taskId);
@@ -77,6 +77,10 @@ class TaskListScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
+
+    if (currentUser == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return tasksAsync.when(
       data: (tasks) {
@@ -115,14 +119,14 @@ class TaskListScreen extends ConsumerWidget {
                     logger.d(
                       'TaskListScreen: Toggling status for task ${task.id} to $newStatus',
                     );
-                    _handleTaskStatusUpdate(ref, familyId, task.id.value, newStatus);
+                    _handleTaskStatusUpdate(ref, familyId, task.id.value, newStatus, currentUser.id);
                   }
                 },
                 onReturnToAvailable: () {
                   logger.d(
                     'TaskListScreen: Returning task ${task.id} to available status',
                   );
-                  _handleTaskStatusUpdate(ref, familyId, task.id.value, TaskStatus.available);
+                  _handleTaskStatusUpdate(ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
                 },
               );
             },
@@ -207,8 +211,8 @@ class TaskListScreen extends ConsumerWidget {
                 child: Text('Available'),
               ),
               const PopupMenuItem(
-                value: TaskFilterType.assigned,
-                child: Text('Assigned'),
+                value: TaskFilterType.myTasks,
+                child: Text('My Tasks'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.completed,

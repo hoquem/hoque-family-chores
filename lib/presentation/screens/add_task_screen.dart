@@ -75,18 +75,10 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     try {
       _logger.i('Creating new task for family ${currentUser.familyId.value} by user ${currentUser.id.value}');
 
-      // Convert TaskDifficulty to domain TaskDifficulty
-      final domainDifficulty = switch (_selectedDifficulty) {
-        TaskDifficulty.easy => domain.TaskDifficulty.easy,
-        TaskDifficulty.medium => domain.TaskDifficulty.medium,
-        TaskDifficulty.hard => domain.TaskDifficulty.hard,
-        TaskDifficulty.challenging => domain.TaskDifficulty.challenging,
-      };
-
       await ref.read(taskCreationNotifierProvider.notifier).createTask(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        difficulty: domainDifficulty,
+        difficulty: _selectedDifficulty,
         familyId: currentUser.familyId,
         creatorId: currentUser.id,
         assignedTo: _selectedAssignee,

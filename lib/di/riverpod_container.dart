@@ -383,4 +383,4 @@ StreamNotificationsUseCase streamNotificationsUseCase(StreamNotificationsUseCase
 ResetPasswordUseCase resetPasswordUseCase(ResetPasswordUseCaseRef ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
-} 
+}

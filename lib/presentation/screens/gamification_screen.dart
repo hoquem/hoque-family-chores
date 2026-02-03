@@ -3,12 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/badge_notifier.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/reward_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/gamification_notifier.dart';
-import 'package:hoque_family_chores/presentation/widgets/user_level_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/badges_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/rewards_store_widget.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 
@@ -21,6 +16,7 @@ class GamificationScreen extends ConsumerStatefulWidget {
 
 class _GamificationScreenState extends ConsumerState<GamificationScreen>
     with SingleTickerProviderStateMixin {
+  final _logger = AppLogger();
   late TabController _tabController;
 
   @override
@@ -217,9 +213,9 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen>
   }
 
   /// Helper method to redeem a reward
-  Future<void> _redeemReward(BuildContext context, String rewardId) async {
+  Future<void> _redeemReward(BuildContext context, String rewardId, User currentUser) async {
     try {
-      await ref.read(gamificationNotifierProvider.notifier).redeemReward(rewardId);
+      await ref.read(gamificationNotifierProvider(currentUser.id).notifier).redeemReward(rewardId, currentUser.familyId);
       
       // Show success message
       if (context.mounted) {

@@ -18,7 +18,7 @@ class ProgressScreen extends ConsumerWidget {
 
     Future<void> _refreshData() async {
       _logger.d('ProgressScreen: Refreshing data');
-      await ref.read(authNotifierProvider.notifier).refresh();
+      ref.invalidate(authNotifierProvider);
     }
 
     if (currentUser == null) {

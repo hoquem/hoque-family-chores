@@ -235,7 +235,7 @@ class AuthNotifier extends _$AuthNotifier {
               );
             },
             (user) {
-              _logger.d('AuthNotifier: User profile updated for user ${user.id}');
+              _logger.d('AuthNotifier: User profile updated for user ${user?.id}');
               state = state.copyWith(
                 user: user,
                 errorMessage: null,

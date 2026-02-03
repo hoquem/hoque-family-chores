@@ -62,7 +62,6 @@ class FamilyScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16.0),
-                _logger.d('FamilyScreen: Building LeaderboardWidget'),
                 const LeaderboardWidget(),
               ],
             ),

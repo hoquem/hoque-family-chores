@@ -207,8 +207,8 @@ return $default(_that.isLoading,_that.error,_that.isSuccess);case _:
 /// @nodoc
 
 
-class _TaskCreationState implements TaskCreationState {
-  const _TaskCreationState({this.isLoading = false, this.error, this.isSuccess = false});
+class _TaskCreationState extends TaskCreationState {
+  const _TaskCreationState({this.isLoading = false, this.error, this.isSuccess = false}): super._();
   
 
 @override@JsonKey() final  bool isLoading;

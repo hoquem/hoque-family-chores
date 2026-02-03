@@ -1,6 +1,9 @@
 // lib/presentation/widgets/my_tasks_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/my_tasks_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart'; // For navigation
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -11,11 +14,19 @@ class MyTasksWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _logger = AppLogger();
-    final myTasksState = ref.watch(myTasksNotifierProvider);
+    final authState = ref.watch(authNotifierProvider);
+    final userId = authState.user?.id;
+    final familyId = authState.user?.familyId;
+
+    if (userId == null || familyId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final myTasksState = ref.watch(myTasksNotifierProvider(familyId, userId));
 
     Future<void> _refreshData() async {
       _logger.d('MyTasksWidget: Refreshing data');
-      ref.read(myTasksNotifierProvider.notifier).refresh();
+      ref.read(myTasksNotifierProvider(familyId, userId).notifier).refresh();
     }
 
     _logger.d('MyTasksWidget: build() called');
@@ -29,7 +40,7 @@ class MyTasksWidget extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             child: IntrinsicHeight(
               child: myTasksState.when(
-                data: (tasks) => _buildTasksList(tasks),
+                data: (tasks) => _buildTasksList(context, tasks),
                 loading: () => const Center(
                   child: CircularProgressIndicator(),
                 ),
@@ -58,7 +69,7 @@ class MyTasksWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildTasksList(List<dynamic> tasks) {
+  Widget _buildTasksList(BuildContext context, List<dynamic> tasks) {
     final _logger = AppLogger();
     _logger.d('MyTasksWidget: _buildTasksList called with ${tasks.length} tasks');
     
