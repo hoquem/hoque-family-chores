@@ -3,8 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-import 'package:hoque_family_chores/domain/entities/user.dart';
-import 'package:hoque_family_chores/utils/logger.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});

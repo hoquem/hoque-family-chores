@@ -306,22 +306,19 @@ InitializeUserDataUseCase initializeUserDataUseCase(InitializeUserDataUseCaseRef
 @riverpod
 AwardBadgeUseCase awardBadgeUseCase(AwardBadgeUseCaseRef ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return AwardBadgeUseCase(badgeRepository, userRepository);
+  return AwardBadgeUseCase(badgeRepository);
 }
 
 @riverpod
 RevokeBadgeUseCase revokeBadgeUseCase(RevokeBadgeUseCaseRef ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return RevokeBadgeUseCase(badgeRepository, userRepository);
+  return RevokeBadgeUseCase(badgeRepository);
 }
 
 @riverpod
 GrantAchievementUseCase grantAchievementUseCase(GrantAchievementUseCaseRef ref) {
   final achievementRepository = ref.watch(achievementRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return GrantAchievementUseCase(achievementRepository, userRepository);
+  return GrantAchievementUseCase(achievementRepository);
 }
 
 @riverpod

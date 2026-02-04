@@ -1,10 +1,8 @@
 // lib/presentation/widgets/rewards_store_widget.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/reward.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
-import 'package:hoque_family_chores/domain/value_objects/points.dart';
 
 class RewardsStoreWidget extends StatefulWidget {
   final User user;

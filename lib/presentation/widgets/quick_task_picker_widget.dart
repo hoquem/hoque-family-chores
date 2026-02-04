@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class QuickTaskPickerWidget extends ConsumerStatefulWidget {
@@ -90,7 +89,7 @@ class _QuickTaskPickerWidgetState extends ConsumerState<QuickTaskPickerWidget> {
 
     return availableTasksAsync.when(
       data: (availableTasks) {
-        logger.d('QuickTaskPickerWidget: Consumer builder called with ${availableTasks.length} tasks');
+        logger.d('QuickTaskPickerWidget: Consumer builder rebuilt with ${availableTasks.length} tasks');
 
         if (availableTasks.isEmpty) {
           return const Center(child: Text('No quick tasks available'));

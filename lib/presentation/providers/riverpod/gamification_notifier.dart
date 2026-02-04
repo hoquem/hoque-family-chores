@@ -5,7 +5,6 @@ import 'package:hoque_family_chores/domain/entities/reward.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 

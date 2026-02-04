@@ -70,6 +70,7 @@ class AvailableTasksNotifier extends _$AvailableTasksNotifier {
           state = AsyncData(
             state.value!.where((task) => task.id.value != taskId).toList()
           );
+          _logger.d('AvailableTasksNotifier: State updated, new length: ${state.value!.length}');
         },
       );
     } catch (e) {

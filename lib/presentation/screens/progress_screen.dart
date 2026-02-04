@@ -4,8 +4,6 @@ import 'package:hoque_family_chores/presentation/widgets/user_level_widget.dart'
 import 'package:hoque_family_chores/presentation/widgets/badges_widget.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
 
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
