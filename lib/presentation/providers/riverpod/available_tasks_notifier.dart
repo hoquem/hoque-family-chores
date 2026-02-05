@@ -68,7 +68,8 @@ class AvailableTasksNotifier extends _$AvailableTasksNotifier {
         (failure) => throw Exception(failure.message),
         (_) {
           _logger.d('AvailableTasksNotifier: Task claimed successfully');
-          // The stream will automatically update the list
+          // Refresh the list so the claimed task is removed from available tasks
+          ref.invalidateSelf();
         },
       );
     } catch (e) {
