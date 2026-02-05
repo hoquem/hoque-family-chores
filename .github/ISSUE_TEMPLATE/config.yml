@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/hoquem/hoque-family-chores/discussions
+    about: Ask questions or discuss ideas with the community
+  - name: 📚 Documentation
+    url: https://github.com/hoquem/hoque-family-chores/blob/main/README.md
+    about: Read the project documentation
