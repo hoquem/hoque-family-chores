@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
 import '../../../core/error/failures.dart';
-import '../../../core/error/exceptions.dart';
 import '../../repositories/auth_repository.dart';
 import '../../value_objects/email.dart';
 

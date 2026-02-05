@@ -117,7 +117,7 @@ class LeaderboardWidget extends ConsumerWidget {
           title: Text(entry.userName),
           subtitle: Text('${entry.points.value} points'),
           trailing: Text(
-            '#${entry.rank ?? index + 1}',
+            '#${entry.rank}',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

@@ -1,6 +1,5 @@
 import 'dart:async';
 import '../value_objects/email.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for authentication operations
 abstract class AuthRepository {

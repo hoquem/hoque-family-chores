@@ -1,13 +1,11 @@
 import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
-import '../../entities/reward.dart';
 import '../../entities/user.dart';
 import '../../repositories/reward_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../value_objects/family_id.dart';
 import '../../value_objects/user_id.dart';
-import '../../value_objects/points.dart';
 
 /// Use case for redeeming a reward
 class RedeemRewardUseCase {

@@ -3,7 +3,6 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../entities/task.dart';
 import '../../repositories/task_repository.dart';
-import '../../value_objects/task_id.dart';
 
 /// Use case for updating existing tasks
 class UpdateTaskUseCase {
@@ -20,11 +19,6 @@ class UpdateTaskUseCase {
     required Task task,
   }) async {
     try {
-      // Validate task ID
-      if (task.id == null) {
-        return Left(ValidationFailure('Task ID is required for update'));
-      }
-
       // Validate task data
       if (task.title.trim().isEmpty) {
         return Left(ValidationFailure('Task title cannot be empty'));
@@ -42,7 +36,7 @@ class UpdateTaskUseCase {
       await _taskRepository.updateTask(task);
       
       // Get the updated task to return
-      final updatedTask = await _taskRepository.getTask(task.familyId, task.id!);
+      final updatedTask = await _taskRepository.getTask(task.familyId, task.id);
       if (updatedTask == null) {
         return Left(NotFoundFailure('Updated task not found'));
       }
