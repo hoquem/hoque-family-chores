@@ -5,7 +5,6 @@ import '../../entities/achievement.dart';
 import '../../repositories/achievement_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
-import '../../value_objects/family_id.dart';
 
 /// Use case for granting achievements to users
 class GrantAchievementUseCase {

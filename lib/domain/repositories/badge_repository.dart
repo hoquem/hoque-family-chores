@@ -2,7 +2,6 @@ import 'dart:async';
 import '../entities/badge.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for badge data operations
 abstract class BadgeRepository {

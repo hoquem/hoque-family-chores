@@ -6,7 +6,6 @@ import '../entities/user.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
 import '../value_objects/points.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for gamification data operations
 abstract class GamificationRepository {
