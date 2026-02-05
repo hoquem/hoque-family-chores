@@ -10,27 +10,27 @@ class FamilyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _logger = AppLogger();
+    final logger = AppLogger();
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
-    Future<void> _refreshData() async {
-      _logger.d('FamilyScreen: Refreshing data');
+    Future<void> refreshData() async {
+      logger.d('FamilyScreen: Refreshing data');
       
       try {
         if (currentUser != null) {
-          _logger.d('FamilyScreen: Refreshing leaderboard for familyId: ${currentUser.familyId.value}');
+          logger.d('FamilyScreen: Refreshing leaderboard for familyId: ${currentUser.familyId.value}');
           ref.invalidate(leaderboardNotifierProvider(currentUser.familyId));
-          _logger.d('FamilyScreen: Leaderboard refresh completed');
+          logger.d('FamilyScreen: Leaderboard refresh completed');
         } else {
-          _logger.w('FamilyScreen: currentUser is null, cannot refresh leaderboard');
+          logger.w('FamilyScreen: currentUser is null, cannot refresh leaderboard');
         }
       } catch (e, stackTrace) {
-        _logger.e('FamilyScreen: Error in _refreshData: $e', error: e, stackTrace: stackTrace);
+        logger.e('FamilyScreen: Error in refreshData: $e', error: e, stackTrace: stackTrace);
       }
     }
 
-    _logger.d('FamilyScreen: Building screen');
+    logger.d('FamilyScreen: Building screen');
     
     return Scaffold(
       appBar: AppBar(
@@ -39,14 +39,14 @@ class FamilyScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              _logger.d('FamilyScreen: Manual refresh triggered');
-              _refreshData();
+              logger.d('FamilyScreen: Manual refresh triggered');
+              refreshData();
             },
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshData,
+        onRefresh: refreshData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(

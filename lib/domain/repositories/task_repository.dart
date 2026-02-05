@@ -3,7 +3,6 @@ import '../entities/task.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
 import '../value_objects/task_id.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for task data operations
 abstract class TaskRepository {

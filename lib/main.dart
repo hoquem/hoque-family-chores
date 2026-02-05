@@ -4,15 +4,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 // Riverpod DI
-import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 
 // UI
-import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -83,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
+    ref.watch(authNotifierProvider);
     // ... rest of the widget tree ...
     return const Scaffold(
       body: Center(child: Text('Welcome to Hoque Family Chores!')),

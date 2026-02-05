@@ -2,7 +2,6 @@ import 'dart:async';
 import '../entities/user.dart';
 import '../value_objects/user_id.dart';
 import '../value_objects/points.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for user data operations
 abstract class UserRepository {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import '../value_objects/user_id.dart';
-import '../../core/error/failures.dart';
 
 /// Domain entity representing a notification
 class Notification {

@@ -36,7 +36,7 @@ android {
         applicationId = "com.hoque.familychores" // Keep your existing applicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23 // <--- This is the updated line
+        minSdk = flutter.minSdkVersion // <--- This is the updated line
         targetSdk = flutter.targetSdkVersion // Keep this as is
         versionCode = flutter.versionCode      // Keep this as is
         versionName = flutter.versionName      // Keep this as is

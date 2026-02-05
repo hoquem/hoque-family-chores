@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
-import 'package:hoque_family_chores/domain/entities/family.dart';
-import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class FamilyListScreen extends ConsumerWidget {
@@ -14,7 +12,7 @@ class FamilyListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
-    final _logger = AppLogger();
+    final logger = AppLogger();
 
     if (currentUser == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -141,7 +139,7 @@ class FamilyListScreen extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) {
-            _logger.e(
+            logger.e(
               "Error loading family members: $error",
               error: error,
               stackTrace: stack,

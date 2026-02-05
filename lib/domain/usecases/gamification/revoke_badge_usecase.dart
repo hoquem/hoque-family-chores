@@ -2,16 +2,14 @@ import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../repositories/badge_repository.dart';
-import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
 import '../../value_objects/family_id.dart';
 
 /// Use case for revoking badges from users
 class RevokeBadgeUseCase {
   final BadgeRepository _badgeRepository;
-  final UserRepository _userRepository;
 
-  RevokeBadgeUseCase(this._badgeRepository, this._userRepository);
+  RevokeBadgeUseCase(this._badgeRepository);
 
   /// Revokes a badge from a user
   /// 

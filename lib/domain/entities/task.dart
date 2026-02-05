@@ -191,5 +191,6 @@ enum TaskFilterType {
   all,
   myTasks,
   available,
+  pendingApproval,
   completed,
 } 

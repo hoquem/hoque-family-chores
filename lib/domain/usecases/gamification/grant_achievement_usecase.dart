@@ -3,16 +3,13 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../entities/achievement.dart';
 import '../../repositories/achievement_repository.dart';
-import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
-import '../../value_objects/family_id.dart';
 
 /// Use case for granting achievements to users
 class GrantAchievementUseCase {
   final AchievementRepository _achievementRepository;
-  final UserRepository _userRepository;
 
-  GrantAchievementUseCase(this._achievementRepository, this._userRepository);
+  GrantAchievementUseCase(this._achievementRepository);
 
   /// Grants an achievement to a user
   /// 
@@ -31,7 +28,7 @@ class GrantAchievementUseCase {
       }
 
       // Validate achievement
-      if (achievement.id == null) {
+      if (achievement.id.trim().isEmpty) {
         return Left(ValidationFailure('Achievement ID cannot be empty'));
       }
 
