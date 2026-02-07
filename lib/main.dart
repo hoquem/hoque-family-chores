@@ -80,6 +80,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(authNotifierProvider);
+
     // ... rest of the widget tree ...
     return const Scaffold(
       body: Center(child: Text('Welcome to Hoque Family Chores!')),
