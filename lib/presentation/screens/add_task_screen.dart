@@ -5,8 +5,6 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_creatio
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
-import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import for TimeoutException
@@ -162,7 +160,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 border: OutlineInputBorder(),
                 helperText: 'Select the effort size - points are automatically set',
               ),
-              value: _selectedDifficulty,
+              initialValue: _selectedDifficulty,
               items: TaskDifficulty.values.map((difficulty) {
                 String description;
                 int points;
@@ -206,7 +204,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: _selectedAssignee,
+                  initialValue: _selectedAssignee,
                   items: [
                     const DropdownMenuItem<User?>(
                       value: null,
@@ -236,7 +234,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: null,
+                  initialValue: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -245,7 +243,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: null,
+                  initialValue: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -256,7 +254,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   labelText: 'Assign To (Optional)',
                   border: OutlineInputBorder(),
                 ),
-                value: null,
+                initialValue: null,
                 items: const [],
                 onChanged: null,
               ),

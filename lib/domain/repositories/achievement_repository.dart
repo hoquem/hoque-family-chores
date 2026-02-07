@@ -1,7 +1,6 @@
 import 'dart:async';
 import '../entities/achievement.dart';
 import '../value_objects/user_id.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for achievement data operations
 abstract class AchievementRepository {

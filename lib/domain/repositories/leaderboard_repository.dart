@@ -1,6 +1,5 @@
 import '../entities/user.dart';
 import '../value_objects/family_id.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for leaderboard data operations
 abstract class LeaderboardRepository {

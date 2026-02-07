@@ -3,7 +3,6 @@ import '../entities/family.dart';
 import '../entities/user.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
-import '../../core/error/failures.dart';
 
 /// Repository interface for family-related operations
 abstract class FamilyRepository {
