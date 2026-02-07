@@ -1,4 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/environment_service.dart';
 
 // Domain repositories
@@ -23,83 +25,83 @@ part 'riverpod_container.g.dart';
 
 /// Environment Service Provider
 @riverpod
-EnvironmentService environmentService(EnvironmentServiceRef ref) {
+EnvironmentService environmentService(Ref ref) {
   return EnvironmentService();
 }
 
 /// Repository Factory Provider
 @riverpod
-RepositoryFactory repositoryFactory(RepositoryFactoryRef ref) {
+RepositoryFactory repositoryFactory(Ref ref) {
   final environmentService = ref.watch(environmentServiceProvider);
   return RepositoryFactory(environmentService);
 }
 
 /// Repository Providers (Clean Architecture)
 @riverpod
-TaskRepository taskRepository(TaskRepositoryRef ref) {
+TaskRepository taskRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[TaskRepository] as TaskRepository;
 }
 
 @riverpod
-AuthRepository authRepository(AuthRepositoryRef ref) {
+AuthRepository authRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[AuthRepository] as AuthRepository;
 }
 
 @riverpod
-UserRepository userRepository(UserRepositoryRef ref) {
+UserRepository userRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[UserRepository] as UserRepository;
 }
 
 @riverpod
-FamilyRepository familyRepository(FamilyRepositoryRef ref) {
+FamilyRepository familyRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[FamilyRepository] as FamilyRepository;
 }
 
 @riverpod
-BadgeRepository badgeRepository(BadgeRepositoryRef ref) {
+BadgeRepository badgeRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[BadgeRepository] as BadgeRepository;
 }
 
 @riverpod
-RewardRepository rewardRepository(RewardRepositoryRef ref) {
+RewardRepository rewardRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[RewardRepository] as RewardRepository;
 }
 
 @riverpod
-LeaderboardRepository leaderboardRepository(LeaderboardRepositoryRef ref) {
+LeaderboardRepository leaderboardRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[LeaderboardRepository] as LeaderboardRepository;
 }
 
 @riverpod
-AchievementRepository achievementRepository(AchievementRepositoryRef ref) {
+AchievementRepository achievementRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[AchievementRepository] as AchievementRepository;
 }
 
 @riverpod
-NotificationRepository notificationRepository(NotificationRepositoryRef ref) {
+NotificationRepository notificationRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[NotificationRepository] as NotificationRepository;
 }
 
 @riverpod
-GamificationRepository gamificationRepository(GamificationRepositoryRef ref) {
+GamificationRepository gamificationRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[GamificationRepository] as GamificationRepository;
@@ -107,277 +109,277 @@ GamificationRepository gamificationRepository(GamificationRepositoryRef ref) {
 
 /// Use Case Providers (Clean Architecture)
 @riverpod
-CreateTaskUseCase createTaskUseCase(CreateTaskUseCaseRef ref) {
+CreateTaskUseCase createTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return CreateTaskUseCase(taskRepository);
 }
 
 @riverpod
-ClaimTaskUseCase claimTaskUseCase(ClaimTaskUseCaseRef ref) {
+ClaimTaskUseCase claimTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ClaimTaskUseCase(taskRepository);
 }
 
 @riverpod
-CompleteTaskUseCase completeTaskUseCase(CompleteTaskUseCaseRef ref) {
+CompleteTaskUseCase completeTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return CompleteTaskUseCase(taskRepository);
 }
 
 @riverpod
-ApproveTaskUseCase approveTaskUseCase(ApproveTaskUseCaseRef ref) {
+ApproveTaskUseCase approveTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ApproveTaskUseCase(taskRepository);
 }
 
 @riverpod
-GetTasksUseCase getTasksUseCase(GetTasksUseCaseRef ref) {
+GetTasksUseCase getTasksUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return GetTasksUseCase(taskRepository);
 }
 
 @riverpod
-SignInUseCase signInUseCase(SignInUseCaseRef ref) {
+SignInUseCase signInUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return SignInUseCase(authRepository);
 }
 
 @riverpod
-SignUpUseCase signUpUseCase(SignUpUseCaseRef ref) {
+SignUpUseCase signUpUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return SignUpUseCase(authRepository);
 }
 
 @riverpod
-CreateFamilyUseCase createFamilyUseCase(CreateFamilyUseCaseRef ref) {
+CreateFamilyUseCase createFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return CreateFamilyUseCase(familyRepository);
 }
 
 @riverpod
-AddMemberUseCase addMemberUseCase(AddMemberUseCaseRef ref) {
+AddMemberUseCase addMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return AddMemberUseCase(familyRepository);
 }
 
 @riverpod
-GetUserProfileUseCase getUserProfileUseCase(GetUserProfileUseCaseRef ref) {
+GetUserProfileUseCase getUserProfileUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return GetUserProfileUseCase(userRepository);
 }
 
 @riverpod
-UpdateUserProfileUseCase updateUserProfileUseCase(UpdateUserProfileUseCaseRef ref) {
+UpdateUserProfileUseCase updateUserProfileUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return UpdateUserProfileUseCase(userRepository);
 }
 
 @riverpod
-AwardPointsUseCase awardPointsUseCase(AwardPointsUseCaseRef ref) {
+AwardPointsUseCase awardPointsUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return AwardPointsUseCase(userRepository);
 }
 
 @riverpod
-RedeemRewardUseCase redeemRewardUseCase(RedeemRewardUseCaseRef ref) {
+RedeemRewardUseCase redeemRewardUseCase(Ref ref) {
   final rewardRepository = ref.watch(rewardRepositoryProvider);
   final userRepository = ref.watch(userRepositoryProvider);
   return RedeemRewardUseCase(rewardRepository, userRepository);
 }
 
 @riverpod
-GetLeaderboardUseCase getLeaderboardUseCase(GetLeaderboardUseCaseRef ref) {
+GetLeaderboardUseCase getLeaderboardUseCase(Ref ref) {
   final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
   return GetLeaderboardUseCase(leaderboardRepository);
 }
 
 // Additional Task Use Cases
 @riverpod
-UpdateTaskUseCase updateTaskUseCase(UpdateTaskUseCaseRef ref) {
+UpdateTaskUseCase updateTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return UpdateTaskUseCase(taskRepository);
 }
 
 @riverpod
-DeleteTaskUseCase deleteTaskUseCase(DeleteTaskUseCaseRef ref) {
+DeleteTaskUseCase deleteTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return DeleteTaskUseCase(taskRepository);
 }
 
 @riverpod
-AssignTaskUseCase assignTaskUseCase(AssignTaskUseCaseRef ref) {
+AssignTaskUseCase assignTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return AssignTaskUseCase(taskRepository);
 }
 
 @riverpod
-UnassignTaskUseCase unassignTaskUseCase(UnassignTaskUseCaseRef ref) {
+UnassignTaskUseCase unassignTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return UnassignTaskUseCase(taskRepository);
 }
 
 @riverpod
-UncompleteTaskUseCase uncompleteTaskUseCase(UncompleteTaskUseCaseRef ref) {
+UncompleteTaskUseCase uncompleteTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return UncompleteTaskUseCase(taskRepository);
 }
 
 @riverpod
-RejectTaskUseCase rejectTaskUseCase(RejectTaskUseCaseRef ref) {
+RejectTaskUseCase rejectTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return RejectTaskUseCase(taskRepository);
 }
 
 @riverpod
-StreamTasksUseCase streamTasksUseCase(StreamTasksUseCaseRef ref) {
+StreamTasksUseCase streamTasksUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return StreamTasksUseCase(taskRepository);
 }
 
 @riverpod
-StreamAvailableTasksUseCase streamAvailableTasksUseCase(StreamAvailableTasksUseCaseRef ref) {
+StreamAvailableTasksUseCase streamAvailableTasksUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return StreamAvailableTasksUseCase(taskRepository);
 }
 
 @riverpod
-StreamTasksByAssigneeUseCase streamTasksByAssigneeUseCase(StreamTasksByAssigneeUseCaseRef ref) {
+StreamTasksByAssigneeUseCase streamTasksByAssigneeUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return StreamTasksByAssigneeUseCase(taskRepository);
 }
 
 // Additional Family Use Cases
 @riverpod
-GetFamilyUseCase getFamilyUseCase(GetFamilyUseCaseRef ref) {
+GetFamilyUseCase getFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return GetFamilyUseCase(familyRepository);
 }
 
 @riverpod
-UpdateFamilyUseCase updateFamilyUseCase(UpdateFamilyUseCaseRef ref) {
+UpdateFamilyUseCase updateFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return UpdateFamilyUseCase(familyRepository);
 }
 
 @riverpod
-DeleteFamilyUseCase deleteFamilyUseCase(DeleteFamilyUseCaseRef ref) {
+DeleteFamilyUseCase deleteFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return DeleteFamilyUseCase(familyRepository);
 }
 
 @riverpod
-RemoveMemberUseCase removeMemberUseCase(RemoveMemberUseCaseRef ref) {
+RemoveMemberUseCase removeMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return RemoveMemberUseCase(familyRepository);
 }
 
 @riverpod
-GetFamilyMembersUseCase getFamilyMembersUseCase(GetFamilyMembersUseCaseRef ref) {
+GetFamilyMembersUseCase getFamilyMembersUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return GetFamilyMembersUseCase(familyRepository);
 }
 
 @riverpod
-UpdateFamilyMemberUseCase updateFamilyMemberUseCase(UpdateFamilyMemberUseCaseRef ref) {
+UpdateFamilyMemberUseCase updateFamilyMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return UpdateFamilyMemberUseCase(familyRepository);
 }
 
 // Additional User Use Cases
 @riverpod
-DeleteUserUseCase deleteUserUseCase(DeleteUserUseCaseRef ref) {
+DeleteUserUseCase deleteUserUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return DeleteUserUseCase(userRepository);
 }
 
 @riverpod
-StreamUserProfileUseCase streamUserProfileUseCase(StreamUserProfileUseCaseRef ref) {
+StreamUserProfileUseCase streamUserProfileUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return StreamUserProfileUseCase(userRepository);
 }
 
 @riverpod
-InitializeUserDataUseCase initializeUserDataUseCase(InitializeUserDataUseCaseRef ref) {
+InitializeUserDataUseCase initializeUserDataUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return InitializeUserDataUseCase(userRepository);
 }
 
 // Additional Gamification Use Cases
 @riverpod
-AwardBadgeUseCase awardBadgeUseCase(AwardBadgeUseCaseRef ref) {
+AwardBadgeUseCase awardBadgeUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
   return AwardBadgeUseCase(badgeRepository);
 }
 
 @riverpod
-RevokeBadgeUseCase revokeBadgeUseCase(RevokeBadgeUseCaseRef ref) {
+RevokeBadgeUseCase revokeBadgeUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
   return RevokeBadgeUseCase(badgeRepository);
 }
 
 @riverpod
-GrantAchievementUseCase grantAchievementUseCase(GrantAchievementUseCaseRef ref) {
+GrantAchievementUseCase grantAchievementUseCase(Ref ref) {
   final achievementRepository = ref.watch(achievementRepositoryProvider);
   return GrantAchievementUseCase(achievementRepository);
 }
 
 @riverpod
-CreateBadgeUseCase createBadgeUseCase(CreateBadgeUseCaseRef ref) {
+CreateBadgeUseCase createBadgeUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
   return CreateBadgeUseCase(badgeRepository);
 }
 
 @riverpod
-CreateRewardUseCase createRewardUseCase(CreateRewardUseCaseRef ref) {
+CreateRewardUseCase createRewardUseCase(Ref ref) {
   final rewardRepository = ref.watch(rewardRepositoryProvider);
   return CreateRewardUseCase(rewardRepository);
 }
 
 @riverpod
-GetBadgesUseCase getBadgesUseCase(GetBadgesUseCaseRef ref) {
+GetBadgesUseCase getBadgesUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
   return GetBadgesUseCase(badgeRepository);
 }
 
 @riverpod
-GetRewardsUseCase getRewardsUseCase(GetRewardsUseCaseRef ref) {
+GetRewardsUseCase getRewardsUseCase(Ref ref) {
   final rewardRepository = ref.watch(rewardRepositoryProvider);
   return GetRewardsUseCase(rewardRepository);
 }
 
 // Notification Use Cases
 @riverpod
-GetNotificationsUseCase getNotificationsUseCase(GetNotificationsUseCaseRef ref) {
+GetNotificationsUseCase getNotificationsUseCase(Ref ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return GetNotificationsUseCase(notificationRepository);
 }
 
 @riverpod
-CreateNotificationUseCase createNotificationUseCase(CreateNotificationUseCaseRef ref) {
+CreateNotificationUseCase createNotificationUseCase(Ref ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return CreateNotificationUseCase(notificationRepository);
 }
 
 @riverpod
-MarkNotificationAsReadUseCase markNotificationAsReadUseCase(MarkNotificationAsReadUseCaseRef ref) {
+MarkNotificationAsReadUseCase markNotificationAsReadUseCase(Ref ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return MarkNotificationAsReadUseCase(notificationRepository);
 }
 
 @riverpod
-DeleteNotificationUseCase deleteNotificationUseCase(DeleteNotificationUseCaseRef ref) {
+DeleteNotificationUseCase deleteNotificationUseCase(Ref ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return DeleteNotificationUseCase(notificationRepository);
 }
 
 @riverpod
-StreamNotificationsUseCase streamNotificationsUseCase(StreamNotificationsUseCaseRef ref) {
+StreamNotificationsUseCase streamNotificationsUseCase(Ref ref) {
   final notificationRepository = ref.watch(notificationRepositoryProvider);
   return StreamNotificationsUseCase(notificationRepository);
 }
 
 @riverpod
-ResetPasswordUseCase resetPasswordUseCase(ResetPasswordUseCaseRef ref) {
+ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
 }

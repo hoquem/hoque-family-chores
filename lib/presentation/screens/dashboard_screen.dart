@@ -4,6 +4,8 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
 import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 
+// For logging
+
 // This screen now represents the content for the 'Home' tab in the AppShell
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});

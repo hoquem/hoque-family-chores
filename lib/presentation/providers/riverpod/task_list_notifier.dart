@@ -1,4 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
@@ -300,7 +302,7 @@ class TaskFilterNotifier extends _$TaskFilterNotifier {
 
 /// Computed provider that returns filtered tasks based on the current filter.
 @riverpod
-List<Task> filteredTasks(FilteredTasksRef ref, FamilyId familyId) {
+List<Task> filteredTasks(Ref ref, FamilyId familyId) {
   final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
   final filter = ref.watch(taskFilterNotifierProvider);
   
@@ -321,6 +323,8 @@ List<Task> _filterTasks(List<Task> tasks, TaskFilterType filter) {
       return tasks;
     case TaskFilterType.available:
       return tasks.where((task) => task.status == TaskStatus.available).toList();
+    case TaskFilterType.pendingApproval:
+      return tasks.where((task) => task.status == TaskStatus.pendingApproval).toList();
     case TaskFilterType.completed:
       return tasks.where((task) => task.status == TaskStatus.completed).toList();
   }

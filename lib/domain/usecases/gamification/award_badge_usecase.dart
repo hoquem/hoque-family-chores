@@ -9,7 +9,10 @@ import '../../value_objects/family_id.dart';
 class AwardBadgeUseCase {
   final BadgeRepository _badgeRepository;
 
-  AwardBadgeUseCase(this._badgeRepository);
+
+  // final UserRepository _userRepository; // Unused - commented out
+
+  AwardBadgeUseCase(this._badgeRepository, [dynamic _]);
 
   /// Awards a badge to a user
   /// 

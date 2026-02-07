@@ -20,7 +20,7 @@ class UpdateTaskUseCase {
   }) async {
     try {
       // Validate task ID
-      if (task.id == null) {
+      if (task.id.value.trim().isEmpty) {
         return Left(ValidationFailure('Task ID is required for update'));
       }
 
@@ -41,7 +41,7 @@ class UpdateTaskUseCase {
       await _taskRepository.updateTask(task);
       
       // Get the updated task to return
-      final updatedTask = await _taskRepository.getTask(task.familyId, task.id!);
+      final updatedTask = await _taskRepository.getTask(task.familyId, task.id);
       if (updatedTask == null) {
         return Left(NotFoundFailure('Updated task not found'));
       }

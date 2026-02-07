@@ -272,7 +272,7 @@ class AuthNotifier extends _$AuthNotifier {
   String? get currentUserId => state.user?.id.value;
 
   /// Gets the current user's family ID.
-  String? get userFamilyId => state.user?.familyId?.value;
+  String? get userFamilyId => state.user?.familyId.value;
 
   /// Gets the display name of the current user.
   String? get displayName => state.user?.name;
