@@ -61,6 +61,11 @@ class UserProfileScreen extends ConsumerWidget {
                   email,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Total Points: ${currentUser.points.value}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
           ),

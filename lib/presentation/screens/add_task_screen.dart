@@ -160,7 +160,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 border: OutlineInputBorder(),
                 helperText: 'Select the effort size - points are automatically set',
               ),
-              value: _selectedDifficulty,
+              initialValue: _selectedDifficulty,
               items: TaskDifficulty.values.map((difficulty) {
                 String description;
                 int points;
@@ -204,7 +204,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: _selectedAssignee,
+                  initialValue: _selectedAssignee,
                   items: [
                     const DropdownMenuItem<User?>(
                       value: null,
@@ -234,7 +234,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: null,
+                  initialValue: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -243,7 +243,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: null,
+                  initialValue: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -254,7 +254,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   labelText: 'Assign To (Optional)',
                   border: OutlineInputBorder(),
                 ),
-                value: null,
+                initialValue: null,
                 items: const [],
                 onChanged: null,
               ),

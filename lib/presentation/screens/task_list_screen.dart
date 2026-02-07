@@ -214,6 +214,10 @@ class TaskListScreen extends ConsumerWidget {
                 child: Text('My Tasks'),
               ),
               const PopupMenuItem(
+                value: TaskFilterType.pendingApproval,
+                child: Text('Needs Approval'),
+              ),
+              const PopupMenuItem(
                 value: TaskFilterType.completed,
                 child: Text('Completed'),
               ),

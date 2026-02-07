@@ -11,12 +11,12 @@ class LeaderboardWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _logger = AppLogger();
+    final logger = AppLogger();
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
-    Future<void> _refreshData() async {
-      _logger.d('LeaderboardWidget: Refreshing data');
+    Future<void> refreshData() async {
+      logger.d('LeaderboardWidget: Refreshing data');
       if (currentUser != null) {
         ref.invalidate(leaderboardNotifierProvider(currentUser.familyId));
       }
@@ -28,10 +28,10 @@ class LeaderboardWidget extends ConsumerWidget {
 
     final leaderboardAsync = ref.watch(leaderboardNotifierProvider(currentUser.familyId));
 
-    _logger.d('LeaderboardWidget: Building widget');
+    logger.d('LeaderboardWidget: Building widget');
     
     return RefreshIndicator(
-      onRefresh: _refreshData,
+      onRefresh: refreshData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: IntrinsicHeight(
@@ -46,16 +46,16 @@ class LeaderboardWidget extends ConsumerWidget {
   }
 
   Widget _buildLoadingState() {
-    final _logger = AppLogger();
-    _logger.d('LeaderboardWidget: Building loading state');
+    final logger = AppLogger();
+    logger.d('LeaderboardWidget: Building loading state');
     return const Center(
       child: CircularProgressIndicator(),
     );
   }
 
   Widget _buildErrorState(String error) {
-    final _logger = AppLogger();
-    _logger.d('LeaderboardWidget: Building error state: $error');
+    final logger = AppLogger();
+    logger.d('LeaderboardWidget: Building error state: $error');
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -78,11 +78,11 @@ class LeaderboardWidget extends ConsumerWidget {
   }
 
   Widget _buildLeaderboard(List<LeaderboardEntry> entries) {
-    final _logger = AppLogger();
-    _logger.d('LeaderboardWidget: Building leaderboard with ${entries.length} entries');
+    final logger = AppLogger();
+    logger.d('LeaderboardWidget: Building leaderboard with ${entries.length} entries');
     
     if (entries.isEmpty) {
-      _logger.w('LeaderboardWidget: No entries to display');
+      logger.w('LeaderboardWidget: No entries to display');
       return const Card(
         margin: EdgeInsets.all(16.0),
         child: Padding(
@@ -96,14 +96,14 @@ class LeaderboardWidget extends ConsumerWidget {
       );
     }
 
-    _logger.d('LeaderboardWidget: Building leaderboard list');
+    logger.d('LeaderboardWidget: Building leaderboard list');
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
-        _logger.d('LeaderboardWidget: Building entry $index: ${entry.userName} with ${entry.points.value} points');
+        logger.d('LeaderboardWidget: Building entry $index: ${entry.userName} with ${entry.points.value} points');
         
         return ListTile(
           leading: CircleAvatar(
@@ -117,7 +117,7 @@ class LeaderboardWidget extends ConsumerWidget {
           title: Text(entry.userName),
           subtitle: Text('${entry.points.value} points'),
           trailing: Text(
-            '#${entry.rank ?? index + 1}',
+            '#${entry.rank}',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

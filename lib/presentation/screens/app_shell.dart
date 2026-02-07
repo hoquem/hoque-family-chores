@@ -76,6 +76,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                   child: Text('Available Tasks'),
                 ),
                 const PopupMenuItem(
+                  value: TaskFilterType.pendingApproval,
+                  child: Text('Needs Approval'),
+                ),
+                const PopupMenuItem(
                   value: TaskFilterType.completed,
                   child: Text('Completed Tasks'),
                 ),
