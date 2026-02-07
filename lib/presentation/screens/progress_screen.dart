@@ -10,12 +10,12 @@ class ProgressScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final _logger = AppLogger();
+    final logger = AppLogger();
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
-    Future<void> _refreshData() async {
-      _logger.d('ProgressScreen: Refreshing data');
+    Future<void> refreshData() async {
+      logger.d('ProgressScreen: Refreshing data');
       ref.invalidate(authNotifierProvider);
     }
 
@@ -23,12 +23,12 @@ class ProgressScreen extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    _logger.d('ProgressScreen: Building screen');
+    logger.d('ProgressScreen: Building screen');
     
     return Scaffold(
       appBar: AppBar(title: const Text('Progress')),
       body: RefreshIndicator(
-        onRefresh: _refreshData,
+        onRefresh: refreshData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Padding(

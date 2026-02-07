@@ -12,7 +12,7 @@ class FamilyListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
-    final _logger = AppLogger();
+    final logger = AppLogger();
 
     if (currentUser == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -139,7 +139,7 @@ class FamilyListScreen extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) {
-            _logger.e(
+            logger.e(
               "Error loading family members: $error",
               error: error,
               stackTrace: stack,

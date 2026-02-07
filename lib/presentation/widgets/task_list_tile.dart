@@ -192,7 +192,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   @override
   Widget build(BuildContext context) {
     final bool isCompleted = widget.task.status == TaskStatus.completed;
-    final theme = Theme.of(context);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
