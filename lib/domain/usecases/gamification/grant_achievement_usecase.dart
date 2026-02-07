@@ -9,6 +9,7 @@ import '../../value_objects/user_id.dart';
 class GrantAchievementUseCase {
   final AchievementRepository _achievementRepository;
 
+
   // final UserRepository _userRepository; // Unused - commented out
 
   GrantAchievementUseCase(this._achievementRepository, [dynamic _]);

@@ -21,6 +21,8 @@ abstract class AuthRepository {
   /// Send password reset email
   Future<void> sendPasswordResetEmail(Email email);
 
+
+
   /// Update email
   Future<void> updateEmail(Email newEmail);
 

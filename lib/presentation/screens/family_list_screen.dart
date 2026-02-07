@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+
 import 'package:hoque_family_chores/utils/logger.dart';
+
 
 class FamilyListScreen extends ConsumerWidget {
   const FamilyListScreen({super.key});
@@ -139,6 +141,7 @@ class FamilyListScreen extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) {
+
             logger.e(
               "Error loading family members: $error",
               error: error,

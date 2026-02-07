@@ -66,7 +66,11 @@ class AvailableTasksNotifier extends _$AvailableTasksNotifier {
         (failure) => throw Exception(failure.message),
         (_) {
           _logger.d('AvailableTasksNotifier: Task claimed successfully');
-          // The stream will automatically update the list
+          // Manually remove the task from the list for immediate UI update
+          state = AsyncData(
+            state.value!.where((task) => task.id.value != taskId).toList()
+          );
+          _logger.d('AvailableTasksNotifier: State updated, new length: ${state.value!.length}');
         },
       );
     } catch (e) {
