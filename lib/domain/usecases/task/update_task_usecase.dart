@@ -19,6 +19,11 @@ class UpdateTaskUseCase {
     required Task task,
   }) async {
     try {
+      // Validate task ID
+      if (task.id.value.trim().isEmpty) {
+        return Left(ValidationFailure('Task ID is required for update'));
+      }
+
       // Validate task data
       if (task.title.trim().isEmpty) {
         return Left(ValidationFailure('Task title cannot be empty'));

@@ -8,6 +8,7 @@ import '../../value_objects/family_id.dart';
 /// Use case for awarding badges to users
 class AwardBadgeUseCase {
   final BadgeRepository _badgeRepository;
+
   // final UserRepository _userRepository; // Unused - commented out
 
   AwardBadgeUseCase(this._badgeRepository, [dynamic _]);

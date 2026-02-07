@@ -8,9 +8,11 @@ import '../../value_objects/user_id.dart';
 /// Use case for granting achievements to users
 class GrantAchievementUseCase {
   final AchievementRepository _achievementRepository;
+
   // final UserRepository _userRepository; // Unused - commented out
 
   GrantAchievementUseCase(this._achievementRepository, [dynamic _]);
+
 
   /// Grants an achievement to a user
   /// 
@@ -29,6 +31,10 @@ class GrantAchievementUseCase {
       }
 
       // Validate achievement
+      if (achievement.id.trim().isEmpty) {
+        return Left(ValidationFailure('Achievement ID cannot be empty'));
+      }
+
       if (achievement.title.trim().isEmpty) {
         return Left(ValidationFailure('Achievement title cannot be empty'));
       }

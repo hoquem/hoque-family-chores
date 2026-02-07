@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
@@ -322,6 +323,8 @@ List<Task> _filterTasks(List<Task> tasks, TaskFilterType filter) {
       return tasks;
     case TaskFilterType.available:
       return tasks.where((task) => task.status == TaskStatus.available).toList();
+    case TaskFilterType.pendingApproval:
+      return tasks.where((task) => task.status == TaskStatus.pendingApproval).toList();
     case TaskFilterType.completed:
       return tasks.where((task) => task.status == TaskStatus.completed).toList();
   }

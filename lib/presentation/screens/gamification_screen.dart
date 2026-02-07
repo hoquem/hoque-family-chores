@@ -211,5 +211,4 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen>
     );
   }
 
-  // Note: _redeemReward and _getIconFromName methods removed as they were unused
 }

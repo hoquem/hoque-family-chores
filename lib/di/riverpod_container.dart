@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/environment_service.dart';
@@ -307,22 +308,19 @@ InitializeUserDataUseCase initializeUserDataUseCase(Ref ref) {
 @riverpod
 AwardBadgeUseCase awardBadgeUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return AwardBadgeUseCase(badgeRepository, userRepository);
+  return AwardBadgeUseCase(badgeRepository);
 }
 
 @riverpod
 RevokeBadgeUseCase revokeBadgeUseCase(Ref ref) {
   final badgeRepository = ref.watch(badgeRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return RevokeBadgeUseCase(badgeRepository, userRepository);
+  return RevokeBadgeUseCase(badgeRepository);
 }
 
 @riverpod
 GrantAchievementUseCase grantAchievementUseCase(Ref ref) {
   final achievementRepository = ref.watch(achievementRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return GrantAchievementUseCase(achievementRepository, userRepository);
+  return GrantAchievementUseCase(achievementRepository);
 }
 
 @riverpod

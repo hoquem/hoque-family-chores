@@ -8,6 +8,7 @@ import '../../value_objects/family_id.dart';
 /// Use case for revoking badges from users
 class RevokeBadgeUseCase {
   final BadgeRepository _badgeRepository;
+
   // final UserRepository _userRepository; // Unused - commented out
 
   RevokeBadgeUseCase(this._badgeRepository, [dynamic _]);
