@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class PhotoPreviewWidget extends StatelessWidget {
   final File photo;
   final VoidCallback onRetake;
-  final VoidCallback onUsePhoto;
+  final VoidCallback? onUsePhoto;
   final String taskTitle;
 
   const PhotoPreviewWidget({

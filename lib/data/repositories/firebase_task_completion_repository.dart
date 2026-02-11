@@ -28,21 +28,37 @@ class FirebaseTaskCompletionRepository implements TaskCompletionRepository {
   }) async {
     try {
       // Compress image to max 1MB
-      final compressedBytes = await FlutterImageCompress.compressWithFile(
+      var compressedBytes = await FlutterImageCompress.compressWithFile(
         photo.path,
-        minWidth: 1024,
-        minHeight: 1024,
         quality: 85,
+        minWidth: 1920,
+        minHeight: 1920,
       );
 
       if (compressedBytes == null) {
         return Left(ServerFailure('Failed to compress image'));
       }
 
+      // If still larger than 1MB, compress more aggressively
+      const maxSize = 1024 * 1024; // 1MB
+      if (compressedBytes.length > maxSize) {
+        compressedBytes = await FlutterImageCompress.compressWithFile(
+          photo.path,
+          quality: 70,
+          minWidth: 1920,
+          minHeight: 1920,
+        );
+        
+        if (compressedBytes == null || compressedBytes.length > maxSize) {
+          return Left(ServerFailure(
+            'Image too large. Please take a new photo with better lighting or a simpler scene.',
+          ));
+        }
+      }
+
       // Upload to Firebase Storage
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = '$timestamp.jpg';
-      final path = 'quest_photos/${taskId.value}/$fileName';
+      final path = 'quest_photos/${taskId.value}/$timestamp.jpg';
 
       final ref = _storage.ref().child(path);
       final uploadTask = ref.putData(

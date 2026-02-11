@@ -61,6 +61,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   image_picker: ^1.1.2 # For camera access
   flutter_image_compress: ^2.3.0 # For image compression
+  permission_handler: ^11.3.1 # For camera permission handling
   # Add other Firebase packages as needed, e.g., firebase_storage, firebase_messaging
 
 

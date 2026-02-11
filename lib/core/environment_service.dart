@@ -28,14 +28,22 @@ class EnvironmentService {
   bool get shouldConnectToFirebase => !useMockData;
 
   /// Gemini API key from environment
-  /// TODO: Replace with actual API key or load from .env file
+  /// Must be set via --dart-define=GEMINI_API_KEY=your_key or environment variable
   String get geminiApiKey {
-    // In production, this should come from a secure source
-    const apiKey = String.fromEnvironment('GEMINI_API_KEY');
-    if (apiKey.isNotEmpty) {
-      return apiKey;
+    const apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+    if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
+      throw StateError(
+        'GEMINI_API_KEY must be set via --dart-define or environment variable. '
+        'Example: flutter run --dart-define=GEMINI_API_KEY=your_key_here',
+      );
     }
-    // Fallback for development (replace with actual key)
-    return 'YOUR_GEMINI_API_KEY_HERE';
+    return apiKey;
+  }
+
+  /// Whether AI rating feature is enabled
+  /// Can be disabled via feature flag for gradual rollout
+  bool get enablePhotoProofAi {
+    const enabled = String.fromEnvironment('ENABLE_PHOTO_PROOF_AI', defaultValue: 'true');
+    return enabled.toLowerCase() == 'true';
   }
 } 

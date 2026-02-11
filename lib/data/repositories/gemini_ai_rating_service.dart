@@ -59,7 +59,7 @@ class GeminiAiRatingService implements AiRatingService {
       // Call Gemini API
       final response = await http
           .post(
-            Uri.parse('$baseUrl/gemini-2.0-flash-exp:generateContent?key=$apiKey'),
+            Uri.parse('$baseUrl/gemini-2.5-flash:generateContent?key=$apiKey'),
             headers: {'Content-Type': 'application/json'},
             body: json.encode(request),
           )
@@ -80,7 +80,7 @@ class GeminiAiRatingService implements AiRatingService {
             relevant: aiResponse['relevant'] as bool? ?? true,
             confidence: aiResponse['confidence'] as String? ?? 'medium',
             contentWarning: aiResponse['contentWarning'] as bool? ?? false,
-            modelVersion: 'gemini-2.0-flash-exp',
+            modelVersion: 'gemini-2.5-flash',
             analysisTimestamp: DateTime.now(),
           ),
         );

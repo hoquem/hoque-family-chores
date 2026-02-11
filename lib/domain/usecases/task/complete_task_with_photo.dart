@@ -45,7 +45,7 @@ class CompleteTaskWithPhoto {
           taskType: taskType,
         );
 
-        // If AI rating succeeds, use it; otherwise continue without it
+        // If AI rating succeeds, check it; otherwise continue without it
         aiResult.fold(
           (failure) {
             // Log failure but don't block completion
@@ -55,6 +55,16 @@ class CompleteTaskWithPhoto {
             aiRating = rating;
           },
         );
+
+        // Check for inappropriate content
+        if (aiRating != null && aiRating!.contentWarning) {
+          return Left(
+            ValidationFailure(
+              'This photo cannot be used for quest completion. '
+              'Please take a new photo of your completed task.',
+            ),
+          );
+        }
 
         // 3. Create completion record
         final completionResult = await completionRepository.createCompletion(

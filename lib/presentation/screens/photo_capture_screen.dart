@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../widgets/photo_preview_widget.dart';
 import '../providers/riverpod/photo_completion_notifier.dart';
 import '../../domain/entities/task.dart';
@@ -27,10 +28,59 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
   @override
   void initState() {
     super.initState();
-    // Open camera immediately when screen loads
+    // Check permissions and open camera immediately when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _openCamera();
+      _checkPermissionsAndOpenCamera();
     });
+  }
+
+  Future<void> _checkPermissionsAndOpenCamera() async {
+    final status = await Permission.camera.status;
+
+    if (status.isDenied) {
+      final result = await Permission.camera.request();
+      if (result.isDenied) {
+        _showPermissionDialog();
+        return;
+      }
+    }
+
+    if (status.isPermanentlyDenied) {
+      _showPermissionDialog();
+      return;
+    }
+
+    await _openCamera();
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Camera Access Required'),
+        content: const Text(
+          'We need camera access to capture your awesome work! 📸\n\n'
+          'Please grant camera permission in your device settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context); // Also exit photo capture screen
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _openCamera() async {
@@ -69,11 +119,11 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
     setState(() {
       _capturedPhoto = null;
     });
-    await _openCamera();
+    await _checkPermissionsAndOpenCamera();
   }
 
   Future<void> _usePhoto() async {
-    if (_capturedPhoto == null) return;
+    if (_capturedPhoto == null || _isLoading) return;
 
     setState(() {
       _isLoading = true;
@@ -154,7 +204,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
               : PhotoPreviewWidget(
                   photo: _capturedPhoto!,
                   onRetake: _retakePhoto,
-                  onUsePhoto: _usePhoto,
+                  onUsePhoto: _isLoading ? null : _usePhoto,
                   taskTitle: widget.task.title,
                 ),
     );
