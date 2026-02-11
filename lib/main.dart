@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-// Riverpod DI
-import 'package:hoque_family_chores/di/riverpod_container.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/app_shell.dart';
+import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
-import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -73,20 +69,20 @@ class MyApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
-    // ... rest of the widget tree ...
-    return const Scaffold(
-      body: Center(child: Text('Welcome to Hoque Family Chores!')),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return const MainScreen();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }
