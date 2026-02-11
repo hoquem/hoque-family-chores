@@ -6,7 +6,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_bottom_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -66,7 +66,7 @@ class TaskListScreen extends ConsumerWidget {
   void _showQuickAddQuest(BuildContext context, WidgetRef ref) {
     final logger = AppLogger();
     logger.i('TaskListScreen: Opening Quick Add Quest bottom sheet');
-    showQuickAddQuestSheet(context);
+    showQuickAddQuestBottomSheet(context, ref);
   }
 
   Widget _buildTaskList(BuildContext context, WidgetRef ref, FamilyId familyId) {
