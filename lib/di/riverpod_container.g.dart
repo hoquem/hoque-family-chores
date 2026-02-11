@@ -243,24 +243,6 @@ final gamificationRepositoryProvider =
 // ignore: unused_element
 typedef GamificationRepositoryRef =
     AutoDisposeProviderRef<GamificationRepository>;
-String _$streakRepositoryHash() => r'9dd977d3453e566a4b28f7de3872e2abf5c9de1f';
-
-/// See also [streakRepository].
-@ProviderFor(streakRepository)
-final streakRepositoryProvider = AutoDisposeProvider<StreakRepository>.internal(
-  streakRepository,
-  name: r'streakRepositoryProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$streakRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef StreakRepositoryRef = AutoDisposeProviderRef<StreakRepository>;
 String _$createTaskUseCaseHash() => r'fd1908728d6fbedfd60f77adc82e5876eb2b2705';
 
 /// Use Case Providers (Clean Architecture)
@@ -1157,25 +1139,5 @@ final resetPasswordUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
-String _$updateStreakUseCaseHash() =>
-    r'888dd4c285f18bebd4115a5bcf928bacae2f9a1a';
-
-/// See also [updateStreakUseCase].
-@ProviderFor(updateStreakUseCase)
-final updateStreakUseCaseProvider =
-    AutoDisposeProvider<UpdateStreakUseCase>.internal(
-      updateStreakUseCase,
-      name: r'updateStreakUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$updateStreakUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UpdateStreakUseCaseRef = AutoDisposeProviderRef<UpdateStreakUseCase>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

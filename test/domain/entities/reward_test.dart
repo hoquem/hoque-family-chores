@@ -9,7 +9,7 @@ Reward _makeReward({Points? pointsCost}) {
     name: 'Screen Time',
     description: '30 min extra screen time',
     pointsCost: pointsCost ?? Points(50),
-    iconName: 'tv',
+    iconEmoji: '📺',
     type: RewardType.privilege,
     familyId: FamilyId('f1'),
     createdAt: DateTime(2024, 1, 1),
