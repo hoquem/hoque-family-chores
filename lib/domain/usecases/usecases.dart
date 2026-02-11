@@ -5,6 +5,7 @@ export 'task/complete_task_usecase.dart';
 export 'task/complete_task_with_photo.dart';
 export 'task/approve_task_usecase.dart';
 export 'task/get_tasks_usecase.dart';
+export 'task/stream_pending_approvals_usecase.dart';
 
 // Additional Task Use Cases
 export 'task/update_task_usecase.dart';

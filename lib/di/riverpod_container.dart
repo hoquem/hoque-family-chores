@@ -144,7 +144,14 @@ CompleteTaskUseCase completeTaskUseCase(Ref ref) {
 @riverpod
 ApproveTaskUseCase approveTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
-  return ApproveTaskUseCase(taskRepository);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return ApproveTaskUseCase(taskRepository, userRepository);
+}
+
+@riverpod
+StreamPendingApprovalsUseCase streamPendingApprovalsUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return StreamPendingApprovalsUseCase(taskRepository);
 }
 
 @riverpod
