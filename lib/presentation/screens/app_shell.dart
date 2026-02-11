@@ -5,7 +5,7 @@ import 'package:hoque_family_chores/presentation/screens/quest_board_screen.dart
 import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart'; // Leaderboard
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart'; // Rewards (placeholder)
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -41,15 +41,6 @@ class _AppShellState extends ConsumerState<AppShell> {
     });
   }
 
-  void _showQuickAddQuest(BuildContext context) {
-    _logger.i('AppShell: Opening quick add quest screen');
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const AddTaskScreen(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,9 +62,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
-              onPressed: () => _showQuickAddQuest(context),
+              onPressed: () {
+                _logger.d('AppShell: Opening Quick Add Quest sheet');
+                showQuickAddQuestSheet(context);
+              },
+              backgroundColor: const Color(0xFFFFB300),
               tooltip: 'Add Quest',
-              child: const Icon(Icons.add),
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
       bottomNavigationBar: BottomNavigationBar(
