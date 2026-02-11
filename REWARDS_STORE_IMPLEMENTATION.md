@@ -60,6 +60,20 @@ This feature implements a comprehensive rewards store where children can browse 
   - Optional rejection reason input
   - Real-time updates via Riverpod
 
+- **`ManageRewardsScreen`** - `lib/presentation/screens/manage_rewards_screen.dart`
+  - List of all rewards with edit/delete actions
+  - Floating action button to create new rewards
+  - Delete confirmation dialog
+
+- **`RewardFormScreen`** - `lib/presentation/screens/manage_rewards_screen.dart`
+  - Create/edit reward form with validation
+  - Template picker for quick setup
+  - Emoji selector (16 preset options)
+  - Name, description, star cost fields
+  - Type dropdown (digital/physical/privilege)
+  - Stock management toggle
+  - Featured reward toggle
+
 #### Widgets
 - **`RewardCard`** - `lib/presentation/widgets/rewards/reward_card.dart`
   - Shows emoji, name, description, star cost
@@ -162,6 +176,12 @@ families/{familyId}/redemptions/{redemptionId}:
 ✅ Parent approval screen  
 ✅ Rejection reason input  
 ✅ Redemption history view (grouped by month)  
+✅ **Parent reward management screen** (create/edit/delete)  
+✅ **Reward form with template picker**  
+✅ Emoji selector with 16 preset options  
+✅ Form validation (name, star cost)  
+✅ Featured reward toggle  
+✅ Stock management toggle  
 ✅ Riverpod state management  
 ✅ Real-time updates via streams  
 ✅ Soft delete for rewards  
@@ -243,6 +263,7 @@ await rewardRepository.rejectRedemption(
 - `lib/domain/entities/reward_templates.dart`
 - `lib/presentation/screens/rewards_store_screen.dart`
 - `lib/presentation/screens/parent_approval_screen.dart`
+- `lib/presentation/screens/manage_rewards_screen.dart`
 - `lib/presentation/widgets/rewards/reward_card.dart`
 - `lib/presentation/widgets/rewards/star_balance_header.dart`
 - `lib/presentation/widgets/rewards/redemption_history_view.dart`
