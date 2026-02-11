@@ -234,6 +234,18 @@ GetLeaderboardUseCase getLeaderboardUseCase(Ref ref) {
   return GetLeaderboardUseCase(leaderboardRepository);
 }
 
+@riverpod
+GetWeeklyLeaderboardUseCase getWeeklyLeaderboardUseCase(Ref ref) {
+  final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
+  return GetWeeklyLeaderboardUseCase(leaderboardRepository);
+}
+
+@riverpod
+GetAllTimeLeaderboardUseCase getAllTimeLeaderboardUseCase(Ref ref) {
+  final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
+  return GetAllTimeLeaderboardUseCase(leaderboardRepository);
+}
+
 // Additional Task Use Cases
 @riverpod
 UpdateTaskUseCase updateTaskUseCase(Ref ref) {
