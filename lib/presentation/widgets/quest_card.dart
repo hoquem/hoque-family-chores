@@ -27,22 +27,29 @@ class QuestCard extends StatelessWidget {
     final isOverdue = quest.isOverdue;
     final canComplete = (isCurrentUserQuest || isParent) && !isCompleted;
 
-    return Card(
-      elevation: isCompleted ? 1 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: isOverdue && !isCompleted
-            ? const BorderSide(color: Color(0xFFF44336), width: 2)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Opacity(
-          opacity: isCompleted ? 0.6 : 1.0,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+    // Build accessibility label
+    final semanticLabel = _buildSemanticLabel();
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      enabled: !isCompleted,
+      child: Card(
+        elevation: isCompleted ? 1 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: isOverdue && !isCompleted
+              ? const BorderSide(color: Color(0xFFF44336), width: 2)
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Opacity(
+            opacity: isCompleted ? 0.6 : 1.0,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Row 1: Title + Action/Status
@@ -80,23 +87,30 @@ class QuestCard extends StatelessWidget {
                         size: 24,
                       )
                     else if (canComplete)
-                      InkWell(
-                        onTap: onComplete,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'COMPLETE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                      Semantics(
+                        label: 'Complete quest and earn ${quest.points.value} stars',
+                        button: true,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                          child: InkWell(
+                            onTap: onComplete,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).primaryColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'COMPLETE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -186,7 +200,8 @@ class QuestCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -213,5 +228,20 @@ class QuestCard extends StatelessWidget {
       'bedroom': '🛏️',
     };
     return emojiMap[tag.toLowerCase()] ?? '✅';
+  }
+
+  String _buildSemanticLabel() {
+    final isCompleted = quest.isCompleted;
+    final isOverdue = quest.isOverdue;
+    final starsText = '${quest.points.value} ${quest.points.value == 1 ? 'star' : 'stars'}';
+    final assigneeText = assignee?.name ?? 'Anyone';
+    final timeText = _formatTime(quest.dueDate);
+    
+    final statusText = isCompleted
+        ? 'Completed'
+        : (isOverdue ? 'Overdue' : 'Not completed');
+    
+    return 'Quest: ${quest.title}. Worth $starsText. Assigned to $assigneeText. '
+           'Due before $timeText. $statusText.';
   }
 }

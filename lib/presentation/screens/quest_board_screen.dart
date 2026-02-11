@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -7,6 +9,17 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/widgets/quest_card.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
+
+part 'quest_board_screen.g.dart';
+
+/// Provider for connectivity status
+@riverpod
+Stream<bool> connectivityStatus(Ref ref) {
+  return Connectivity().onConnectivityChanged.map((results) {
+    // results is List<ConnectivityResult>
+    return results.any((result) => result != ConnectivityResult.none);
+  });
+}
 
 class QuestBoardScreen extends ConsumerStatefulWidget {
   const QuestBoardScreen({super.key});
@@ -19,17 +32,16 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
   @override
   void initState() {
     super.initState();
-    // Quests are automatically loaded by the provider
+    // Quests are automatically streamed by the provider
   }
 
   Future<void> _refreshQuests() async {
+    // Force a rebuild of the stream provider
     final authState = ref.read(authNotifierProvider);
     final currentUser = authState.user;
-    final familyId = currentUser?.familyId;
-
-    if (currentUser != null && familyId != null) {
-      logger.d('[QuestBoardScreen] Refreshing quests for family: $familyId');
-      await ref.read(taskListNotifierProvider(familyId).notifier).refresh();
+    if (currentUser != null) {
+      logger.d('[QuestBoardScreen] Refreshing quests for family: ${currentUser.familyId}');
+      ref.invalidate(taskListStreamProvider(currentUser.familyId));
     }
   }
 
@@ -39,16 +51,27 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
     
     if (currentUser == null) return;
 
-    try {
-      // Update quest status to completed
-      final updatedQuest = quest.copyWith(
-        status: TaskStatus.completed,
-        completedAt: DateTime.now(),
-      );
+    // Check connectivity before attempting to complete
+    final connectivityState = ref.read(connectivityStatusProvider);
+    final isOnline = connectivityState.value ?? true;
+    
+    if (!isOnline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot complete quest while offline. Please check your connection.'),
+            backgroundColor: Color(0xFFF44336),
+          ),
+        );
+      }
+      return;
+    }
 
+    try {
+      // Use the domain layer's completeTask use case (ensures business logic runs)
       await ref
           .read(taskListNotifierProvider(currentUser.familyId).notifier)
-          .updateTask(updatedQuest);
+          .completeTask(quest.id.value, currentUser.id, currentUser.familyId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -59,15 +82,18 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
           ),
         );
       }
-
-      await _refreshQuests();
     } catch (e) {
       logger.e('[QuestBoardScreen] Error completing quest: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to complete quest. Please try again.'),
-            backgroundColor: Color(0xFFF44336),
+          SnackBar(
+            content: const Text('Failed to complete quest. Please try again.'),
+            backgroundColor: const Color(0xFFF44336),
+            action: SnackBarAction(
+              label: 'RETRY',
+              textColor: Colors.white,
+              onPressed: () => _completeQuest(quest),
+            ),
           ),
         );
       }
@@ -324,6 +350,28 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
     );
   }
 
+  Widget _buildOfflineBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      color: Colors.orange.shade700,
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.cloud_off, size: 16, color: Colors.white),
+          SizedBox(width: 8),
+          Text(
+            'Offline — showing last synced data',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
@@ -333,11 +381,30 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final taskListState = ref.watch(taskListNotifierProvider(currentUser.familyId));
+    final isParent = currentUser.role == UserRole.parent;
+    
+    // Use role-based filtered stream provider for real-time updates
+    final taskListState = ref.watch(
+      filteredQuestsStreamProvider(
+        currentUser.familyId,
+        currentUser.id,
+        isParent,
+      ),
+    );
 
-    return RefreshIndicator(
-      onRefresh: _refreshQuests,
-      child: taskListState.when(
+    // Watch connectivity status
+    final connectivityState = ref.watch(connectivityStatusProvider);
+    final isOnline = connectivityState.value ?? true;
+
+    return Column(
+      children: [
+        // Offline banner
+        if (!isOnline) _buildOfflineBanner(),
+        // Main content
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _refreshQuests,
+            child: taskListState.when(
         data: (tasks) {
           final todayQuests = _getTodayQuests(tasks);
           final sortedQuests = _sortQuests(todayQuests);
@@ -403,9 +470,12 @@ class _QuestBoardScreenState extends ConsumerState<QuestBoardScreen> {
             ],
           );
         },
-        loading: () => _buildLoadingState(),
-        error: (error, stack) => _buildErrorState(error.toString()),
-      ),
+              loading: () => _buildLoadingState(),
+              error: (error, stack) => _buildErrorState(error.toString()),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
