@@ -9,6 +9,8 @@ import '../../domain/repositories/leaderboard_repository.dart';
 import '../../domain/repositories/achievement_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/gamification_repository.dart';
+import '../../domain/repositories/task_completion_repository.dart';
+import '../../domain/repositories/ai_rating_service.dart';
 
 // Firebase implementations
 import 'firebase_task_repository.dart';
@@ -21,6 +23,8 @@ import 'firebase_leaderboard_repository.dart';
 import 'firebase_achievement_repository.dart';
 import 'firebase_notification_repository.dart';
 import 'firebase_gamification_repository.dart';
+import 'firebase_task_completion_repository.dart';
+import 'gemini_ai_rating_service.dart';
 
 // Mock implementations
 import 'mock_task_repository.dart';
@@ -33,6 +37,8 @@ import 'mock_leaderboard_repository.dart';
 import 'mock_achievement_repository.dart';
 import 'mock_notification_repository.dart';
 import 'mock_gamification_repository.dart';
+import 'mock_task_completion_repository.dart';
+import 'mock_ai_rating_service.dart';
 
 /// Factory for creating repository implementations based on environment
 class RepositoryFactory {
@@ -94,6 +100,16 @@ class RepositoryFactory {
       repositories[GamificationRepository] = _environment.useMockData 
           ? MockGamificationRepository() 
           : FirebaseGamificationRepository();
+
+      // Create task completion repository
+      repositories[TaskCompletionRepository] = _environment.useMockData 
+          ? MockTaskCompletionRepository() 
+          : FirebaseTaskCompletionRepository();
+
+      // Create AI rating service
+      repositories[AiRatingService] = _environment.useMockData 
+          ? MockAiRatingService() 
+          : GeminiAiRatingService(apiKey: _environment.geminiApiKey);
 
     } catch (e) {
       throw Exception('Failed to create repositories: $e');

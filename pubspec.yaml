@@ -51,6 +51,7 @@ dependencies:
   firebase_core: ^3.13.0 # Check pub.dev for the latest version
   firebase_auth: ^5.5.3 # Check pub.dev for the latest version
   cloud_firestore: ^5.6.7 # Check pub.dev for the latest version
+  firebase_storage: ^12.3.9 # For photo uploads
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   hooks_riverpod: ^2.4.0
@@ -58,6 +59,8 @@ dependencies:
   freezed_annotation: ^3.0.0
   dio: ^5.4.0
   connectivity_plus: ^7.0.0
+  image_picker: ^1.1.2 # For camera access
+  flutter_image_compress: ^2.3.0 # For image compression
   # Add other Firebase packages as needed, e.g., firebase_storage, firebase_messaging
 
 

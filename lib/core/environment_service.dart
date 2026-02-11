@@ -26,4 +26,16 @@ class EnvironmentService {
 
   /// Whether we should connect to Firebase
   bool get shouldConnectToFirebase => !useMockData;
+
+  /// Gemini API key from environment
+  /// TODO: Replace with actual API key or load from .env file
+  String get geminiApiKey {
+    // In production, this should come from a secure source
+    const apiKey = String.fromEnvironment('GEMINI_API_KEY');
+    if (apiKey.isNotEmpty) {
+      return apiKey;
+    }
+    // Fallback for development (replace with actual key)
+    return 'YOUR_GEMINI_API_KEY_HERE';
+  }
 } 

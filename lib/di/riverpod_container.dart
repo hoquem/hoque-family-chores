@@ -13,6 +13,8 @@ import '../domain/repositories/achievement_repository.dart';
 import '../domain/repositories/badge_repository.dart';
 import '../domain/repositories/reward_repository.dart';
 import '../domain/repositories/user_repository.dart';
+import '../domain/repositories/task_completion_repository.dart';
+import '../domain/repositories/ai_rating_service.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
@@ -106,6 +108,20 @@ GamificationRepository gamificationRepository(Ref ref) {
   return repositories[GamificationRepository] as GamificationRepository;
 }
 
+@riverpod
+TaskCompletionRepository taskCompletionRepository(Ref ref) {
+  final factory = ref.watch(repositoryFactoryProvider);
+  final repositories = factory.createRepositories();
+  return repositories[TaskCompletionRepository] as TaskCompletionRepository;
+}
+
+@riverpod
+AiRatingService aiRatingService(Ref ref) {
+  final factory = ref.watch(repositoryFactoryProvider);
+  final repositories = factory.createRepositories();
+  return repositories[AiRatingService] as AiRatingService;
+}
+
 /// Use Case Providers (Clean Architecture)
 @riverpod
 CreateTaskUseCase createTaskUseCase(Ref ref) {
@@ -135,6 +151,16 @@ ApproveTaskUseCase approveTaskUseCase(Ref ref) {
 GetTasksUseCase getTasksUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return GetTasksUseCase(taskRepository);
+}
+
+@riverpod
+CompleteTaskWithPhoto completeTaskWithPhoto(Ref ref) {
+  final completionRepository = ref.watch(taskCompletionRepositoryProvider);
+  final aiRatingService = ref.watch(aiRatingServiceProvider);
+    return CompleteTaskWithPhoto(
+    completionRepository: completionRepository,
+    aiRatingService: aiRatingService,
+  );
 }
 
 @riverpod
