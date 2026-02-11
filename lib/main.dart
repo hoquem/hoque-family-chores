@@ -11,6 +11,36 @@ import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 
+// Custom theme colors extension
+class CustomColors extends ThemeExtension<CustomColors> {
+  final Color success;
+  final Color starGold;
+
+  const CustomColors({
+    required this.success,
+    required this.starGold,
+  });
+
+  @override
+  CustomColors copyWith({Color? success, Color? starGold}) {
+    return CustomColors(
+      success: success ?? this.success,
+      starGold: starGold ?? this.starGold,
+    );
+  }
+
+  @override
+  CustomColors lerp(ThemeExtension<CustomColors>? other, double t) {
+    if (other is! CustomColors) {
+      return this;
+    }
+    return CustomColors(
+      success: Color.lerp(success, other.success, t)!,
+      starGold: Color.lerp(starGold, other.starGold, t)!,
+    );
+  }
+}
+
 void main() async {
   final logger = AppLogger();
   logger.init(); // Initialize the logger first
@@ -66,8 +96,21 @@ class MyApp extends ConsumerWidget {
       navigatorKey: navigatorKey,
       title: 'Hoque Family Chores',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6750A4), // Purple - adventure/quest theme
+          primary: const Color(0xFF6750A4),
+          secondary: const Color(0xFFFFB300), // Gold/Amber - stars
+          error: const Color(0xFFF44336), // Red
+        ),
         useMaterial3: true,
+        primaryColor: const Color(0xFF6750A4),
+        // Custom color for success states
+        extensions: const <ThemeExtension<dynamic>>[
+          CustomColors(
+            success: Color(0xFF4CAF50), // Green
+            starGold: Color(0xFFFFB300), // Amber
+          ),
+        ],
       ),
       home: const HomeScreen(),
     );
