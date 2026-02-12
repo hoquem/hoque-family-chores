@@ -57,6 +57,7 @@ dependencies:
   go_router: ^13.0.0
   freezed_annotation: ^3.0.0
   dio: ^5.4.0
+  connectivity_plus: ^7.0.0
   # Add other Firebase packages as needed, e.g., firebase_storage, firebase_messaging
 
 

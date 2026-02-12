@@ -125,7 +125,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New Task')),
+      appBar: AppBar(title: const Text('Add New Quest')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -134,12 +134,12 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Task Title',
+                labelText: 'Quest Title',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a task title';
+                  return 'Please enter a quest title';
                 }
                 return null;
               },
@@ -158,33 +158,33 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               decoration: const InputDecoration(
                 labelText: 'Effort Size',
                 border: OutlineInputBorder(),
-                helperText: 'Select the effort size - points are automatically set',
+                helperText: 'Select the effort size - stars are automatically set',
               ),
               initialValue: _selectedDifficulty,
               items: TaskDifficulty.values.map((difficulty) {
                 String description;
-                int points;
+                int stars;
                 switch (difficulty) {
                   case TaskDifficulty.easy:
-                    description = 'Small (S) - Quick tasks, 5-15 minutes';
-                    points = 10;
+                    description = 'Small (S) - Quick quests, 5-15 minutes';
+                    stars = 10;
                     break;
                   case TaskDifficulty.medium:
-                    description = 'Medium (M) - Moderate tasks, 15-30 minutes';
-                    points = 25;
+                    description = 'Medium (M) - Moderate quests, 15-30 minutes';
+                    stars = 25;
                     break;
                   case TaskDifficulty.hard:
-                    description = 'Large (L) - Complex tasks, 30-60 minutes';
-                    points = 50;
+                    description = 'Large (L) - Complex quests, 30-60 minutes';
+                    stars = 50;
                     break;
                   case TaskDifficulty.challenging:
-                    description = 'Extra Large (XL) - Major tasks, 60+ minutes';
-                    points = 100;
+                    description = 'Extra Large (XL) - Major quests, 60+ minutes';
+                    stars = 100;
                     break;
                 }
                 return DropdownMenuItem<TaskDifficulty>(
                   value: difficulty,
-                  child: Text('$description ($points points)'),
+                  child: Text('$description ($stars ⭐)'),
                 );
               }).toList(),
               onChanged: (TaskDifficulty? newValue) {
@@ -266,7 +266,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Due Date (Approximate Time to Complete)',
                   border: OutlineInputBorder(),
-                  helperText: 'When should this task be completed by?',
+                  helperText: 'When should this quest be completed by?',
                 ),
                 child: Text(
                   _dueDate != null
@@ -283,7 +283,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               ),
               child: taskCreationState.isLoading
                   ? const CircularProgressIndicator()
-                  : const Text('Create Task'),
+                  : const Text('Create Quest'),
             ),
             // Show error if any
             if (taskCreationState.error != null) ...[
