@@ -59,6 +59,8 @@ export 'gamification/get_rewards_usecase.dart';
 
 // Leaderboard Use Cases
 export 'leaderboard/get_leaderboard_usecase.dart';
+export 'leaderboard/get_weekly_leaderboard_usecase.dart';
+export 'leaderboard/get_alltime_leaderboard_usecase.dart';
 
 // Notification Use Cases
 export 'notification/get_notifications_usecase.dart';

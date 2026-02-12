@@ -517,6 +517,48 @@ final getLeaderboardUseCaseProvider =
 // ignore: unused_element
 typedef GetLeaderboardUseCaseRef =
     AutoDisposeProviderRef<GetLeaderboardUseCase>;
+String _$getWeeklyLeaderboardUseCaseHash() =>
+    r'4a76a9058c4b56cc33ff35446eca244732a53b7d';
+
+/// See also [getWeeklyLeaderboardUseCase].
+@ProviderFor(getWeeklyLeaderboardUseCase)
+final getWeeklyLeaderboardUseCaseProvider =
+    AutoDisposeProvider<GetWeeklyLeaderboardUseCase>.internal(
+      getWeeklyLeaderboardUseCase,
+      name: r'getWeeklyLeaderboardUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$getWeeklyLeaderboardUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetWeeklyLeaderboardUseCaseRef =
+    AutoDisposeProviderRef<GetWeeklyLeaderboardUseCase>;
+String _$getAllTimeLeaderboardUseCaseHash() =>
+    r'de24f6c64664ebb8be2220145a63f3b27d4a0065';
+
+/// See also [getAllTimeLeaderboardUseCase].
+@ProviderFor(getAllTimeLeaderboardUseCase)
+final getAllTimeLeaderboardUseCaseProvider =
+    AutoDisposeProvider<GetAllTimeLeaderboardUseCase>.internal(
+      getAllTimeLeaderboardUseCase,
+      name: r'getAllTimeLeaderboardUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$getAllTimeLeaderboardUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetAllTimeLeaderboardUseCaseRef =
+    AutoDisposeProviderRef<GetAllTimeLeaderboardUseCase>;
 String _$updateTaskUseCaseHash() => r'79f901348b8ce9ebe93bc08a5ccb4c1e05fd6b03';
 
 /// See also [updateTaskUseCase].
