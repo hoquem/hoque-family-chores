@@ -32,10 +32,6 @@ class CreateRewardUseCase {
         return Left(ValidationFailure('Reward name cannot be empty'));
       }
 
-      if (reward.description.trim().isEmpty) {
-        return Left(ValidationFailure('Reward description cannot be empty'));
-      }
-
       if (reward.pointsCost.value <= 0) {
         return Left(ValidationFailure('Reward points cost must be greater than 0'));
       }

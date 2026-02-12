@@ -114,12 +114,13 @@ class RewardTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    reward.description,
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  if (reward.description != null)
+                    Text(
+                      reward.description!,
+                      style: theme.textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),

@@ -6,28 +6,34 @@ import '../value_objects/points.dart';
 class Reward extends Equatable {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final Points pointsCost;
-  final String iconName;
+  final String iconEmoji;
   final RewardType type;
   final FamilyId familyId;
   final String? creatorId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final RewardRarity rarity;
+  final bool isActive;
+  final int? stock;
+  final bool isFeatured;
 
   const Reward({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.pointsCost,
-    required this.iconName,
+    required this.iconEmoji,
     required this.type,
     required this.familyId,
     this.creatorId,
     required this.createdAt,
     required this.updatedAt,
     this.rarity = RewardRarity.common,
+    this.isActive = true,
+    this.stock,
+    this.isFeatured = false,
   });
 
   /// Creates a copy of this reward with updated fields
@@ -36,26 +42,32 @@ class Reward extends Equatable {
     String? name,
     String? description,
     Points? pointsCost,
-    String? iconName,
+    String? iconEmoji,
     RewardType? type,
     FamilyId? familyId,
     String? creatorId,
     DateTime? createdAt,
     DateTime? updatedAt,
     RewardRarity? rarity,
+    bool? isActive,
+    int? stock,
+    bool? isFeatured,
   }) {
     return Reward(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       pointsCost: pointsCost ?? this.pointsCost,
-      iconName: iconName ?? this.iconName,
+      iconEmoji: iconEmoji ?? this.iconEmoji,
       type: type ?? this.type,
       familyId: familyId ?? this.familyId,
       creatorId: creatorId ?? this.creatorId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rarity: rarity ?? this.rarity,
+      isActive: isActive ?? this.isActive,
+      stock: stock ?? this.stock,
+      isFeatured: isFeatured ?? this.isFeatured,
     );
   }
 
@@ -67,8 +79,12 @@ class Reward extends Equatable {
   /// Get the cost in points as an integer
   int get costAsInt => pointsCost.toInt();
 
-  /// Check if reward is available (always true for now, can be extended)
-  bool get isAvailable => true;
+  /// Check if reward is available
+  bool get isAvailable {
+    if (!isActive) return false;
+    if (stock != null && stock! <= 0) return false;
+    return true;
+  }
 
   @override
   List<Object?> get props => [
@@ -76,13 +92,16 @@ class Reward extends Equatable {
         name,
         description,
         pointsCost,
-        iconName,
+        iconEmoji,
         type,
         familyId,
         creatorId,
         createdAt,
         updatedAt,
         rarity,
+        isActive,
+        stock,
+        isFeatured,
       ];
 }
 
