@@ -5,7 +5,7 @@ import 'package:hoque_family_chores/presentation/screens/quest_board_screen.dart
 import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart'; // Leaderboard
 import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart'; // Rewards (placeholder)
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_bottom_sheet.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -64,7 +64,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           ? FloatingActionButton(
               onPressed: () {
                 _logger.d('AppShell: Opening Quick Add Quest sheet');
-                showQuickAddQuestBottomSheet(context, ref);
+                showQuickAddQuestSheet(context);
               },
               backgroundColor: const Color(0xFFFFB300),
               tooltip: 'Add Quest',
