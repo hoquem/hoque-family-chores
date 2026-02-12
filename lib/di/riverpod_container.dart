@@ -15,12 +15,14 @@ import '../domain/repositories/reward_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/task_completion_repository.dart';
 import '../domain/repositories/ai_rating_service.dart';
+import '../domain/repositories/streak_repository.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
+import '../domain/usecases/streak/update_streak_usecase.dart';
 
 part 'riverpod_container.g.dart';
 
@@ -120,6 +122,13 @@ AiRatingService aiRatingService(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[AiRatingService] as AiRatingService;
+}
+
+@riverpod
+StreakRepository streakRepository(Ref ref) {
+  final factory = ref.watch(repositoryFactoryProvider);
+  final repositories = factory.createRepositories();
+  return repositories[StreakRepository] as StreakRepository;
 }
 
 /// Use Case Providers (Clean Architecture)
@@ -414,4 +423,12 @@ StreamNotificationsUseCase streamNotificationsUseCase(Ref ref) {
 ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
+}
+
+// Streak Use Cases
+@riverpod
+UpdateStreakUseCase updateStreakUseCase(Ref ref) {
+  final streakRepository = ref.watch(streakRepositoryProvider);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return UpdateStreakUseCase(streakRepository, userRepository);
 }

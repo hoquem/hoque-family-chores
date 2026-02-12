@@ -243,6 +243,24 @@ final gamificationRepositoryProvider =
 // ignore: unused_element
 typedef GamificationRepositoryRef =
     AutoDisposeProviderRef<GamificationRepository>;
+String _$streakRepositoryHash() => r'9dd977d3453e566a4b28f7de3872e2abf5c9de1f';
+
+/// See also [streakRepository].
+@ProviderFor(streakRepository)
+final streakRepositoryProvider = AutoDisposeProvider<StreakRepository>.internal(
+  streakRepository,
+  name: r'streakRepositoryProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$streakRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StreakRepositoryRef = AutoDisposeProviderRef<StreakRepository>;
 String _$createTaskUseCaseHash() => r'fd1908728d6fbedfd60f77adc82e5876eb2b2705';
 
 /// Use Case Providers (Clean Architecture)
@@ -303,7 +321,7 @@ final completeTaskUseCaseProvider =
 // ignore: unused_element
 typedef CompleteTaskUseCaseRef = AutoDisposeProviderRef<CompleteTaskUseCase>;
 String _$approveTaskUseCaseHash() =>
-    r'acc73a1d329102108b28369c357ea03015c98d9b';
+    r'06aabf329911316625a89d7c88256cb161e0de36';
 
 /// See also [approveTaskUseCase].
 @ProviderFor(approveTaskUseCase)
@@ -322,27 +340,6 @@ final approveTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ApproveTaskUseCaseRef = AutoDisposeProviderRef<ApproveTaskUseCase>;
-String _$streamPendingApprovalsUseCaseHash() =>
-    r'91fd06e127ccc2ac09d952d8c4cbeb1ddd8a02aa';
-
-/// See also [streamPendingApprovalsUseCase].
-@ProviderFor(streamPendingApprovalsUseCase)
-final streamPendingApprovalsUseCaseProvider =
-    AutoDisposeProvider<StreamPendingApprovalsUseCase>.internal(
-      streamPendingApprovalsUseCase,
-      name: r'streamPendingApprovalsUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$streamPendingApprovalsUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef StreamPendingApprovalsUseCaseRef =
-    AutoDisposeProviderRef<StreamPendingApprovalsUseCase>;
 String _$getTasksUseCaseHash() => r'0e77dfb35e3419a46183d01c86ff6eed4cb1994f';
 
 /// See also [getTasksUseCase].
@@ -1160,5 +1157,25 @@ final resetPasswordUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
+String _$updateStreakUseCaseHash() =>
+    r'888dd4c285f18bebd4115a5bcf928bacae2f9a1a';
+
+/// See also [updateStreakUseCase].
+@ProviderFor(updateStreakUseCase)
+final updateStreakUseCaseProvider =
+    AutoDisposeProvider<UpdateStreakUseCase>.internal(
+      updateStreakUseCase,
+      name: r'updateStreakUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$updateStreakUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UpdateStreakUseCaseRef = AutoDisposeProviderRef<UpdateStreakUseCase>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
