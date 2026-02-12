@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 // Riverpod DI
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -45,6 +47,15 @@ class CustomColors extends ThemeExtension<CustomColors> {
   }
 }
 
+// Push notifications background handler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final logger = AppLogger();
+  logger.i('[FCM Background] Message received: ${message.notification?.title}');
+  // Handle background message - notification is automatically shown by the system
+}
+
 void main() async {
   final logger = AppLogger();
   logger.init(); // Initialize the logger first
@@ -72,6 +83,24 @@ void main() async {
     } catch (e, s) {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       rethrow;
+    }
+
+    // Initialize timezone database for scheduled notifications
+    try {
+      logger.i("[Startup] Initializing timezone database...");
+      tz.initializeTimeZones();
+      logger.i("[Startup] Timezone database initialized.");
+    } catch (e, s) {
+      logger.e("[Startup] Timezone initialization failed.", error: e, stackTrace: s);
+    }
+
+    // Initialize push notifications background handler
+    try {
+      logger.i("[Startup] Setting up FCM background handler...");
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      logger.i("[Startup] FCM background handler configured.");
+    } catch (e, s) {
+      logger.e("[Startup] FCM background handler setup failed.", error: e, stackTrace: s);
     }
 
     // Run the app with Riverpod
