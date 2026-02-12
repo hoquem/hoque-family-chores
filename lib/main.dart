@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// UI
+import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -144,6 +149,20 @@ class MyApp extends ConsumerWidget {
             starGold: Color(0xFFFFB300), // Amber
           ),
         ],
+      ),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return const MainScreen();
+          }
+          return const LoginScreen();
+        },
       ),
       home: const HomeScreen(),
       onGenerateRoute: (settings) {
