@@ -43,6 +43,9 @@ dependencies:
   http: ^1.2.0 # For HTTP requests
   equatable: ^2.0.5 # For value equality
   dartz: ^0.10.1 # For functional programming (Either, Option)
+  confetti: ^0.7.0 # For celebration animations
+  audioplayers: ^5.2.1 # For sound effects
+  shared_preferences: ^2.2.2 # For settings persistence
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -102,9 +105,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/sounds/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
