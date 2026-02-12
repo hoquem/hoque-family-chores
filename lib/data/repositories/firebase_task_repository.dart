@@ -302,6 +302,9 @@ class FirebaseTaskRepository implements TaskRepository {
 
   @override
   Future<void> approveTask(TaskId taskId) async {
+    // Note: This is a basic implementation. Full approval logic including
+    // awarding stars, updating streaks, and sending notifications should be
+    // handled by the ApproveTaskUseCase in the domain layer.
     try {
       final familiesSnapshot = await _firestore.collection('families').get();
 
@@ -316,6 +319,7 @@ class FirebaseTaskRepository implements TaskRepository {
               .doc(taskId.value)
               .update({
                 'status': TaskStatus.completed.name,
+                'approvedAt': FieldValue.serverTimestamp(),
               });
           return;
         }
@@ -389,6 +393,19 @@ class FirebaseTaskRepository implements TaskRepository {
 
   /// Maps Firestore document data to domain Task entity
   Task _mapFirestoreToTask(Map<String, dynamic> data, String id, FamilyId familyId) {
+    // Parse AI rating if present
+    AIRating? aiRating;
+    if (data['aiRating'] != null && data['aiRating'] is Map) {
+      final aiData = data['aiRating'] as Map<String, dynamic>;
+      aiRating = AIRating(
+        score: (aiData['score'] as num?)?.toDouble() ?? 0.0,
+        comment: aiData['comment'] as String? ?? '',
+        generatedAt: aiData['generatedAt'] is Timestamp
+            ? (aiData['generatedAt'] as Timestamp).toDate()
+            : DateTime.tryParse(aiData['generatedAt']?.toString() ?? '') ?? DateTime.now(),
+      );
+    }
+    
     return Task(
       id: TaskId(id),
       title: data['title'] as String? ?? '',
@@ -423,6 +440,28 @@ class FirebaseTaskRepository implements TaskRepository {
               ? DateTime.tryParse(data['lastCompletedAt'].toString())
               : null,
       familyId: familyId,
+      // Photo proof and approval fields
+      photoUrl: data['photoUrl'] as String?,
+      submittedAt: data['submittedAt'] is Timestamp
+          ? (data['submittedAt'] as Timestamp).toDate()
+          : data['submittedAt'] != null
+              ? DateTime.tryParse(data['submittedAt'].toString())
+              : null,
+      submittedBy: data['submittedBy'] != null ? UserId(data['submittedBy'] as String) : null,
+      aiRating: aiRating,
+      approvedBy: data['approvedBy'] != null ? UserId(data['approvedBy'] as String) : null,
+      approvedAt: data['approvedAt'] is Timestamp
+          ? (data['approvedAt'] as Timestamp).toDate()
+          : data['approvedAt'] != null
+              ? DateTime.tryParse(data['approvedAt'].toString())
+              : null,
+      rejectedBy: data['rejectedBy'] != null ? UserId(data['rejectedBy'] as String) : null,
+      rejectedAt: data['rejectedAt'] is Timestamp
+          ? (data['rejectedAt'] as Timestamp).toDate()
+          : data['rejectedAt'] != null
+              ? DateTime.tryParse(data['rejectedAt'].toString())
+              : null,
+      rejectionReason: data['rejectionReason'] as String?,
     );
   }
 
@@ -442,6 +481,22 @@ class FirebaseTaskRepository implements TaskRepository {
       'tags': task.tags,
       'recurringPattern': task.recurringPattern,
       'lastCompletedAt': task.lastCompletedAt,
+      // Photo proof and approval fields
+      'photoUrl': task.photoUrl,
+      'submittedAt': task.submittedAt,
+      'submittedBy': task.submittedBy?.value,
+      'aiRating': task.aiRating != null
+          ? {
+              'score': task.aiRating!.score,
+              'comment': task.aiRating!.comment,
+              'generatedAt': task.aiRating!.generatedAt,
+            }
+          : null,
+      'approvedBy': task.approvedBy?.value,
+      'approvedAt': task.approvedAt,
+      'rejectedBy': task.rejectedBy?.value,
+      'rejectedAt': task.rejectedAt,
+      'rejectionReason': task.rejectionReason,
     };
   }
 } 
