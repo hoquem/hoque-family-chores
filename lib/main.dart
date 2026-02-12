@@ -8,6 +8,10 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 
 // UI
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
+import 'package:hoque_family_chores/presentation/screens/photo_capture_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/task_completion_result_screen.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/task_completion.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 
@@ -113,6 +117,25 @@ class MyApp extends ConsumerWidget {
         ],
       ),
       home: const HomeScreen(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/photo-capture':
+            final task = settings.arguments as Task;
+            return MaterialPageRoute(
+              builder: (context) => PhotoCaptureScreen(task: task),
+            );
+          case '/task-completion-result':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => TaskCompletionResultScreen(
+                task: args['task'] as Task,
+                completion: args['completion'] as TaskCompletion,
+              ),
+            );
+          default:
+            return null;
+        }
+      },
     );
   }
 }

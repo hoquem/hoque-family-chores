@@ -243,6 +243,45 @@ final gamificationRepositoryProvider =
 // ignore: unused_element
 typedef GamificationRepositoryRef =
     AutoDisposeProviderRef<GamificationRepository>;
+String _$taskCompletionRepositoryHash() =>
+    r'c5bdd16ab6718c60b4b3a64dc655a0ca12ae2337';
+
+/// See also [taskCompletionRepository].
+@ProviderFor(taskCompletionRepository)
+final taskCompletionRepositoryProvider =
+    AutoDisposeProvider<TaskCompletionRepository>.internal(
+      taskCompletionRepository,
+      name: r'taskCompletionRepositoryProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$taskCompletionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef TaskCompletionRepositoryRef =
+    AutoDisposeProviderRef<TaskCompletionRepository>;
+String _$aiRatingServiceHash() => r'1bcf03839ec00b0fb72c8d1062a8d91d44afdeab';
+
+/// See also [aiRatingService].
+@ProviderFor(aiRatingService)
+final aiRatingServiceProvider = AutoDisposeProvider<AiRatingService>.internal(
+  aiRatingService,
+  name: r'aiRatingServiceProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$aiRatingServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AiRatingServiceRef = AutoDisposeProviderRef<AiRatingService>;
 String _$createTaskUseCaseHash() => r'fd1908728d6fbedfd60f77adc82e5876eb2b2705';
 
 /// Use Case Providers (Clean Architecture)
@@ -340,6 +379,27 @@ final getTasksUseCaseProvider = AutoDisposeProvider<GetTasksUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTasksUseCaseRef = AutoDisposeProviderRef<GetTasksUseCase>;
+String _$completeTaskWithPhotoHash() =>
+    r'd1cce62729bd1fafed64042de79f0cdc141e7f0c';
+
+/// See also [completeTaskWithPhoto].
+@ProviderFor(completeTaskWithPhoto)
+final completeTaskWithPhotoProvider =
+    AutoDisposeProvider<CompleteTaskWithPhoto>.internal(
+      completeTaskWithPhoto,
+      name: r'completeTaskWithPhotoProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$completeTaskWithPhotoHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CompleteTaskWithPhotoRef =
+    AutoDisposeProviderRef<CompleteTaskWithPhoto>;
 String _$signInUseCaseHash() => r'1f792d19a5edd705f764dd1e4cf006ceebe24159';
 
 /// See also [signInUseCase].
