@@ -3,13 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
-class QuickTaskPickerWidget extends ConsumerWidget {
+class QuickTaskPickerWidget extends ConsumerStatefulWidget {
   const QuickTaskPickerWidget({super.key});
 
-  Future<void> _handleTaskSelection(WidgetRef ref, Task task) async {
+  @override
+  ConsumerState<QuickTaskPickerWidget> createState() => _QuickTaskPickerWidgetState();
+}
+
+class _QuickTaskPickerWidgetState extends ConsumerState<QuickTaskPickerWidget> {
+  String? _claimingTaskId;
+
+  Future<void> _handleTaskSelection(Task task) async {
+    setState(() {
+      _claimingTaskId = task.id.value;
+    });
     final logger = AppLogger();
     logger.d('QuickTaskPickerWidget: Task selected: ${task.id}');
 
@@ -27,10 +36,20 @@ class QuickTaskPickerWidget extends ConsumerWidget {
           task.familyId,
         );
         logger.d('QuickTaskPickerWidget: Task claimed successfully');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Task claimed!'), backgroundColor: Colors.green),
+          );
+        }
       } else {
         logger.w(
           'QuickTaskPickerWidget: Cannot claim task - missing user profile',
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not claim task: Not signed in.'), backgroundColor: Colors.red),
+          );
+        }
       }
     } catch (e, stackTrace) {
       logger.e(
@@ -38,11 +57,22 @@ class QuickTaskPickerWidget extends ConsumerWidget {
         error: e,
         stackTrace: stackTrace,
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _claimingTaskId = null;
+        });
+      }
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final logger = AppLogger();
     logger.d('QuickTaskPickerWidget: build called');
     
@@ -59,7 +89,7 @@ class QuickTaskPickerWidget extends ConsumerWidget {
 
     return availableTasksAsync.when(
       data: (availableTasks) {
-        logger.d('QuickTaskPickerWidget: Consumer builder called with ${availableTasks.length} tasks');
+        logger.d('QuickTaskPickerWidget: Consumer builder rebuilt with ${availableTasks.length} tasks');
 
         if (availableTasks.isEmpty) {
           return const Center(child: Text('No quick tasks available'));
@@ -77,10 +107,12 @@ class QuickTaskPickerWidget extends ConsumerWidget {
             return ListTile(
               title: Text(task.title),
               subtitle: Text(task.description),
-              trailing: IconButton(
-                icon: const Icon(Icons.add_task),
-                onPressed: () => _handleTaskSelection(ref, task),
-              ),
+              trailing: _claimingTaskId == task.id.value
+                  ? const CircularProgressIndicator()
+                  : IconButton(
+                      icon: const Icon(Icons.add_task),
+                      onPressed: _claimingTaskId != null ? null : () => _handleTaskSelection(task),
+                    ),
             );
           },
         );

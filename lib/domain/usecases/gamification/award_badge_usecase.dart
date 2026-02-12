@@ -2,16 +2,17 @@ import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../repositories/badge_repository.dart';
-import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
 import '../../value_objects/family_id.dart';
 
 /// Use case for awarding badges to users
 class AwardBadgeUseCase {
   final BadgeRepository _badgeRepository;
-  final UserRepository _userRepository;
 
-  AwardBadgeUseCase(this._badgeRepository, this._userRepository);
+
+  // final UserRepository _userRepository; // Unused - commented out
+
+  AwardBadgeUseCase(this._badgeRepository, [dynamic _]);
 
   /// Awards a badge to a user
   /// 

@@ -2,8 +2,10 @@
 export 'task/create_task_usecase.dart';
 export 'task/claim_task_usecase.dart';
 export 'task/complete_task_usecase.dart';
+export 'task/complete_task_with_photo.dart';
 export 'task/approve_task_usecase.dart';
 export 'task/get_tasks_usecase.dart';
+export 'task/stream_pending_approvals_usecase.dart';
 
 // Additional Task Use Cases
 export 'task/update_task_usecase.dart';
@@ -57,6 +59,8 @@ export 'gamification/get_rewards_usecase.dart';
 
 // Leaderboard Use Cases
 export 'leaderboard/get_leaderboard_usecase.dart';
+export 'leaderboard/get_weekly_leaderboard_usecase.dart';
+export 'leaderboard/get_alltime_leaderboard_usecase.dart';
 
 // Notification Use Cases
 export 'notification/get_notifications_usecase.dart';

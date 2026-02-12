@@ -4,6 +4,22 @@ import '../value_objects/family_id.dart';
 import '../value_objects/points.dart';
 import '../value_objects/user_id.dart';
 
+/// AI rating details for task photo proof
+class AIRating extends Equatable {
+  final double score; // 0-10
+  final String comment;
+  final DateTime generatedAt;
+
+  const AIRating({
+    required this.score,
+    required this.comment,
+    required this.generatedAt,
+  });
+
+  @override
+  List<Object?> get props => [score, comment, generatedAt];
+}
+
 /// Domain entity representing a task
 class Task extends Equatable {
   final TaskId id;
@@ -21,6 +37,17 @@ class Task extends Equatable {
   final String? recurringPattern;
   final DateTime? lastCompletedAt;
   final FamilyId familyId;
+  
+  // Photo proof and approval fields (Issue #109, #110)
+  final String? photoUrl;
+  final DateTime? submittedAt;
+  final UserId? submittedBy;
+  final AIRating? aiRating;
+  final UserId? approvedBy;
+  final DateTime? approvedAt;
+  final UserId? rejectedBy;
+  final DateTime? rejectedAt;
+  final String? rejectionReason;
 
   const Task({
     required this.id,
@@ -38,6 +65,15 @@ class Task extends Equatable {
     this.recurringPattern,
     this.lastCompletedAt,
     required this.familyId,
+    this.photoUrl,
+    this.submittedAt,
+    this.submittedBy,
+    this.aiRating,
+    this.approvedBy,
+    this.approvedAt,
+    this.rejectedBy,
+    this.rejectedAt,
+    this.rejectionReason,
   });
 
   /// Creates a copy of this task with updated fields
@@ -57,6 +93,15 @@ class Task extends Equatable {
     String? recurringPattern,
     DateTime? lastCompletedAt,
     FamilyId? familyId,
+    String? photoUrl,
+    DateTime? submittedAt,
+    UserId? submittedBy,
+    AIRating? aiRating,
+    UserId? approvedBy,
+    DateTime? approvedAt,
+    UserId? rejectedBy,
+    DateTime? rejectedAt,
+    String? rejectionReason,
   }) {
     return Task(
       id: id ?? this.id,
@@ -74,6 +119,15 @@ class Task extends Equatable {
       recurringPattern: recurringPattern ?? this.recurringPattern,
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
       familyId: familyId ?? this.familyId,
+      photoUrl: photoUrl ?? this.photoUrl,
+      submittedAt: submittedAt ?? this.submittedAt,
+      submittedBy: submittedBy ?? this.submittedBy,
+      aiRating: aiRating ?? this.aiRating,
+      approvedBy: approvedBy ?? this.approvedBy,
+      approvedAt: approvedAt ?? this.approvedAt,
+      rejectedBy: rejectedBy ?? this.rejectedBy,
+      rejectedAt: rejectedAt ?? this.rejectedAt,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
 
@@ -138,6 +192,15 @@ class Task extends Equatable {
         recurringPattern,
         lastCompletedAt,
         familyId,
+        photoUrl,
+        submittedAt,
+        submittedBy,
+        aiRating,
+        approvedBy,
+        approvedAt,
+        rejectedBy,
+        rejectedAt,
+        rejectionReason,
       ];
 }
 
@@ -191,5 +254,6 @@ enum TaskFilterType {
   all,
   myTasks,
   available,
+  pendingApproval,
   completed,
 } 

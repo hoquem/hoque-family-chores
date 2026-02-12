@@ -1,6 +1,5 @@
 import 'dart:async';
 import '../value_objects/email.dart';
-import '../../core/error/failures.dart';
 
 /// Abstract interface for authentication operations
 abstract class AuthRepository {
@@ -21,6 +20,8 @@ abstract class AuthRepository {
 
   /// Send password reset email
   Future<void> sendPasswordResetEmail(Email email);
+
+
 
   /// Update email
   Future<void> updateEmail(Email newEmail);

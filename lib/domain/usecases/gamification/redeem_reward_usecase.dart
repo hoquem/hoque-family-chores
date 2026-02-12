@@ -1,13 +1,11 @@
 import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
-import '../../entities/reward.dart';
 import '../../entities/user.dart';
 import '../../repositories/reward_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../value_objects/family_id.dart';
 import '../../value_objects/user_id.dart';
-import '../../value_objects/points.dart';
 
 /// Use case for redeeming a reward
 class RedeemRewardUseCase {
@@ -52,14 +50,8 @@ class RedeemRewardUseCase {
         return Left(BusinessFailure('Insufficient points to redeem this reward'));
       }
 
-      // Calculate new points after redemption
-      final newPoints = currentUser.points.subtract(reward.pointsCost);
-
-      // Redeem the reward
-      await _rewardRepository.redeemReward(familyId, userId, rewardId);
-      
-      // Update user points
-      await _userRepository.updateUserPoints(userId, newPoints);
+      // Request redemption (creates pending request, doesn't deduct points yet)
+      await _rewardRepository.requestRedemption(familyId, userId, rewardId);
       
       // Return updated user
       final updatedUser = await _userRepository.getUserProfile(userId);

@@ -424,9 +424,9 @@ class FirebaseGamificationRepository implements GamificationRepository {
     return Reward(
       id: id,
       name: data['name'] as String? ?? '',
-      description: data['description'] as String? ?? '',
+      description: data['description'] as String?,
       pointsCost: Points(data['pointsCost'] as int? ?? 0),
-      iconName: data['iconName'] as String? ?? '',
+      iconEmoji: data['iconEmoji'] as String? ?? '🎁',
       type: _mapStringToRewardType(data['type'] as String? ?? 'digital'),
       familyId: FamilyId(data['familyId'] as String? ?? ''),
       creatorId: data['creatorId'] as String?,
@@ -437,6 +437,9 @@ class FirebaseGamificationRepository implements GamificationRepository {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
       rarity: _mapStringToRewardRarity(data['rarity'] as String? ?? 'common'),
+      isActive: data['isActive'] as bool? ?? true,
+      stock: data['stock'] as int?,
+      isFeatured: data['isFeatured'] as bool? ?? false,
     );
   }
 
@@ -445,13 +448,16 @@ class FirebaseGamificationRepository implements GamificationRepository {
       'name': reward.name,
       'description': reward.description,
       'pointsCost': reward.pointsCost.toInt(),
-      'iconName': reward.iconName,
+      'iconEmoji': reward.iconEmoji,
       'type': reward.type.name,
       'familyId': reward.familyId.value,
       'creatorId': reward.creatorId,
       'createdAt': reward.createdAt,
       'updatedAt': reward.updatedAt,
       'rarity': reward.rarity.name,
+      'isActive': reward.isActive,
+      if (reward.stock != null) 'stock': reward.stock,
+      'isFeatured': reward.isFeatured,
     };
   }
 

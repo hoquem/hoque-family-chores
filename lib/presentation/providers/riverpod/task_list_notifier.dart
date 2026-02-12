@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
@@ -8,17 +9,26 @@ import 'package:hoque_family_chores/di/riverpod_container.dart';
 
 part 'task_list_notifier.g.dart';
 
-/// Manages the list of tasks for a family with filtering capabilities.
+/// Manages the list of tasks for a family with real-time updates.
 /// 
-/// This notifier fetches tasks from the repository and provides
-/// methods for creating, updating, and deleting tasks.
+/// This notifier streams tasks from the repository providing automatic
+/// updates when tasks change in the database.
 /// 
 /// Example:
 /// ```dart
-/// final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
-/// final notifier = ref.read(taskListNotifierProvider(familyId).notifier);
-/// await notifier.createTask(newTask);
+/// final tasksAsync = ref.watch(taskListStreamProvider(familyId));
 /// ```
+@riverpod
+Stream<List<Task>> taskListStream(Ref ref, FamilyId familyId) {
+  final logger = AppLogger();
+  logger.d('TaskListStream: Streaming tasks for family $familyId');
+  
+  final repository = ref.watch(taskRepositoryProvider);
+  return repository.streamTasks(familyId);
+}
+
+/// Legacy notifier - kept for backward compatibility with use case methods.
+/// Use taskListStreamProvider for real-time updates instead.
 @riverpod
 class TaskListNotifier extends _$TaskListNotifier {
   final _logger = AppLogger();
@@ -298,9 +308,25 @@ class TaskFilterNotifier extends _$TaskFilterNotifier {
   }
 }
 
+/// Provider for assignee filtering (for parent view).
+/// Stores which child's quests to show, or null for "All Family".
+@riverpod
+class AssigneeFilterNotifier extends _$AssigneeFilterNotifier {
+  @override
+  UserId? build() => null; // null = show all
+  
+  void setAssignee(UserId? assigneeId) {
+    state = assigneeId;
+  }
+  
+  void clearFilter() {
+    state = null;
+  }
+}
+
 /// Computed provider that returns filtered tasks based on the current filter.
 @riverpod
-List<Task> filteredTasks(FilteredTasksRef ref, FamilyId familyId) {
+List<Task> filteredTasks(Ref ref, FamilyId familyId) {
   final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
   final filter = ref.watch(taskFilterNotifierProvider);
   
@@ -309,6 +335,29 @@ List<Task> filteredTasks(FilteredTasksRef ref, FamilyId familyId) {
     loading: () => [],
     error: (_, __) => [],
   );
+}
+
+/// Stream provider for role-based filtered quests (Quest Board specific).
+/// Children see only their own quests, parents see all or filtered by assignee.
+@riverpod
+Stream<List<Task>> filteredQuestsStream(Ref ref, FamilyId familyId, UserId currentUserId, bool isParent) {
+  final assigneeFilter = ref.watch(assigneeFilterNotifierProvider);
+  
+  // If parent and a specific assignee is selected, use assignee stream
+  if (isParent && assigneeFilter != null) {
+    final repository = ref.watch(taskRepositoryProvider);
+    return repository.streamTasksByAssignee(familyId, assigneeFilter);
+  }
+  
+  // If child, only show their own quests
+  if (!isParent) {
+    final repository = ref.watch(taskRepositoryProvider);
+    return repository.streamTasksByAssignee(familyId, currentUserId);
+  }
+  
+  // Otherwise (parent with no filter), show all family quests
+  final repository = ref.watch(taskRepositoryProvider);
+  return repository.streamTasks(familyId);
 }
 
 /// Filters tasks based on the specified filter type.
@@ -321,6 +370,8 @@ List<Task> _filterTasks(List<Task> tasks, TaskFilterType filter) {
       return tasks;
     case TaskFilterType.available:
       return tasks.where((task) => task.status == TaskStatus.available).toList();
+    case TaskFilterType.pendingApproval:
+      return tasks.where((task) => task.status == TaskStatus.pendingApproval).toList();
     case TaskFilterType.completed:
       return tasks.where((task) => task.status == TaskStatus.completed).toList();
   }

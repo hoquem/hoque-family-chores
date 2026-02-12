@@ -7,7 +7,7 @@ part of 'riverpod_container.dart';
 // **************************************************************************
 
 String _$environmentServiceHash() =>
-    r'a9c762b89bbbfe370fd8c01da36407eb6256ef10';
+    r'374edda3a6ac7a47af1e7a63dfc51587c7e40170';
 
 /// Environment Service Provider
 ///
@@ -28,7 +28,7 @@ final environmentServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef EnvironmentServiceRef = AutoDisposeProviderRef<EnvironmentService>;
-String _$repositoryFactoryHash() => r'ac8482d626e9433a7f24fc43b90f4a062afba959';
+String _$repositoryFactoryHash() => r'499840c9b61bd317366fe65b12a35afad8f58200';
 
 /// Repository Factory Provider
 ///
@@ -49,7 +49,7 @@ final repositoryFactoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RepositoryFactoryRef = AutoDisposeProviderRef<RepositoryFactory>;
-String _$taskRepositoryHash() => r'67d027836796ace2f3d87dbbe5cb8acc3a94fffa';
+String _$taskRepositoryHash() => r'a2eda516c8778de74573755967c1ef964861d8e5';
 
 /// Repository Providers (Clean Architecture)
 ///
@@ -69,7 +69,7 @@ final taskRepositoryProvider = AutoDisposeProvider<TaskRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef TaskRepositoryRef = AutoDisposeProviderRef<TaskRepository>;
-String _$authRepositoryHash() => r'7197a6e33eb22bf5795d509253fab7d235cbfd2d';
+String _$authRepositoryHash() => r'bbf1c544a6bd7e2bad945cdd1ca9bf1518daf0b8';
 
 /// See also [authRepository].
 @ProviderFor(authRepository)
@@ -87,7 +87,7 @@ final authRepositoryProvider = AutoDisposeProvider<AuthRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthRepositoryRef = AutoDisposeProviderRef<AuthRepository>;
-String _$userRepositoryHash() => r'908c5927da83c9cf4dcb1df3ec482c040fbe5112';
+String _$userRepositoryHash() => r'abcd54d02bdc7d78eb392e43e4c30ddbe8c4c561';
 
 /// See also [userRepository].
 @ProviderFor(userRepository)
@@ -105,7 +105,7 @@ final userRepositoryProvider = AutoDisposeProvider<UserRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserRepositoryRef = AutoDisposeProviderRef<UserRepository>;
-String _$familyRepositoryHash() => r'f59d17886ebbeb272d51f2bcc04a31a31ed95821';
+String _$familyRepositoryHash() => r'6a5ad323906f6d718d45d5fa29ae9f2d0a11ded5';
 
 /// See also [familyRepository].
 @ProviderFor(familyRepository)
@@ -123,7 +123,7 @@ final familyRepositoryProvider = AutoDisposeProvider<FamilyRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FamilyRepositoryRef = AutoDisposeProviderRef<FamilyRepository>;
-String _$badgeRepositoryHash() => r'cb384bbdaaa6ff1b3ad4d4522dddde0ebc1699e3';
+String _$badgeRepositoryHash() => r'4be58c4e6943f96c9798e8c4e98739a3cd8cdfe2';
 
 /// See also [badgeRepository].
 @ProviderFor(badgeRepository)
@@ -141,7 +141,7 @@ final badgeRepositoryProvider = AutoDisposeProvider<BadgeRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef BadgeRepositoryRef = AutoDisposeProviderRef<BadgeRepository>;
-String _$rewardRepositoryHash() => r'e7e7f035798f7e514ca43402e6afcd6f71080e0a';
+String _$rewardRepositoryHash() => r'4201d5fbc9090a0227a648da59a3f09a041f6d47';
 
 /// See also [rewardRepository].
 @ProviderFor(rewardRepository)
@@ -160,7 +160,7 @@ final rewardRepositoryProvider = AutoDisposeProvider<RewardRepository>.internal(
 // ignore: unused_element
 typedef RewardRepositoryRef = AutoDisposeProviderRef<RewardRepository>;
 String _$leaderboardRepositoryHash() =>
-    r'721bee460f72bf36a72ac6215d8d641c807228ed';
+    r'e238f21125226f2ffd73823e65f7135ae5a5569c';
 
 /// See also [leaderboardRepository].
 @ProviderFor(leaderboardRepository)
@@ -181,7 +181,7 @@ final leaderboardRepositoryProvider =
 typedef LeaderboardRepositoryRef =
     AutoDisposeProviderRef<LeaderboardRepository>;
 String _$achievementRepositoryHash() =>
-    r'4575e9087407f7ecc8b6c25a14b83791815413d0';
+    r'ec5831d4ae6c5f6c15193ed7479cc6693497ea00';
 
 /// See also [achievementRepository].
 @ProviderFor(achievementRepository)
@@ -202,7 +202,7 @@ final achievementRepositoryProvider =
 typedef AchievementRepositoryRef =
     AutoDisposeProviderRef<AchievementRepository>;
 String _$notificationRepositoryHash() =>
-    r'2ef42b44793860257cc0c7f0d5ee79d2ef5935a0';
+    r'3945da4c35ae242b34d24dfb2a24afd7485029c3';
 
 /// See also [notificationRepository].
 @ProviderFor(notificationRepository)
@@ -223,7 +223,7 @@ final notificationRepositoryProvider =
 typedef NotificationRepositoryRef =
     AutoDisposeProviderRef<NotificationRepository>;
 String _$gamificationRepositoryHash() =>
-    r'52b47369e4f9b8ab8cd5b49cedbbcc667f0424c0';
+    r'4c4417882bdef39f61930b09bbf8435fe1e7edc2';
 
 /// See also [gamificationRepository].
 @ProviderFor(gamificationRepository)
@@ -243,7 +243,64 @@ final gamificationRepositoryProvider =
 // ignore: unused_element
 typedef GamificationRepositoryRef =
     AutoDisposeProviderRef<GamificationRepository>;
-String _$createTaskUseCaseHash() => r'14926e77496cd920be8955a9d6e4237c819c756a';
+String _$taskCompletionRepositoryHash() =>
+    r'c5bdd16ab6718c60b4b3a64dc655a0ca12ae2337';
+
+/// See also [taskCompletionRepository].
+@ProviderFor(taskCompletionRepository)
+final taskCompletionRepositoryProvider =
+    AutoDisposeProvider<TaskCompletionRepository>.internal(
+      taskCompletionRepository,
+      name: r'taskCompletionRepositoryProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$taskCompletionRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef TaskCompletionRepositoryRef =
+    AutoDisposeProviderRef<TaskCompletionRepository>;
+String _$aiRatingServiceHash() => r'1bcf03839ec00b0fb72c8d1062a8d91d44afdeab';
+
+/// See also [aiRatingService].
+@ProviderFor(aiRatingService)
+final aiRatingServiceProvider = AutoDisposeProvider<AiRatingService>.internal(
+  aiRatingService,
+  name: r'aiRatingServiceProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$aiRatingServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AiRatingServiceRef = AutoDisposeProviderRef<AiRatingService>;
+String _$streakRepositoryHash() => r'9dd977d3453e566a4b28f7de3872e2abf5c9de1f';
+
+/// See also [streakRepository].
+@ProviderFor(streakRepository)
+final streakRepositoryProvider = AutoDisposeProvider<StreakRepository>.internal(
+  streakRepository,
+  name: r'streakRepositoryProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$streakRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StreakRepositoryRef = AutoDisposeProviderRef<StreakRepository>;
+String _$createTaskUseCaseHash() => r'fd1908728d6fbedfd60f77adc82e5876eb2b2705';
 
 /// Use Case Providers (Clean Architecture)
 ///
@@ -264,7 +321,7 @@ final createTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CreateTaskUseCaseRef = AutoDisposeProviderRef<CreateTaskUseCase>;
-String _$claimTaskUseCaseHash() => r'13ce0f3be5f12bbfe926cbf95bda1d993a6d4139';
+String _$claimTaskUseCaseHash() => r'5a8231c9cdc5ae8eccc4589dd2d82544fab6c990';
 
 /// See also [claimTaskUseCase].
 @ProviderFor(claimTaskUseCase)
@@ -283,7 +340,7 @@ final claimTaskUseCaseProvider = AutoDisposeProvider<ClaimTaskUseCase>.internal(
 // ignore: unused_element
 typedef ClaimTaskUseCaseRef = AutoDisposeProviderRef<ClaimTaskUseCase>;
 String _$completeTaskUseCaseHash() =>
-    r'36a7f2db7ab19dee43fff64efbc226c4eaeb90c7';
+    r'e4eff5ddb874b2c0c98e8f4d8a5c60cff9b77457';
 
 /// See also [completeTaskUseCase].
 @ProviderFor(completeTaskUseCase)
@@ -303,7 +360,7 @@ final completeTaskUseCaseProvider =
 // ignore: unused_element
 typedef CompleteTaskUseCaseRef = AutoDisposeProviderRef<CompleteTaskUseCase>;
 String _$approveTaskUseCaseHash() =>
-    r'e0bf57ea9488da2079dbe888a6f539b1be8e9253';
+    r'acc73a1d329102108b28369c357ea03015c98d9b';
 
 /// See also [approveTaskUseCase].
 @ProviderFor(approveTaskUseCase)
@@ -322,7 +379,28 @@ final approveTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ApproveTaskUseCaseRef = AutoDisposeProviderRef<ApproveTaskUseCase>;
-String _$getTasksUseCaseHash() => r'4acfaf98bafaa5805d092a5df2ae57f465704310';
+String _$streamPendingApprovalsUseCaseHash() =>
+    r'91fd06e127ccc2ac09d952d8c4cbeb1ddd8a02aa';
+
+/// See also [streamPendingApprovalsUseCase].
+@ProviderFor(streamPendingApprovalsUseCase)
+final streamPendingApprovalsUseCaseProvider =
+    AutoDisposeProvider<StreamPendingApprovalsUseCase>.internal(
+      streamPendingApprovalsUseCase,
+      name: r'streamPendingApprovalsUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$streamPendingApprovalsUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StreamPendingApprovalsUseCaseRef =
+    AutoDisposeProviderRef<StreamPendingApprovalsUseCase>;
+String _$getTasksUseCaseHash() => r'0e77dfb35e3419a46183d01c86ff6eed4cb1994f';
 
 /// See also [getTasksUseCase].
 @ProviderFor(getTasksUseCase)
@@ -340,7 +418,28 @@ final getTasksUseCaseProvider = AutoDisposeProvider<GetTasksUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTasksUseCaseRef = AutoDisposeProviderRef<GetTasksUseCase>;
-String _$signInUseCaseHash() => r'8a7eba9c6bde77a8f714110befd1267e0de21012';
+String _$completeTaskWithPhotoHash() =>
+    r'd1cce62729bd1fafed64042de79f0cdc141e7f0c';
+
+/// See also [completeTaskWithPhoto].
+@ProviderFor(completeTaskWithPhoto)
+final completeTaskWithPhotoProvider =
+    AutoDisposeProvider<CompleteTaskWithPhoto>.internal(
+      completeTaskWithPhoto,
+      name: r'completeTaskWithPhotoProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$completeTaskWithPhotoHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CompleteTaskWithPhotoRef =
+    AutoDisposeProviderRef<CompleteTaskWithPhoto>;
+String _$signInUseCaseHash() => r'1f792d19a5edd705f764dd1e4cf006ceebe24159';
 
 /// See also [signInUseCase].
 @ProviderFor(signInUseCase)
@@ -358,7 +457,7 @@ final signInUseCaseProvider = AutoDisposeProvider<SignInUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SignInUseCaseRef = AutoDisposeProviderRef<SignInUseCase>;
-String _$signUpUseCaseHash() => r'cd9dac97711a08a8a6707b9887af6795d6239980';
+String _$signUpUseCaseHash() => r'2ed2279a8e810a7fed8116074569014c7aa86839';
 
 /// See also [signUpUseCase].
 @ProviderFor(signUpUseCase)
@@ -377,7 +476,7 @@ final signUpUseCaseProvider = AutoDisposeProvider<SignUpUseCase>.internal(
 // ignore: unused_element
 typedef SignUpUseCaseRef = AutoDisposeProviderRef<SignUpUseCase>;
 String _$createFamilyUseCaseHash() =>
-    r'1b8d3e9139eba53b97e8af1cd9e948e96c6a6361';
+    r'3cf9be1f593d24577d7c67ff1672178478ca09af';
 
 /// See also [createFamilyUseCase].
 @ProviderFor(createFamilyUseCase)
@@ -396,7 +495,7 @@ final createFamilyUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CreateFamilyUseCaseRef = AutoDisposeProviderRef<CreateFamilyUseCase>;
-String _$addMemberUseCaseHash() => r'beb409bf7f779e495fd8cb6bb8abe5964b05ecf9';
+String _$addMemberUseCaseHash() => r'4967437143fecc5dc2ce6d6fdfdd49d2159f2816';
 
 /// See also [addMemberUseCase].
 @ProviderFor(addMemberUseCase)
@@ -415,7 +514,7 @@ final addMemberUseCaseProvider = AutoDisposeProvider<AddMemberUseCase>.internal(
 // ignore: unused_element
 typedef AddMemberUseCaseRef = AutoDisposeProviderRef<AddMemberUseCase>;
 String _$getUserProfileUseCaseHash() =>
-    r'98853e6fdd9f2f0775955dfca751b5ebc8ac981a';
+    r'708ccbe07af5a8181c4ff505dee40274c9f567bc';
 
 /// See also [getUserProfileUseCase].
 @ProviderFor(getUserProfileUseCase)
@@ -436,7 +535,7 @@ final getUserProfileUseCaseProvider =
 typedef GetUserProfileUseCaseRef =
     AutoDisposeProviderRef<GetUserProfileUseCase>;
 String _$updateUserProfileUseCaseHash() =>
-    r'2093822bdc8df3956f9cc61bd740ed7d291b8fc3';
+    r'49229a22bcebad2b18e3b45e8a4ad9dd00a7d2cf';
 
 /// See also [updateUserProfileUseCase].
 @ProviderFor(updateUserProfileUseCase)
@@ -457,7 +556,7 @@ final updateUserProfileUseCaseProvider =
 typedef UpdateUserProfileUseCaseRef =
     AutoDisposeProviderRef<UpdateUserProfileUseCase>;
 String _$awardPointsUseCaseHash() =>
-    r'0d0a0e00800167d8298c8824a63cd0911d26a1c5';
+    r'e13fbd85a5878a595b09b73b220f07fe8970a4b6';
 
 /// See also [awardPointsUseCase].
 @ProviderFor(awardPointsUseCase)
@@ -477,7 +576,7 @@ final awardPointsUseCaseProvider =
 // ignore: unused_element
 typedef AwardPointsUseCaseRef = AutoDisposeProviderRef<AwardPointsUseCase>;
 String _$redeemRewardUseCaseHash() =>
-    r'8ea88f5d80faf9923c7387f9b8dce007807a9844';
+    r'e245c098d3723baad28bccc9328873baa12d331d';
 
 /// See also [redeemRewardUseCase].
 @ProviderFor(redeemRewardUseCase)
@@ -497,7 +596,7 @@ final redeemRewardUseCaseProvider =
 // ignore: unused_element
 typedef RedeemRewardUseCaseRef = AutoDisposeProviderRef<RedeemRewardUseCase>;
 String _$getLeaderboardUseCaseHash() =>
-    r'f392520cfa1d8120fa8644685377574d77ab278d';
+    r'f0f8b298501fd45cd409f14945feddc68f71083c';
 
 /// See also [getLeaderboardUseCase].
 @ProviderFor(getLeaderboardUseCase)
@@ -517,7 +616,49 @@ final getLeaderboardUseCaseProvider =
 // ignore: unused_element
 typedef GetLeaderboardUseCaseRef =
     AutoDisposeProviderRef<GetLeaderboardUseCase>;
-String _$updateTaskUseCaseHash() => r'98e2a3c7b70b6a9ada083ae2548a288d85e86b95';
+String _$getWeeklyLeaderboardUseCaseHash() =>
+    r'4a76a9058c4b56cc33ff35446eca244732a53b7d';
+
+/// See also [getWeeklyLeaderboardUseCase].
+@ProviderFor(getWeeklyLeaderboardUseCase)
+final getWeeklyLeaderboardUseCaseProvider =
+    AutoDisposeProvider<GetWeeklyLeaderboardUseCase>.internal(
+      getWeeklyLeaderboardUseCase,
+      name: r'getWeeklyLeaderboardUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$getWeeklyLeaderboardUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetWeeklyLeaderboardUseCaseRef =
+    AutoDisposeProviderRef<GetWeeklyLeaderboardUseCase>;
+String _$getAllTimeLeaderboardUseCaseHash() =>
+    r'de24f6c64664ebb8be2220145a63f3b27d4a0065';
+
+/// See also [getAllTimeLeaderboardUseCase].
+@ProviderFor(getAllTimeLeaderboardUseCase)
+final getAllTimeLeaderboardUseCaseProvider =
+    AutoDisposeProvider<GetAllTimeLeaderboardUseCase>.internal(
+      getAllTimeLeaderboardUseCase,
+      name: r'getAllTimeLeaderboardUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$getAllTimeLeaderboardUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GetAllTimeLeaderboardUseCaseRef =
+    AutoDisposeProviderRef<GetAllTimeLeaderboardUseCase>;
+String _$updateTaskUseCaseHash() => r'79f901348b8ce9ebe93bc08a5ccb4c1e05fd6b03';
 
 /// See also [updateTaskUseCase].
 @ProviderFor(updateTaskUseCase)
@@ -536,7 +677,7 @@ final updateTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UpdateTaskUseCaseRef = AutoDisposeProviderRef<UpdateTaskUseCase>;
-String _$deleteTaskUseCaseHash() => r'023d4f80a9dc29d398ba29bf73fe4a3aa6cf3683';
+String _$deleteTaskUseCaseHash() => r'fd2cdd31f9e167cef1fe57c695bebe27bb1fa3f0';
 
 /// See also [deleteTaskUseCase].
 @ProviderFor(deleteTaskUseCase)
@@ -555,7 +696,7 @@ final deleteTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeleteTaskUseCaseRef = AutoDisposeProviderRef<DeleteTaskUseCase>;
-String _$assignTaskUseCaseHash() => r'c61b76178c3b118624364f0088969f9255b39315';
+String _$assignTaskUseCaseHash() => r'11b32e445f8e393aa3161d711969461f61716fc7';
 
 /// See also [assignTaskUseCase].
 @ProviderFor(assignTaskUseCase)
@@ -575,7 +716,7 @@ final assignTaskUseCaseProvider =
 // ignore: unused_element
 typedef AssignTaskUseCaseRef = AutoDisposeProviderRef<AssignTaskUseCase>;
 String _$unassignTaskUseCaseHash() =>
-    r'fa36dd8cb58d7564509fb5dd191e93e41718017b';
+    r'1bbada02ad0b48b3de8bf8541b08916d7b07685c';
 
 /// See also [unassignTaskUseCase].
 @ProviderFor(unassignTaskUseCase)
@@ -595,7 +736,7 @@ final unassignTaskUseCaseProvider =
 // ignore: unused_element
 typedef UnassignTaskUseCaseRef = AutoDisposeProviderRef<UnassignTaskUseCase>;
 String _$uncompleteTaskUseCaseHash() =>
-    r'cc67d07d77474830400f3c73bb6cb22485ffb1af';
+    r'4006ab75ed4a852d8cac42aeea714613878f60ea';
 
 /// See also [uncompleteTaskUseCase].
 @ProviderFor(uncompleteTaskUseCase)
@@ -615,7 +756,7 @@ final uncompleteTaskUseCaseProvider =
 // ignore: unused_element
 typedef UncompleteTaskUseCaseRef =
     AutoDisposeProviderRef<UncompleteTaskUseCase>;
-String _$rejectTaskUseCaseHash() => r'b946359c4715c29b2535a09161fd74cafb50f41c';
+String _$rejectTaskUseCaseHash() => r'343b1eabba8fd069dafd20fd057496c10042b275';
 
 /// See also [rejectTaskUseCase].
 @ProviderFor(rejectTaskUseCase)
@@ -635,7 +776,7 @@ final rejectTaskUseCaseProvider =
 // ignore: unused_element
 typedef RejectTaskUseCaseRef = AutoDisposeProviderRef<RejectTaskUseCase>;
 String _$streamTasksUseCaseHash() =>
-    r'02eeb67887b9653cf04ac00fa9b5d52599d04849';
+    r'd274ec14529508c4f3429965cd8c2b9833d0dc51';
 
 /// See also [streamTasksUseCase].
 @ProviderFor(streamTasksUseCase)
@@ -655,7 +796,7 @@ final streamTasksUseCaseProvider =
 // ignore: unused_element
 typedef StreamTasksUseCaseRef = AutoDisposeProviderRef<StreamTasksUseCase>;
 String _$streamAvailableTasksUseCaseHash() =>
-    r'562086c7afd4af82fafa9114033a02d92b206eaa';
+    r'aa05c6010960f8666dbeef6ceaa866212ebcae00';
 
 /// See also [streamAvailableTasksUseCase].
 @ProviderFor(streamAvailableTasksUseCase)
@@ -676,7 +817,7 @@ final streamAvailableTasksUseCaseProvider =
 typedef StreamAvailableTasksUseCaseRef =
     AutoDisposeProviderRef<StreamAvailableTasksUseCase>;
 String _$streamTasksByAssigneeUseCaseHash() =>
-    r'6328c491a499ed2b8d84d3eae9fa82140cef62f7';
+    r'295416d3734763ae97911ef1ff5543090b0277c1';
 
 /// See also [streamTasksByAssigneeUseCase].
 @ProviderFor(streamTasksByAssigneeUseCase)
@@ -696,7 +837,7 @@ final streamTasksByAssigneeUseCaseProvider =
 // ignore: unused_element
 typedef StreamTasksByAssigneeUseCaseRef =
     AutoDisposeProviderRef<StreamTasksByAssigneeUseCase>;
-String _$getFamilyUseCaseHash() => r'6d14fedfbec13b40f1d2fc3411ec56befc6b64ac';
+String _$getFamilyUseCaseHash() => r'7f09231a57c832371aa82506d2806f56b96878b0';
 
 /// See also [getFamilyUseCase].
 @ProviderFor(getFamilyUseCase)
@@ -715,7 +856,7 @@ final getFamilyUseCaseProvider = AutoDisposeProvider<GetFamilyUseCase>.internal(
 // ignore: unused_element
 typedef GetFamilyUseCaseRef = AutoDisposeProviderRef<GetFamilyUseCase>;
 String _$updateFamilyUseCaseHash() =>
-    r'906b8c85014768a53ead267b9565a85a31946e92';
+    r'4291c8aae54304c9df291089724b57235e3f1fde';
 
 /// See also [updateFamilyUseCase].
 @ProviderFor(updateFamilyUseCase)
@@ -735,7 +876,7 @@ final updateFamilyUseCaseProvider =
 // ignore: unused_element
 typedef UpdateFamilyUseCaseRef = AutoDisposeProviderRef<UpdateFamilyUseCase>;
 String _$deleteFamilyUseCaseHash() =>
-    r'39ad6d9ae906c8118154e0cd47ae9f9ec8a56cff';
+    r'6222bb4e1ef2892c9881bb94afe8b31a02693658';
 
 /// See also [deleteFamilyUseCase].
 @ProviderFor(deleteFamilyUseCase)
@@ -755,7 +896,7 @@ final deleteFamilyUseCaseProvider =
 // ignore: unused_element
 typedef DeleteFamilyUseCaseRef = AutoDisposeProviderRef<DeleteFamilyUseCase>;
 String _$removeMemberUseCaseHash() =>
-    r'08d638d87802f91dd291d563073c0e617df301b5';
+    r'45b91c25bde06d1eb285f1a3aa47a5b5f1ac23ba';
 
 /// See also [removeMemberUseCase].
 @ProviderFor(removeMemberUseCase)
@@ -775,7 +916,7 @@ final removeMemberUseCaseProvider =
 // ignore: unused_element
 typedef RemoveMemberUseCaseRef = AutoDisposeProviderRef<RemoveMemberUseCase>;
 String _$getFamilyMembersUseCaseHash() =>
-    r'b3f578cbe4f161a429310e7fa2c3e0f4777d3296';
+    r'930bf389198021e51a67bacf096424e7b7667b30';
 
 /// See also [getFamilyMembersUseCase].
 @ProviderFor(getFamilyMembersUseCase)
@@ -796,7 +937,7 @@ final getFamilyMembersUseCaseProvider =
 typedef GetFamilyMembersUseCaseRef =
     AutoDisposeProviderRef<GetFamilyMembersUseCase>;
 String _$updateFamilyMemberUseCaseHash() =>
-    r'74e57f280050a91a14e03d7c6023abcc7e9c25c4';
+    r'db50f86388fbd4185859de138cc2f0075abc9d01';
 
 /// See also [updateFamilyMemberUseCase].
 @ProviderFor(updateFamilyMemberUseCase)
@@ -816,7 +957,7 @@ final updateFamilyMemberUseCaseProvider =
 // ignore: unused_element
 typedef UpdateFamilyMemberUseCaseRef =
     AutoDisposeProviderRef<UpdateFamilyMemberUseCase>;
-String _$deleteUserUseCaseHash() => r'014bcf1f070c66780d928269379350d6e1353449';
+String _$deleteUserUseCaseHash() => r'58c07ee8858bbf7d27e2b4cf2dd55d3ac9f9087f';
 
 /// See also [deleteUserUseCase].
 @ProviderFor(deleteUserUseCase)
@@ -836,7 +977,7 @@ final deleteUserUseCaseProvider =
 // ignore: unused_element
 typedef DeleteUserUseCaseRef = AutoDisposeProviderRef<DeleteUserUseCase>;
 String _$streamUserProfileUseCaseHash() =>
-    r'69e3eaceb68e14b9a2e00b9854f070a8ca608916';
+    r'd1cd7ce2afc89dd32e2beae2ee210808578b589b';
 
 /// See also [streamUserProfileUseCase].
 @ProviderFor(streamUserProfileUseCase)
@@ -857,7 +998,7 @@ final streamUserProfileUseCaseProvider =
 typedef StreamUserProfileUseCaseRef =
     AutoDisposeProviderRef<StreamUserProfileUseCase>;
 String _$initializeUserDataUseCaseHash() =>
-    r'fcce114eb58b35380170e720f7658435e1859323';
+    r'7556831646a6287adc567ec58fef28745e630dd8';
 
 /// See also [initializeUserDataUseCase].
 @ProviderFor(initializeUserDataUseCase)
@@ -877,7 +1018,7 @@ final initializeUserDataUseCaseProvider =
 // ignore: unused_element
 typedef InitializeUserDataUseCaseRef =
     AutoDisposeProviderRef<InitializeUserDataUseCase>;
-String _$awardBadgeUseCaseHash() => r'e07a1f2cb7424d4fccb868ab57afc3697fd1ea28';
+String _$awardBadgeUseCaseHash() => r'efcefad8d6d33addfbe1500452ff598bd910b4a5';
 
 /// See also [awardBadgeUseCase].
 @ProviderFor(awardBadgeUseCase)
@@ -897,7 +1038,7 @@ final awardBadgeUseCaseProvider =
 // ignore: unused_element
 typedef AwardBadgeUseCaseRef = AutoDisposeProviderRef<AwardBadgeUseCase>;
 String _$revokeBadgeUseCaseHash() =>
-    r'd9fde96b83f10748d1e3c9eb74732010d27be5e4';
+    r'2802d3df23f86a53fc1da6a0e354f23f4d21ca1c';
 
 /// See also [revokeBadgeUseCase].
 @ProviderFor(revokeBadgeUseCase)
@@ -917,7 +1058,7 @@ final revokeBadgeUseCaseProvider =
 // ignore: unused_element
 typedef RevokeBadgeUseCaseRef = AutoDisposeProviderRef<RevokeBadgeUseCase>;
 String _$grantAchievementUseCaseHash() =>
-    r'9c68c16ad808daf3af963435e05c5713be4d146a';
+    r'c4d5119b028aed7ddb5df772ff2c49e0220419f7';
 
 /// See also [grantAchievementUseCase].
 @ProviderFor(grantAchievementUseCase)
@@ -938,7 +1079,7 @@ final grantAchievementUseCaseProvider =
 typedef GrantAchievementUseCaseRef =
     AutoDisposeProviderRef<GrantAchievementUseCase>;
 String _$createBadgeUseCaseHash() =>
-    r'983e558530c7eee3bdfbf60eb7e7e1f5ad7aa311';
+    r'11736533825d2f7bf7587fa8ca8e9df955c1ed71';
 
 /// See also [createBadgeUseCase].
 @ProviderFor(createBadgeUseCase)
@@ -958,7 +1099,7 @@ final createBadgeUseCaseProvider =
 // ignore: unused_element
 typedef CreateBadgeUseCaseRef = AutoDisposeProviderRef<CreateBadgeUseCase>;
 String _$createRewardUseCaseHash() =>
-    r'ee433b3d22e15664f57490e60b3772ce5c6c7f91';
+    r'd4b5d01a2a0be20a62957b3f5d3603d6044bc9de';
 
 /// See also [createRewardUseCase].
 @ProviderFor(createRewardUseCase)
@@ -977,7 +1118,7 @@ final createRewardUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CreateRewardUseCaseRef = AutoDisposeProviderRef<CreateRewardUseCase>;
-String _$getBadgesUseCaseHash() => r'550040b6eb498ab30dad7b1ecd7b6c9b794a99c8';
+String _$getBadgesUseCaseHash() => r'f902ec4e75c59f8d23db33af0d55c472dd5cc7a0';
 
 /// See also [getBadgesUseCase].
 @ProviderFor(getBadgesUseCase)
@@ -995,7 +1136,7 @@ final getBadgesUseCaseProvider = AutoDisposeProvider<GetBadgesUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetBadgesUseCaseRef = AutoDisposeProviderRef<GetBadgesUseCase>;
-String _$getRewardsUseCaseHash() => r'57b5fcdbff14cfdfefbce55fc4101e5336c394b9';
+String _$getRewardsUseCaseHash() => r'e2f2710427e37599643d587931f3339c80e1d38f';
 
 /// See also [getRewardsUseCase].
 @ProviderFor(getRewardsUseCase)
@@ -1015,7 +1156,7 @@ final getRewardsUseCaseProvider =
 // ignore: unused_element
 typedef GetRewardsUseCaseRef = AutoDisposeProviderRef<GetRewardsUseCase>;
 String _$getNotificationsUseCaseHash() =>
-    r'dedee46365487f85a570fe956594a812f8e980b5';
+    r'f5ebf23e7b65cefffa8f927330ae84e7364c585d';
 
 /// See also [getNotificationsUseCase].
 @ProviderFor(getNotificationsUseCase)
@@ -1036,7 +1177,7 @@ final getNotificationsUseCaseProvider =
 typedef GetNotificationsUseCaseRef =
     AutoDisposeProviderRef<GetNotificationsUseCase>;
 String _$createNotificationUseCaseHash() =>
-    r'2af7f3326e0628aaa5f383a6139510de273173f3';
+    r'22e4e1d1978e12e2c7eeaee05c13957a24436a6b';
 
 /// See also [createNotificationUseCase].
 @ProviderFor(createNotificationUseCase)
@@ -1057,7 +1198,7 @@ final createNotificationUseCaseProvider =
 typedef CreateNotificationUseCaseRef =
     AutoDisposeProviderRef<CreateNotificationUseCase>;
 String _$markNotificationAsReadUseCaseHash() =>
-    r'745d50e1998d7166c5818936b86efe607fc99fea';
+    r'3ec9beff509113f56cee5e14f7f4cbfff348ef46';
 
 /// See also [markNotificationAsReadUseCase].
 @ProviderFor(markNotificationAsReadUseCase)
@@ -1078,7 +1219,7 @@ final markNotificationAsReadUseCaseProvider =
 typedef MarkNotificationAsReadUseCaseRef =
     AutoDisposeProviderRef<MarkNotificationAsReadUseCase>;
 String _$deleteNotificationUseCaseHash() =>
-    r'0696e49b9f265b86931f021da3104bb7663c62e9';
+    r'91f756d5ec8258419280ba920e1239313ec38434';
 
 /// See also [deleteNotificationUseCase].
 @ProviderFor(deleteNotificationUseCase)
@@ -1099,7 +1240,7 @@ final deleteNotificationUseCaseProvider =
 typedef DeleteNotificationUseCaseRef =
     AutoDisposeProviderRef<DeleteNotificationUseCase>;
 String _$streamNotificationsUseCaseHash() =>
-    r'473d0691393f2abd6ff421d8c9fd193d99902425';
+    r'53c6e6438bf4ef51907c577ac57102e75c7a42ae';
 
 /// See also [streamNotificationsUseCase].
 @ProviderFor(streamNotificationsUseCase)
@@ -1120,7 +1261,7 @@ final streamNotificationsUseCaseProvider =
 typedef StreamNotificationsUseCaseRef =
     AutoDisposeProviderRef<StreamNotificationsUseCase>;
 String _$resetPasswordUseCaseHash() =>
-    r'e96916aed879d8c1d7a7fdebc266ba0c7a8e22f3';
+    r'18cf64c97273ee1717940eac4b92da0b9a36e7a0';
 
 /// See also [resetPasswordUseCase].
 @ProviderFor(resetPasswordUseCase)
@@ -1139,5 +1280,25 @@ final resetPasswordUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
+String _$updateStreakUseCaseHash() =>
+    r'888dd4c285f18bebd4115a5bcf928bacae2f9a1a';
+
+/// See also [updateStreakUseCase].
+@ProviderFor(updateStreakUseCase)
+final updateStreakUseCaseProvider =
+    AutoDisposeProvider<UpdateStreakUseCase>.internal(
+      updateStreakUseCase,
+      name: r'updateStreakUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$updateStreakUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef UpdateStreakUseCaseRef = AutoDisposeProviderRef<UpdateStreakUseCase>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

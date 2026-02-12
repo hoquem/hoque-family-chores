@@ -3,7 +3,6 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../entities/family.dart';
 import '../../repositories/family_repository.dart';
-import '../../value_objects/family_id.dart';
 
 /// Use case for updating family information
 class UpdateFamilyUseCase {

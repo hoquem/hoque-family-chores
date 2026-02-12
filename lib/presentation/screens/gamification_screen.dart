@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/gamification_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 
@@ -212,62 +211,4 @@ class _GamificationScreenState extends ConsumerState<GamificationScreen>
     );
   }
 
-  /// Helper method to redeem a reward
-  Future<void> _redeemReward(BuildContext context, String rewardId, User currentUser) async {
-    try {
-      await ref.read(gamificationNotifierProvider(currentUser.id).notifier).redeemReward(rewardId, currentUser.familyId);
-      
-      // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Reward redeemed successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to redeem reward: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Helper method to convert icon name string to IconData
-  IconData _getIconFromName(String iconName) {
-    switch (iconName) {
-      case 'emoji_events':
-        return Icons.emoji_events;
-      case 'star_border':
-        return Icons.star_border;
-      case 'military_tech':
-        return Icons.military_tech;
-      case 'local_fire_department':
-        return Icons.local_fire_department;
-      case 'card_giftcard':
-        return Icons.card_giftcard;
-      case 'theaters':
-        return Icons.theaters;
-      case 'icecream':
-        return Icons.icecream;
-      case 'trending_up':
-        return Icons.trending_up;
-      case 'redeem':
-        return Icons.redeem;
-      case 'attach_money':
-        return Icons.attach_money;
-      case 'check_circle':
-        return Icons.check_circle;
-      case 'star':
-        return Icons.star;
-      default:
-        return Icons.emoji_events; // Default fallback
-    }
-  }
 }

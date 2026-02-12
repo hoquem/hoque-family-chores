@@ -7,7 +7,7 @@ part of 'available_tasks_notifier.dart';
 // **************************************************************************
 
 String _$availableTasksNotifierHash() =>
-    r'dfcf64ea358744a1a596f6722a216ed526bfedf7';
+    r'29e574ae7abd26ff9e42dc9862cd3201f120d880';
 
 /// Copied from Dart SDK
 class _SystemHash {

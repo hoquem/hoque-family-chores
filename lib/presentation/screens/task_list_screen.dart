@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
-import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -64,12 +63,10 @@ class TaskListScreen extends ConsumerWidget {
     }
   }
 
-  void _navigateToAddTask(BuildContext context) {
+  void _showQuickAddQuest(BuildContext context, WidgetRef ref) {
     final logger = AppLogger();
-    logger.i('TaskListScreen: Navigating to Add New Task screen');
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AddTaskScreen()),
-    );
+    logger.i('TaskListScreen: Opening Quick Add Quest bottom sheet');
+    showQuickAddQuestSheet(context);
   }
 
   Widget _buildTaskList(BuildContext context, WidgetRef ref, FamilyId familyId) {
@@ -215,6 +212,10 @@ class TaskListScreen extends ConsumerWidget {
                 child: Text('My Tasks'),
               ),
               const PopupMenuItem(
+                value: TaskFilterType.pendingApproval,
+                child: Text('Needs Approval'),
+              ),
+              const PopupMenuItem(
                 value: TaskFilterType.completed,
                 child: Text('Completed'),
               ),
@@ -228,9 +229,10 @@ class TaskListScreen extends ConsumerWidget {
       ),
       body: _buildTaskList(context, ref, familyId),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddTask(context),
+        onPressed: () => _showQuickAddQuest(context, ref),
+        backgroundColor: const Color(0xFFFFB300),
         child: const Icon(Icons.add),
-        tooltip: 'Add New Task',
+        tooltip: 'Quick Add Quest',
       ),
     );
   }
