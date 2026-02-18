@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:hoque_family_chores/domain/repositories/auth_repository.dart';
-import 'package:hoque_family_chores/domain/value_objects/email.dart';
-import 'package:hoque_family_chores/core/error/exceptions.dart';
+import '../../domain/repositories/auth_repository.dart';
+import '../../domain/value_objects/email.dart';
+import '../../core/error/exceptions.dart';
 
 /// Mock implementation of AuthRepository for testing
 class MockAuthRepository implements AuthRepository {

@@ -1,8 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // UI
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
@@ -74,6 +77,21 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       logger.i("[Startup] Firebase connected successfully.");
+
+      // Setup Crashlytics
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      logger.i("[Startup] Firebase Crashlytics configured.");
+
+      // Enable Firestore offline persistence
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+      logger.i("[Startup] Firestore offline persistence enabled.");
     } catch (e, s) {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       rethrow;
@@ -95,6 +113,16 @@ void main() async {
       logger.e("[Startup] FCM background handler setup failed.", error: e, stackTrace: s);
     }
 
+    // Global error widget
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Material(
+        child: Center(
+          child: Text('Something went wrong', style: TextStyle(color: Colors.red)),
+        ),
+      );
+    };
+
+    // Run the app with Riverpod
     logger.i("[Startup] Running the app with Riverpod...");
     runApp(
       const ProviderScope(
@@ -142,6 +170,14 @@ class MyApp extends StatelessWidget {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
+          }
+          if (snapshot.hasError) {
+            // Handle auth token expiry or other auth errors
+            final error = snapshot.error;
+            if (error is FirebaseAuthException) {
+              FirebaseAuth.instance.signOut();
+            }
+            return const LoginScreen();
           }
           if (snapshot.hasData) {
             return const MainScreen();

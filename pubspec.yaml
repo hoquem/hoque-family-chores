@@ -66,6 +66,7 @@ dependencies:
   timezone: ^0.9.4 # For scheduled notifications
   app_settings: ^5.2.0 # For app settings
   cached_network_image: ^3.3.1 # For image caching
+  firebase_crashlytics: ^4.3.2 # For crash reporting
 
 
 dev_dependencies:
