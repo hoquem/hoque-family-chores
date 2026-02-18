@@ -5,8 +5,8 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListScreen extends ConsumerWidget {
@@ -47,7 +47,6 @@ class TaskListScreen extends ConsumerWidget {
           await notifier.unassignTask(taskId);
           break;
         case TaskStatus.assigned:
-          // This would need to be handled differently - need user ID
           break;
         default:
           logger.w('TaskListScreen: Unhandled status update: $newStatus');
@@ -63,14 +62,14 @@ class TaskListScreen extends ConsumerWidget {
     }
   }
 
-  void _showQuickAddQuest(BuildContext context, WidgetRef ref) {
-    final logger = AppLogger();
-    logger.i('TaskListScreen: Opening Quick Add Quest bottom sheet');
-    showQuickAddQuestSheet(context);
+  void _navigateToAddTask(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddTaskScreen()),
+    );
   }
 
   Widget _buildTaskList(BuildContext context, WidgetRef ref, FamilyId familyId) {
-    final logger = AppLogger();
     final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
@@ -113,16 +112,10 @@ class TaskListScreen extends ConsumerWidget {
                     final newStatus = newValue 
                         ? TaskStatus.completed 
                         : TaskStatus.assigned;
-                    logger.d(
-                      'TaskListScreen: Toggling status for task ${task.id} to $newStatus',
-                    );
                     _handleTaskStatusUpdate(ref, familyId, task.id.value, newStatus, currentUser.id);
                   }
                 },
                 onReturnToAvailable: () {
-                  logger.d(
-                    'TaskListScreen: Returning task ${task.id} to available status',
-                  );
                   _handleTaskStatusUpdate(ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
                 },
               );
@@ -172,17 +165,11 @@ class TaskListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logger = AppLogger();
-    logger.d('TaskListScreen: Building screen');
-    
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
     final familyId = currentUser?.familyId;
 
     if (currentUser == null || familyId == null) {
-      logger.w(
-        'TaskListScreen: User ID or Family ID is null, cannot display tasks',
-      );
       return const Scaffold(
         body: Center(
           child: Text('Please log in and join a family to view tasks.'),
@@ -229,10 +216,10 @@ class TaskListScreen extends ConsumerWidget {
       ),
       body: _buildTaskList(context, ref, familyId),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showQuickAddQuest(context, ref),
+        onPressed: () => _navigateToAddTask(context),
         backgroundColor: const Color(0xFFFFB300),
+        tooltip: 'Add Task',
         child: const Icon(Icons.add),
-        tooltip: 'Quick Add Quest',
       ),
     );
   }

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// Import all screens that will be part of the bottom navigation
-import 'package:hoque_family_chores/presentation/screens/quest_board_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/gamification_screen.dart'; // Leaderboard
-import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart'; // Rewards (placeholder)
+import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/tasks_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/family_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_add_quest_sheet.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -16,22 +14,19 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  final _logger = AppLogger();
-  int _selectedIndex = 0; // Set initial index to 0 for the Home tab
+  int _selectedIndex = 0;
 
-  // List of main content widgets for each tab
   static final List<Widget> _widgetOptions = <Widget>[
-    const QuestBoardScreen(), // Index 0: Quest Board
-    const GamificationScreen(), // Index 1: Leaderboard
-    const FamilyListScreen(), // Index 2: Rewards (placeholder)
-    const UserProfileScreen(), // Index 3: Profile
+    const HomeScreen(),
+    const TasksScreen(),
+    const FamilyListScreen(),
+    const UserProfileScreen(),
   ];
 
-  // Titles corresponding to each tab's AppBar
   static const List<String> _appBarTitles = <String>[
-    'Quest Board',
-    'Leaderboard',
-    'Rewards',
+    'Home',
+    'Tasks',
+    'Family',
     'Profile',
   ];
 
@@ -47,48 +42,23 @@ class _AppShellState extends ConsumerState<AppShell> {
       appBar: AppBar(
         title: Text(_appBarTitles[_selectedIndex]),
         actions: [
-          // Show settings icon only for non-profile tabs
           if (_selectedIndex != 3)
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
-                _logger.i('AppShell: Settings tapped');
-                // TODO: Navigate to settings
+                logger.i('AppShell: Settings tapped');
               },
               tooltip: 'Settings',
             ),
         ],
       ),
       body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {
-                _logger.d('AppShell: Opening Quick Add Quest sheet');
-                showQuickAddQuestSheet(context);
-              },
-              backgroundColor: const Color(0xFFFFB300),
-              tooltip: 'Add Quest',
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Quest Board',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: 'Leaderboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.card_giftcard),
-            label: 'Rewards',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.task), label: 'Tasks'),
+          BottomNavigationBarItem(icon: Icon(Icons.family_restroom), label: 'Family'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).primaryColor,

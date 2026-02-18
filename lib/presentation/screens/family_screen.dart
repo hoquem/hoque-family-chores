@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hoque_family_chores/presentation/widgets/leaderboard_widget.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/leaderboard_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -10,62 +8,30 @@ class FamilyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logger = AppLogger();
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
-    Future<void> refreshData() async {
-      logger.d('FamilyScreen: Refreshing data');
-      
-      try {
-        if (currentUser != null) {
-          logger.d('FamilyScreen: Refreshing leaderboard for familyId: ${currentUser.familyId.value}');
-          ref.invalidate(leaderboardNotifierProvider(currentUser.familyId));
-          logger.d('FamilyScreen: Leaderboard refresh completed');
-        } else {
-          logger.w('FamilyScreen: currentUser is null, cannot refresh leaderboard');
-        }
-      } catch (e, stackTrace) {
-        logger.e('FamilyScreen: Error in refreshData: $e', error: e, stackTrace: stackTrace);
-      }
-    }
-
     logger.d('FamilyScreen: Building screen');
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Family'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              logger.d('FamilyScreen: Manual refresh triggered');
-              refreshData();
-            },
-          ),
-        ],
       ),
-      body: RefreshIndicator(
-        onRefresh: refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Family Leaderboard',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16.0),
-                const LeaderboardWidget(),
-              ],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.family_restroom, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              currentUser != null
+                  ? 'Family: ${currentUser.familyId.value}'
+                  : 'No family found',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          ),
+            const SizedBox(height: 8),
+            const Text('Family management coming soon!'),
+          ],
         ),
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:confetti/confetti.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/value_objects/family_id.dart';
 import '../../domain/value_objects/user_id.dart';
@@ -25,19 +24,17 @@ class TaskApprovalScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskApprovalScreenState extends ConsumerState<TaskApprovalScreen> {
-  late ConfettiController _confettiController;
+  
   int _currentIndex = 0;
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
   }
 
   @override
   void dispose() {
-    _confettiController.dispose();
     super.dispose();
   }
 
@@ -80,24 +77,6 @@ class _TaskApprovalScreenState extends ConsumerState<TaskApprovalScreen> {
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => _buildErrorState(error.toString()),
-          ),
-          // Confetti overlay
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirectionality: BlastDirectionality.explosive,
-              particleDrag: 0.05,
-              emissionFrequency: 0.05,
-              numberOfParticles: 30,
-              gravity: 0.2,
-              shouldLoop: false,
-              colors: const [
-                Color(0xFFFFB300),
-                Color(0xFF6750A4),
-                Colors.white,
-              ],
-            ),
           ),
         ],
       ),
@@ -466,7 +445,6 @@ class _TaskApprovalScreenState extends ConsumerState<TaskApprovalScreen> {
           );
 
       // Show confetti
-      _confettiController.play();
 
       // Show success message
       if (mounted) {
