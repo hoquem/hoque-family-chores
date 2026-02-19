@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Import domain entities
 import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:hoque_family_chores/domain/entities/badge.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart' as domain;
 import 'package:hoque_family_chores/domain/entities/family.dart';
 import 'package:hoque_family_chores/domain/entities/task_summary.dart';
@@ -14,7 +12,6 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
 
-// --- Test Data ---
 class TestData {
   static final domain.User testUser = domain.User(
     id: UserId('test_user_id'),
@@ -51,19 +48,6 @@ class TestData {
     createdAt: DateTime(2020, 1, 1),
   );
 
-  static final Badge testBadge = Badge(
-    id: 'test_badge_id',
-    name: 'Test Badge',
-    description: 'A test badge',
-    iconName: 'star',
-    requiredPoints: Points(50),
-    type: BadgeType.taskCompletion,
-    rarity: BadgeRarity.common,
-    familyId: FamilyId('test_family_id'),
-    createdAt: DateTime(2020, 1, 1),
-    updatedAt: DateTime(2020, 1, 1),
-  );
-
   static final TaskSummary testTaskSummary = TaskSummary(
     totalTasks: 5,
     completedTasks: 3,
@@ -77,14 +61,11 @@ class TestData {
   );
 }
 
-// --- Test Helpers ---
 class TestHelpers {
   static ProviderContainer createTestContainer({
     List<Override> overrides = const [],
   }) {
-    return ProviderContainer(
-      overrides: overrides,
-    );
+    return ProviderContainer(overrides: overrides);
   }
 
   static Widget createTestApp({
@@ -93,14 +74,11 @@ class TestHelpers {
   }) {
     return ProviderScope(
       overrides: overrides,
-      child: MaterialApp(
-        home: child,
-      ),
+      child: MaterialApp(home: child),
     );
   }
 }
 
-// --- Test Cases ---
 void main() {
   group('Unit Tests', () {
     test('TestData has valid test user', () {
@@ -121,12 +99,6 @@ void main() {
       expect(TestData.testTask.status, TaskStatus.available);
     });
 
-    test('TestData has valid test badge', () {
-      expect(TestData.testBadge.id, 'test_badge_id');
-      expect(TestData.testBadge.name, 'Test Badge');
-      expect(TestData.testBadge.requiredPoints.value, 50);
-    });
-
     test('TestData has valid test task summary', () {
       expect(TestData.testTaskSummary.totalTasks, 5);
       expect(TestData.testTaskSummary.completedTasks, 3);
@@ -138,14 +110,9 @@ void main() {
     testWidgets('TestHelpers creates valid test app', (WidgetTester tester) async {
       await tester.pumpWidget(
         TestHelpers.createTestApp(
-          child: const Scaffold(
-            body: Center(
-              child: Text('Test'),
-            ),
-          ),
+          child: const Scaffold(body: Center(child: Text('Test'))),
         ),
       );
-
       expect(find.text('Test'), findsOneWidget);
     });
   });

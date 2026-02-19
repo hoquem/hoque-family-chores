@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-import 'package:hoque_family_chores/presentation/widgets/quick_task_picker_widget.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_summary_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -74,7 +73,6 @@ class HomeScreen extends ConsumerWidget {
   }
 
   int _calculateLevelFromPoints(int points) {
-    // Simple level calculation: every 100 points = 1 level
     return (points / 100).floor() + 1;
   }
 
@@ -107,14 +105,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16.0),
               const TaskSummaryWidget(),
-              const SizedBox(height: 24.0),
-              const Text(
-                'Quick Tasks',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16.0),
-              const QuickTaskPickerWidget(),
-              const SizedBox(height: 50.0), // Bottom padding
+              const SizedBox(height: 50.0),
             ],
           ),
         ),

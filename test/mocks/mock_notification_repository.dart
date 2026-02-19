@@ -1,7 +1,7 @@
 import 'dart:async';
-import '../../domain/repositories/notification_repository.dart';
-import '../../domain/value_objects/user_id.dart';
-import '../../core/error/exceptions.dart';
+import 'package:hoque_family_chores/domain/repositories/notification_repository.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 
 /// Mock implementation of NotificationRepository for testing
 class MockNotificationRepository implements NotificationRepository {

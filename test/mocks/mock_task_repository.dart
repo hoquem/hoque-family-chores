@@ -1,11 +1,11 @@
 import 'dart:async';
-import '../../domain/repositories/task_repository.dart';
-import '../../domain/entities/task.dart';
-import '../../domain/value_objects/task_id.dart';
-import '../../domain/value_objects/family_id.dart';
-import '../../domain/value_objects/user_id.dart';
-import '../../domain/value_objects/points.dart';
-import '../../core/error/exceptions.dart';
+import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 
 /// Mock implementation of TaskRepository for testing
 class MockTaskRepository implements TaskRepository {

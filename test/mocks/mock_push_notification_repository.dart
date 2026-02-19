@@ -1,6 +1,6 @@
-import '../../domain/repositories/push_notification_repository.dart';
-import '../../domain/entities/push_notification.dart';
-import '../../utils/logger.dart';
+import 'package:hoque_family_chores/domain/repositories/push_notification_repository.dart';
+import 'package:hoque_family_chores/domain/entities/push_notification.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 
 /// Mock implementation of push notification repository for testing
 class MockPushNotificationRepository implements PushNotificationRepository {

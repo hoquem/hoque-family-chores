@@ -1,11 +1,11 @@
 import 'dart:async';
-import '../../domain/repositories/user_repository.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/value_objects/user_id.dart';
-import '../../domain/value_objects/email.dart';
-import '../../domain/value_objects/points.dart';
-import '../../domain/value_objects/family_id.dart';
-import '../../core/error/exceptions.dart';
+import 'package:hoque_family_chores/domain/repositories/user_repository.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/email.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 
 /// Mock implementation of UserRepository for testing
 class MockUserRepository implements UserRepository {

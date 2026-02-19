@@ -5,24 +5,16 @@ import '../core/environment_service.dart';
 // Domain repositories
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/family_repository.dart';
-import '../domain/repositories/gamification_repository.dart';
-import '../domain/repositories/leaderboard_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/notification_repository.dart';
-import '../domain/repositories/achievement_repository.dart';
-import '../domain/repositories/badge_repository.dart';
-import '../domain/repositories/reward_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/task_completion_repository.dart';
-import '../domain/repositories/ai_rating_service.dart';
-import '../domain/repositories/streak_repository.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
-import '../domain/usecases/streak/update_streak_usecase.dart';
 
 part 'riverpod_container.g.dart';
 
@@ -69,45 +61,10 @@ FamilyRepository familyRepository(Ref ref) {
 }
 
 @riverpod
-BadgeRepository badgeRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[BadgeRepository] as BadgeRepository;
-}
-
-@riverpod
-RewardRepository rewardRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[RewardRepository] as RewardRepository;
-}
-
-@riverpod
-LeaderboardRepository leaderboardRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[LeaderboardRepository] as LeaderboardRepository;
-}
-
-@riverpod
-AchievementRepository achievementRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[AchievementRepository] as AchievementRepository;
-}
-
-@riverpod
 NotificationRepository notificationRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[NotificationRepository] as NotificationRepository;
-}
-
-@riverpod
-GamificationRepository gamificationRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[GamificationRepository] as GamificationRepository;
 }
 
 @riverpod
@@ -117,21 +74,7 @@ TaskCompletionRepository taskCompletionRepository(Ref ref) {
   return repositories[TaskCompletionRepository] as TaskCompletionRepository;
 }
 
-@riverpod
-AiRatingService aiRatingService(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[AiRatingService] as AiRatingService;
-}
-
-@riverpod
-StreakRepository streakRepository(Ref ref) {
-  final factory = ref.watch(repositoryFactoryProvider);
-  final repositories = factory.createRepositories();
-  return repositories[StreakRepository] as StreakRepository;
-}
-
-/// Use Case Providers (Clean Architecture)
+/// Use Case Providers
 @riverpod
 CreateTaskUseCase createTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
@@ -170,16 +113,6 @@ GetTasksUseCase getTasksUseCase(Ref ref) {
 }
 
 @riverpod
-CompleteTaskWithPhoto completeTaskWithPhoto(Ref ref) {
-  final completionRepository = ref.watch(taskCompletionRepositoryProvider);
-  final aiRatingService = ref.watch(aiRatingServiceProvider);
-    return CompleteTaskWithPhoto(
-    completionRepository: completionRepository,
-    aiRatingService: aiRatingService,
-  );
-}
-
-@riverpod
 SignInUseCase signInUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return SignInUseCase(authRepository);
@@ -213,37 +146,6 @@ GetUserProfileUseCase getUserProfileUseCase(Ref ref) {
 UpdateUserProfileUseCase updateUserProfileUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return UpdateUserProfileUseCase(userRepository);
-}
-
-@riverpod
-AwardPointsUseCase awardPointsUseCase(Ref ref) {
-  final userRepository = ref.watch(userRepositoryProvider);
-  return AwardPointsUseCase(userRepository);
-}
-
-@riverpod
-RedeemRewardUseCase redeemRewardUseCase(Ref ref) {
-  final rewardRepository = ref.watch(rewardRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return RedeemRewardUseCase(rewardRepository, userRepository);
-}
-
-@riverpod
-GetLeaderboardUseCase getLeaderboardUseCase(Ref ref) {
-  final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
-  return GetLeaderboardUseCase(leaderboardRepository);
-}
-
-@riverpod
-GetWeeklyLeaderboardUseCase getWeeklyLeaderboardUseCase(Ref ref) {
-  final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
-  return GetWeeklyLeaderboardUseCase(leaderboardRepository);
-}
-
-@riverpod
-GetAllTimeLeaderboardUseCase getAllTimeLeaderboardUseCase(Ref ref) {
-  final leaderboardRepository = ref.watch(leaderboardRepositoryProvider);
-  return GetAllTimeLeaderboardUseCase(leaderboardRepository);
 }
 
 // Additional Task Use Cases
@@ -301,7 +203,7 @@ StreamTasksByAssigneeUseCase streamTasksByAssigneeUseCase(Ref ref) {
   return StreamTasksByAssigneeUseCase(taskRepository);
 }
 
-// Additional Family Use Cases
+// Family Use Cases
 @riverpod
 GetFamilyUseCase getFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
@@ -338,7 +240,7 @@ UpdateFamilyMemberUseCase updateFamilyMemberUseCase(Ref ref) {
   return UpdateFamilyMemberUseCase(familyRepository);
 }
 
-// Additional User Use Cases
+// User Use Cases
 @riverpod
 DeleteUserUseCase deleteUserUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
@@ -355,49 +257,6 @@ StreamUserProfileUseCase streamUserProfileUseCase(Ref ref) {
 InitializeUserDataUseCase initializeUserDataUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   return InitializeUserDataUseCase(userRepository);
-}
-
-// Additional Gamification Use Cases
-@riverpod
-AwardBadgeUseCase awardBadgeUseCase(Ref ref) {
-  final badgeRepository = ref.watch(badgeRepositoryProvider);
-  return AwardBadgeUseCase(badgeRepository);
-}
-
-@riverpod
-RevokeBadgeUseCase revokeBadgeUseCase(Ref ref) {
-  final badgeRepository = ref.watch(badgeRepositoryProvider);
-  return RevokeBadgeUseCase(badgeRepository);
-}
-
-@riverpod
-GrantAchievementUseCase grantAchievementUseCase(Ref ref) {
-  final achievementRepository = ref.watch(achievementRepositoryProvider);
-  return GrantAchievementUseCase(achievementRepository);
-}
-
-@riverpod
-CreateBadgeUseCase createBadgeUseCase(Ref ref) {
-  final badgeRepository = ref.watch(badgeRepositoryProvider);
-  return CreateBadgeUseCase(badgeRepository);
-}
-
-@riverpod
-CreateRewardUseCase createRewardUseCase(Ref ref) {
-  final rewardRepository = ref.watch(rewardRepositoryProvider);
-  return CreateRewardUseCase(rewardRepository);
-}
-
-@riverpod
-GetBadgesUseCase getBadgesUseCase(Ref ref) {
-  final badgeRepository = ref.watch(badgeRepositoryProvider);
-  return GetBadgesUseCase(badgeRepository);
-}
-
-@riverpod
-GetRewardsUseCase getRewardsUseCase(Ref ref) {
-  final rewardRepository = ref.watch(rewardRepositoryProvider);
-  return GetRewardsUseCase(rewardRepository);
 }
 
 // Notification Use Cases
@@ -435,12 +294,4 @@ StreamNotificationsUseCase streamNotificationsUseCase(Ref ref) {
 ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
-}
-
-// Streak Use Cases
-@riverpod
-UpdateStreakUseCase updateStreakUseCase(Ref ref) {
-  final streakRepository = ref.watch(streakRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return UpdateStreakUseCase(streakRepository, userRepository);
 }

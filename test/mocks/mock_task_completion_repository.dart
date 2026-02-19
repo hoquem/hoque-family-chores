@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:dartz/dartz.dart';
-import '../../core/error/failures.dart';
-import '../../domain/entities/task_completion.dart';
-import '../../domain/repositories/task_completion_repository.dart';
-import '../../domain/value_objects/task_id.dart';
-import '../../domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/core/error/failures.dart';
+import 'package:hoque_family_chores/domain/entities/task_completion.dart';
+import 'package:hoque_family_chores/domain/repositories/task_completion_repository.dart';
+import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 
 /// Mock implementation of TaskCompletionRepository for testing
 class MockTaskCompletionRepository implements TaskCompletionRepository {

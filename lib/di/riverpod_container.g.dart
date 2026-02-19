@@ -123,84 +123,6 @@ final familyRepositoryProvider = AutoDisposeProvider<FamilyRepository>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FamilyRepositoryRef = AutoDisposeProviderRef<FamilyRepository>;
-String _$badgeRepositoryHash() => r'4be58c4e6943f96c9798e8c4e98739a3cd8cdfe2';
-
-/// See also [badgeRepository].
-@ProviderFor(badgeRepository)
-final badgeRepositoryProvider = AutoDisposeProvider<BadgeRepository>.internal(
-  badgeRepository,
-  name: r'badgeRepositoryProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$badgeRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef BadgeRepositoryRef = AutoDisposeProviderRef<BadgeRepository>;
-String _$rewardRepositoryHash() => r'4201d5fbc9090a0227a648da59a3f09a041f6d47';
-
-/// See also [rewardRepository].
-@ProviderFor(rewardRepository)
-final rewardRepositoryProvider = AutoDisposeProvider<RewardRepository>.internal(
-  rewardRepository,
-  name: r'rewardRepositoryProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$rewardRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef RewardRepositoryRef = AutoDisposeProviderRef<RewardRepository>;
-String _$leaderboardRepositoryHash() =>
-    r'e238f21125226f2ffd73823e65f7135ae5a5569c';
-
-/// See also [leaderboardRepository].
-@ProviderFor(leaderboardRepository)
-final leaderboardRepositoryProvider =
-    AutoDisposeProvider<LeaderboardRepository>.internal(
-      leaderboardRepository,
-      name: r'leaderboardRepositoryProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$leaderboardRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef LeaderboardRepositoryRef =
-    AutoDisposeProviderRef<LeaderboardRepository>;
-String _$achievementRepositoryHash() =>
-    r'ec5831d4ae6c5f6c15193ed7479cc6693497ea00';
-
-/// See also [achievementRepository].
-@ProviderFor(achievementRepository)
-final achievementRepositoryProvider =
-    AutoDisposeProvider<AchievementRepository>.internal(
-      achievementRepository,
-      name: r'achievementRepositoryProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$achievementRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AchievementRepositoryRef =
-    AutoDisposeProviderRef<AchievementRepository>;
 String _$notificationRepositoryHash() =>
     r'3945da4c35ae242b34d24dfb2a24afd7485029c3';
 
@@ -222,27 +144,6 @@ final notificationRepositoryProvider =
 // ignore: unused_element
 typedef NotificationRepositoryRef =
     AutoDisposeProviderRef<NotificationRepository>;
-String _$gamificationRepositoryHash() =>
-    r'4c4417882bdef39f61930b09bbf8435fe1e7edc2';
-
-/// See also [gamificationRepository].
-@ProviderFor(gamificationRepository)
-final gamificationRepositoryProvider =
-    AutoDisposeProvider<GamificationRepository>.internal(
-      gamificationRepository,
-      name: r'gamificationRepositoryProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$gamificationRepositoryHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GamificationRepositoryRef =
-    AutoDisposeProviderRef<GamificationRepository>;
 String _$taskCompletionRepositoryHash() =>
     r'c5bdd16ab6718c60b4b3a64dc655a0ca12ae2337';
 
@@ -264,45 +165,9 @@ final taskCompletionRepositoryProvider =
 // ignore: unused_element
 typedef TaskCompletionRepositoryRef =
     AutoDisposeProviderRef<TaskCompletionRepository>;
-String _$aiRatingServiceHash() => r'1bcf03839ec00b0fb72c8d1062a8d91d44afdeab';
-
-/// See also [aiRatingService].
-@ProviderFor(aiRatingService)
-final aiRatingServiceProvider = AutoDisposeProvider<AiRatingService>.internal(
-  aiRatingService,
-  name: r'aiRatingServiceProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$aiRatingServiceHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AiRatingServiceRef = AutoDisposeProviderRef<AiRatingService>;
-String _$streakRepositoryHash() => r'9dd977d3453e566a4b28f7de3872e2abf5c9de1f';
-
-/// See also [streakRepository].
-@ProviderFor(streakRepository)
-final streakRepositoryProvider = AutoDisposeProvider<StreakRepository>.internal(
-  streakRepository,
-  name: r'streakRepositoryProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$streakRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef StreakRepositoryRef = AutoDisposeProviderRef<StreakRepository>;
 String _$createTaskUseCaseHash() => r'fd1908728d6fbedfd60f77adc82e5876eb2b2705';
 
-/// Use Case Providers (Clean Architecture)
+/// Use Case Providers
 ///
 /// Copied from [createTaskUseCase].
 @ProviderFor(createTaskUseCase)
@@ -418,27 +283,6 @@ final getTasksUseCaseProvider = AutoDisposeProvider<GetTasksUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GetTasksUseCaseRef = AutoDisposeProviderRef<GetTasksUseCase>;
-String _$completeTaskWithPhotoHash() =>
-    r'd1cce62729bd1fafed64042de79f0cdc141e7f0c';
-
-/// See also [completeTaskWithPhoto].
-@ProviderFor(completeTaskWithPhoto)
-final completeTaskWithPhotoProvider =
-    AutoDisposeProvider<CompleteTaskWithPhoto>.internal(
-      completeTaskWithPhoto,
-      name: r'completeTaskWithPhotoProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$completeTaskWithPhotoHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CompleteTaskWithPhotoRef =
-    AutoDisposeProviderRef<CompleteTaskWithPhoto>;
 String _$signInUseCaseHash() => r'1f792d19a5edd705f764dd1e4cf006ceebe24159';
 
 /// See also [signInUseCase].
@@ -555,109 +399,6 @@ final updateUserProfileUseCaseProvider =
 // ignore: unused_element
 typedef UpdateUserProfileUseCaseRef =
     AutoDisposeProviderRef<UpdateUserProfileUseCase>;
-String _$awardPointsUseCaseHash() =>
-    r'e13fbd85a5878a595b09b73b220f07fe8970a4b6';
-
-/// See also [awardPointsUseCase].
-@ProviderFor(awardPointsUseCase)
-final awardPointsUseCaseProvider =
-    AutoDisposeProvider<AwardPointsUseCase>.internal(
-      awardPointsUseCase,
-      name: r'awardPointsUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$awardPointsUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AwardPointsUseCaseRef = AutoDisposeProviderRef<AwardPointsUseCase>;
-String _$redeemRewardUseCaseHash() =>
-    r'e245c098d3723baad28bccc9328873baa12d331d';
-
-/// See also [redeemRewardUseCase].
-@ProviderFor(redeemRewardUseCase)
-final redeemRewardUseCaseProvider =
-    AutoDisposeProvider<RedeemRewardUseCase>.internal(
-      redeemRewardUseCase,
-      name: r'redeemRewardUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$redeemRewardUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef RedeemRewardUseCaseRef = AutoDisposeProviderRef<RedeemRewardUseCase>;
-String _$getLeaderboardUseCaseHash() =>
-    r'f0f8b298501fd45cd409f14945feddc68f71083c';
-
-/// See also [getLeaderboardUseCase].
-@ProviderFor(getLeaderboardUseCase)
-final getLeaderboardUseCaseProvider =
-    AutoDisposeProvider<GetLeaderboardUseCase>.internal(
-      getLeaderboardUseCase,
-      name: r'getLeaderboardUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$getLeaderboardUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetLeaderboardUseCaseRef =
-    AutoDisposeProviderRef<GetLeaderboardUseCase>;
-String _$getWeeklyLeaderboardUseCaseHash() =>
-    r'4a76a9058c4b56cc33ff35446eca244732a53b7d';
-
-/// See also [getWeeklyLeaderboardUseCase].
-@ProviderFor(getWeeklyLeaderboardUseCase)
-final getWeeklyLeaderboardUseCaseProvider =
-    AutoDisposeProvider<GetWeeklyLeaderboardUseCase>.internal(
-      getWeeklyLeaderboardUseCase,
-      name: r'getWeeklyLeaderboardUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$getWeeklyLeaderboardUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetWeeklyLeaderboardUseCaseRef =
-    AutoDisposeProviderRef<GetWeeklyLeaderboardUseCase>;
-String _$getAllTimeLeaderboardUseCaseHash() =>
-    r'de24f6c64664ebb8be2220145a63f3b27d4a0065';
-
-/// See also [getAllTimeLeaderboardUseCase].
-@ProviderFor(getAllTimeLeaderboardUseCase)
-final getAllTimeLeaderboardUseCaseProvider =
-    AutoDisposeProvider<GetAllTimeLeaderboardUseCase>.internal(
-      getAllTimeLeaderboardUseCase,
-      name: r'getAllTimeLeaderboardUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$getAllTimeLeaderboardUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetAllTimeLeaderboardUseCaseRef =
-    AutoDisposeProviderRef<GetAllTimeLeaderboardUseCase>;
 String _$updateTaskUseCaseHash() => r'79f901348b8ce9ebe93bc08a5ccb4c1e05fd6b03';
 
 /// See also [updateTaskUseCase].
@@ -1018,143 +759,6 @@ final initializeUserDataUseCaseProvider =
 // ignore: unused_element
 typedef InitializeUserDataUseCaseRef =
     AutoDisposeProviderRef<InitializeUserDataUseCase>;
-String _$awardBadgeUseCaseHash() => r'efcefad8d6d33addfbe1500452ff598bd910b4a5';
-
-/// See also [awardBadgeUseCase].
-@ProviderFor(awardBadgeUseCase)
-final awardBadgeUseCaseProvider =
-    AutoDisposeProvider<AwardBadgeUseCase>.internal(
-      awardBadgeUseCase,
-      name: r'awardBadgeUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$awardBadgeUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef AwardBadgeUseCaseRef = AutoDisposeProviderRef<AwardBadgeUseCase>;
-String _$revokeBadgeUseCaseHash() =>
-    r'2802d3df23f86a53fc1da6a0e354f23f4d21ca1c';
-
-/// See also [revokeBadgeUseCase].
-@ProviderFor(revokeBadgeUseCase)
-final revokeBadgeUseCaseProvider =
-    AutoDisposeProvider<RevokeBadgeUseCase>.internal(
-      revokeBadgeUseCase,
-      name: r'revokeBadgeUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$revokeBadgeUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef RevokeBadgeUseCaseRef = AutoDisposeProviderRef<RevokeBadgeUseCase>;
-String _$grantAchievementUseCaseHash() =>
-    r'c4d5119b028aed7ddb5df772ff2c49e0220419f7';
-
-/// See also [grantAchievementUseCase].
-@ProviderFor(grantAchievementUseCase)
-final grantAchievementUseCaseProvider =
-    AutoDisposeProvider<GrantAchievementUseCase>.internal(
-      grantAchievementUseCase,
-      name: r'grantAchievementUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$grantAchievementUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GrantAchievementUseCaseRef =
-    AutoDisposeProviderRef<GrantAchievementUseCase>;
-String _$createBadgeUseCaseHash() =>
-    r'11736533825d2f7bf7587fa8ca8e9df955c1ed71';
-
-/// See also [createBadgeUseCase].
-@ProviderFor(createBadgeUseCase)
-final createBadgeUseCaseProvider =
-    AutoDisposeProvider<CreateBadgeUseCase>.internal(
-      createBadgeUseCase,
-      name: r'createBadgeUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$createBadgeUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CreateBadgeUseCaseRef = AutoDisposeProviderRef<CreateBadgeUseCase>;
-String _$createRewardUseCaseHash() =>
-    r'd4b5d01a2a0be20a62957b3f5d3603d6044bc9de';
-
-/// See also [createRewardUseCase].
-@ProviderFor(createRewardUseCase)
-final createRewardUseCaseProvider =
-    AutoDisposeProvider<CreateRewardUseCase>.internal(
-      createRewardUseCase,
-      name: r'createRewardUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$createRewardUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef CreateRewardUseCaseRef = AutoDisposeProviderRef<CreateRewardUseCase>;
-String _$getBadgesUseCaseHash() => r'f902ec4e75c59f8d23db33af0d55c472dd5cc7a0';
-
-/// See also [getBadgesUseCase].
-@ProviderFor(getBadgesUseCase)
-final getBadgesUseCaseProvider = AutoDisposeProvider<GetBadgesUseCase>.internal(
-  getBadgesUseCase,
-  name: r'getBadgesUseCaseProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$getBadgesUseCaseHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetBadgesUseCaseRef = AutoDisposeProviderRef<GetBadgesUseCase>;
-String _$getRewardsUseCaseHash() => r'e2f2710427e37599643d587931f3339c80e1d38f';
-
-/// See also [getRewardsUseCase].
-@ProviderFor(getRewardsUseCase)
-final getRewardsUseCaseProvider =
-    AutoDisposeProvider<GetRewardsUseCase>.internal(
-      getRewardsUseCase,
-      name: r'getRewardsUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$getRewardsUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef GetRewardsUseCaseRef = AutoDisposeProviderRef<GetRewardsUseCase>;
 String _$getNotificationsUseCaseHash() =>
     r'f5ebf23e7b65cefffa8f927330ae84e7364c585d';
 
@@ -1280,25 +884,5 @@ final resetPasswordUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
-String _$updateStreakUseCaseHash() =>
-    r'888dd4c285f18bebd4115a5bcf928bacae2f9a1a';
-
-/// See also [updateStreakUseCase].
-@ProviderFor(updateStreakUseCase)
-final updateStreakUseCaseProvider =
-    AutoDisposeProvider<UpdateStreakUseCase>.internal(
-      updateStreakUseCase,
-      name: r'updateStreakUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$updateStreakUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UpdateStreakUseCaseRef = AutoDisposeProviderRef<UpdateStreakUseCase>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

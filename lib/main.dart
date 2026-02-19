@@ -13,15 +13,7 @@ import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
-// Riverpod DI
-import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-
-// UI
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
-import 'package:hoque_family_chores/presentation/screens/photo_capture_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/task_completion_result_screen.dart';
-import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:hoque_family_chores/domain/entities/task_completion.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 
@@ -61,18 +53,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final logger = AppLogger();
   logger.i('[FCM Background] Message received: ${message.notification?.title}');
-  // Handle background message - notification is automatically shown by the system
 }
 
 void main() async {
   final logger = AppLogger();
-  logger.init(); // Initialize the logger first
+  logger.init();
 
   try {
     logger.i("[Startup] Initializing Flutter bindings...");
     WidgetsFlutterBinding.ensureInitialized();
 
-    // Load environment variables (optional)
     try {
       logger.i("[Startup] Attempting to load .env file...");
       await dotenv.load(fileName: ".env");
@@ -81,7 +71,6 @@ void main() async {
       logger.w("[Startup] No .env file found, using default configuration. Error: $e");
     }
 
-    // Initialize Firebase if needed
     try {
       logger.i("[Startup] Connecting to Firebase...");
       await Firebase.initializeApp(
@@ -108,7 +97,6 @@ void main() async {
       rethrow;
     }
 
-    // Initialize timezone database for scheduled notifications
     try {
       logger.i("[Startup] Initializing timezone database...");
       tz.initializeTimeZones();
@@ -117,7 +105,6 @@ void main() async {
       logger.e("[Startup] Timezone initialization failed.", error: e, stackTrace: s);
     }
 
-    // Initialize push notifications background handler
     try {
       logger.i("[Startup] Setting up FCM background handler...");
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -152,28 +139,27 @@ void main() async {
   }
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Hoque Family Chores',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4), // Purple - adventure/quest theme
+          seedColor: const Color(0xFF6750A4),
           primary: const Color(0xFF6750A4),
-          secondary: const Color(0xFFFFB300), // Gold/Amber - stars
-          error: const Color(0xFFF44336), // Red
+          secondary: const Color(0xFFFFB300),
+          error: const Color(0xFFF44336),
         ),
         useMaterial3: true,
         primaryColor: const Color(0xFF6750A4),
-        // Custom color for success states
         extensions: const <ThemeExtension<dynamic>>[
           CustomColors(
-            success: Color(0xFF4CAF50), // Green
-            starGold: Color(0xFFFFB300), // Amber
+            success: Color(0xFF4CAF50),
+            starGold: Color(0xFFFFB300),
           ),
         ],
       ),
@@ -199,40 +185,6 @@ class MyApp extends ConsumerWidget {
           return const LoginScreen();
         },
       ),
-      home: const HomeScreen(),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/photo-capture':
-            final task = settings.arguments as Task;
-            return MaterialPageRoute(
-              builder: (context) => PhotoCaptureScreen(task: task),
-            );
-          case '/task-completion-result':
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => TaskCompletionResultScreen(
-                task: args['task'] as Task,
-                completion: args['completion'] as TaskCompletion,
-              ),
-            );
-          default:
-            return null;
-        }
-      },
-    );
-  }
-}
-
-class HomeScreen extends ConsumerWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(authNotifierProvider);
-
-    // ... rest of the widget tree ...
-    return const Scaffold(
-      body: Center(child: Text('Welcome to Hoque Family Chores!')),
     );
   }
 }
