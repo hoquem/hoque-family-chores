@@ -94,7 +94,8 @@ void main() async {
       logger.i("[Startup] Firestore offline persistence enabled.");
     } catch (e, s) {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
-      rethrow;
+      runApp(ErrorApp(error: e));
+      return;
     }
 
     try {
@@ -167,9 +168,7 @@ class MyApp extends StatelessWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const _SplashScreen();
           }
           if (snapshot.hasError) {
             // Handle auth token expiry or other auth errors
@@ -218,6 +217,75 @@ class ErrorApp extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Splash screen with timeout — if Firebase takes too long, show an error
+class _SplashScreen extends StatefulWidget {
+  const _SplashScreen();
+
+  @override
+  State<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<_SplashScreen> {
+  bool _timedOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted) {
+        setState(() => _timedOut = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.home_rounded, size: 64, color: Color(0xFF6750A4)),
+              const SizedBox(height: 24),
+              const Text(
+                'Our Family Chores',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              if (!_timedOut) ...[
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                const Text('Connecting...', style: TextStyle(color: Colors.grey)),
+              ] else ...[
+                const Icon(Icons.cloud_off, size: 48, color: Colors.orange),
+                const SizedBox(height: 16),
+                const Text(
+                  'Unable to connect to the server.\n\nPlease check your internet connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() => _timedOut = false);
+                    Future.delayed(const Duration(seconds: 10), () {
+                      if (mounted) setState(() => _timedOut = true);
+                    });
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ],
           ),
         ),
       ),
