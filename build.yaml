@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      bdd_widget_test|featureBuilder:
+        enabled: true
+        generate_for:
+          - test/features/**/*.feature

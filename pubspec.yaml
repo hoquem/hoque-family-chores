@@ -75,6 +75,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3 # Check pub.dev for the latest version
   mocktail: ^1.0.4
   mockito: ^5.4.0
+  bdd_widget_test: ^1.7.0 # BDD testing with Gherkin syntax
     
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
