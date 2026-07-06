@@ -1,25 +1,35 @@
+import 'dart:math';
+
 import 'package:dartz/dartz.dart' hide Task;
+import 'package:uuid/uuid.dart';
 import '../../../core/error/failures.dart';
 import '../../entities/family.dart';
 import '../../repositories/family_repository.dart';
+import '../../repositories/user_repository.dart';
 import '../../value_objects/family_id.dart';
 import '../../value_objects/user_id.dart';
+import '../../entities/user.dart';
 
 /// Use case for creating a new family
 class CreateFamilyUseCase {
   final FamilyRepository _familyRepository;
+  final UserRepository _userRepository;
 
-  CreateFamilyUseCase(this._familyRepository);
+  CreateFamilyUseCase(this._familyRepository, this._userRepository);
 
-  /// Creates a new family with the creator as the first member
-  /// 
-  /// Parameters:
-  /// [name] - Family name
-  /// [description] - Family description (optional)
-  /// [creatorId] - ID of the user creating the family
-  /// [photoUrl] - Optional family photo URL
-  /// 
-  /// Returns [FamilyEntity] on success or [Failure] on error
+  /// Characters used for invite codes; ambiguous glyphs (0/O, 1/I/L) excluded.
+  static const _codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+  /// Creates a new family with the creator as the first member.
+  ///
+  /// The creator's user profile is updated to reference the new family and
+  /// is promoted to the parent role.
+  ///
+  /// :param name: Family name.
+  /// :param description: Family description (optional).
+  /// :param creatorId: ID of the user creating the family.
+  /// :param photoUrl: Optional family photo URL.
+  /// :returns: ``FamilyEntity`` on success or ``Failure`` on error.
   Future<Either<Failure, FamilyEntity>> call({
     required String name,
     String? description,
@@ -33,7 +43,7 @@ class CreateFamilyUseCase {
         description: description,
         creatorId: creatorId,
       );
-      
+
       if (validationResult.isLeft()) {
         return validationResult.fold(
           (failure) => Left(failure),
@@ -41,10 +51,18 @@ class CreateFamilyUseCase {
         );
       }
 
+      final creator = await _userRepository.getUserProfile(creatorId);
+      if (creator == null) {
+        return Left(NotFoundFailure('User profile not found'));
+      }
+      if (creator.familyId.value.isNotEmpty) {
+        return Left(BusinessFailure('You already belong to a family'));
+      }
+
       // Create family entity
       final now = DateTime.now();
       final family = FamilyEntity(
-        id: FamilyId(''), // Will be set by repository
+        id: FamilyId(const Uuid().v4()),
         name: name.trim(),
         description: description?.trim() ?? '',
         creatorId: creatorId,
@@ -52,17 +70,32 @@ class CreateFamilyUseCase {
         createdAt: now,
         updatedAt: now,
         photoUrl: photoUrl,
+        inviteCode: _generateInviteCode(),
       );
 
-      // Save family to repository
       await _familyRepository.createFamily(family);
-      
-      // Return the created family (repository should return it with proper ID)
-      // For now, we'll return the family as created
+
+      // Link the creator to the family as a parent.
+      await _userRepository.updateUserProfile(
+        creator.copyWith(
+          familyId: family.id,
+          role: UserRole.parent,
+          updatedAt: DateTime.now(),
+        ),
+      );
+
       return Right(family);
     } catch (e) {
       return Left(ServerFailure('Failed to create family: $e'));
     }
+  }
+
+  String _generateInviteCode() {
+    final random = Random.secure();
+    return List.generate(
+      6,
+      (_) => _codeAlphabet[random.nextInt(_codeAlphabet.length)],
+    ).join();
   }
 
   /// Validates family input parameters
@@ -86,4 +119,4 @@ class CreateFamilyUseCase {
 
     return const Right(null);
   }
-} 
+}

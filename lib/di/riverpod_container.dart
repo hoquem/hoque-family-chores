@@ -127,7 +127,15 @@ SignUpUseCase signUpUseCase(Ref ref) {
 @riverpod
 CreateFamilyUseCase createFamilyUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
-  return CreateFamilyUseCase(familyRepository);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return CreateFamilyUseCase(familyRepository, userRepository);
+}
+
+@riverpod
+JoinFamilyUseCase joinFamilyUseCase(Ref ref) {
+  final familyRepository = ref.watch(familyRepositoryProvider);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return JoinFamilyUseCase(familyRepository, userRepository);
 }
 
 @riverpod

@@ -59,7 +59,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
         description: description,
         points: points,
         difficulty: difficulty,
-        dueDate: dueDate ?? DateTime.now(),
+        dueDate: dueDate ?? DateTime.now().add(const Duration(days: 1)),
         familyId: familyId,
         createdById: creatorId,
         assignedToId: assignedTo?.id,

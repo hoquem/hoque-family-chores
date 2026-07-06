@@ -111,7 +111,10 @@ class TaskListNotifier extends _$TaskListNotifier {
     
     try {
       final deleteTaskUseCase = ref.read(deleteTaskUseCaseProvider);
-      final result = await deleteTaskUseCase.call(taskId: TaskId(taskId));
+      final result = await deleteTaskUseCase.call(
+        taskId: TaskId(taskId),
+        familyId: familyId,
+      );
       
       result.fold(
         (failure) => throw Exception(failure.message),
@@ -208,8 +211,9 @@ class TaskListNotifier extends _$TaskListNotifier {
     try {
       final assignTaskUseCase = ref.read(assignTaskUseCaseProvider);
       final result = await assignTaskUseCase.call(
-        taskId: TaskId(taskId), 
+        taskId: TaskId(taskId),
         userId: userId,
+        familyId: familyId,
       );
       
       result.fold(
@@ -231,7 +235,10 @@ class TaskListNotifier extends _$TaskListNotifier {
     
     try {
       final unassignTaskUseCase = ref.read(unassignTaskUseCaseProvider);
-      final result = await unassignTaskUseCase.call(taskId: TaskId(taskId));
+      final result = await unassignTaskUseCase.call(
+        taskId: TaskId(taskId),
+        familyId: familyId,
+      );
       
       result.fold(
         (failure) => throw Exception(failure.message),
@@ -252,7 +259,10 @@ class TaskListNotifier extends _$TaskListNotifier {
     
     try {
       final uncompleteTaskUseCase = ref.read(uncompleteTaskUseCaseProvider);
-      final result = await uncompleteTaskUseCase.call(taskId: TaskId(taskId));
+      final result = await uncompleteTaskUseCase.call(
+        taskId: TaskId(taskId),
+        familyId: familyId,
+      );
       
       result.fold(
         (failure) => throw Exception(failure.message),
@@ -273,7 +283,10 @@ class TaskListNotifier extends _$TaskListNotifier {
     
     try {
       final rejectTaskUseCase = ref.read(rejectTaskUseCaseProvider);
-      final result = await rejectTaskUseCase.call(taskId: TaskId(taskId));
+      final result = await rejectTaskUseCase.call(
+        taskId: TaskId(taskId),
+        familyId: familyId,
+      );
       
       result.fold(
         (failure) => throw Exception(failure.message),

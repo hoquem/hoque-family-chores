@@ -4,6 +4,7 @@ import '../../../core/error/exceptions.dart';
 import '../../repositories/task_repository.dart';
 import '../../value_objects/task_id.dart';
 import '../../value_objects/user_id.dart';
+import '../../value_objects/family_id.dart';
 
 /// Use case for assigning tasks to users
 class AssignTaskUseCase {
@@ -15,11 +16,13 @@ class AssignTaskUseCase {
   /// 
   /// [taskId] - ID of the task to assign
   /// [userId] - ID of the user to assign the task to
-  /// 
+  /// [familyId] - ID of the family the task belongs to
+  ///
   /// Returns [Unit] on success or [Failure] on error
   Future<Either<Failure, Unit>> call({
     required TaskId taskId,
     required UserId userId,
+    required FamilyId familyId,
   }) async {
     try {
       // Validate task ID
@@ -33,7 +36,7 @@ class AssignTaskUseCase {
       }
 
       // Assign the task
-      await _taskRepository.assignTask(taskId, userId);
+      await _taskRepository.assignTask(familyId, taskId, userId);
       return const Right(unit);
     } on DataException catch (e) {
       return Left(ServerFailure(e.message, code: e.code));

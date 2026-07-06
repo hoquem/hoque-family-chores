@@ -54,7 +54,7 @@ class CreateTaskUseCase {
 
       // Create task entity
       final task = Task(
-        id: TaskId(''), // Will be set by repository
+        id: TaskId('new'), // Placeholder — replaced by repository
         title: title.trim(),
         description: description?.trim() ?? '',
         status: assignedToId != null ? TaskStatus.assigned : TaskStatus.available,

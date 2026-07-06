@@ -13,6 +13,9 @@ class FamilyEntity extends Equatable {
   final DateTime updatedAt;
   final String? photoUrl;
 
+  /// Short code family members enter to join this family.
+  final String inviteCode;
+
   const FamilyEntity({
     required this.id,
     required this.name,
@@ -22,6 +25,7 @@ class FamilyEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.photoUrl,
+    this.inviteCode = '',
   });
 
   /// Creates a copy of this family with updated fields
@@ -34,6 +38,7 @@ class FamilyEntity extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? photoUrl,
+    String? inviteCode,
   }) {
     return FamilyEntity(
       id: id ?? this.id,
@@ -44,6 +49,7 @@ class FamilyEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       photoUrl: photoUrl ?? this.photoUrl,
+      inviteCode: inviteCode ?? this.inviteCode,
     );
   }
 
@@ -98,5 +104,6 @@ class FamilyEntity extends Equatable {
         createdAt,
         updatedAt,
         photoUrl,
+        inviteCode,
       ];
 } 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_creation_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -83,7 +84,16 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
         dueDate: _dueDate,
       );
 
+      final creationState = ref.read(taskCreationNotifierProvider);
+      if (creationState.error != null) {
+        _logger.e('Task creation failed: ${creationState.error}');
+        return;
+      }
+
       _logger.i('Task created successfully');
+
+      // Refresh the task list so the new task appears immediately.
+      ref.invalidate(taskListNotifierProvider(currentUser.familyId));
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -132,6 +142,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
           padding: const EdgeInsets.all(16.0),
           children: [
             TextFormField(
+              key: const Key('task_title_field'),
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: 'Quest Title',
@@ -146,6 +157,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              key: const Key('task_description_field'),
               controller: _descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Description (Optional)',
@@ -155,12 +167,13 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<TaskDifficulty>(
+              key: const Key('task_difficulty_dropdown'),
               decoration: const InputDecoration(
                 labelText: 'Effort Size',
                 border: OutlineInputBorder(),
                 helperText: 'Select the effort size - stars are automatically set',
               ),
-              initialValue: _selectedDifficulty,
+              value: _selectedDifficulty,
               items: TaskDifficulty.values.map((difficulty) {
                 String description;
                 int stars;
@@ -204,7 +217,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  initialValue: _selectedAssignee,
+                  value: _selectedAssignee,
                   items: [
                     const DropdownMenuItem<User?>(
                       value: null,
@@ -234,7 +247,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  initialValue: null,
+                  value: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -243,7 +256,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  initialValue: null,
+                  value: null,
                   items: const [],
                   onChanged: null,
                 ),
@@ -254,7 +267,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   labelText: 'Assign To (Optional)',
                   border: OutlineInputBorder(),
                 ),
-                initialValue: null,
+                value: null,
                 items: const [],
                 onChanged: null,
               ),

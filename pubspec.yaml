@@ -58,9 +58,7 @@ dependencies:
   go_router: ^13.0.0
   freezed_annotation: ^3.0.0
   connectivity_plus: ^7.0.0
-  image_picker: ^1.1.2 # For camera access
   flutter_image_compress: ^2.3.0 # For image compression
-  permission_handler: ^11.3.1 # For camera permission handling
   firebase_messaging: ^15.2.0 # For push notifications
   flutter_local_notifications: ^16.3.0 # For local notifications
   timezone: ^0.9.4 # For scheduled notifications
@@ -75,6 +73,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.3 # Check pub.dev for the latest version
   mocktail: ^1.0.4
   mockito: ^5.4.0
+  bdd_widget_test: ^1.7.0 # BDD testing with Gherkin syntax
     
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

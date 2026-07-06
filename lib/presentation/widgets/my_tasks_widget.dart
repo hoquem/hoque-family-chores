@@ -20,6 +20,15 @@ class MyTasksWidget extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (familyId.value.isEmpty) {
+      return const Center(
+        child: Text(
+          'Join or create a family in the Family tab to see tasks.',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     final myTasksState = ref.watch(myTasksNotifierProvider(familyId, userId));
 
     Future<void> refreshData() async {

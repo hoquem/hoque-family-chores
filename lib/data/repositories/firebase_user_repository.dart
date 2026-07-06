@@ -85,13 +85,11 @@ class FirebaseUserRepository implements UserRepository {
   @override
   Future<void> addPoints(UserId userId, Points points) async {
     try {
-      final user = await getUserProfile(userId);
-      if (user == null) {
-        throw NotFoundException('User not found', code: 'USER_NOT_FOUND');
-      }
-
-      final newPoints = user.points.add(points);
-      await updateUserPoints(userId, newPoints);
+      // Atomic increment: concurrent awards must not lose writes.
+      await _firestore
+          .collection('users')
+          .doc(userId.value)
+          .update({'points': FieldValue.increment(points.toInt())});
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to add points: $e', code: 'USER_ADD_POINTS_ERROR');

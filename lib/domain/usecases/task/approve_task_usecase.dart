@@ -47,11 +47,12 @@ class ApproveTaskUseCase {
       // TODO: Validate that approverId is a parent/guardian
       // This would require checking user role in UserRepository
 
+      // Approve the task first: once the status leaves pendingApproval a
+      // retried approval fails validation, so points can't be awarded twice.
+      await _taskRepository.approveTask(familyId, taskId);
+
       // Award stars to the user who completed the task
       await _userRepository.addPoints(task.assignedToId!, task.points);
-
-      // Approve the task
-      await _taskRepository.approveTask(taskId);
       
       // TODO: Update user streak (requires additional repository method)
       // TODO: Send push notification to child (requires NotificationRepository)

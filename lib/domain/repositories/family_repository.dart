@@ -12,6 +12,9 @@ abstract class FamilyRepository {
   /// Get all families for a specific user
   Future<List<FamilyEntity>> getFamiliesForUser(UserId userId);
 
+  /// Get a family by its invite code, or null if no family matches
+  Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode);
+
   /// Create a new family
   Future<void> createFamily(FamilyEntity family);
 
