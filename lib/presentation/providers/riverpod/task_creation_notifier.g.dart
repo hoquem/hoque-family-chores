@@ -7,7 +7,7 @@ part of 'task_creation_notifier.dart';
 // **************************************************************************
 
 String _$taskCreationNotifierHash() =>
-    r'a403496100ffa7fe979966e3d798fa42b29cb8a8';
+    r'8db20c71428bf1b1e3ac16d0a1f285517d67dc90';
 
 /// See also [TaskCreationNotifier].
 @ProviderFor(TaskCreationNotifier)

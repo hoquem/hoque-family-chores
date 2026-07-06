@@ -80,25 +80,19 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> deleteTask(TaskId taskId) async {
+  Future<void> deleteTask(FamilyId familyId, TaskId taskId) async {
     try {
-      // Find the task first to get its family ID
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .delete();
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .delete();
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to delete task: $e', code: 'TASK_DELETE_ERROR');
@@ -106,27 +100,22 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> assignTask(TaskId taskId, UserId userId) async {
+  Future<void> assignTask(FamilyId familyId, TaskId taskId, UserId userId) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'assignedToId': userId.value,
-                'status': TaskStatus.assigned.name,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'assignedToId': userId.value,
+            'status': TaskStatus.assigned.name,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to assign task: $e', code: 'TASK_ASSIGN_ERROR');
@@ -134,27 +123,22 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> unassignTask(TaskId taskId) async {
+  Future<void> unassignTask(FamilyId familyId, TaskId taskId) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'assignedToId': null,
-                'status': TaskStatus.available.name,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'assignedToId': null,
+            'status': TaskStatus.available.name,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to unassign task: $e', code: 'TASK_UNASSIGN_ERROR');
@@ -162,27 +146,22 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> completeTask(TaskId taskId) async {
+  Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'status': TaskStatus.pendingApproval.name,
-                'completedAt': FieldValue.serverTimestamp(),
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': TaskStatus.pendingApproval.name,
+            'completedAt': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to complete task: $e', code: 'TASK_COMPLETE_ERROR');
@@ -190,27 +169,22 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> uncompleteTask(TaskId taskId) async {
+  Future<void> uncompleteTask(FamilyId familyId, TaskId taskId) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'status': TaskStatus.assigned.name,
-                'completedAt': null,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': TaskStatus.assigned.name,
+            'completedAt': null,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to uncomplete task: $e', code: 'TASK_UNCOMPLETE_ERROR');
@@ -218,26 +192,21 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> updateTaskStatus(TaskId taskId, TaskStatus status) async {
+  Future<void> updateTaskStatus(FamilyId familyId, TaskId taskId, TaskStatus status) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'status': status.name,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': status.name,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to update task status: $e', code: 'TASK_STATUS_UPDATE_ERROR');
@@ -301,30 +270,25 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> approveTask(TaskId taskId) async {
+  Future<void> approveTask(FamilyId familyId, TaskId taskId) async {
     // Note: This is a basic implementation. Full approval logic including
     // awarding stars, updating streaks, and sending notifications should be
     // handled by the ApproveTaskUseCase in the domain layer.
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'status': TaskStatus.completed.name,
-                'approvedAt': FieldValue.serverTimestamp(),
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': TaskStatus.completed.name,
+            'approvedAt': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to approve task: $e', code: 'TASK_APPROVE_ERROR');
@@ -332,27 +296,22 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> rejectTask(TaskId taskId, {String? comments}) async {
+  Future<void> rejectTask(FamilyId familyId, TaskId taskId, {String? comments}) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'status': TaskStatus.needsRevision.name,
-                'rejectionComments': comments,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': TaskStatus.needsRevision.name,
+            'rejectionReason': comments,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to reject task: $e', code: 'TASK_REJECT_ERROR');
@@ -360,31 +319,26 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> claimTask(TaskId taskId, UserId userId) async {
+  Future<void> claimTask(FamilyId familyId, TaskId taskId, UserId userId) async {
     try {
-      final familiesSnapshot = await _firestore.collection('families').get();
-
-      for (final familyDoc in familiesSnapshot.docs) {
-        final familyId = FamilyId(familyDoc.id);
-        final task = await getTask(familyId, taskId);
-        if (task != null) {
-          if (task.status != TaskStatus.available) {
-            throw ValidationException('Task is not available for claiming', code: 'TASK_NOT_AVAILABLE');
-          }
-          
-          await _firestore
-              .collection('families')
-              .doc(familyId.value)
-              .collection('tasks')
-              .doc(taskId.value)
-              .update({
-                'assignedToId': userId.value,
-                'status': TaskStatus.assigned.name,
-              });
-          return;
-        }
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+
+      if (task.status != TaskStatus.available) {
+        throw ValidationException('Task is not available for claiming', code: 'TASK_NOT_AVAILABLE');
+      }
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'assignedToId': userId.value,
+            'status': TaskStatus.assigned.name,
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to claim task: $e', code: 'TASK_CLAIM_ERROR');

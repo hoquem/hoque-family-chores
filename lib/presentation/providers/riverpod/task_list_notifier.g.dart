@@ -516,7 +516,7 @@ class _FilteredQuestsStreamProviderElement
   bool get isParent => (origin as FilteredQuestsStreamProvider).isParent;
 }
 
-String _$taskListNotifierHash() => r'393ba02e479295eda80e5a6d4da09e69399461b9';
+String _$taskListNotifierHash() => r'd737e07c9b7c7560c0073a4435f0dcd9da62b95f';
 
 abstract class _$TaskListNotifier
     extends BuildlessAutoDisposeAsyncNotifier<List<Task>> {

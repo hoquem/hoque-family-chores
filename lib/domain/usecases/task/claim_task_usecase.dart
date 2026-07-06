@@ -38,7 +38,7 @@ class ClaimTaskUseCase {
       }
 
       // Claim the task
-      await _taskRepository.claimTask(taskId, userId);
+      await _taskRepository.claimTask(familyId, taskId, userId);
       
       // Return the updated task
       final updatedTask = await _taskRepository.getTask(familyId, taskId);

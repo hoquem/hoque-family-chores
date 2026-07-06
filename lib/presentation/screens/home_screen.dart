@@ -87,6 +87,32 @@ class HomeScreen extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (currentUser.familyId.value.isEmpty) {
+      logger.i("[HomeScreen] User has no family yet - showing setup hint");
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.family_restroom, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Welcome, ${currentUser.name}!',
+                style: Theme.of(context).textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Head to the Family tab to create your family or join one with an invite code.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     logger.d("[HomeScreen] Building home screen for user: ${currentUser.id}");
     return RefreshIndicator(
       onRefresh: () => _refreshData(ref),

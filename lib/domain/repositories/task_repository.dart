@@ -19,22 +19,22 @@ abstract class TaskRepository {
   Future<void> updateTask(Task task);
 
   /// Delete a task
-  Future<void> deleteTask(TaskId taskId);
+  Future<void> deleteTask(FamilyId familyId, TaskId taskId);
 
   /// Assign a task to a user
-  Future<void> assignTask(TaskId taskId, UserId userId);
+  Future<void> assignTask(FamilyId familyId, TaskId taskId, UserId userId);
 
   /// Unassign a task
-  Future<void> unassignTask(TaskId taskId);
+  Future<void> unassignTask(FamilyId familyId, TaskId taskId);
 
   /// Complete a task
-  Future<void> completeTask(TaskId taskId);
+  Future<void> completeTask(FamilyId familyId, TaskId taskId);
 
   /// Uncomplete a task
-  Future<void> uncompleteTask(TaskId taskId);
+  Future<void> uncompleteTask(FamilyId familyId, TaskId taskId);
 
   /// Update task status
-  Future<void> updateTaskStatus(TaskId taskId, TaskStatus status);
+  Future<void> updateTaskStatus(FamilyId familyId, TaskId taskId, TaskStatus status);
 
   /// Get a specific task
   Future<Task?> getTask(FamilyId familyId, TaskId taskId);
@@ -49,11 +49,11 @@ abstract class TaskRepository {
   Stream<List<Task>> streamTasksByAssignee(FamilyId familyId, UserId assigneeId);
 
   /// Approve a task
-  Future<void> approveTask(TaskId taskId);
+  Future<void> approveTask(FamilyId familyId, TaskId taskId);
 
   /// Reject a task
-  Future<void> rejectTask(TaskId taskId, {String? comments});
+  Future<void> rejectTask(FamilyId familyId, TaskId taskId, {String? comments});
 
   /// Claim a task
-  Future<void> claimTask(TaskId taskId, UserId userId);
+  Future<void> claimTask(FamilyId familyId, TaskId taskId, UserId userId);
 } 

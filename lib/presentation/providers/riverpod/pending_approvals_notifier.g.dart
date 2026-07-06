@@ -7,7 +7,7 @@ part of 'pending_approvals_notifier.dart';
 // **************************************************************************
 
 String _$pendingApprovalsNotifierHash() =>
-    r'78729db2ae6b0f0766c0ce4d69e04b8191b4de31';
+    r'591a3ecc322c1a881d63559763c5146f69210923';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -46,12 +46,40 @@ class FirebaseFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode) async {
+    try {
+      // Invite codes resolve through familyInvites/{code}: security rules
+      // allow fetching an invite by code but never listing families.
+      final inviteDoc = await _firestore
+          .collection('familyInvites')
+          .doc(inviteCode)
+          .get();
+
+      if (!inviteDoc.exists) return null;
+
+      final familyId = inviteDoc.data()?['familyId'] as String?;
+      if (familyId == null || familyId.isEmpty) return null;
+
+      return getFamily(FamilyId(familyId));
+    } catch (e) {
+      throw ServerException('Failed to look up invite code: $e', code: 'FAMILY_INVITE_LOOKUP_ERROR');
+    }
+  }
+
+  @override
   Future<void> createFamily(FamilyEntity family) async {
     try {
       await _firestore
           .collection('families')
           .doc(family.id.value)
           .set(_mapFamilyToFirestore(family));
+
+      if (family.inviteCode.isNotEmpty) {
+        await _firestore
+            .collection('familyInvites')
+            .doc(family.inviteCode)
+            .set({'familyId': family.id.value});
+      }
     } catch (e) {
       throw ServerException('Failed to create family: $e', code: 'FAMILY_CREATE_ERROR');
     }
@@ -108,12 +136,13 @@ class FirebaseFamilyRepository implements FamilyRepository {
     }
   }
 
+  // Members live in the top-level `users` collection keyed by familyId;
+  // the families/{id}/members subcollection is never populated.
   @override
   Stream<List<User>> streamFamilyMembers(FamilyId familyId) {
     return _firestore
-        .collection('families')
-        .doc(familyId.value)
-        .collection('members')
+        .collection('users')
+        .where('familyId', isEqualTo: familyId.value)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => _mapFirestoreToUser(doc.data(), doc.id))
@@ -124,9 +153,8 @@ class FirebaseFamilyRepository implements FamilyRepository {
   Future<List<User>> getFamilyMembers(FamilyId familyId) async {
     try {
       final snapshot = await _firestore
-          .collection('families')
-          .doc(familyId.value)
-          .collection('members')
+          .collection('users')
+          .where('familyId', isEqualTo: familyId.value)
           .get();
 
       return snapshot.docs
@@ -182,6 +210,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
       photoUrl: data['photoUrl'] as String?,
+      inviteCode: data['inviteCode'] as String? ?? '',
     );
   }
 
@@ -195,6 +224,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
       'createdAt': family.createdAt,
       'updatedAt': family.updatedAt,
       'photoUrl': family.photoUrl,
+      'inviteCode': family.inviteCode,
     };
   }
 

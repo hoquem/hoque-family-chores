@@ -67,6 +67,7 @@ class PendingApprovalsNotifier extends _$PendingApprovalsNotifier {
       final rejectTaskUseCase = ref.read(rejectTaskUseCaseProvider);
       final result = await rejectTaskUseCase(
         taskId: taskId,
+        familyId: familyId,
         comments: reason,
       );
       

@@ -134,7 +134,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> deleteTask(TaskId taskId) async {
+  Future<void> deleteTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -153,7 +153,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> assignTask(TaskId taskId, UserId userId) async {
+  Future<void> assignTask(FamilyId familyId, TaskId taskId, UserId userId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -174,7 +174,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> unassignTask(TaskId taskId) async {
+  Future<void> unassignTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -195,7 +195,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> completeTask(TaskId taskId) async {
+  Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -216,7 +216,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> uncompleteTask(TaskId taskId) async {
+  Future<void> uncompleteTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -237,7 +237,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> updateTaskStatus(TaskId taskId, TaskStatus status) async {
+  Future<void> updateTaskStatus(FamilyId familyId, TaskId taskId, TaskStatus status) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -292,7 +292,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> approveTask(TaskId taskId) async {
+  Future<void> approveTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -312,7 +312,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> rejectTask(TaskId taskId, {String? comments}) async {
+  Future<void> rejectTask(FamilyId familyId, TaskId taskId, {String? comments}) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -332,7 +332,7 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> claimTask(TaskId taskId, UserId userId) async {
+  Future<void> claimTask(FamilyId familyId, TaskId taskId, UserId userId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
@@ -354,6 +354,33 @@ class MockTaskRepository implements TaskRepository {
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to claim task: $e', code: 'TASK_CLAIM_ERROR');
+    }
+  }
+
+  /// Adds a task synchronously without delay. For test setup only.
+  void addTaskSync(Task task) {
+    _tasks.add(task);
+    _taskStreamController.add(List.from(_tasks));
+  }
+
+  /// Updates a task's status synchronously. For test setup only.
+  void updateTaskStatusSync(TaskId taskId, TaskStatus status) {
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index != -1) {
+      _tasks[index] = _tasks[index].copyWith(status: status);
+      _taskStreamController.add(List.from(_tasks));
+    }
+  }
+
+  /// Unassigns a task synchronously. For test setup only.
+  void unassignTaskSync(TaskId taskId) {
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index != -1) {
+      _tasks[index] = _tasks[index].copyWith(
+        assignedToId: null,
+        status: TaskStatus.available,
+      );
+      _taskStreamController.add(List.from(_tasks));
     }
   }
 

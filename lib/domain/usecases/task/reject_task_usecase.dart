@@ -3,6 +3,7 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../repositories/task_repository.dart';
 import '../../value_objects/task_id.dart';
+import '../../value_objects/family_id.dart';
 
 /// Use case for rejecting completed tasks
 class RejectTaskUseCase {
@@ -13,11 +14,13 @@ class RejectTaskUseCase {
   /// Rejects a completed task
   /// 
   /// [taskId] - ID of the task to reject
+  /// [familyId] - ID of the family the task belongs to
   /// [comments] - Optional comments explaining the rejection
-  /// 
+  ///
   /// Returns [Unit] on success or [Failure] on error
   Future<Either<Failure, Unit>> call({
     required TaskId taskId,
+    required FamilyId familyId,
     String? comments,
   }) async {
     try {
@@ -27,7 +30,7 @@ class RejectTaskUseCase {
       }
 
       // Reject the task
-      await _taskRepository.rejectTask(taskId, comments: comments);
+      await _taskRepository.rejectTask(familyId, taskId, comments: comments);
       return const Right(unit);
     } on DataException catch (e) {
       return Left(ServerFailure(e.message, code: e.code));

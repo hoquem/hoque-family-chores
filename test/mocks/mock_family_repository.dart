@@ -26,6 +26,15 @@ class MockFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    for (final family in _families.values) {
+      if (family.inviteCode == inviteCode) return family;
+    }
+    return null;
+  }
+
+  @override
   Future<void> createFamily(FamilyEntity family) async {
     await Future.delayed(const Duration(milliseconds: 100));
     _families[family.id.value] = family;

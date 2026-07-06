@@ -32,8 +32,9 @@ class CompleteTaskUseCase {
         return Left(NotFoundFailure('Task not found'));
       }
 
-      // Validate task can be completed
-      if (task.status != TaskStatus.assigned) {
+      // Validate task can be completed (assigned, or resubmitted after revision)
+      if (task.status != TaskStatus.assigned &&
+          task.status != TaskStatus.needsRevision) {
         return Left(BusinessFailure('Task must be assigned before it can be completed'));
       }
 
@@ -42,7 +43,7 @@ class CompleteTaskUseCase {
       }
 
       // Complete the task (this changes status to pendingApproval)
-      await _taskRepository.completeTask(taskId);
+      await _taskRepository.completeTask(familyId, taskId);
       
       // Return the updated task
       final updatedTask = await _taskRepository.getTask(familyId, taskId);
