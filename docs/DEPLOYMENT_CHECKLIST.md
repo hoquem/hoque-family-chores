@@ -12,14 +12,9 @@
 - [x] Privacy policy drafted: `docs/PRIVACY_POLICY.md`
 - [x] Version: `1.0.0+7` in pubspec.yaml (bump build number for each upload)
 
-## Before first release: deploy Firestore security rules (5 min, requires your Google login)
+## Firestore security rules — DEPLOYED ✅ (2026-07-06)
 
-The repo now has proper per-family security rules in `firestore.rules`, but the **deployed** rules are still the wide-open dev rules (any authenticated user can read/write everything — not acceptable once the app is on the App Store). Deploy them:
-
-```bash
-firebase login          # interactive; or run: ! firebase login
-firebase deploy --only firestore:rules
-```
+The per-family rules from `firestore.rules` are live (ruleset `e0d56872`, deployed via the Firebase Rules REST API with gcloud credentials). Future rule changes: edit `firestore.rules`, then `firebase deploy --only firestore:rules` (or the same REST flow).
 
 Note: existing Firestore data needs no migration. New writes populate `familyInvites/{code}` automatically when a family is created. If you have an existing family document created by an older build, it has no `inviteCode` — easiest path is to start fresh (create the family again in the new build) since rules and invite flow assume the new shape.
 
