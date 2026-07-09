@@ -43,9 +43,11 @@ working with minimal change.
 | Email | Present | `null` |
 | Reinstall | Provider re-login | Re-enter code + PIN (points persist on the profile) |
 
-The child custom token is minted by a Cloud Function (§4) as
-`createCustomToken(childId, { role: 'child', familyId })`. Firebase creates the
-auth user on first `signInWithCustomToken`.
+The child's Firebase Auth user is **pre-created when the parent adds the child**
+(`createChild`, §4.2), which also sets its `role`/`familyId` custom claims. Later,
+`childSignIn` (§4.3) mints a bare `createCustomToken(childId)`; the claims already
+resident on the user record merge into every ID token, so security rules can rely
+on `request.auth.token.role`/`familyId` from the first sign-in onward.
 
 **Role model simplified (adopting review):** the role enum collapses to
 `{ parent, child }`. `guardian` and `other` are removed. Any adult who signs in is
