@@ -69,11 +69,12 @@ clean break, so no migration of old roles is needed.
   likewise gets `familyId` set write-once. Invite-code generation lives on the
   family doc; a parent can **rotate** it (§6). `listChildren` (§4.1) and the picker
   assume this model.
-- **Task reward value is server-trusted.** Each task carries an explicit
-  `pointValue` set only at creation by a parent (or Cloud Function). Rules forbid
-  any child write to `pointValue`. `approveTask` awards **`task.pointValue`** — it
-  never trusts a points amount supplied by a client at approval time. (Closes
-  review B1.)
+- **Task reward value is server-trusted.** Each task already carries a reward field
+  on the task doc (its existing name is kept — no rename). Rules make it write-once
+  at creation and forbid any child write to it. `approveTask` awards **the task's
+  stored reward** — it never trusts an amount supplied by a client at approval time.
+  (Closes review B1. Note the task reward and the user score are both conceptually
+  "points" but live in different collections, so rules disambiguate by path.)
 - **`childCredentials/{childId}`** — new **server-only** collection holding the
   salted PIN hash, salt, and attempt counters/timestamps. Rules deny all client
   read/write; only Cloud Functions touch it. (A separate collection is required
@@ -110,10 +111,17 @@ mandatory on them.
    merged into every ID token. Client then calls `signInWithCustomToken`.
 
 4. **`approveTask({ taskId })`** — caller must be a parent of the task's family.
-   In a transaction: assert current status is **not already** `approved`
-   (idempotent — a retry or a second parent no-ops), flip to `approved`, and
-   increment the assigned child's `points` by the server-trusted `task.pointValue`.
-   (Closes review B1 + idempotency should-fix.)
+   In a transaction: assert current status is **not already** `completed`
+   (idempotent — a retry or a second parent no-ops), flip
+   `pendingApproval → completed` (and set `approvedBy`/`approvedAt` metadata as the
+   existing repo does), and increment the assigned child's user-`points` score by
+   the server-trusted **task reward** value. (Closes review B1 + idempotency.)
+
+   **Status vocabulary:** this app's `TaskStatus` enum is
+   `{ available, assigned, pendingApproval, needsRevision, completed }`. There is no
+   `claimed`/`approved`/`rejected` status — a claim writes `assigned`, an approval
+   writes `completed`, a rejection writes `needsRevision`. All of §5 and the plans
+   use these real values.
 
 5. **`resetChildPin({ childId, newPin })`** — **core scope** (promoted from
    optional). Parent-only. Re-hashes the PIN **and calls
@@ -132,12 +140,15 @@ former, not hash strength.
 
 ## 5. Security Rules
 
-- **`points`: writable only by the Admin SDK.** Any client write (parent or child)
-  that sets `points` is **denied** — only `approveTask` does it.
-- **`pointValue` and the `approved` status: write-once at creation / server-only.**
-  A parent may set `pointValue` **only at task creation** (never on update); the
-  `approved` transition is Admin-SDK-only (`approveTask`). Both are denied to
-  children entirely.
+- **User `points` (score): writable only by the Admin SDK.** Any client write
+  (parent or child) that sets a user's `points` is **denied** — only `approveTask`
+  does it.
+- **Task reward value + the `completed` status: write-once / server-only.** A parent
+  may set a task's reward value **only at task creation** (never on update); the
+  `pendingApproval → completed` transition is Admin-SDK-only (`approveTask`). Both
+  are denied to children entirely. (The task reward field keeps its existing name on
+  the task doc — no rename; it lives in a different collection from the user score,
+  so rules disambiguate by path.)
 - **`role` is immutable after creation.** No self-escalation to `parent`.
 - **`familyId` is write-once**: settable by the owning user only when its prior
   value is empty/null (the create/join-family onboarding write, §6), immutable
@@ -148,20 +159,22 @@ former, not hash strength.
   the allowlisted fields, via
   `request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])` — the
   allowlist is `status`, `assignedToId`, `completedAt`, `updatedAt` (+ any
-  submission-note/photo field), finalized against the `Task` model. Never
-  `pointValue`. Permitted **status transitions** (full table, closes review B4):
+  submission-note/photo field), finalized against the `Task` model. Never the reward
+  value. Permitted **status transitions** (real `TaskStatus` values):
 
   | From | To | Meaning |
   |---|---|---|
-  | `available` | `claimed` (sets `assignedToId = self`) | child claims |
-  | `claimed` | `available` (clears `assignedToId`) | child unclaims |
-  | `claimed` / `assigned` | `pendingApproval` | child submits |
+  | `available` | `assigned` (sets `assignedToId = self`) | child claims |
+  | `assigned` | `available` (clears `assignedToId`) | child unclaims |
+  | `assigned` | `pendingApproval` | child submits |
   | `needsRevision` | `pendingApproval` | child resubmits after send-back |
 
-  All other transitions (`approved`, `rejected`, `needsRevision`, parent assignment)
-  are parent/function only. `rejected` is terminal for the child.
-- **Parents**: create/edit tasks (including `pointValue` at creation), manage child
-  profiles, manage the family — but still cannot client-write `points`/`approved`.
+  All other transitions — `pendingApproval → completed` (approve; +points) and
+  `pendingApproval → needsRevision` (parent sends back) — are parent/function only.
+  A child in `needsRevision` resubmits (row 4); there is no dead-end state.
+- **Parents**: create/edit tasks (setting the reward only at creation), manage child
+  profiles, manage the family — but still cannot client-write user `points` or set
+  `completed` (both go through `approveTask`).
 - **`childCredentials/{childId}`**: `allow read, write: if false`.
 
 ## 6. UI Changes
