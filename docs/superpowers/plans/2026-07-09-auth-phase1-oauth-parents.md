@@ -341,7 +341,14 @@ Live Firebase/provider calls cannot be unit-tested without device/emulator; keep
   }
 ```
 
-- [ ] **Step 4: Add the collision mapper** (per spec §9 OAuth collision item)
+**Account-collision decision (spec §9/§11):** for a family-scale app we deliberately
+choose **error-only, no auto-linking** — map `account-exists-with-different-credential`
+to a clear message telling the user which provider to use. We do **not** implement
+`fetchSignInMethodsForEmail` + `linkWithCredential`. Apple "Hide My Email" yields a
+real relay address, so it does not produce a null email. Record this as the decision;
+revisit only if a real user hits it.
+
+- [ ] **Step 4: Add the collision mapper** (per the decision above)
 ```dart
   AuthException _mapOAuthError(FirebaseAuthException e) {
     if (e.code == 'account-exists-with-different-credential') {
@@ -386,9 +393,9 @@ git commit -m "feat(auth): implement Apple/Google sign-in in FirebaseAuthReposit
 Run: `flutter test test/domain/usecases/user/initialize_user_data_role_test.dart`
 Expected: FAIL — the usecase has no `role` parameter.
 
-- [ ] **Step 3: Add the optional `role` parameter**
+- [ ] **Step 3: Add the optional `role` parameter (and keep the loud email check)**
 
-In `initialize_user_data_usecase.dart`, add `UserRole role = UserRole.child` to `call(...)` and use it in the `User(... role: role ...)` construction (replacing the hardcoded `UserRole.child`).
+In `initialize_user_data_usecase.dart`, add `UserRole role = UserRole.child` to `call(...)` and use it in the `User(... role: role ...)` construction (replacing the hardcoded `UserRole.child`). **Do not** weaken the existing "email must be non-empty" validation — it stays. The OAuth caller (Task 6) is responsible for supplying a real email or failing loudly; this use case must never receive an empty string masked by a fallback (per the global "no fallbacks to hide issues" rule).
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -410,7 +417,7 @@ git commit -m "feat(user): allow role override in InitializeUserDataUseCase (def
 
 - [ ] **Step 1: Write the failing test**
 
-With `authRepositoryProvider` overridden to `MockAuthRepository` and the user repo mocked: call `signInWithGoogle()`; assert (a) a profile doc is created with `role: parent` when none exists, and (b) `state.status == authenticated`.
+With `authRepositoryProvider` overridden to `MockAuthRepository` and the user repo mocked: call `signInWithGoogle()`; assert (a) a profile doc is created with `role: parent` when none exists, (b) `state.status == authenticated`, and (c) when the fake Firebase user has a null/empty email, no profile is created and `state.status == error` with the provider-email message (loud failure, not a silent empty string). Make `MockAuthRepository.signInWithGoogle` support a null-email variant for this case.
 
 - [ ] **Step 2: Run to verify it fails**
 
@@ -419,14 +426,35 @@ Expected: FAIL — `signInWithGoogle` not defined on notifier.
 
 - [ ] **Step 3: Implement the methods**
 
-Add to `AuthNotifier` a private `_afterOAuth(dynamic firebaseUser)` that: extracts `UserId(firebaseUser.uid)`; checks if a profile exists (via `getUserProfileUseCaseProvider`); if not, calls `initializeUserData.call(userId, name: firebaseUser.displayName ?? 'Parent', email: firebaseUser.email ?? '', role: UserRole.parent)`; then `_startUserProfileStream(userId)` and sets `status: authenticated`. Then:
+Add to `AuthNotifier` a private `_afterOAuth(dynamic firebaseUser)` that: extracts `UserId(firebaseUser.uid)`; checks if a profile exists (via `getUserProfileUseCaseProvider` — confirmed to exist in `riverpod_container.g.dart`); if a profile already exists, just start the stream; if not, **require a real email** and create the profile as a parent:
+```dart
+final email = firebaseUser.email as String?;
+if (email == null || email.trim().isEmpty) {
+  state = state.copyWith(
+    isLoading: false, status: AuthStatus.error,
+    errorMessage: 'Could not get your email from the sign-in provider. '
+        'Please try the other provider (Apple/Google).');
+  return; // fail loudly — no empty-string fallback
+}
+await initializeUserData.call(
+  userId: userId,
+  name: (firebaseUser.displayName as String?)?.trim().isNotEmpty == true
+      ? firebaseUser.displayName as String
+      : email.split('@').first,
+  email: email.trim().toLowerCase(),
+  role: UserRole.parent,
+);
+```
+then `_startUserProfileStream(userId)` and `status: authenticated`. Expose:
 ```dart
   Future<void> signInWithApple() => _oauth(() =>
       ref.read(authRepositoryProvider).signInWithApple());
   Future<void> signInWithGoogle() => _oauth(() =>
       ref.read(authRepositoryProvider).signInWithGoogle());
 ```
-where `_oauth(fn)` wraps loading/error state like `signIn` does and calls `_afterOAuth`. **Note:** an OAuth user whose email is a hidden Apple relay still has a non-empty email; if `email` is null (rare), store empty string — Phase 2 makes email nullable, so do not over-engineer here.
+where `_oauth(fn)` wraps loading/error state like `signIn` does and calls `_afterOAuth`.
+
+**Codegen note:** these are plain instance methods on the existing `@riverpod AuthNotifier`; the `AuthState` shape is unchanged, so no `build_runner` run is required for this task. (Only re-run codegen if you add/rename a provider or change `AuthState`'s fields.)
 
 - [ ] **Step 4: Run to verify it passes**
 
