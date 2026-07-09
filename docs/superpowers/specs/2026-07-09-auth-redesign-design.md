@@ -1,209 +1,248 @@
 # Design Spec: Auth Redesign — OAuth Parents + Accountless Kids
 
 **Date:** 2026-07-09
-**Status:** Approved (pending spec review)
+**Status:** Approved (revised after spec review v1)
 **Author:** Mahmud + Claude
 
 ## 1. Problem & Goals
 
 Today every family member — parents and children alike — is a full Firebase Auth
-user created via email/password, with a `role` field (`parent` / `child` /
-`guardian`). This has two problems:
+user created via email/password, with a `role` field. This has two problems:
 
-1. **Poor UX**, especially for children, who must manage an email address and
-   password. Account-creation friction is the biggest onboarding drop-off.
+1. **Poor UX**, especially for children, who must manage an email and password.
 2. **Weak integrity.** All chore/points logic runs client-side against Firestore.
    Security rules currently let a signed-in child write their own `points` field
-   directly (`allow update: if request.auth.uid == userId` on `users/{userId}`),
-   so a child can self-award points without parental approval.
+   directly, so a child can self-award points without parental approval.
 
 ### Goals
 
-- Parents/guardians sign in with **Sign in with Apple** and **Google** (no
-  password to manage).
+- Parents sign in with **Sign in with Apple** and **Google** (no password).
 - Children use the app on **their own devices** with **no account** — entry is a
-  **family invite code + a PIN**, nothing more.
-- **Airtight points integrity**: no client (parent or child) can write points or
-  approve a task directly; that happens server-side only.
+  **family invite code + a PIN**.
+- **Airtight integrity**: no client (parent or child) can write points, set a task
+  `approved`, or alter a task's reward value; those happen server-side only.
 - Keep an email/password path solely for **App Review**, hidden from normal users.
 
 ### Non-goals
 
-- Migrating existing data. This is a **clean break** (see §8).
-- Push notifications, Android-specific polish, or any feature work beyond auth.
-- Parent custom claims (parent role stays derived from the Firestore user doc).
+- Data migration — this is a **clean break** (§8).
+- Push notifications, Android polish, or feature work beyond auth.
 
 ## 2. Identity Model
 
 Two mechanisms, **one `users/{id}` collection** so task assignment
-(`assignedToId`), family member queries (`where familyId ==`), and points display
-keep working with minimal change.
+(`assignedToId`), member queries (`where familyId ==`), and points display keep
+working with minimal change.
 
-| | Parents / guardians | Children |
+| | Parents | Children |
 |---|---|---|
-| Auth mechanism | Firebase Auth: Apple / Google OAuth | Firebase Auth: **custom token** (uid = child profile id) |
-| Account | Real identity provider | None — no email, no password, no OAuth |
-| Entry | Tap "Sign in with Apple / Google" | Family invite code → pick profile → PIN |
+| Auth | Firebase Auth: Apple / Google OAuth | Firebase Auth: **custom token** (uid = child profile id) |
+| Account | Identity provider | None — no email, password, or OAuth |
+| Entry | "Sign in with Apple / Google" | Family invite code → pick profile → PIN |
 | Role source | `users/{uid}.role` (Firestore doc) | Token claim `role: 'child'` + `familyId` |
 | Email | Present | `null` |
-| Session across reinstall | Provider re-login | Re-enter code + PIN (points persist on the profile, not the session) |
+| Reinstall | Provider re-login | Re-enter code + PIN (points persist on the profile) |
 
-The child custom token is minted by a Cloud Function (see §4) as
+The child custom token is minted by a Cloud Function (§4) as
 `createCustomToken(childId, { role: 'child', familyId })`. Firebase creates the
-auth user on first `signInWithCustomToken`. The token claims (`role`, `familyId`)
-are read directly by security rules — no `setCustomUserClaims` round-trip needed.
+auth user on first `signInWithCustomToken`.
 
-From the child's point of view there is **no account**: "type the family code and
-your PIN." Under the hood it is a Firebase custom-token session; we are transparent
-that this exists because it is what lets a child's own device reach Firestore
-securely.
+**Role model simplified (adopting review):** the role enum collapses to
+`{ parent, child }`. `guardian` and `other` are removed. Any adult who signs in is
+`parent` (all adults are admins); children are `child`. This is done during the
+clean break, so no migration of old roles is needed.
 
 ## 3. Data Model Changes
 
-- **`User.email` becomes nullable** (`Email?`). Children have no email; we do not
-  fabricate one (per the "no fallbacks that hide issues" principle). Ripples to the
-  `User` entity, `copyWith`, Firestore mapping, and entity tests.
-- **Child profile** = a `users/{childId}` document: `role: child`, `email: null`,
-  `points`, `familyId`, `name`, optional avatar. `assignedToId` on tasks already
-  references a user id, so task assignment is unchanged.
-- **`childCredentials/{childId}`** — a new server-only collection holding the
-  **hashed** PIN (and salt, attempt counters). Security rules deny **all** client
-  reads and writes; only Cloud Functions (Admin SDK, which bypasses rules) touch
-  it. Field-level read hiding is not possible in Firestore, so the PIN hash must
-  live in its own locked collection, never on the readable `users` doc.
+- **`User.email` → nullable** (`Email?`). Children have no email; we do not
+  fabricate one. **Task: audit every `.email` call site app-wide** (display,
+  mapping, analytics, any lookup-by-email), not just the entity/tests.
+- **Child profile** = `users/{childId}`: `role: child`, `email: null`, `points`,
+  `familyId`, `name`, optional avatar. `assignedToId` already references a user id.
+- **Task reward value is server-trusted.** Each task carries an explicit
+  `pointValue` set only at creation by a parent (or Cloud Function). Rules forbid
+  any child write to `pointValue`. `approveTask` awards **`task.pointValue`** — it
+  never trusts a points amount supplied by a client at approval time. (Closes
+  review B1.)
+- **`childCredentials/{childId}`** — new **server-only** collection holding the
+  salted PIN hash, salt, and attempt counters/timestamps. Rules deny all client
+  read/write; only Cloud Functions touch it. (A separate collection is required
+  because Firestore cannot hide a single field on an otherwise-readable doc.)
 
 ## 4. Cloud Functions (Firebase, Blaze plan)
 
-Three callable functions. All validate the caller and the target family.
+All callables are protected by **Firebase App Check**. The child-facing callables
+(`listChildren`, `childSignIn`) are the brute-force surface and App Check is
+mandatory on them.
 
-1. **`createChild({ name, pin, avatar? })`** — caller must be an authenticated
-   parent/guardian of a family. Generates `childId`, writes `users/{childId}`
-   (role child, points 0, email null, familyId = caller's family) and
-   `childCredentials/{childId}` (hashed PIN). Returns the child profile.
+1. **`listChildren({ inviteCode })`** — *unauthenticated*, App-Check-gated,
+   rate-limited. Resolves the invite code to a family and returns that family's
+   child profiles (`childId`, `name`, `avatar`) so the pre-auth device can render
+   the picker. Returns nothing else. (Closes review B3 — the §6 avatar grid now has
+   a data source.)
 
-2. **`childSignIn({ inviteCode, childId, pin })`** — resolves `inviteCode` →
-   family, verifies `childId` belongs to that family, verifies the PIN against the
-   stored hash with **server-side rate limiting** (lockout after N failed
-   attempts). On success returns a custom token
-   `createCustomToken(childId, { role: 'child', familyId })`. The client calls
-   `signInWithCustomToken`.
+2. **`createChild({ name, pin, avatar? })`** — caller must be an authenticated
+   parent of a family. Generates `childId`, writes `users/{childId}` and
+   `childCredentials/{childId}` (hashed PIN).
 
-3. **`approveTask({ taskId })`** — caller must be a parent/guardian of the task's
-   family. Atomically flips the task to `approved` **and** increments the assigned
-   child's `points`. This is the only path that writes points or the `approved`
-   status.
+3. **`childSignIn({ inviteCode, childId, pin })`** — App-Check-gated. Verifies
+   `childId` belongs to the code's family, verifies the PIN against the stored hash
+   with **server-side rate limiting** (see policy below). On success:
+   `createCustomToken(childId, { role: 'child', familyId })`, and — as the resilient
+   path for claims surviving ID-token refresh — also
+   `setCustomUserClaims(childId, { role, familyId })` (the auth user exists after
+   the first sign-in; on subsequent sign-ins this keeps claims authoritative).
+   Client then calls `signInWithCustomToken`. (Addresses review B2; see §11 for the
+   required pre-implementation verification.)
 
-PIN hashing: a slow salted hash (bcrypt/scrypt) server-side. Rate limiting uses
-attempt counters + timestamps in `childCredentials` to make a 4-digit PIN
-non-brute-forceable.
+4. **`approveTask({ taskId })`** — caller must be a parent of the task's family.
+   In a transaction: assert current status is **not already** `approved`
+   (idempotent — a retry or a second parent no-ops), flip to `approved`, and
+   increment the assigned child's `points` by the server-trusted `task.pointValue`.
+   (Closes review B1 + idempotency should-fix.)
 
-Optional later helpers (not in core scope): `resetChildPin`, `deleteChild`.
+5. **`resetChildPin({ childId, newPin })`** — **core scope** (promoted from
+   optional). Parent-only. Re-hashes the PIN **and calls
+   `admin.auth().revokeRefreshTokens(childId)`** so a compromised session is cut off
+   immediately rather than lingering up to the ~1h token lifetime. `deleteChild`
+   behaves the same (delete docs + revoke).
+
+**Rate-limit policy (explicit):** max 5 PIN attempts per child per rolling 15
+minutes; on exceed, lock that child for 15 minutes. Lock auto-clears; a parent may
+also `resetChildPin` to clear immediately. Counters live in `childCredentials`.
+
+**PIN hashing note:** a salted slow hash is used, but the real protection for a
+4-digit PIN is the **server-only locked collection + rate limiting** — a leaked
+hash dump falls to all 10,000 candidates regardless of cost factor. We rely on the
+former, not hash strength.
 
 ## 5. Security Rules
 
-The rules become the enforcement backbone:
+- **`points`, `pointValue`, and the `approved` status: writable only by the Admin
+  SDK.** Every client write (parent or child) that sets `points`, changes
+  `pointValue`, or transitions a task to `approved` is **denied**. Only
+  `approveTask` can do them.
+- **`role` and `familyId` are immutable after creation** for any user doc,
+  settable only by Cloud Functions / the narrowly-scoped first-run onboarding
+  write (§6). No self-escalation to `parent`, no hopping families.
+- **Children** (`request.auth.token.role == 'child'`, matching `familyId`): may read
+  their family and its tasks; may write **only their own** assigned tasks, and only
+  the allowlisted fields, via
+  `request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])` — the
+  allowlist is `status`, `assignedToId`, `completedAt`, `updatedAt` (+ any
+  submission-note/photo field), finalized against the `Task` model. Never
+  `pointValue`. Permitted **status transitions** (full table, closes review B4):
 
-- **`points` field and `approved` task status: writable only by the Admin SDK.**
-  Every client write that sets `points` or transitions a task to `approved` is
-  **denied**. Only `approveTask` (which bypasses rules) can do it. This closes the
-  self-award gap for everyone, parent and child.
-- **Children** (identified by `request.auth.token.role == 'child'` and matching
-  `request.auth.token.familyId`): may read their family and its tasks; may
-  transition **their own** assigned tasks `available → claimed` and
-  `assigned → pendingApproval`; may **not** write any `points`, may **not** set
-  `approved`, may **not** write other members' docs or `childCredentials`.
-- **Parents/guardians** (role from their `users/{uid}` doc): may create/edit tasks,
-  create/manage child profiles, manage the family — but still cannot client-write
-  `points` or `approved` (those go through `approveTask`).
-- **`childCredentials/{childId}`**: `allow read, write: if false` (server only).
+  | From | To | Meaning |
+  |---|---|---|
+  | `available` | `claimed` (sets `assignedToId = self`) | child claims |
+  | `claimed` | `available` (clears `assignedToId`) | child unclaims |
+  | `claimed` / `assigned` | `pendingApproval` | child submits |
+  | `needsRevision` | `pendingApproval` | child resubmits after send-back |
+
+  All other transitions (`approved`, `rejected`, `needsRevision`, parent assignment)
+  are parent/function only. `rejected` is terminal for the child.
+- **Parents**: create/edit tasks (including `pointValue` at creation), manage child
+  profiles, manage the family — but still cannot client-write `points`/`approved`.
+- **`childCredentials/{childId}`**: `allow read, write: if false`.
 
 ## 6. UI Changes
 
-- **Login screen**: "Sign in with Apple" + "Continue with Google" as the primary
-  actions. The email/password form is removed from normal view (see §7 for the
-  hidden review path and the Phase 1 exception).
-- **New "Manage Children" screen** (parents): add child (name + set PIN), edit,
-  remove, reset PIN. Reachable from the Family tab.
-- **New kid onboarding flow** (kid's device): enter family code → tap your profile
-  (avatar grid) → enter PIN. No signup form.
-- The **parent/child toggle on "join family" is removed**. Everyone who signs in is
-  a parent/guardian; children never "join" — a parent creates them. A family
-  creator becomes `parent`; a subsequent OAuth joiner becomes `guardian`
-  (both are admins).
+- **Login screen**: "Sign in with Apple" + "Continue with Google" primary. Email
+  form removed from normal view (§7 hidden path; §9 Phase 1 exception).
+- **New "Manage Children"** (parents): add child (name + PIN), edit, remove, reset
+  PIN. In the Family tab.
+- **New kid onboarding** (kid device): enter family code → `listChildren` renders
+  the avatar grid → tap your profile → enter PIN → `childSignIn`.
+- **Shared-device switching:** before a new child onboards on a device where
+  another child is signed in, the app **explicitly signs out the current child and
+  clears the local Firestore cache** so sessions/data don't bleed across kids.
+- **First-run for a new OAuth parent:** on first successful OAuth sign-in with no
+  existing `users/{uid}`, the app creates the doc (`role: parent`, `familyId`
+  empty) in a single onboarding write, then routes to create/join-family. Until a
+  family exists the user can read/write only their own doc. The parent/child join
+  toggle is gone (all adults are parents).
+- **Invite-code rotation:** a parent can regenerate the family invite code (old
+  code stops resolving) to recover from a leaked code.
 
 ## 7. Hidden Email/Password Path for App Review
 
-The app requires login, so App Review needs a working demo account without an
-Apple/Google identity. We keep the **email/password provider enabled** in Firebase
-but expose it only through a **hidden gesture** (e.g., long-press or 7 taps on the
-app logo / version label) that reveals an email+password form. A pre-created parent
-demo account (with a pre-populated family + sample children and chores) is handed to
-reviewers via the App Store Connect "App Review Information" notes, along with the
-gesture instructions. Normal users never see it.
+The email/password provider stays enabled but is reachable only via a **hidden
+gesture** (e.g., 7 taps on the version label) that reveals an email form. A
+pre-created parent demo account with a pre-populated family + sample children/chores
+is given to reviewers in App Store Connect "App Review Information," with the
+gesture instructions. **This demo account is (re)provisioned as an explicit Phase 2
+rollout step *after* the clean-break wipe (§8)** — it must not be swept away with the
+discarded data, or review fails on "can't sign in."
 
 ## 8. Migration — Clean Break
 
-Existing accounts and family data are **discarded**. On the switchover, the live
-testers (Mahmud, Alima) recreate their family via OAuth and re-add the children;
-existing points and chore history are wiped. This is **destructive and
-irreversible**, accepted as the simplest path given the app is still in family
-beta with a handful of users. No data-migration code is written.
+Existing accounts and family data are **discarded**. Live testers (Mahmud, Alima)
+recreate their family via OAuth and re-add children; existing points/history are
+wiped. Destructive and irreversible, accepted given the small family beta. No
+migration code. The App Review demo account is recreated afterward (§7).
 
 ## 9. Sequencing — Two Shippable Phases
-
-Ordered so nothing breaks mid-flight.
 
 ### Phase 1 — OAuth for parents (free tier, ships first, independent)
 
 - Add `sign_in_with_apple` + `google_sign_in`; extend `AuthRepository` with
-  `signInWithApple()` / `signInWithGoogle()` (+ expose `authStateChanges`).
-- Firebase Console: enable Apple + Google providers. Xcode: add the **Sign in with
-  Apple** capability; add the Google reversed-client-id URL scheme to `Info.plist`.
-  Apple capability is auto-managed by the cloud-signing pipeline
-  (`-allowProvisioningUpdates`); the App ID capability may need enabling in the
-  Developer portal.
-- Login screen shows Apple + Google. **Email/password stays fully visible in
-  Phase 1** because children still use it — do not hide or remove it yet.
-- New OAuth users with no family land in the existing create/join onboarding;
-  drop the parent/child role toggle (all are parents/guardians).
-- Ships to TestFlight on its own; gets Sign in with Apple through review early.
+  `signInWithApple()` / `signInWithGoogle()` + expose `authStateChanges`.
+- Firebase Console: enable Apple + Google providers. Xcode: add **Sign in with
+  Apple** capability; add Google reversed-client-id URL scheme to `Info.plist`.
+- **OAuth account-collision handling:** decide and implement a linking strategy for
+  Firebase's one-account-per-email (a parent using Google then Apple on the same
+  address triggers `account-exists-with-different-credential`); handle Apple "Hide
+  My Email" relay addresses. Specify before coding Phase 1.
+- Login shows Apple + Google. **Email/password stays fully visible in Phase 1**
+  because existing children still use it. Toggle removal is scoped to the *new OAuth
+  path only*; no new children are onboarded via email during Phase 1 (the beta
+  family's children already exist).
+- Ships to TestFlight independently; gets Sign in with Apple through review early.
 
 ### Phase 2 — Accountless kids (Blaze plan)
 
-- Enable **Blaze** on the Firebase project.
-- Add the three Cloud Functions (§4); add the child-profile data model (§3);
-  build the "Manage Children" UI and the kid onboarding flow (§6).
-- Move approve→points to `approveTask`; **lock the rules** (§5) so points/approved
-  are server-only.
-- **Remove the visible email/password signup + login last**, only after the kid
-  custom-token flow works end-to-end — leaving only the hidden review path (§7).
-  This ordering guarantees children are never locked out during the transition.
-- Clean-break switchover (§8); ship to TestFlight.
+- Enable **Blaze**.
+- Add the Cloud Functions (§4); add child-profile model + `pointValue` (§3); build
+  "Manage Children" + kid onboarding (§6).
+- Move approve→points into `approveTask`; **lock the rules** (§5).
+- **Consolidate the two auth-truth sources** (`main.dart`'s direct
+  `FirebaseAuth.authStateChanges()` vs `AuthNotifier`) onto the
+  repository/notifier, so OAuth and child custom-token sessions route uniformly.
+  (Assigned here per review; load-bearing for child routing.)
+- **Remove the visible email/password path last**, only after the kid flow works
+  end-to-end — leaving only the hidden review path (§7). Children are never locked
+  out mid-transition.
+- Clean-break switchover (§8) + recreate demo account (§7); ship.
 
 ## 10. Testing Impact
 
-- **Entity tests** (`user_test.dart`) change for nullable email and any role-model
-  updates.
+- **Entity tests** for nullable email + collapsed role enum.
 - **`MockAuthRepository`** gains OAuth methods + `authStateChanges`.
-- **BDD feature tests** under `test/features/task/` encode "child is a logged-in
-  user" (`i_am_logged_in_as_a_child`, `i_approve_the_task`, `points_should_be_
-  awarded_to_the_child`); these are reworked so a child is a custom-token profile
-  and approval/points go through `approveTask`.
-- **New tests**: Cloud Functions (createChild / childSignIn PIN + rate-limit /
-  approveTask authorization + atomic points); security-rules tests
-  (child cannot write points or self-approve; childCredentials is unreadable);
-  OAuth sign-in mapping.
+- **BDD feature tests** (`test/features/task/`, e.g. `i_am_logged_in_as_a_child`,
+  `i_approve_the_task`, `points_should_be_awarded_to_the_child`) reworked: a child
+  is a custom-token profile; approval/points go through `approveTask`.
+- **New tests**: Cloud Functions (createChild; childSignIn PIN + rate-limit +
+  App Check; approveTask authorization, idempotency, atomic award of `pointValue`;
+  resetChildPin revocation); security-rules tests (child cannot write
+  points/pointValue/approved, cannot change role/familyId, cannot read
+  childCredentials; full transition table incl. `needsRevision→pendingApproval`);
+  OAuth mapping + account-collision.
 
 ## 11. Risks & Open Items
 
-- **Blaze billing posture**: card on file; real cost ~$0/mo at family scale but no
-  longer "never billed." Accepted.
-- **Apple Sign in review**: requires the capability + correct entitlement; the
-  hidden demo path must be reliable or review will fail on "can't create account."
-- **PIN security** rests entirely on server-side hashing + rate limiting; a
-  rules-only or client-side PIN check would be brute-forceable and is explicitly
-  rejected.
-- **Two sources of auth truth today**: `main.dart` routes off
-  `FirebaseAuth.instance.authStateChanges()` directly while content uses the
-  `AuthNotifier`. The redesign should consolidate on the repository/notifier so the
-  child custom-token session and OAuth session are handled uniformly.
+- **Custom-token claims across refresh (verify before building):** confirm empirically
+  that `request.auth.token.role`/`familyId` from `createCustomToken` remain resolvable
+  in rules after a forced ID-token refresh past expiry. Fallback (already in §4.3):
+  `setCustomUserClaims` in `childSignIn`. This is a named verification task, not an
+  assumption.
+- **Blaze billing:** card on file; ~$0/mo at family scale. Accepted.
+- **Apple Sign in review:** needs the capability + reliable hidden demo path.
+- **COPPA / Apple Kids Category:** children under 13 use this on their own devices.
+  Mitigation: we collect **no child email or PII** beyond a parent-entered display
+  name and avatar; no ads, no tracking. Confirm against Apple's current
+  kids/family guidelines; do **not** enroll in the Kids Category unless required
+  (it triggers stricter review). State the data-collected posture in the privacy
+  policy.
+- **App Check provisioning:** requires registering the app with App Check
+  (DeviceCheck/App Attest on iOS) before the callables can enforce it.
