@@ -59,6 +59,14 @@ clean break, so no migration of old roles is needed.
   mapping, analytics, any lookup-by-email), not just the entity/tests.
 - **Child profile** = `users/{childId}`: `role: child`, `email: null`, `points`,
   `familyId`, `name`, optional avatar. `assignedToId` already references a user id.
+- **Existing family model is retained** (not re-invented): `families/{familyId}`
+  (`name`, `creatorId`, `memberIds`, `inviteCode`) and `familyInvites/{code}` →
+  `familyId`, with the current **client-side** `CreateFamilyUseCase` /
+  `JoinFamilyUseCase`. A parent creating a family becomes its `creator` and gets
+  their `familyId` set (write-once, §5); a second adult joining via invite code
+  likewise gets `familyId` set write-once. Invite-code generation lives on the
+  family doc; a parent can **rotate** it (§6). `listChildren` (§4.1) and the picker
+  assume this model.
 - **Task reward value is server-trusted.** Each task carries an explicit
   `pointValue` set only at creation by a parent (or Cloud Function). Rules forbid
   any child write to `pointValue`. `approveTask` awards **`task.pointValue`** — it
@@ -78,22 +86,26 @@ mandatory on them.
 1. **`listChildren({ inviteCode })`** — *unauthenticated*, App-Check-gated,
    rate-limited. Resolves the invite code to a family and returns that family's
    child profiles (`childId`, `name`, `avatar`) so the pre-auth device can render
-   the picker. Returns nothing else. (Closes review B3 — the §6 avatar grid now has
+   the picker. Returns nothing else. Rate-limited: max 10 calls per device
+   (App Check token) per 10 minutes. (Closes review B3 — the §6 avatar grid now has
    a data source.)
 
 2. **`createChild({ name, pin, avatar? })`** — caller must be an authenticated
-   parent of a family. Generates `childId`, writes `users/{childId}` and
-   `childCredentials/{childId}` (hashed PIN).
+   parent of a family. Generates `childId`, then **pre-creates the Firebase Auth
+   user** (`admin.auth().createUser({ uid: childId })`) and immediately
+   `setCustomUserClaims(childId, { role: 'child', familyId })`, then writes
+   `users/{childId}` + `childCredentials/{childId}` (hashed PIN). Pre-creating the
+   auth user is what makes claims durable: `setCustomUserClaims` claims persist
+   across ID-token refresh, so we never depend on `createCustomToken`'s ephemeral
+   developer-claims. (Fixes review B2 cleanly; dissolves the former verification
+   task.)
 
 3. **`childSignIn({ inviteCode, childId, pin })`** — App-Check-gated. Verifies
    `childId` belongs to the code's family, verifies the PIN against the stored hash
-   with **server-side rate limiting** (see policy below). On success:
-   `createCustomToken(childId, { role: 'child', familyId })`, and — as the resilient
-   path for claims surviving ID-token refresh — also
-   `setCustomUserClaims(childId, { role, familyId })` (the auth user exists after
-   the first sign-in; on subsequent sign-ins this keeps claims authoritative).
-   Client then calls `signInWithCustomToken`. (Addresses review B2; see §11 for the
-   required pre-implementation verification.)
+   with **server-side rate limiting** (see policy below). On success mints
+   `createCustomToken(childId)` — no extra claims needed, because `role`/`familyId`
+   already live on the auth user's custom claims (set in `createChild`) and are
+   merged into every ID token. Client then calls `signInWithCustomToken`.
 
 4. **`approveTask({ taskId })`** — caller must be a parent of the task's family.
    In a transaction: assert current status is **not already** `approved`
@@ -118,13 +130,17 @@ former, not hash strength.
 
 ## 5. Security Rules
 
-- **`points`, `pointValue`, and the `approved` status: writable only by the Admin
-  SDK.** Every client write (parent or child) that sets `points`, changes
-  `pointValue`, or transitions a task to `approved` is **denied**. Only
-  `approveTask` can do them.
-- **`role` and `familyId` are immutable after creation** for any user doc,
-  settable only by Cloud Functions / the narrowly-scoped first-run onboarding
-  write (§6). No self-escalation to `parent`, no hopping families.
+- **`points`: writable only by the Admin SDK.** Any client write (parent or child)
+  that sets `points` is **denied** — only `approveTask` does it.
+- **`pointValue` and the `approved` status: write-once at creation / server-only.**
+  A parent may set `pointValue` **only at task creation** (never on update); the
+  `approved` transition is Admin-SDK-only (`approveTask`). Both are denied to
+  children entirely.
+- **`role` is immutable after creation.** No self-escalation to `parent`.
+- **`familyId` is write-once**: settable by the owning user only when its prior
+  value is empty/null (the create/join-family onboarding write, §6), immutable
+  thereafter. No hopping families. (This is what lets the existing client-side
+  `CreateFamilyUseCase`/`JoinFamilyUseCase` populate it; §3.)
 - **Children** (`request.auth.token.role == 'child'`, matching `familyId`): may read
   their family and its tasks; may write **only their own** assigned tasks, and only
   the allowlisted fields, via
@@ -231,11 +247,12 @@ migration code. The App Review demo account is recreated afterward (§7).
 
 ## 11. Risks & Open Items
 
-- **Custom-token claims across refresh (verify before building):** confirm empirically
-  that `request.auth.token.role`/`familyId` from `createCustomToken` remain resolvable
-  in rules after a forced ID-token refresh past expiry. Fallback (already in §4.3):
-  `setCustomUserClaims` in `childSignIn`. This is a named verification task, not an
-  assumption.
+- **Child claims durability:** resolved by design — `createChild` pre-creates the
+  auth user and sets `setCustomUserClaims` (§4.2), whose claims are documented to
+  persist across ID-token refresh. No dependence on `createCustomToken` ephemeral
+  claims, so no empirical verification task remains.
+- **OAuth account collision (specify before coding Phase 1):** linking strategy for
+  Firebase one-account-per-email and Apple "Hide My Email" relay addresses (§9).
 - **Blaze billing:** card on file; ~$0/mo at family scale. Accepted.
 - **Apple Sign in review:** needs the capability + reliable hidden demo path.
 - **COPPA / Apple Kids Category:** children under 13 use this on their own devices.
