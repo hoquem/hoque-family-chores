@@ -27,22 +27,35 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 4. **Age rating questionnaire**: fill honestly; this is a utility app, expect 4+. Do NOT enroll in the "Kids" category (triggers stricter review; unnecessary for family-only use).
 5. Screenshots: 6.7" and 6.5" iPhone screenshots required (take from Simulator: `flutter run --release`, Cmd+S in Simulator).
 
-## Build & upload (each release)
+## Build & upload (each release) — WORKING PIPELINE (verified 2026-07-08, build 1.0.0+10)
+
+Auth: App Store Connect API key `55A763B9XW` (Admin) at `~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8`, Issuer ID `2e924c90-75cb-4ef0-a036-574926a7b628`. Cloud signing — no local certificates needed.
+
+**Build numbers must exceed the highest ever uploaded** (currently 10; builds 3–10 exist on train 1.0.0). A duplicate build number uploads "successfully" but is silently dropped during processing.
 
 ```bash
-# 1. Bump build number in pubspec.yaml (e.g. 1.0.0+8), then:
-flutter build ipa --release
-# Output: build/ios/ipa/*.ipa
+# 1. Bump build number in pubspec.yaml (e.g. 1.0.0+11), then:
+KEY=(-allowProvisioningUpdates \
+  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8 \
+  -authenticationKeyID 55A763B9XW \
+  -authenticationKeyIssuerID 2e924c90-75cb-4ef0-a036-574926a7b628)
 
-# 2. Upload (either):
-#    a) Open build/ios/archive/Runner.xcarchive in Xcode → Distribute App → App Store Connect
-#    b) Or command line:
+flutter build ios --config-only --release
+xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath build/ios/archive/Runner.xcarchive archive "${KEY[@]}"
+xcodebuild -exportArchive -archivePath build/ios/archive/Runner.xcarchive \
+  -exportOptionsPlist ios/exportOptions.plist -exportPath build/ios/ipa "${KEY[@]}"
 xcrun altool --upload-app -f build/ios/ipa/hoque_family_chores.ipa -t ios \
-  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>   # needs App Store Connect API key
+  --apiKey 55A763B9XW --apiIssuer 2e924c90-75cb-4ef0-a036-574926a7b628
 ```
 
-3. In App Store Connect: select the processed build, fill in release notes, submit for review.
-4. **Recommended**: distribute to the family via TestFlight first (internal testing — instant, no review) before public App Store release.
+2. Processing takes 5–15 min. The internal TestFlight group **"Family"** (m.hoque@gmail.com, alima_begum@icloud.com) has automatic distribution — every processed build reaches it with no manual step.
+3. Export compliance: `ITSAppUsesNonExemptEncryption=false` is in Info.plist (since build 10), so no compliance prompt.
+4. For public App Store release: in App Store Connect select the processed build on version 1.0, fill release notes, submit for review.
+
+### App Store Connect facts
+- App record: "Our Family Chores", Apple ID 6746752194, SKU com.hoque.hoqueFamilyChores, en-GB
+- App Store version 1.0 state: PREPARE_FOR_SUBMISSION
 
 ## Post-MVP (optional, not blocking)
 
