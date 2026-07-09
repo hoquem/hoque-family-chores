@@ -4,7 +4,7 @@
 
 **Goal:** Let children use the app on their own devices with no account — family invite code + PIN backed by a Firebase custom token — and move points/approval server-side so no device can self-award. Remove the visible email/password path (kept only as a hidden App Review entry).
 
-**Architecture:** Add Firebase **Cloud Functions** (TypeScript) for the operations that must be trusted: `createChild`, `listChildren`, `childSignIn`, `approveTask`, `resetChildPin`/`deleteChild`. Children are Firebase Auth users created by `createChild` (uid = child profile id) with `role`/`familyId` custom claims; they sign in via a server-minted custom token. Firestore rules make `points`, task `pointValue`, and the `approved` status **server-only**, and constrain child writes to an allowlist. Requires the **Blaze** plan and **App Check**. Delivered as a clean break (existing data wiped; demo account recreated).
+**Architecture:** Add Firebase **Cloud Functions** (TypeScript) for the operations that must be trusted: `createChild`, `listChildren`, `childSignIn`, `approveTask`, `resetChildPin`/`deleteChild`. Children are Firebase Auth users created by `createChild` (uid = child profile id) with `role`/`familyId` custom claims; they sign in via a server-minted custom token. Firestore rules make the user score (`users/{uid}.points`), the task reward (`Task.points`, write-once), and the `pendingApproval → completed` transition **server-only**, and constrain child writes to an allowlist. Requires the **Blaze** plan and **App Check**. Delivered as a clean break (existing data wiped; demo account recreated).
 
 **Tech Stack:** Flutter + Riverpod, Firebase Auth (custom tokens + claims), Cloud Firestore + security rules, Firebase Cloud Functions (Node/TypeScript, Admin SDK), Firebase App Check, `@firebase/rules-unit-testing` + Firestore emulator for tests. Spec: `docs/superpowers/specs/2026-07-09-auth-redesign-design.md` (§3–§8).
 
@@ -18,7 +18,7 @@
 
 - **Create** `functions/` — TypeScript Cloud Functions project (`src/index.ts`, `src/createChild.ts`, `src/listChildren.ts`, `src/childSignIn.ts`, `src/approveTask.ts`, `src/childAdmin.ts`, `src/pin.ts`, `test/*`).
 - **Modify** `firebase.json` — add `functions` config; keep `firestore.rules`.
-- **Modify** `firestore.rules` — server-only points/pointValue/approved, role/familyId rules, child transition allowlist, `childCredentials` locked.
+- **Modify** `firestore.rules` — server-only user score (`users.points`), write-once task reward (`Task.points`), server-only `pendingApproval → completed`; role/familyId rules; child transition allowlist; `childCredentials` locked.
 - **Create** `test/firestore/rules.test.js` — rules unit tests (emulator).
 - **Modify** `lib/domain/entities/user.dart` — `Email? email`; collapse `UserRole` to `{ parent, child }`.
 - **Modify** `lib/domain/entities/task.dart` (+ mappers) — ensure the task reward field is server-trusted (write-once); no rename.
@@ -60,7 +60,7 @@
 
 **Files:** `lib/domain/entities/task.dart` (+ mapper), `lib/domain/usecases/task/approve_task_usecase.dart`, tests
 
-The `Task` entity already carries a reward field (a `Points` value object on the task). **Keep its existing name** — it lives in the `families/{fid}/tasks` collection, distinct from the user score in `users/{uid}`, so rules disambiguate by path; a rename is unnecessary churn.
+**The task reward field is `Task.points`** (a `Points` value object; on the task doc at `families/{fid}/tasks/{taskId}`). The user *score* is also called `points` but lives on `users/{uid}` — a different collection, so rules disambiguate by path. **Keep both names as-is** (no rename; that would be unnecessary churn). Throughout this plan, "the task reward" = the task doc's `points` field, and "the user score" = the `users/{uid}.points` field. `approveTask` reads `task.points` and increments `users/{assignedToId}.points`.
 
 - [ ] **Step 1:** Add a test asserting the approval path derives the awarded amount from the **task's** reward field, not from a client-supplied argument. Run → FAIL if approval currently accepts a points argument.
 - [ ] **Step 2:** Refactor approval to read the amount from the task doc (prep for Task 6's `approveTask` + Task 9's rules making it write-once). Commit.
@@ -115,9 +115,9 @@ export const createChild = onCall(async (request) => {
 
 **Files:** `functions/src/listChildren.ts`, test
 
-- [ ] **Step 1: Failing test** — given a family with children, `listChildren({inviteCode})` returns `[{childId, name, avatar}]` and nothing else (no PII, no pinHash). Unknown code → empty list / `not-found`. Enforce App Check (`context.app` present). Verify a rate-limit counter blocks after 10 calls / 10 min per App Check token.
+- [ ] **Step 1: Failing test** — given a family with children, `listChildren({inviteCode})` returns `[{childId, name, avatar}]` and nothing else (no PII, no pinHash). Unknown code → empty list / `not-found`. Enforce App Check. Verify a rate-limit counter blocks after 10 calls / 10 min per App Check token.
 - [ ] **Step 2:** Emulator run → FAIL.
-- [ ] **Step 3: Implement** — resolve `familyInvites/{code}` → familyId; query `users where familyId == && role == 'child'`; project to `{childId, name, avatar}`. Reject when `context.app == undefined` (App Check). Keep a simple counter doc keyed by the App Check token for rate limiting.
+- [ ] **Step 3: Implement (v2)** — `onCall({ enforceAppCheck: true }, async (request) => …)`; resolve `familyInvites/{request.data.inviteCode}` → familyId; query `users where familyId == && role == 'child'`; project to `{childId, name, avatar}`. Keep a simple counter doc keyed by `request.app?.appId` for rate limiting. (Same v2 shape as Tasks 3, 5-7 — `request.data`/`request.app`, never v1 `context`.)
 - [ ] **Step 4:** PASS. **Step 5:** Commit.
 
 ---
@@ -173,7 +173,7 @@ do not rely on the emulator for the App-Check success path.
 
 ---
 
-## Task 6: Cloud Function `approveTask` (parent-only, idempotent, awards `pointValue`)
+## Task 6: Cloud Function `approveTask` (parent-only, idempotent, awards the task reward)
 
 **Files:** `functions/src/approveTask.ts`, test
 
@@ -222,9 +222,9 @@ spec's earlier `claimed`/`approved`/`rejected`.
   - `familyId` writable by the owning user only when previously empty (create/join), immutable after.
   - No one can read/write `childCredentials/{childId}`.
 - [ ] **Step 2:** Run `firebase emulators:exec --only firestore "npm test"` → FAIL.
-- [ ] **Step 3: Implement the rules** — add `isChild()` (`request.auth.token.role == 'child'`), field-diff allowlists (`request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])`), transition guards, and the immutability/write-once conditions. Deny `points`/`pointValue`/`approved` writes to all clients.
+- [ ] **Step 3: Implement the rules** — add `isChild()` (`request.auth.token.role == 'child'`), field-diff allowlists (`request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])`), transition guards, and the immutability/write-once conditions. Concretely, to **all clients** (parent and child): deny writes to `users/{uid}.points` (the user score); on `families/{fid}/tasks/{taskId}`, deny changing the task's reward `points` field after create and deny the `status: 'completed'` transition (both are `approveTask`-only). Also drop `guardian` from any `me().role in ['parent','guardian']` check (role collapse, Task 1).
 - [ ] **Step 4:** Emulator tests → PASS.
-- [ ] **Step 5:** Deploy rules to production (`firebase deploy --only firestore:rules`) is deferred to Task 17 (clean-break switchover). Commit.
+- [ ] **Step 5:** Deploy rules to production (`firebase deploy --only firestore:rules`) is deferred to Task 18 (clean-break switchover). Commit.
 
 ---
 

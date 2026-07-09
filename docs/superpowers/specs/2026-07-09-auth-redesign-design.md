@@ -19,8 +19,9 @@ user created via email/password, with a `role` field. This has two problems:
 - Parents sign in with **Sign in with Apple** and **Google** (no password).
 - Children use the app on **their own devices** with **no account** — entry is a
   **family invite code + a PIN**.
-- **Airtight integrity**: no client (parent or child) can write points, set a task
-  `approved`, or alter a task's reward value; those happen server-side only.
+- **Airtight integrity**: no client (parent or child) can write a user's score,
+  approve a task (`pendingApproval → completed`), or alter a task's reward value;
+  those happen server-side only.
 - Keep an email/password path solely for **App Review**, hidden from normal users.
 
 ### Non-goals
@@ -234,7 +235,8 @@ migration code. The App Review demo account is recreated afterward (§7).
 ### Phase 2 — Accountless kids (Blaze plan)
 
 - Enable **Blaze**.
-- Add the Cloud Functions (§4); add child-profile model + `pointValue` (§3); build
+- Add the Cloud Functions (§4); add child-profile model + make the task reward
+  write-once (§3); build
   "Manage Children" + kid onboarding (§6).
 - Move approve→points into `approveTask`; **lock the rules** (§5).
 - **Consolidate the two auth-truth sources** (`main.dart`'s direct
@@ -254,11 +256,11 @@ migration code. The App Review demo account is recreated afterward (§7).
   `i_approve_the_task`, `points_should_be_awarded_to_the_child`) reworked: a child
   is a custom-token profile; approval/points go through `approveTask`.
 - **New tests**: Cloud Functions (createChild; childSignIn PIN + rate-limit +
-  App Check; approveTask authorization, idempotency, atomic award of `pointValue`;
-  resetChildPin revocation); security-rules tests (child cannot write
-  points/pointValue/approved, cannot change role/familyId, cannot read
-  childCredentials; full transition table incl. `needsRevision→pendingApproval`);
-  OAuth mapping + account-collision.
+  App Check; approveTask authorization, idempotency, atomic award of the task
+  reward; resetChildPin revocation); security-rules tests (child cannot write the
+  user score or the task reward, cannot set `completed`, cannot change
+  role/familyId, cannot read childCredentials; full transition table incl.
+  `needsRevision→pendingApproval`); OAuth mapping + account-collision.
 
 ## 11. Risks & Open Items
 
