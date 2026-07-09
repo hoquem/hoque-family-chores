@@ -52,6 +52,9 @@ dependencies:
   firebase_auth: ^5.5.3 # Check pub.dev for the latest version
   cloud_firestore: ^5.6.7 # Check pub.dev for the latest version
   firebase_storage: ^12.3.9 # For photo uploads
+  sign_in_with_apple: ^6.1.4 # OAuth: Sign in with Apple (Phase 1)
+  google_sign_in: ^6.2.1 # OAuth: Google sign-in (Phase 1)
+  crypto: ^3.0.3 # Apple sign-in nonce hashing
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   hooks_riverpod: ^2.4.0
