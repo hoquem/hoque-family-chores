@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/domain/repositories/auth_repository.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
 
@@ -18,11 +19,21 @@ class FakeFirebaseUser {
 class MockAuthRepository implements AuthRepository {
   FakeFirebaseUser? _currentUser;
 
+  /// Email the OAuth providers report. Set to null to simulate a provider that
+  /// withholds the address.
+  final String? oauthEmail;
+
+  /// When true, the OAuth providers throw as if the user dismissed the sheet.
+  final bool oauthCancels;
+
   final _authStateController =
       StreamController<FakeFirebaseUser?>.broadcast();
 
-  MockAuthRepository({FakeFirebaseUser? currentUser})
-      : _currentUser = currentUser;
+  MockAuthRepository({
+    FakeFirebaseUser? currentUser,
+    this.oauthEmail = 'oauth@example.com',
+    this.oauthCancels = false,
+  }) : _currentUser = currentUser;
 
   @override
   dynamic get currentUser => _currentUser;
@@ -31,17 +42,23 @@ class MockAuthRepository implements AuthRepository {
   Stream<dynamic> get authStateChanges => _authStateController.stream;
 
   @override
-  Future<dynamic> signInWithApple() async {
-    _currentUser =
-        FakeFirebaseUser(uid: 'mock_apple_uid', email: 'apple@example.com');
-    _authStateController.add(_currentUser);
-    return _currentUser;
-  }
+  Future<dynamic> signInWithApple() => _fakeOAuthSignIn('mock_apple_uid');
 
   @override
-  Future<dynamic> signInWithGoogle() async {
-    _currentUser =
-        FakeFirebaseUser(uid: 'mock_google_uid', email: 'google@example.com');
+  Future<dynamic> signInWithGoogle() => _fakeOAuthSignIn('mock_google_uid');
+
+  Future<dynamic> _fakeOAuthSignIn(String uid) async {
+    if (oauthCancels) {
+      throw const AuthException(
+        'Sign-in cancelled',
+        code: 'SIGN_IN_CANCELLED',
+      );
+    }
+    _currentUser = FakeFirebaseUser(
+      uid: uid,
+      email: oauthEmail,
+      displayName: 'OAuth User',
+    );
     _authStateController.add(_currentUser);
     return _currentUser;
   }
