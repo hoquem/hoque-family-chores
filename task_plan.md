@@ -84,9 +84,11 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 - [x] Task 4: OAuth in FirebaseAuthRepository, commit 5717962. mapOAuthError extracted to lib/data/auth/oauth_error_mapper.dart (pure, 2 tests) since firebase_auth_mocks is absent. `hide generateNonce` on the sign_in_with_apple import (it exports the same name). Live OAuth flows NOT verified — Task 8 on-device.
 - [x] BUG FOUND + FIXED (commit 20862ae): FamilyId('') threw ArgumentError → InitializeUserDataUseCase ALWAYS returned ServerFailure → email/password sign-up never created a profile doc and ended in AuthStatus.error. Same throw in _mapFirestoreToUser for family-less profiles. Added FamilyId.empty sentinel (constructor still rejects ''). Likely broken in shipped build 1.0.0+10.
 - [x] Task 5: role param on InitializeUserDataUseCase (default child), commit 544b94c. 3 tests; email validation untouched.
-- [ ] Task 6: AuthNotifier OAuth methods (new adults → parent; loud fail on null email)
-- [ ] Task 7: login screen OAuth buttons
+- [x] Task 6: AuthNotifier OAuth methods, commit 6a1ed8b. 4 tests. Only NotFoundFailure ⇒ new user; null email fails loudly; SIGN_IN_CANCELLED → unauthenticated, no error banner. Existing profile keeps its role (returning child never promoted).
+  - Test harness gotcha: authNotifierProvider is autoDispose — a test MUST hold `container.listen(...)` or the notifier is rebuilt between reads and assertions observe build() re-deriving state from the mock's mutated currentUser (3 tests initially passed for the wrong reason).
+- [x] Task 7: login screen OAuth buttons + "or use email" divider, commit 6aa9466. 3 widget tests drive the real notifier through mock repos. Email form kept.
 - [ ] Task 8 (verify + on-device smoke + build 1.0.0+11 → TestFlight) — USER-GATED device/deploy
+- Gate after Task 7: analyze 0 issues, 126/126 tests pass
 - NOTE: global gitignore ignores lib/ → new lib/ files need `git add -f`
 - Key decisions banked: task reward field NOT renamed (kept as-is, disambiguated by collection path); guardian role removed (parent+child only); account-collision = error-only no auto-link
 - Decision: parents = Apple/Google OAuth (+ email kept for demo); kids = own device via family code + PIN
