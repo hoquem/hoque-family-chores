@@ -15,11 +15,11 @@ class InitializeUserDataUseCase {
   InitializeUserDataUseCase(this._userRepository);
 
   /// Initializes user data with default values
-  /// 
+  ///
   /// [userId] - ID of the user to initialize
   /// [name] - Name of the user
   /// [email] - Email of the user
-  /// 
+  ///
   /// Returns [User] on success or [Failure] on error
   Future<Either<Failure, User>> call({
     required UserId userId,
@@ -47,7 +47,7 @@ class InitializeUserDataUseCase {
         id: userId,
         name: name,
         email: Email(email),
-        familyId: FamilyId(''), // Will be set when user joins a family
+        familyId: FamilyId.empty, // Will be set when user joins a family
         role: UserRole.child, // Default role
         points: Points(0),
         joinedAt: DateTime.now(),
