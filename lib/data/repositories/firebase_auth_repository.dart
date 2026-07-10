@@ -1,7 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+// Hide the package's own nonce helper: this app uses the unit-tested one from
+// data/auth/apple_nonce.dart.
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' hide generateNonce;
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/value_objects/email.dart';
 import '../../core/error/exceptions.dart';
+import '../auth/apple_nonce.dart';
+import '../auth/oauth_error_mapper.dart';
 
 /// Firebase implementation of AuthRepository
 class FirebaseAuthRepository implements AuthRepository {
@@ -12,6 +18,53 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   dynamic get currentUser => _auth.currentUser;
+
+  @override
+  Stream<dynamic> get authStateChanges => _auth.authStateChanges();
+
+  @override
+  Future<dynamic> signInWithApple() async {
+    try {
+      final rawNonce = generateNonce();
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: sha256OfString(rawNonce),
+      );
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
+      final cred = await _auth.signInWithCredential(oauthCredential);
+      return cred.user!;
+    } on FirebaseAuthException catch (e) {
+      throw mapOAuthError(e);
+    }
+  }
+
+  @override
+  Future<dynamic> signInWithGoogle() async {
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        throw const AuthException(
+          'Google sign-in cancelled',
+          code: 'SIGN_IN_CANCELLED',
+        );
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final cred = await _auth.signInWithCredential(credential);
+      return cred.user!;
+    } on FirebaseAuthException catch (e) {
+      throw mapOAuthError(e);
+    }
+  }
 
   @override
   Future<dynamic> signInWithEmailAndPassword(Email email, String password) async {
