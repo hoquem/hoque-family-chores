@@ -18,11 +18,33 @@ class FakeFirebaseUser {
 class MockAuthRepository implements AuthRepository {
   FakeFirebaseUser? _currentUser;
 
+  final _authStateController =
+      StreamController<FakeFirebaseUser?>.broadcast();
+
   MockAuthRepository({FakeFirebaseUser? currentUser})
       : _currentUser = currentUser;
 
   @override
   dynamic get currentUser => _currentUser;
+
+  @override
+  Stream<dynamic> get authStateChanges => _authStateController.stream;
+
+  @override
+  Future<dynamic> signInWithApple() async {
+    _currentUser =
+        FakeFirebaseUser(uid: 'mock_apple_uid', email: 'apple@example.com');
+    _authStateController.add(_currentUser);
+    return _currentUser;
+  }
+
+  @override
+  Future<dynamic> signInWithGoogle() async {
+    _currentUser =
+        FakeFirebaseUser(uid: 'mock_google_uid', email: 'google@example.com');
+    _authStateController.add(_currentUser);
+    return _currentUser;
+  }
 
   @override
   Future<dynamic> signInWithEmailAndPassword(Email email, String password) async {
@@ -39,6 +61,7 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<void> signOut() async {
     _currentUser = null;
+    _authStateController.add(null);
   }
 
   @override

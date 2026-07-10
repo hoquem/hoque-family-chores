@@ -6,6 +6,15 @@ abstract class AuthRepository {
   /// Get current user
   dynamic get currentUser;
 
+  /// Stream of auth state changes (null = signed out).
+  Stream<dynamic> get authStateChanges;
+
+  /// Sign in with Apple (OAuth). Returns the raw Firebase user.
+  Future<dynamic> signInWithApple();
+
+  /// Sign in with Google (OAuth). Returns the raw Firebase user.
+  Future<dynamic> signInWithGoogle();
+
   /// Sign in with email and password
   Future<dynamic> signInWithEmailAndPassword(Email email, String password);
 
