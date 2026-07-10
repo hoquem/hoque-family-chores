@@ -19,12 +19,14 @@ class InitializeUserDataUseCase {
   /// [userId] - ID of the user to initialize
   /// [name] - Name of the user
   /// [email] - Email of the user
+  /// [role] - Role to assign; OAuth adults pass [UserRole.parent]
   ///
   /// Returns [User] on success or [Failure] on error
   Future<Either<Failure, User>> call({
     required UserId userId,
     required String name,
     required String email,
+    UserRole role = UserRole.child,
   }) async {
     try {
       // Validate user ID
@@ -48,7 +50,7 @@ class InitializeUserDataUseCase {
         name: name,
         email: Email(email),
         familyId: FamilyId.empty, // Will be set when user joins a family
-        role: UserRole.child, // Default role
+        role: role,
         points: Points(0),
         joinedAt: DateTime.now(),
         updatedAt: DateTime.now(),
