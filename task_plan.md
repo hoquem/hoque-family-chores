@@ -73,8 +73,20 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 - Spec: docs/superpowers/specs/2026-07-09-auth-redesign-design.md (approved, 3-iteration review; reconciled to real TaskStatus enum {available,assigned,pendingApproval,needsRevision,completed})
 - Plans: docs/superpowers/plans/2026-07-09-auth-phase1-oauth-parents.md (free, ships first) + 2026-07-09-auth-phase2-accountless-kids.md (Blaze)
 - Plan review iter 1: 2 blockers (B1 fake task-status vocab; B2 email '' fallback) + should-fixes → all fixed (real enum throughout; loud email failure; v2 functions API; role-collapse file list; retire client approveTask; split coarse tasks; invite rotation)
-- Plan review iter 2 running
-- NEXT: user reviews plan → choose execution mode (subagent-driven vs inline)
+- Plan review iter 2: blockers confirmed closed; fixed residual text (Task 9 rules guidance named fake fields; Task 4 context.app→request.app; named Task.points concretely). Converged.
+- Committed + pushed (b17df87). Spec + both plans on origin/main.
+
+### Phase 1 execution (subagent-driven) — branch feature/auth-phase1-oauth
+- [x] Task 0: branch created; deps sign_in_with_apple/google_sign_in/crypto added + pub get; committed
+- [x] Task 2: Apple nonce helper (lib/data/auth/apple_nonce.dart) — 3 tests pass, analyze clean, commit 6bca47a. Verified.
+- [~] Task 3: extend AuthRepository (authStateChanges + signInWithApple/Google) + mock — implementer running
+- [ ] Task 1 (iOS native config: Firebase Console enable Apple+Google, re-download GoogleService-Info.plist, Xcode Sign-in-with-Apple capability, Google URL scheme) — USER-GATED, batch at end
+- [ ] Task 4: implement OAuth in FirebaseAuthRepository (fixes compile break from Task 3)
+- [ ] Task 5: role param on InitializeUserDataUseCase
+- [ ] Task 6: AuthNotifier OAuth methods (new adults → parent; loud fail on null email)
+- [ ] Task 7: login screen OAuth buttons
+- [ ] Task 8 (verify + on-device smoke + build 1.0.0+11 → TestFlight) — USER-GATED device/deploy
+- NOTE: global gitignore ignores lib/ → new lib/ files need `git add -f`
 - Key decisions banked: task reward field NOT renamed (kept as-is, disambiguated by collection path); guardian role removed (parent+child only); account-collision = error-only no auto-link
 - Decision: parents = Apple/Google OAuth (+ email kept for demo); kids = own device via family code + PIN
 - Decision: kid identity = Firebase custom token (uid = childId), claims {role:child, familyId}; NOT anonymous

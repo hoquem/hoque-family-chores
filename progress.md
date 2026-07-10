@@ -28,3 +28,10 @@
 - Upload of +8 was a duplicate build number (silently dropped) → bumped to +10, added ITSAppUsesNonExemptEncryption=false, rebuilt
 - Build 1.0.0+10: archive/export/upload ✓, processed VALID, compliance set, IN_BETA_TESTING via auto-distributing Family group
 - DEPLOYED TO TESTFLIGHT 2026-07-09 ✅ — pipeline documented in docs/DEPLOYMENT_CHECKLIST.md; memory saved (testflight-deploy-pipeline)
+
+## Session 2026-07-10 — auth redesign design + Phase 1 execution
+- Brainstormed auth redesign; spec + 2 plans written, 3-round spec review + 2-round plan review (all blockers closed), committed/pushed to origin/main (b17df87)
+- Decisions: parents Apple/Google OAuth; kids accountless (family code + PIN, custom token, Blaze); airtight server-side points/approval; clean break; hidden email for App Review; guardian role removed; task reward = Task.points (kept, disambiguated by collection)
+- Started subagent-driven execution of Phase 1 on branch feature/auth-phase1-oauth
+- Task 0 (deps) + Task 2 (nonce helper 6bca47a) done + verified; Task 3 (interface+mock) in progress
+- User-gated remaining: Task 1 (Firebase Console + Xcode capability), Task 8 (on-device smoke + TestFlight upload)
