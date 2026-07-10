@@ -45,3 +45,14 @@
 - Gate after Task 7: analyze 0 issues, 126/126 tests (106 baseline + 20 new).
 - BLOCKED on user: ios/Runner/GoogleService-Info.plist has no CLIENT_ID/REVERSED_CLIENT_ID → Google is not enabled in Firebase Console yet. Task 1 Step 3 (URL scheme) cannot be done until it is re-downloaded. No Runner.entitlements yet; pbxproj has no CODE_SIGN_ENTITLEMENTS.
 - Next: Task 1 (needs Console) then Task 8 (device smoke, bump to 1.0.0+11, TestFlight).
+
+### USER-GATED handoff batch (do both, then Claude finishes Task 1 + Task 8 together)
+1. **Firebase Console** → Authentication → Sign-in method → enable **Apple** and **Google**; re-download `GoogleService-Info.plist` (it will then carry `CLIENT_ID`/`REVERSED_CLIENT_ID`) and replace `ios/Runner/GoogleService-Info.plist`.
+2. **Apple Developer portal** → Identifiers → App ID `com.hoque.hoqueFamilyChores` → enable the **Sign in with Apple** capability. Separate from step 1 and easy to miss. This machine signs headlessly via the ASC API key (no Xcode account), so Xcode will NOT auto-register the capability on the App ID; without it, the `applesignin` entitlement makes cloud signing fail to produce a profile and the **archive breaks**.
+
+Deliberately NOT done yet: `Runner.entitlements` + `CODE_SIGN_ENTITLEMENTS` in pbxproj + Info.plist URL scheme. They are two halves of one task and `flutter build ios --no-codesign` cannot verify the entitlement (it strips signing). Doing them before step 2 would risk the archive pipeline that shipped build +10. Do them together, verify with a real archive.
+
+### Task 8 smoke checklist (beyond the plan's steps)
+- Fresh OAuth parent (no family yet): confirm no crash and no family-scoped Firestore read firing as `where('familyId', == '')` before the "set up family" screen appears. `FamilyId.empty` is now a real value that reaches the user doc; the three UI guards cover Home/MyTasks/Family, but only a device run proves nothing else reads first.
+- Apple returns the email only on the *first* sign-in. We read `firebaseUser.email` (Firebase retains it across later sign-ins), not the Apple credential, so the loud-fail path should trip only on a genuinely null email. Confirm on a second Apple sign-in.
+- Also re-verify plain email/password **sign-up** end to end: it was broken by the FamilyId bug (20862ae) and this is the first build where it can succeed.
