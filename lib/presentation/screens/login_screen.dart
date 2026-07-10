@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/registration_screen.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -20,6 +21,33 @@ class LoginScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            SignInWithAppleButton(
+              onPressed: () =>
+                  ref.read(authNotifierProvider.notifier).signInWithApple(),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  ref.read(authNotifierProvider.notifier).signInWithGoogle(),
+              icon: const Icon(Icons.account_circle),
+              label: const Text('Continue with Google'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20.0),
+              child: Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Text('or use email'),
+                  ),
+                  Expanded(child: Divider()),
+                ],
+              ),
+            ),
             TextField(
               controller: emailController,
               decoration: const InputDecoration(labelText: 'Email'),
