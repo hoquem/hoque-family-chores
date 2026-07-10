@@ -79,10 +79,11 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 ### Phase 1 execution (subagent-driven) — branch feature/auth-phase1-oauth
 - [x] Task 0: branch created; deps sign_in_with_apple/google_sign_in/crypto added + pub get; committed
 - [x] Task 2: Apple nonce helper (lib/data/auth/apple_nonce.dart) — 3 tests pass, analyze clean, commit 6bca47a. Verified.
-- [~] Task 3: extend AuthRepository (authStateChanges + signInWithApple/Google) + mock — implementer running
+- [x] Task 3: extend AuthRepository (authStateChanges + signInWithApple/Google) + mock — 2 tests, commit 9e9f25f
 - [ ] Task 1 (iOS native config: Firebase Console enable Apple+Google, re-download GoogleService-Info.plist, Xcode Sign-in-with-Apple capability, Google URL scheme) — USER-GATED, batch at end
-- [ ] Task 4: implement OAuth in FirebaseAuthRepository (fixes compile break from Task 3)
-- [ ] Task 5: role param on InitializeUserDataUseCase
+- [x] Task 4: OAuth in FirebaseAuthRepository, commit 5717962. mapOAuthError extracted to lib/data/auth/oauth_error_mapper.dart (pure, 2 tests) since firebase_auth_mocks is absent. `hide generateNonce` on the sign_in_with_apple import (it exports the same name). Live OAuth flows NOT verified — Task 8 on-device.
+- [x] BUG FOUND + FIXED (commit 20862ae): FamilyId('') threw ArgumentError → InitializeUserDataUseCase ALWAYS returned ServerFailure → email/password sign-up never created a profile doc and ended in AuthStatus.error. Same throw in _mapFirestoreToUser for family-less profiles. Added FamilyId.empty sentinel (constructor still rejects ''). Likely broken in shipped build 1.0.0+10.
+- [x] Task 5: role param on InitializeUserDataUseCase (default child), commit 544b94c. 3 tests; email validation untouched.
 - [ ] Task 6: AuthNotifier OAuth methods (new adults → parent; loud fail on null email)
 - [ ] Task 7: login screen OAuth buttons
 - [ ] Task 8 (verify + on-device smoke + build 1.0.0+11 → TestFlight) — USER-GATED device/deploy

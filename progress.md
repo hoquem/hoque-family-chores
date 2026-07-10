@@ -35,3 +35,8 @@
 - Started subagent-driven execution of Phase 1 on branch feature/auth-phase1-oauth
 - Task 0 (deps) + Task 2 (nonce helper 6bca47a) done + verified; Task 3 (interface+mock) in progress
 - User-gated remaining: Task 1 (Firebase Console + Xcode capability), Task 8 (on-device smoke + TestFlight upload)
+- Resumed: Task 3 verified + committed (9e9f25f); Task 4 done (5717962); Task 5 done (544b94c)
+- Task 4 notes: no firebase_auth_mocks → extracted pure `mapOAuthError` into lib/data/auth/oauth_error_mapper.dart and unit-tested it; `sign_in_with_apple` exports its own `generateNonce`, so its import is `hide generateNonce` to keep our tested helper
+- REAL BUG surfaced by the Task 5 test (20862ae): `FamilyId('')` throws → `InitializeUserDataUseCase` always returned ServerFailure → **email/password sign-up has been creating no profile doc and erroring out**, and reading a family-less profile threw too. Three screens already guard on `familyId.value.isEmpty`, so "no family yet" was an expected-but-unrepresentable state. Fixed with a `FamilyId.empty` sentinel; the constructor still rejects `''`. Present in shipped build 1.0.0+10 (inferred from code, not re-verified against the IPA).
+- Gate after Task 5: analyze 0 issues, 119/119 tests pass (106 baseline + 13 new)
+- Next: Task 6 (AuthNotifier OAuth entry points). Bank: treat `SIGN_IN_CANCELLED` as a silent no-op, not an error banner.
