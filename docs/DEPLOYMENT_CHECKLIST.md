@@ -31,7 +31,9 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 
 Auth: App Store Connect API key `55A763B9XW` (Admin) at `~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8`, Issuer ID `2e924c90-75cb-4ef0-a036-574926a7b628`. Cloud signing — no local certificates needed.
 
-**Build numbers must exceed the highest ever uploaded** (currently 12; builds 3–12 exist on train 1.0.0). A duplicate build number uploads "successfully" but is silently dropped during processing — `altool` reports "UPLOAD SUCCEEDED" either way. **Always check first**: `GET https://api.appstoreconnect.apple.com/v1/builds?filter[app]=6746752194&sort=-uploadedDate&limit=3` (JWT with the ASC key) and pick highest+1.
+**Use `scripts/deploy_testflight.sh`** — it queries ASC for the highest existing build number, deploys highest+1, and polls until the build is VALID. Don't pick build numbers by hand: ASC history is full of surprises (builds 2–13 exist as of 2026-07-11), and until now `exportOptions.plist` implicitly had `manageAppVersionAndBuildNumber=true`, which silently renumbered duplicate builds at export (that's how IPAs labelled +11/+12 shipped as TestFlight builds 12/13). That key is now explicitly `false` so the uploaded number is always the built number, and `altool`'s "UPLOAD SUCCEEDED" still proves nothing — only a VALID processingState does.
+
+The manual pipeline below is what the script automates:
 
 ```bash
 # 1. Bump build number in pubspec.yaml (e.g. 1.0.0+11), then:
