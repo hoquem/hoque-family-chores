@@ -31,7 +31,7 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 
 Auth: App Store Connect API key `55A763B9XW` (Admin) at `~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8`, Issuer ID `2e924c90-75cb-4ef0-a036-574926a7b628`. Cloud signing — no local certificates needed.
 
-**Build numbers must exceed the highest ever uploaded** (currently 10; builds 3–10 exist on train 1.0.0). A duplicate build number uploads "successfully" but is silently dropped during processing.
+**Build numbers must exceed the highest ever uploaded** (currently 12; builds 3–12 exist on train 1.0.0). A duplicate build number uploads "successfully" but is silently dropped during processing — `altool` reports "UPLOAD SUCCEEDED" either way. **Always check first**: `GET https://api.appstoreconnect.apple.com/v1/builds?filter[app]=6746752194&sort=-uploadedDate&limit=3` (JWT with the ASC key) and pick highest+1.
 
 ```bash
 # 1. Bump build number in pubspec.yaml (e.g. 1.0.0+11), then:
