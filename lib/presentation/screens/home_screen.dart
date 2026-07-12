@@ -4,6 +4,7 @@ import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dar
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_summary_notifier.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -83,6 +84,40 @@ class HomeScreen extends ConsumerWidget {
     final currentUser = authState.user;
 
     if (currentUser == null) {
+      // A profile that failed to load must surface the error with a way
+      // out; an endless spinner strands the user with no escape.
+      if (authState.status == AuthStatus.error ||
+          authState.errorMessage != null) {
+        logger.w("[HomeScreen] Profile failed to load: ${authState.errorMessage}");
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Could not load your profile',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  authState.errorMessage ?? 'An unknown error occurred.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () =>
+                      ref.read(authNotifierProvider.notifier).signOut(),
+                  child: const Text('Sign Out'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       logger.w("[HomeScreen] User profile is null - showing loading indicator");
       return const Center(child: CircularProgressIndicator());
     }

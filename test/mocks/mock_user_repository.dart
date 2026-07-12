@@ -198,6 +198,12 @@ class MockUserRepository implements UserRepository {
     }
   }
 
+  /// Pushes an error into the profile stream, simulating a Firestore failure
+  /// or a malformed document that could not be parsed.
+  void emitProfileError(Object error) {
+    _userStreamController.addError(error);
+  }
+
   /// Dispose the stream controller
   void dispose() {
     _userStreamController.close();

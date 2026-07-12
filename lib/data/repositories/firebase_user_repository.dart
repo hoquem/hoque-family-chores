@@ -22,7 +22,7 @@ class FirebaseUserRepository implements UserRepository {
 
       if (!doc.exists) return null;
 
-      return _mapFirestoreToUser(doc.data()!, doc.id);
+      return mapFirestoreToUser(doc.data()!, doc.id);
     } catch (e) {
       throw ServerException('Failed to get user profile: $e', code: 'USER_FETCH_ERROR');
     }
@@ -34,7 +34,7 @@ class FirebaseUserRepository implements UserRepository {
         .collection('users')
         .doc(userId.value)
         .snapshots()
-        .map((doc) => doc.exists ? _mapFirestoreToUser(doc.data()!, doc.id) : null);
+        .map((doc) => doc.exists ? mapFirestoreToUser(doc.data()!, doc.id) : null);
   }
 
   @override
@@ -112,26 +112,38 @@ class FirebaseUserRepository implements UserRepository {
     }
   }
 
-  /// Maps Firestore document data to domain User entity
-  User _mapFirestoreToUser(Map<String, dynamic> data, String id) {
-    // A user who has not created or joined a family yet stores an empty
-    // familyId; that is a valid state, not a malformed document.
-    final rawFamilyId = data['familyId'] as String? ?? '';
-    return User(
-      id: UserId(id),
-      name: data['name'] as String? ?? '',
-      email: Email(data['email'] as String? ?? ''),
-      photoUrl: data['photoUrl'] as String?,
-      familyId: rawFamilyId.isEmpty ? FamilyId.empty : FamilyId(rawFamilyId),
-      role: _mapStringToUserRole(data['role'] as String? ?? 'child'),
-      points: Points(data['points'] as int? ?? 0),
-      joinedAt: data['joinedAt'] is Timestamp
-          ? (data['joinedAt'] as Timestamp).toDate()
-          : DateTime.tryParse(data['joinedAt']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: data['updatedAt'] is Timestamp
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
-    );
+  /// Maps Firestore document data to domain User entity.
+  ///
+  /// A document that cannot be parsed (e.g. a legacy schema without a
+  /// top-level email) throws a [ServerException] with code
+  /// `USER_DATA_MALFORMED` naming the document, so the failure surfaces
+  /// instead of masquerading as a missing or half-empty profile.
+  static User mapFirestoreToUser(Map<String, dynamic> data, String id) {
+    try {
+      // A user who has not created or joined a family yet stores an empty
+      // familyId; that is a valid state, not a malformed document.
+      final rawFamilyId = data['familyId'] as String? ?? '';
+      return User(
+        id: UserId(id),
+        name: data['name'] as String? ?? '',
+        email: Email(data['email'] as String? ?? ''),
+        photoUrl: data['photoUrl'] as String?,
+        familyId: rawFamilyId.isEmpty ? FamilyId.empty : FamilyId(rawFamilyId),
+        role: _mapStringToUserRole(data['role'] as String? ?? 'child'),
+        points: Points(data['points'] as int? ?? 0),
+        joinedAt: data['joinedAt'] is Timestamp
+            ? (data['joinedAt'] as Timestamp).toDate()
+            : DateTime.tryParse(data['joinedAt']?.toString() ?? '') ?? DateTime.now(),
+        updatedAt: data['updatedAt'] is Timestamp
+            ? (data['updatedAt'] as Timestamp).toDate()
+            : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      );
+    } catch (e) {
+      throw ServerException(
+        'User profile document users/$id could not be parsed: $e',
+        code: 'USER_DATA_MALFORMED',
+      );
+    }
   }
 
   /// Maps domain User entity to Firestore document data
@@ -149,7 +161,7 @@ class FirebaseUserRepository implements UserRepository {
   }
 
   /// Maps string to UserRole enum
-  UserRole _mapStringToUserRole(String role) {
+  static UserRole _mapStringToUserRole(String role) {
     switch (role.toLowerCase()) {
       case 'parent':
         return UserRole.parent;

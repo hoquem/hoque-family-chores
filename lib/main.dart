@@ -13,6 +13,9 @@ import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:hoque_family_chores/core/fresh_install_guard.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
@@ -92,6 +95,15 @@ void main() async {
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
       logger.i("[Startup] Firestore offline persistence enabled.");
+
+      // The iOS keychain keeps the Firebase session across app deletion; a
+      // fresh install must start signed out, not resurrect the old session.
+      final prefs = await SharedPreferences.getInstance();
+      await FreshInstallGuard.run(
+        prefs: prefs,
+        signOut: () => FirebaseAuth.instance.signOut(),
+      );
+      logger.i("[Startup] Fresh-install guard completed.");
     } catch (e, s) {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       runApp(ErrorApp(error: e));

@@ -26,16 +26,22 @@ class StreamUserProfileUseCase {
         return Stream.value(Left(ValidationFailure('User ID cannot be empty')));
       }
 
-      // Stream the user profile
-      return _userRepository.streamUserProfile(userId).map(
-        (user) => Right<Failure, User?>(user),
-      ).handleError(
-        (error) {
-          if (error is DataException) {
-            return Left<Failure, User?>(ServerFailure(error.message, code: error.code));
-          }
-          return Left<Failure, User?>(ServerFailure('Failed to stream user profile: $error'));
-        },
+      // Stream the user profile. Errors must be emitted as Left events —
+      // handleError discards its callback's return value, which silently
+      // swallowed failures and left listeners waiting forever.
+      return _userRepository.streamUserProfile(userId).transform(
+        StreamTransformer<User?, Either<Failure, User?>>.fromHandlers(
+          handleData: (user, sink) => sink.add(Right(user)),
+          handleError: (error, stackTrace, sink) {
+            if (error is DataException) {
+              sink.add(Left(ServerFailure(error.message, code: error.code)));
+            } else {
+              sink.add(
+                Left(ServerFailure('Failed to stream user profile: $error')),
+              );
+            }
+          },
+        ),
       );
     } catch (e) {
       return Stream.value(Left(ServerFailure('Failed to stream user profile: $e')));
