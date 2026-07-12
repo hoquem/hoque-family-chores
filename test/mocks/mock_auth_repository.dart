@@ -29,10 +29,17 @@ class MockAuthRepository implements AuthRepository {
   final _authStateController =
       StreamController<FakeFirebaseUser?>.broadcast();
 
+  /// When set, [deleteUser] throws this instead of deleting.
+  final AuthException? deleteUserError;
+
+  /// Whether [deleteUser] was invoked (regardless of outcome).
+  bool deleteUserCalled = false;
+
   MockAuthRepository({
     FakeFirebaseUser? currentUser,
     this.oauthEmail = 'oauth@example.com',
     this.oauthCancels = false,
+    this.deleteUserError,
   }) : _currentUser = currentUser;
 
   @override
@@ -83,7 +90,12 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> deleteUser() async {
+    deleteUserCalled = true;
+    if (deleteUserError != null) {
+      throw deleteUserError!;
+    }
     _currentUser = null;
+    _authStateController.add(null);
   }
 
   @override

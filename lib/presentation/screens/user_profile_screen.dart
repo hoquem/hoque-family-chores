@@ -7,6 +7,49 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
 
+  /// Asks for confirmation, then deletes the account. On failure the session
+  /// survives and the error from [AuthState.errorMessage] is shown in a
+  /// SnackBar.
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'This permanently deletes your account and profile data. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await ref.read(authNotifierProvider.notifier).deleteAccount();
+
+    if (!context.mounted) return;
+    final errorMessage = ref.read(authNotifierProvider).errorMessage;
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } else {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
@@ -108,6 +151,15 @@ class UserProfileScreen extends ConsumerWidget {
             },
           ),
           
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text(
+              'Delete Account',
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () => _confirmDeleteAccount(context, ref),
+          ),
+
           const Divider(),
           const SizedBox(height: 16),
 

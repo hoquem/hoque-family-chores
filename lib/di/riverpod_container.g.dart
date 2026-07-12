@@ -717,6 +717,26 @@ final updateFamilyMemberUseCaseProvider =
 // ignore: unused_element
 typedef UpdateFamilyMemberUseCaseRef =
     AutoDisposeProviderRef<UpdateFamilyMemberUseCase>;
+String _$deleteAccountUseCaseHash() =>
+    r'bbdc07faa667f87b2b8498e9dcc7deceb7689012';
+
+/// See also [deleteAccountUseCase].
+@ProviderFor(deleteAccountUseCase)
+final deleteAccountUseCaseProvider =
+    AutoDisposeProvider<DeleteAccountUseCase>.internal(
+      deleteAccountUseCase,
+      name: r'deleteAccountUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$deleteAccountUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DeleteAccountUseCaseRef = AutoDisposeProviderRef<DeleteAccountUseCase>;
 String _$deleteUserUseCaseHash() => r'58c07ee8858bbf7d27e2b4cf2dd55d3ac9f9087f';
 
 /// See also [deleteUserUseCase].

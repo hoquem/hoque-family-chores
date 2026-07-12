@@ -103,8 +103,22 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> deleteUser() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('No signed-in user to delete',
+          code: 'NO_CURRENT_USER');
+    }
     try {
-      await _auth.currentUser?.delete();
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw AuthException(
+          'Account deletion requires a recent sign-in',
+          code: 'REQUIRES_RECENT_LOGIN',
+        );
+      }
+      throw AuthException('Failed to delete user: ${e.message}',
+          code: 'DELETE_USER_ERROR');
     } catch (e) {
       throw AuthException('Failed to delete user: $e', code: 'DELETE_USER_ERROR');
     }

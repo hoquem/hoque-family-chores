@@ -248,6 +248,13 @@ UpdateFamilyMemberUseCase updateFamilyMemberUseCase(Ref ref) {
   return UpdateFamilyMemberUseCase(familyRepository);
 }
 
+@riverpod
+DeleteAccountUseCase deleteAccountUseCase(Ref ref) {
+  final userRepository = ref.watch(userRepositoryProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
+  return DeleteAccountUseCase(userRepository, authRepository);
+}
+
 // User Use Cases
 @riverpod
 DeleteUserUseCase deleteUserUseCase(Ref ref) {

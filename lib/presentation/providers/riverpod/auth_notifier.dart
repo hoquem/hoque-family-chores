@@ -335,6 +335,47 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Permanently deletes the signed-in user's account and profile.
+  ///
+  /// On success the state becomes unauthenticated (authStateChanges routing
+  /// returns the app to the login screen). On failure — most commonly
+  /// Firebase requiring a recent sign-in — the session survives and
+  /// `errorMessage` carries the explanation.
+  Future<void> deleteAccount() async {
+    final user = state.user;
+    if (user == null) {
+      _logger.w('AuthNotifier: Cannot delete account - no user profile');
+      state = state.copyWith(
+        errorMessage: 'No signed-in user to delete',
+      );
+      return;
+    }
+
+    _logger.d('AuthNotifier: Deleting account for ${user.id}');
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    final result =
+        await ref.read(deleteAccountUseCaseProvider).call(user: user);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Account deletion failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+        );
+      },
+      (_) {
+        _logger.d('AuthNotifier: Account deleted');
+        _stopUserProfileStream();
+        state = const AuthState(
+          status: AuthStatus.unauthenticated,
+          isLoading: false,
+        );
+      },
+    );
+  }
+
   /// Refreshes the user profile.
   Future<void> refreshUserProfile() async {
     if (state.user == null) {
