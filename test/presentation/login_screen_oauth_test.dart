@@ -23,16 +23,13 @@ Future<MockAuthRepository> _pumpLoginScreen(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('shows Apple and Google buttons alongside the email form',
-      (tester) async {
+  testWidgets('shows the Apple and Google buttons', (tester) async {
     await _pumpLoginScreen(tester);
 
     expect(find.byType(SignInWithAppleButton), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
-
-    // Phase 1 keeps email/password: children still sign in that way.
-    expect(find.byType(TextField), findsNWidgets(2));
-    expect(find.text('Sign In'), findsOneWidget);
+    // Email/password is hidden by default (App Store review only) —
+    // covered in login_screen_email_hidden_test.dart.
   });
 
   testWidgets('tapping Continue with Google signs in through the repository',

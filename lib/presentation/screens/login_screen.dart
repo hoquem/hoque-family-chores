@@ -5,17 +5,40 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/screens/registration_screen.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  // Email/password auth exists for App Store review validation only;
+  // families sign in with Apple or Google. Long-pressing the Login title
+  // reveals it (documented in the App Store review notes).
+  bool _showEmailAuth = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        title: GestureDetector(
+          onLongPress: () => setState(() => _showEmailAuth = !_showEmailAuth),
+          child: const Text('Login'),
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -35,43 +58,13 @@ class LoginScreen extends ConsumerWidget {
                 minimumSize: const Size.fromHeight(44),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20.0),
-              child: Row(
-                children: [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.0),
-                    child: Text('or use email'),
-                  ),
-                  Expanded(child: Divider()),
-                ],
+            if (authState.isLoading)
+              const Padding(
+                padding: EdgeInsets.only(top: 24.0),
+                child: CircularProgressIndicator(),
               ),
-            ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 24),
-            authState.isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: () async {
-                      await ref.read(authNotifierProvider.notifier).signIn(
-                        email: emailController.text,
-                        password: passwordController.text,
-                      );
-                    },
-                    child: const Text('Sign In'),
-                  ),
-            if (authState.errorMessage != null && authState.errorMessage!.isNotEmpty)
+            if (authState.errorMessage != null &&
+                authState.errorMessage!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
@@ -80,26 +73,69 @@ class LoginScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-            TextButton(
-              onPressed: () {
-                ref.read(authNotifierProvider.notifier).resetPassword(emailController.text);
-              },
-              child: const Text('Forgot Password?'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegistrationScreen(),
-                  ),
-                );
-              },
-              child: const Text("Don't have an account? Sign Up"),
-            ),
+            if (_showEmailAuth) ..._emailAuthSection(authState.isLoading),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _emailAuthSection(bool isLoading) {
+    return [
+      const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: Row(
+          children: [
+            Expanded(child: Divider()),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.0),
+              child: Text('or use email'),
+            ),
+            Expanded(child: Divider()),
+          ],
+        ),
+      ),
+      TextField(
+        controller: _emailController,
+        decoration: const InputDecoration(labelText: 'Email'),
+        keyboardType: TextInputType.emailAddress,
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _passwordController,
+        decoration: const InputDecoration(labelText: 'Password'),
+        obscureText: true,
+      ),
+      const SizedBox(height: 24),
+      if (!isLoading)
+        ElevatedButton(
+          onPressed: () async {
+            await ref.read(authNotifierProvider.notifier).signIn(
+                  email: _emailController.text,
+                  password: _passwordController.text,
+                );
+          },
+          child: const Text('Sign In'),
+        ),
+      TextButton(
+        onPressed: () {
+          ref
+              .read(authNotifierProvider.notifier)
+              .resetPassword(_emailController.text);
+        },
+        child: const Text('Forgot Password?'),
+      ),
+      TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const RegistrationScreen(),
+            ),
+          );
+        },
+        child: const Text("Don't have an account? Sign Up"),
+      ),
+    ];
   }
 }
