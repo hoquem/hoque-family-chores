@@ -39,6 +39,8 @@ class FirebaseAuthRepository implements AuthRepository {
       );
       final cred = await _auth.signInWithCredential(oauthCredential);
       return cred.user!;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      throw mapAppleAuthorizationError(e);
     } on FirebaseAuthException catch (e) {
       throw mapOAuthError(e);
     }

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../core/error/exceptions.dart';
 
@@ -20,4 +21,27 @@ AuthException mapOAuthError(FirebaseAuthException e) {
     );
   }
   return AuthException('OAuth sign-in failed: ${e.message}', code: e.code);
+}
+
+/// Translates a [SignInWithAppleAuthorizationException] into the app's
+/// [AuthException].
+///
+/// Dismissing the Apple sheet (ASAuthorizationError 1001) is a choice, not a
+/// failure: it maps to ``SIGN_IN_CANCELLED``, the same silent code the Google
+/// flow uses. Every other code surfaces as a real error.
+///
+/// :param e: the exception raised by the sign_in_with_apple plugin.
+/// :returns: the equivalent :class:`AuthException`.
+AuthException mapAppleAuthorizationError(
+    SignInWithAppleAuthorizationException e) {
+  if (e.code == AuthorizationErrorCode.canceled) {
+    return const AuthException(
+      'Sign-in cancelled',
+      code: 'SIGN_IN_CANCELLED',
+    );
+  }
+  return AuthException(
+    'Apple sign-in failed: ${e.message}',
+    code: 'APPLE_SIGN_IN_${e.code.name.toUpperCase()}',
+  );
 }
