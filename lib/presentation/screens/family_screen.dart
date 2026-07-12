@@ -296,7 +296,19 @@ class _FamilyDetailsView extends ConsumerWidget {
                   padding: EdgeInsets.all(16),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (error, _) => Text('Could not load members: $error'),
+                error: (error, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Could not load members: $error'),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(
+                        familyMembersNotifierProvider(currentUser.familyId),
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
                 data: (members) => Column(
                   children: members
                       .map(
