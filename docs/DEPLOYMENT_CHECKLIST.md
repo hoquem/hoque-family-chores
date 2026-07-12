@@ -22,7 +22,7 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 
 1. **App Store Connect record**: at appstoreconnect.apple.com → My Apps → "+" → New App.
    - Platform iOS, Bundle ID `com.hoque.hoqueFamilyChores`, SKU e.g. `hoque-family-chores`.
-2. **Host the privacy policy** and paste its URL into App Privacy. Easy option: GitHub Pages or a public gist of `docs/PRIVACY_POLICY.md`.
+2. **Privacy policy** — DONE (2026-07-11): hosted via GitHub Pages at https://hoquem.github.io/hoque-family-chores/PRIVACY_POLICY.html (Pages serves `main:/docs`) and set on both ASC appInfo localizations via `PATCH /v1/appInfoLocalizations` (privacyPolicyUrl).
 3. **App Privacy questionnaire**: declare collection of Email Address + Name (App Functionality, linked to identity), Crash Data (Crashlytics, not linked). No tracking.
 4. **Age rating questionnaire**: fill honestly; this is a utility app, expect 4+. Do NOT enroll in the "Kids" category (triggers stricter review; unnecessary for family-only use).
 5. Screenshots: 6.7" and 6.5" iPhone screenshots required (take from Simulator: `flutter run --release`, Cmd+S in Simulator).
