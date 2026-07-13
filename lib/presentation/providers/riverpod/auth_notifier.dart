@@ -301,6 +301,47 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
+  /// Joins a family as a child: anonymous account + profile + membership.
+  ///
+  /// On failure the use case has already rolled the anonymous account back,
+  /// so the state returns to unauthenticated with the error message set.
+  Future<void> joinFamilyAsChild({
+    required String name,
+    required String inviteCode,
+  }) async {
+    _logger.d('AuthNotifier: Child joining family with code $inviteCode');
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.authenticating,
+    );
+
+    final result = await ref
+        .read(joinFamilyAsChildUseCaseProvider)
+        .call(name: name, inviteCode: inviteCode);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Child join failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+          status: AuthStatus.unauthenticated,
+        );
+      },
+      (_) {
+        final userId =
+            UserId(ref.read(authRepositoryProvider).currentUser.uid as String);
+        _logger.d('AuthNotifier: Child joined family as $userId');
+        _startUserProfileStream(userId);
+        state = state.copyWith(
+          isLoading: false,
+          status: AuthStatus.authenticated,
+        );
+      },
+    );
+  }
+
   /// Signs out the current user.
   Future<void> signOut() async {
     _logger.d('AuthNotifier: Signing out user');
@@ -478,7 +519,7 @@ class AuthNotifier extends _$AuthNotifier {
   String? get displayName => state.user?.name;
 
   /// Gets the current user's email.
-  String? get userEmail => state.user?.email.value;
+  String? get userEmail => state.user?.email?.value;
 
   /// Gets the current user's photo URL.
   String? get photoUrl => state.user?.photoUrl;

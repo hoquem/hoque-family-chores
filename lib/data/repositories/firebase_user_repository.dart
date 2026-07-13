@@ -121,12 +121,21 @@ class FirebaseUserRepository implements UserRepository {
   static User mapFirestoreToUser(Map<String, dynamic> data, String id) {
     try {
       // A user who has not created or joined a family yet stores an empty
-      // familyId; that is a valid state, not a malformed document.
+      // familyId; that is a valid state, not a malformed document. Likewise
+      // a missing email is valid — children join anonymously without one —
+      // but a present, unparseable email is still malformed data.
       final rawFamilyId = data['familyId'] as String? ?? '';
+      final rawEmail = data['email'] as String?;
+      final rawName = data['name'] as String?;
+      if (rawName == null || rawName.trim().isEmpty) {
+        // Every user — adult or anonymous child — has a name; a document
+        // without one is corrupt (e.g. the legacy nested schema).
+        throw const FormatException('missing required field: name');
+      }
       return User(
         id: UserId(id),
-        name: data['name'] as String? ?? '',
-        email: Email(data['email'] as String? ?? ''),
+        name: rawName,
+        email: (rawEmail == null || rawEmail.isEmpty) ? null : Email(rawEmail),
         photoUrl: data['photoUrl'] as String?,
         familyId: rawFamilyId.isEmpty ? FamilyId.empty : FamilyId(rawFamilyId),
         role: _mapStringToUserRole(data['role'] as String? ?? 'child'),
@@ -150,7 +159,7 @@ class FirebaseUserRepository implements UserRepository {
   Map<String, dynamic> _mapUserToFirestore(User user) {
     return {
       'name': user.name,
-      'email': user.email.value,
+      'email': user.email?.value,
       'photoUrl': user.photoUrl,
       'familyId': user.familyId.value,
       'role': user.role.name,

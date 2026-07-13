@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/child_join_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/registration_screen.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -39,11 +40,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: const Text('Login'),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      // Scrollable: with the email section revealed (and the keyboard up on
+      // small phones) the content is taller than the screen.
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             SignInWithAppleButton(
               onPressed: () =>
                   ref.read(authNotifierProvider.notifier).signInWithApple(),
@@ -55,6 +59,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               icon: const Icon(Icons.account_circle),
               label: const Text('Continue with Google'),
               style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ChildJoinScreen()),
+              ),
+              icon: const Icon(Icons.child_care),
+              label: const Text("I'm a kid — join my family"),
+              style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
               ),
             ),
@@ -74,7 +89,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             if (_showEmailAuth) ..._emailAuthSection(authState.isLoading),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -19,6 +19,9 @@ abstract class AuthRepository {
   /// Sign in with Google (OAuth). Returns the raw Firebase user.
   Future<dynamic> signInWithGoogle();
 
+  /// Sign in anonymously (child accounts). Returns the raw Firebase user.
+  Future<dynamic> signInAnonymously();
+
   /// Sign in with email and password
   Future<dynamic> signInWithEmailAndPassword(Email email, String password);
 

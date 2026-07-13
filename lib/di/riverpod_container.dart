@@ -139,6 +139,16 @@ JoinFamilyUseCase joinFamilyUseCase(Ref ref) {
 }
 
 @riverpod
+JoinFamilyAsChildUseCase joinFamilyAsChildUseCase(Ref ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return JoinFamilyAsChildUseCase(
+    authRepository,
+    ref.watch(initializeUserDataUseCaseProvider),
+    ref.watch(joinFamilyUseCaseProvider),
+  );
+}
+
+@riverpod
 AddMemberUseCase addMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return AddMemberUseCase(familyRepository);

@@ -66,6 +66,18 @@ class MockAuthRepository implements AuthRepository {
   List<String> get currentProviderIds =>
       _currentUser == null ? const [] : providerIds;
 
+  /// Uids handed out by [signInAnonymously], for uniqueness across calls.
+  int _anonCounter = 0;
+
+  @override
+  Future<dynamic> signInAnonymously() async {
+    _anonCounter++;
+    _currentUser = FakeFirebaseUser(uid: 'anon_uid_$_anonCounter');
+    providerIds = const [];
+    _authStateController.add(_currentUser);
+    return _currentUser;
+  }
+
   @override
   Future<dynamic> signInWithApple() => _fakeOAuthSignIn('mock_apple_uid');
 

@@ -51,7 +51,7 @@ void main() {
     final profile = await users.getUserProfile(UserId(_googleUid));
     expect(profile, isNotNull, reason: 'a profile doc must be created');
     expect(profile!.role, UserRole.parent);
-    expect(profile.email.value, 'oauth@example.com');
+    expect(profile.email?.value, 'oauth@example.com');
     expect(profile.familyId.isEmpty, isTrue);
   });
 

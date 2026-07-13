@@ -25,7 +25,8 @@ class InitializeUserDataUseCase {
   Future<Either<Failure, User>> call({
     required UserId userId,
     required String name,
-    required String email,
+    // Null for children, who join anonymously and have no email address.
+    String? email,
     UserRole role = UserRole.child,
   }) async {
     try {
@@ -39,8 +40,8 @@ class InitializeUserDataUseCase {
         return Left(ValidationFailure('User name cannot be empty'));
       }
 
-      // Validate email
-      if (email.trim().isEmpty) {
+      // Validate email when given (adults); absent is valid for children.
+      if (email != null && email.trim().isEmpty) {
         return Left(ValidationFailure('User email cannot be empty'));
       }
 
@@ -48,7 +49,7 @@ class InitializeUserDataUseCase {
       final user = User(
         id: userId,
         name: name,
-        email: Email(email),
+        email: email == null ? null : Email(email),
         familyId: FamilyId.empty, // Will be set when user joins a family
         role: role,
         points: Points(0),

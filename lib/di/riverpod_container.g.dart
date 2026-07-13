@@ -358,6 +358,27 @@ final joinFamilyUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef JoinFamilyUseCaseRef = AutoDisposeProviderRef<JoinFamilyUseCase>;
+String _$joinFamilyAsChildUseCaseHash() =>
+    r'6790e12e9a91fca36de62d510a07380a709a4913';
+
+/// See also [joinFamilyAsChildUseCase].
+@ProviderFor(joinFamilyAsChildUseCase)
+final joinFamilyAsChildUseCaseProvider =
+    AutoDisposeProvider<JoinFamilyAsChildUseCase>.internal(
+      joinFamilyAsChildUseCase,
+      name: r'joinFamilyAsChildUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$joinFamilyAsChildUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef JoinFamilyAsChildUseCaseRef =
+    AutoDisposeProviderRef<JoinFamilyAsChildUseCase>;
 String _$addMemberUseCaseHash() => r'4967437143fecc5dc2ce6d6fdfdd49d2159f2816';
 
 /// See also [addMemberUseCase].

@@ -16,6 +16,9 @@ void main() {
     final events = <Either<Failure, User?>>[];
     final sub = useCase.call(userId: UserId('user_1')).listen(events.add);
     addTearDown(sub.cancel);
+    // Let the stream deliver its initial value (and subscribe internally)
+    // before injecting the error into the broadcast controller.
+    await Future<void>.delayed(const Duration(milliseconds: 10));
 
     users.emitProfileError(
       const ServerException(
@@ -25,9 +28,11 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
 
-    expect(events, hasLength(1),
+    // The mock (like Firestore) emits the current profile on listen, so the
+    // error arrives as the second event.
+    expect(events, hasLength(2),
         reason: 'the error must reach the listener as an event');
-    final failure = events.single.fold((f) => f, (_) => null);
+    final failure = events.last.fold((f) => f, (_) => null);
     expect(failure, isA<ServerFailure>());
     expect(failure!.message, contains('malformed'));
   });

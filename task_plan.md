@@ -107,3 +107,41 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 
 ## Decisions
 - Keep scope strictly MVP: no new features, only fix broken core flows
+
+## Feature: Child Join Flow (2026-07-13)
+
+### Design
+**Model**: a child is an anonymous Firebase account + a normal profile doc
+(role=child, email=null). Same uid-based identity as adults, so tasks,
+points, approvals, and security rules work unchanged. No email/password.
+
+**Join sequence** (JoinFamilyAsChildUseCase):
+1. Validate name + code format (before touching auth).
+2. authRepository.signInAnonymously() → anon uid.
+3. initializeUserData(uid, name, role: child, email: none).
+4. JoinFamilyUseCase(code, uid, role: child) — reuses invite lookup via
+   familyInvites/{code} (rules: get allowed for any signed-in incl. anon).
+5. Any failure after step 2 → delete the anonymous user and surface the
+   failure. This prevents the orphan state "signed in with no profile",
+   which the router would otherwise turn into a stuck home screen.
+
+**Domain change**: User.email becomes Email? (children have none).
+- Mapper: missing email → null; present-but-invalid → USER_DATA_MALFORMED.
+- initializeUserData: email becomes optional.
+- UI guards: profile/edit screens hide email when null.
+
+**Rules**: no changes needed (verified against deployed rules):
+familyInvites get = isSignedIn; users create = own uid; families update =
+non-member may add self to memberIds.
+
+**Server config**: enable anonymous auth provider (Identity Toolkit API).
+
+**Known limits (accepted v1)**: reinstalling the app loses a child's
+anonymous account (rejoin creates a fresh member; stale member remains
+until removed); child device is the account.
+
+### Phases
+1. Domain: nullable email + mapper + initializeUserData (TDD)
+2. JoinFamilyAsChildUseCase + AuthNotifier.joinFamilyAsChild (TDD)
+3. UI: ChildJoinScreen + login button + null-email guards (TDD)
+4. Enable anon provider, full gate, commit, deploy build 22

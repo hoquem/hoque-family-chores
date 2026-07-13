@@ -61,3 +61,15 @@
 ## Firebase config diff (uncommitted)
 - firebase.json adds dataconnect emulator config + dataconnect source dir (experiment; harmless for iOS app, app does not use Data Connect)
 
+
+## Child join flow research (2026-07-13)
+- JoinFamilyUseCase(inviteCode, userId, role) requires an existing profile
+  with empty familyId → child flow composes: anon sign-in → create profile
+  → join. No changes needed to the join use case.
+- getFamilyByInviteCode resolves familyInvites/{code} (get: isSignedIn —
+  anonymous auth passes). Families list stays member-only.
+- initializeUserData currently REQUIRES email (String); User.email is a
+  non-null Email; mapper throws USER_DATA_MALFORMED for missing email.
+  Ripple of Email? change: auth_notifier userEmail getter,
+  user_profile_screen, edit_profile_screen (3 UI spots) + mappers + tests.
+- Firebase anonymous provider is currently DISABLED in the project config.

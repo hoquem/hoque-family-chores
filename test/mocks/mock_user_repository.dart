@@ -68,9 +68,12 @@ class MockUserRepository implements UserRepository {
   }
 
   @override
-  Stream<User?> streamUserProfile(UserId userId) {
-    return _userStreamController.stream
-        .where((user) => user?.id == userId);
+  Stream<User?> streamUserProfile(UserId userId) async* {
+    // Firestore snapshots deliver the current document immediately on
+    // listen; the mock must do the same or late subscribers wait forever.
+    yield _users.where((user) => user.id == userId).firstOrNull;
+    yield* _userStreamController.stream
+        .where((user) => user == null || user.id == userId);
   }
 
   @override

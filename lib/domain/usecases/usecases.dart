@@ -25,6 +25,7 @@ export 'auth/change_password_usecase.dart';
 // Family Use Cases
 export 'family/create_family_usecase.dart';
 export 'family/join_family_usecase.dart';
+export 'family/join_family_as_child_usecase.dart';
 export 'family/add_member_usecase.dart';
 export 'family/get_family_usecase.dart';
 export 'family/update_family_usecase.dart';

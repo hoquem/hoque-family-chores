@@ -16,7 +16,7 @@ void main() {
     }, 'uid_1');
 
     expect(user.name, 'Alice');
-    expect(user.email.value, 'alice@example.com');
+    expect(user.email?.value, 'alice@example.com');
     expect(user.role, UserRole.parent);
     expect(user.familyId.value, isEmpty);
   });

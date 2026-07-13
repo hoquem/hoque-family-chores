@@ -8,7 +8,9 @@ import '../value_objects/family_id.dart';
 class User extends Equatable {
   final UserId id;
   final String name;
-  final Email email;
+
+  /// Null for children, who join anonymously with no email address.
+  final Email? email;
   final String? photoUrl;
   final FamilyId familyId;
   final UserRole role;
@@ -19,7 +21,7 @@ class User extends Equatable {
   const User({
     required this.id,
     required this.name,
-    required this.email,
+    this.email,
     this.photoUrl,
     required this.familyId,
     required this.role,

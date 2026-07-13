@@ -91,10 +91,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 8),
-            Text(
-              user.email.value,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            if (user.email != null)
+              Text(
+                user.email!.value,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             const SizedBox(height: 24),
             _saving
                 ? const Center(child: CircularProgressIndicator())

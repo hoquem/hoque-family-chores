@@ -65,7 +65,8 @@ class UserProfileScreen extends ConsumerWidget {
     }
 
     final displayName = currentUser.name;
-    final email = currentUser.email.value;
+    // Children join anonymously and have no email to show.
+    final email = currentUser.email?.value ?? '';
 
     return Scaffold(
       appBar: AppBar(
