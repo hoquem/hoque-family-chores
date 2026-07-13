@@ -49,8 +49,11 @@ class MockNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Stream<List<Notification>> streamNotifications(UserId userId) {
-    return _notificationsStreamController.stream
+  Stream<List<Notification>> streamNotifications(UserId userId) async* {
+    // Firestore snapshots deliver the current state immediately on listen;
+    // the mock must do the same or subscribers wait forever.
+    yield _notifications.where((n) => n.userId == userId.value).toList();
+    yield* _notificationsStreamController.stream
         .map((notifications) => notifications.where((n) => n.userId == userId.value).toList());
   }
 
