@@ -3,6 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
@@ -121,34 +124,25 @@ class UserProfileScreen extends ConsumerWidget {
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to an edit profile screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.notifications),
             title: const Text('Notifications'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to notification settings
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notification Settings coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.security),
             title: const Text('Security'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to security settings
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Security Settings coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SecurityScreen()),
+            ),
           ),
           
           ListTile(
