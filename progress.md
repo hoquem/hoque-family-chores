@@ -71,3 +71,11 @@ Deliberately NOT done yet: `Runner.entitlements` + `CODE_SIGN_ENTITLEMENTS` in p
 - REMAINING (genuinely user-only): Task 8 on-device smoke — see checklist above (fresh OAuth parent, second Apple sign-in email, email/password sign-up e2e).
 - NEAR-MISS: ASC API showed a build 11 ALREADY uploaded 2026-07-08 (docs said "currently 10" — stale). Today's +11 upload will be silently dropped as duplicate. Bumped to 1.0.0+12, re-archived, re-uploaded. Lesson: query `GET /v1/builds?filter[app]=6746752194&sort=-uploadedDate` BEFORE choosing a build number; altool "UPLOAD SUCCEEDED" proves nothing about acceptance.
 - MYSTERY SOLVED: ASC shows builds 12 AND 13 today — exportOptions' implicit manageAppVersionAndBuildNumber=true auto-renumbers duplicate build numbers at export. So the "+11" IPA shipped as 12 and the "+12" IPA as 13 (both same code; testers get 13). Set manageAppVersionAndBuildNumber=false — the new scripts/deploy_testflight.sh queries ASC for highest+1 so duplicates can't happen, and silent renumbering hides issues.
+
+## Session 2026-07-13 (child join flow)
+- Designed + built child join: anonymous auth + family code + name (design in task_plan.md)
+- User.email now nullable; mapper requires name, allows missing email
+- JoinFamilyAsChildUseCase rolls back the anonymous account on failure
+- ChildJoinScreen + kid button on login; login body made scrollable (overflow fix)
+- Anonymous provider enabled on Firebase project via Identity Toolkit API
+- Gate: analyze 0, tests 169/169; deployed as build 1.0.0+22
