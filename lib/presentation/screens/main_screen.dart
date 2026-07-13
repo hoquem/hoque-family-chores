@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/tasks_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/family_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
@@ -18,7 +18,9 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const TasksScreen(),
+    // The full task manager (filters + add-task), not a read-only summary:
+    // the Tasks tab is the only place tasks can be created and managed.
+    const TaskListScreen(),
     const FamilyScreen(),
     const UserProfileScreen(),
   ];

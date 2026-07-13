@@ -168,6 +168,8 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<TaskDifficulty>(
               key: const Key('task_difficulty_dropdown'),
+              // The long labels overflow narrow screens without this.
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: 'Effort Size',
                 border: OutlineInputBorder(),
@@ -197,7 +199,10 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 }
                 return DropdownMenuItem<TaskDifficulty>(
                   value: difficulty,
-                  child: Text('$description ($stars ⭐)'),
+                  child: Text(
+                    '$description ($stars ⭐)',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 );
               }).toList(),
               onChanged: (TaskDifficulty? newValue) {
