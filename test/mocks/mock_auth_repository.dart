@@ -35,11 +35,25 @@ class MockAuthRepository implements AuthRepository {
   /// Whether [deleteUser] was invoked (regardless of outcome).
   bool deleteUserCalled = false;
 
+  /// When set, [reauthenticate] throws this instead of succeeding.
+  AuthException? reauthenticateError;
+
+  /// Password passed to the last [reauthenticate] call.
+  String? reauthenticatedWithPassword;
+
+  /// Password passed to the last [updatePassword] call.
+  String? lastUpdatedPassword;
+
+  /// Provider ids reported for the signed-in user.
+  List<String> providerIds;
+
   MockAuthRepository({
     FakeFirebaseUser? currentUser,
     this.oauthEmail = 'oauth@example.com',
     this.oauthCancels = false,
     this.deleteUserError,
+    this.reauthenticateError,
+    this.providerIds = const [],
   }) : _currentUser = currentUser;
 
   @override
@@ -47,6 +61,10 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Stream<dynamic> get authStateChanges => _authStateController.stream;
+
+  @override
+  List<String> get currentProviderIds =>
+      _currentUser == null ? const [] : providerIds;
 
   @override
   Future<dynamic> signInWithApple() => _fakeOAuthSignIn('mock_apple_uid');
@@ -66,6 +84,7 @@ class MockAuthRepository implements AuthRepository {
       email: oauthEmail,
       displayName: 'OAuth User',
     );
+    providerIds = [uid == 'mock_apple_uid' ? 'apple.com' : 'google.com'];
     _authStateController.add(_currentUser);
     return _currentUser;
   }
@@ -105,7 +124,9 @@ class MockAuthRepository implements AuthRepository {
   Future<void> updateEmail(Email newEmail) async {}
 
   @override
-  Future<void> updatePassword(String newPassword) async {}
+  Future<void> updatePassword(String newPassword) async {
+    lastUpdatedPassword = newPassword;
+  }
 
   @override
   Future<void> updateDisplayName(String newName) async {}
@@ -114,7 +135,12 @@ class MockAuthRepository implements AuthRepository {
   Future<void> updatePhotoURL(String newPhotoURL) async {}
 
   @override
-  Future<void> reauthenticate(Email email, String password) async {}
+  Future<void> reauthenticate(Email email, String password) async {
+    if (reauthenticateError != null) {
+      throw reauthenticateError!;
+    }
+    reauthenticatedWithPassword = password;
+  }
 
   @override
   Future<String?> getToken() async => 'mock_token';

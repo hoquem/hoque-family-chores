@@ -249,6 +249,12 @@ UpdateFamilyMemberUseCase updateFamilyMemberUseCase(Ref ref) {
 }
 
 @riverpod
+ChangePasswordUseCase changePasswordUseCase(Ref ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return ChangePasswordUseCase(authRepository);
+}
+
+@riverpod
 DeleteAccountUseCase deleteAccountUseCase(Ref ref) {
   final userRepository = ref.watch(userRepositoryProvider);
   final authRepository = ref.watch(authRepositoryProvider);

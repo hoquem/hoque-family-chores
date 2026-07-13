@@ -717,6 +717,27 @@ final updateFamilyMemberUseCaseProvider =
 // ignore: unused_element
 typedef UpdateFamilyMemberUseCaseRef =
     AutoDisposeProviderRef<UpdateFamilyMemberUseCase>;
+String _$changePasswordUseCaseHash() =>
+    r'5ba45e95809483f7b01ea04aa27d1427dfcd9a22';
+
+/// See also [changePasswordUseCase].
+@ProviderFor(changePasswordUseCase)
+final changePasswordUseCaseProvider =
+    AutoDisposeProvider<ChangePasswordUseCase>.internal(
+      changePasswordUseCase,
+      name: r'changePasswordUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$changePasswordUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChangePasswordUseCaseRef =
+    AutoDisposeProviderRef<ChangePasswordUseCase>;
 String _$deleteAccountUseCaseHash() =>
     r'bbdc07faa667f87b2b8498e9dcc7deceb7689012';
 

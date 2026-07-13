@@ -23,6 +23,11 @@ class FirebaseAuthRepository implements AuthRepository {
   Stream<dynamic> get authStateChanges => _auth.authStateChanges();
 
   @override
+  List<String> get currentProviderIds =>
+      _auth.currentUser?.providerData.map((p) => p.providerId).toList() ??
+      const [];
+
+  @override
   Future<dynamic> signInWithApple() async {
     try {
       final rawNonce = generateNonce();

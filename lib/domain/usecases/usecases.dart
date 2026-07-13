@@ -20,6 +20,7 @@ export 'auth/sign_in_usecase.dart';
 export 'auth/sign_up_usecase.dart';
 export 'auth/reset_password_usecase.dart';
 export 'auth/delete_account_usecase.dart';
+export 'auth/change_password_usecase.dart';
 
 // Family Use Cases
 export 'family/create_family_usecase.dart';

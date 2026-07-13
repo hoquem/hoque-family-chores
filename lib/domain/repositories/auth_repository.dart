@@ -9,6 +9,10 @@ abstract class AuthRepository {
   /// Stream of auth state changes (null = signed out).
   Stream<dynamic> get authStateChanges;
 
+  /// Provider ids of the signed-in user (e.g. 'password', 'apple.com',
+  /// 'google.com'); empty when signed out.
+  List<String> get currentProviderIds;
+
   /// Sign in with Apple (OAuth). Returns the raw Firebase user.
   Future<dynamic> signInWithApple();
 
