@@ -79,3 +79,13 @@ Deliberately NOT done yet: `Runner.entitlements` + `CODE_SIGN_ENTITLEMENTS` in p
 - ChildJoinScreen + kid button on login; login body made scrollable (overflow fix)
 - Anonymous provider enabled on Firebase project via Identity Toolkit API
 - Gate: analyze 0, tests 169/169; deployed as build 1.0.0+22
+
+## Session 2026-07-15 (Quest cleanup + kids' Home redesign)
+- Quest→Task rename in user-facing copy only: add_task_screen, notification template titles/bodies, Android channel name ("Task Notifications"; channel *id* unchanged). Data contracts kept: questCompletions/quest_photos collections, choresapp://quest deep links, PushNotificationType.quest* identifiers.
+- Add Task UX: "Due Date" label fixed (was "(Approximate Time to Complete)"), clear-date ✕ button, assignee dropdown now surfaces load errors with Retry (was a silent empty dropdown), sized submit spinner.
+- All tab titles now match nav labels ("Profile & Settings"→"Profile"); HomeScreen got its missing AppBar — its content was rendering under the iPhone notch (no Scaffold at all).
+- Kids' Home redesign (spec: docs/superpowers/specs/2026-07-15-kids-home-screen-design.md): greeting header, level progress + streak, Today's Missions with tap-to-complete, all-done celebration, weekly-stars leaderboard (child) / needs-approval card (parent, taps through to filtered Tasks tab). All stats derived client-side in lib/domain/services/home_stats.dart (pure, unit-tested) — no backend changes.
+- BUG FOUND+FIXED: TaskListScreen set taskFilterNotifierProvider but never watched it — the filter menu did nothing. Now applied (incl. My Tasks by assignee).
+- Dead code deleted: filteredQuestsStream, AssigneeFilterNotifier, filteredTasks provider, TaskSummaryWidget + notifier + entity + TaskSummaryState enum.
+- MainScreen tab index moved to BottomNavIndexNotifier so Home cards can switch tabs.
+- Gate: analyze 0 issues, tests 195/195 (was 169). NOT yet verified on device/simulator — visual pass of the new Home recommended alongside the pending Task 8 smoke.

@@ -69,8 +69,28 @@ class TaskListScreen extends ConsumerWidget {
     );
   }
 
+  /// Applies the selected filter; needs the current user for "My Tasks".
+  List<Task> _applyFilter(
+      List<Task> tasks, TaskFilterType filter, UserId userId) {
+    switch (filter) {
+      case TaskFilterType.all:
+        return tasks;
+      case TaskFilterType.myTasks:
+        return tasks.where((t) => t.assignedToId == userId).toList();
+      case TaskFilterType.available:
+        return tasks.where((t) => t.status == TaskStatus.available).toList();
+      case TaskFilterType.pendingApproval:
+        return tasks
+            .where((t) => t.status == TaskStatus.pendingApproval)
+            .toList();
+      case TaskFilterType.completed:
+        return tasks.where((t) => t.status == TaskStatus.completed).toList();
+    }
+  }
+
   Widget _buildTaskList(BuildContext context, WidgetRef ref, FamilyId familyId) {
     final tasksAsync = ref.watch(taskListNotifierProvider(familyId));
+    final filter = ref.watch(taskFilterNotifierProvider);
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
@@ -79,8 +99,8 @@ class TaskListScreen extends ConsumerWidget {
     }
 
     return tasksAsync.when(
-      data: (tasks) {
-        if (tasks.isEmpty) {
+      data: (allTasks) {
+        if (allTasks.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -94,6 +114,11 @@ class TaskListScreen extends ConsumerWidget {
               ],
             ),
           );
+        }
+
+        final tasks = _applyFilter(allTasks, filter, currentUser.id);
+        if (tasks.isEmpty) {
+          return const Center(child: Text('No tasks match this filter.'));
         }
 
         return RefreshIndicator(

@@ -11,5 +11,4 @@ enum AuthStatus {
 }
 
 /// UI/Provider state enums used across multiple providers
-enum TaskSummaryState { loading, loaded, error }
-enum AvailableTasksState { loading, loaded, error, claiming } 
+enum AvailableTasksState { loading, loaded, error, claiming }

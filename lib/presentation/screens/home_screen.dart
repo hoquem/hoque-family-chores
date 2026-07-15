@@ -1,85 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hoque_family_chores/presentation/widgets/task_summary_widget.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/task_summary_notifier.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/services/home_stats.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/greeting_header.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/leaderboard_card.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/progress_card.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/today_missions_card.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
+/// The family hub: greeting, level progress, today's missions, and a
+/// role-based bottom card (weekly leaderboard for children, approval
+/// queue for parents).
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  Future<void> _refreshData(WidgetRef ref) async {
-    logger.i("[HomeScreen] Refreshing data...");
-    final authState = ref.read(authNotifierProvider);
-    final currentUser = authState.user;
-    final familyId = currentUser?.familyId;
-
-    if (currentUser != null && familyId != null) {
-      logger.d("[HomeScreen] User profile and family ID available. User: ${currentUser.id}, Family: $familyId");
-      try {
-        await Future.wait([
-          ref.read(taskSummaryNotifierProvider(familyId).notifier).refresh(),
-        ]);
-        logger.i("[HomeScreen] Data refresh completed successfully");
-      } catch (e, s) {
-        logger.e("[HomeScreen] Error refreshing data: $e", error: e, stackTrace: s);
-      }
-    } else {
-      logger.w("[HomeScreen] Cannot refresh data - missing user profile or family ID. User: $currentUser, FamilyId: $familyId");
-    }
-  }
-
-  Widget _buildUserProfileSection(User currentUser) {
-    logger.d("[HomeScreen] Building user profile section for user: ${currentUser.id}");
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 40,
-          child: Text(
-            currentUser.name.substring(0, 1).toUpperCase(),
-            style: const TextStyle(fontSize: 30),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                currentUser.name,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.amber),
-                  Text(
-                    'Level ${_calculateLevelFromPoints(currentUser.points.value)}',
-                  ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.attach_money),
-                  Text('${currentUser.points.value} Points'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  int _calculateLevelFromPoints(int points) {
-    return (points / 100).floor() + 1;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     logger.d("[HomeScreen] Building screen");
+    // The AppBar keeps the content below the status bar/notch, matching
+    // the other tabs.
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home')),
+      body: _buildBody(context, ref),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
 
@@ -88,7 +42,8 @@ class HomeScreen extends ConsumerWidget {
       // out; an endless spinner strands the user with no escape.
       if (authState.status == AuthStatus.error ||
           authState.errorMessage != null) {
-        logger.w("[HomeScreen] Profile failed to load: ${authState.errorMessage}");
+        logger.w(
+            "[HomeScreen] Profile failed to load: ${authState.errorMessage}");
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -148,29 +103,120 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
-    logger.d("[HomeScreen] Building home screen for user: ${currentUser.id}");
+    final tasksAsync = ref.watch(taskListNotifierProvider(currentUser.familyId));
+    return tasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) {
+        logger.e("[HomeScreen] Task list failed to load", error: error);
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 8),
+                const Text(
+                  'Could not load tasks',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => ref
+                      .invalidate(taskListNotifierProvider(currentUser.familyId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      data: (tasks) => _buildDashboard(context, ref, currentUser, tasks),
+    );
+  }
+
+  Widget _buildDashboard(
+    BuildContext context,
+    WidgetRef ref,
+    User currentUser,
+    List<Task> tasks,
+  ) {
+    final now = DateTime.now();
+    final missions = todayMissions(tasks, currentUser.id, now);
+    final streak = streakDays(tasks, currentUser.id, now);
+
     return RefreshIndicator(
-      onRefresh: () => _refreshData(ref),
-      child: SingleChildScrollView(
+      onRefresh: () async {
+        ref.invalidate(taskListNotifierProvider(currentUser.familyId));
+        ref.invalidate(familyMembersNotifierProvider(currentUser.familyId));
+      },
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildUserProfileSection(currentUser),
-              const SizedBox(height: 24.0),
-              const Text(
-                'Task Summary',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16.0),
-              const TaskSummaryWidget(),
-              const SizedBox(height: 50.0),
-            ],
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          GreetingHeader(user: currentUser),
+          const SizedBox(height: 16),
+          ProgressCard(points: currentUser.points.value, streak: streak),
+          const SizedBox(height: 8),
+          if (missions.allDone) ...[
+            const CelebrationCard(),
+            const SizedBox(height: 8),
+          ],
+          TodayMissionsCard(
+            missions: missions,
+            onComplete: (task) => ref
+                .read(taskListNotifierProvider(currentUser.familyId).notifier)
+                .completeTask(
+                    task.id.value, currentUser.id, currentUser.familyId),
+          ),
+          const SizedBox(height: 8),
+          if (currentUser.isParent)
+            ApprovalQueueCard(
+              count: tasks
+                  .where((t) => t.status == TaskStatus.pendingApproval)
+                  .length,
+              onTap: () {
+                ref
+                    .read(taskFilterNotifierProvider.notifier)
+                    .setFilter(TaskFilterType.pendingApproval);
+                // The Tasks tab is index 1 in MainScreen.
+                ref.read(bottomNavIndexNotifierProvider.notifier).setIndex(1);
+              },
+            )
+          else
+            _buildLeaderboard(ref, currentUser, tasks, now),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaderboard(
+    WidgetRef ref,
+    User currentUser,
+    List<Task> tasks,
+    DateTime now,
+  ) {
+    final membersAsync =
+        ref.watch(familyMembersNotifierProvider(currentUser.familyId));
+    return membersAsync.when(
+      loading: () => const Card(
+        child: ListTile(title: Text('Loading family members…')),
+      ),
+      error: (error, _) => Card(
+        child: ListTile(
+          title: const Text('Could not load family members.'),
+          trailing: TextButton(
+            onPressed: () => ref
+                .read(familyMembersNotifierProvider(currentUser.familyId)
+                    .notifier)
+                .refresh(),
+            child: const Text('Retry'),
           ),
         ),
       ),
+      data: (members) =>
+          LeaderboardCard(ranking: weeklyStars(tasks, members, now)),
     );
   }
 }
