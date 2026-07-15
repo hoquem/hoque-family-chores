@@ -118,8 +118,8 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
     await androidPlugin.createNotificationChannel(
       const AndroidNotificationChannel(
         'medium_priority',
-        'Quest Notifications',
-        description: 'Quest assignments and reminders',
+        'Task Notifications',
+        description: 'Task assignments and reminders',
         importance: Importance.defaultImportance,
         enableVibration: true,
         playSound: true,

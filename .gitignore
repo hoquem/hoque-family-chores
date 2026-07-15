@@ -62,3 +62,7 @@ app.*.map.json
 
 # Node dependencies
 scripts/node_modules/
+
+# lib/ is ignored in the user-global gitignore (Python convention);
+# it is the Dart source root here — always track it.
+!lib/

@@ -135,7 +135,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New Quest')),
+      appBar: AppBar(title: const Text('Add New Task')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -145,12 +145,12 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               key: const Key('task_title_field'),
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Quest Title',
+                labelText: 'Task Title',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a quest title';
+                  return 'Please enter a task title';
                 }
                 return null;
               },
@@ -181,19 +181,19 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 int stars;
                 switch (difficulty) {
                   case TaskDifficulty.easy:
-                    description = 'Small (S) - Quick quests, 5-15 minutes';
+                    description = 'Small (S) - Quick tasks, 5-15 minutes';
                     stars = 10;
                     break;
                   case TaskDifficulty.medium:
-                    description = 'Medium (M) - Moderate quests, 15-30 minutes';
+                    description = 'Medium (M) - Moderate tasks, 15-30 minutes';
                     stars = 25;
                     break;
                   case TaskDifficulty.hard:
-                    description = 'Large (L) - Complex quests, 30-60 minutes';
+                    description = 'Large (L) - Complex tasks, 30-60 minutes';
                     stars = 50;
                     break;
                   case TaskDifficulty.challenging:
-                    description = 'Extra Large (XL) - Major quests, 60+ minutes';
+                    description = 'Extra Large (XL) - Major tasks, 60+ minutes';
                     stars = 100;
                     break;
                 }
@@ -251,19 +251,37 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
+                    helperText: 'Loading family members…',
                   ),
                   value: null,
                   items: const [],
                   onChanged: null,
                 ),
-                error: (error, stack) => DropdownButtonFormField<User?>(
-                  decoration: const InputDecoration(
-                    labelText: 'Assign To (Optional)',
-                    border: OutlineInputBorder(),
+                error: (error, stack) => Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    border: Border.all(color: Colors.red.shade200),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  value: null,
-                  items: const [],
-                  onChanged: null,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Could not load family members.',
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => ref
+                            .read(familyMembersNotifierProvider(
+                                    currentUser!.familyId)
+                                .notifier)
+                            .refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ] else ...[
@@ -281,10 +299,17 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             InkWell(
               onTap: () => _selectDate(context),
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Due Date (Approximate Time to Complete)',
-                  border: OutlineInputBorder(),
-                  helperText: 'When should this quest be completed by?',
+                decoration: InputDecoration(
+                  labelText: 'Due Date',
+                  border: const OutlineInputBorder(),
+                  helperText: 'When should this task be completed by?',
+                  suffixIcon: _dueDate == null
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear due date',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _dueDate = null),
+                        ),
                 ),
                 child: Text(
                   _dueDate != null
@@ -300,8 +325,12 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 minimumSize: const Size.fromHeight(50),
               ),
               child: taskCreationState.isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Create Quest'),
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  : const Text('Create Task'),
             ),
             // Show error if any
             if (taskCreationState.error != null) ...[

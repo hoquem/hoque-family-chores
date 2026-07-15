@@ -71,7 +71,7 @@ class UserProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         // --- CHANGED --- Title updated to reflect its new purpose.
-        title: const Text('Profile & Settings'),
+        title: const Text('Profile'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),

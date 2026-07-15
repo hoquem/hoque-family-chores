@@ -9,11 +9,11 @@ class NotificationTemplates {
   }) {
     String body;
     if (streakDays != null && streakDays >= 3) {
-      body = "Complete today's quests to keep your $streakDays-day streak alive";
+      body = "Complete today's tasks to keep your $streakDays-day streak alive";
     } else if (questCount == 1) {
-      body = "You have 1 quest waiting";
+      body = "You have 1 task waiting";
     } else {
-      body = "You have $questCount quests to complete today";
+      body = "You have $questCount tasks to complete today";
     }
 
     return PushNotificationPayload(
@@ -39,7 +39,7 @@ class NotificationTemplates {
     DateTime? dueDate,
     bool isUrgent = false,
   }) {
-    final title = isUrgent ? 'Urgent quest! 🚨' : 'New quest assigned 📋';
+    final title = isUrgent ? 'Urgent task! 🚨' : 'New task assigned 📋';
     final dueText = dueDate != null ? ' — due ${_formatDueDate(dueDate)}' : '';
 
     return PushNotificationPayload(
@@ -65,7 +65,7 @@ class NotificationTemplates {
     return PushNotificationPayload(
       id: _generateId(PushNotificationType.questReminder, questId),
       type: PushNotificationType.questReminder,
-      title: 'Quest due in 1 hour ⏱️',
+      title: 'Task due in 1 hour ⏱️',
       body: '$questName — don\'t forget!',
       priority: NotificationPriority.medium,
       deepLink: 'choresapp://quest/$questId',
@@ -88,10 +88,10 @@ class NotificationTemplates {
     String body;
 
     if (isMultiple && count != null) {
-      title = '$count quests overdue ⏰';
+      title = '$count tasks overdue ⏰';
       body = questName; // Should be comma-separated list
     } else {
-      title = 'Quest overdue ⏰';
+      title = 'Task overdue ⏰';
       body = dueTime != null
           ? '$questName was due at ${_formatTime(dueTime)}. Complete it soon!'
           : '$questName is waiting! Don\'t break your streak 🔥';
@@ -128,10 +128,10 @@ class NotificationTemplates {
     String body;
 
     if (isMultiple && count != null) {
-      title = '$childName completed $count quests! ✨';
+      title = '$childName completed $count tasks! ✨';
       body = questName; // Should be comma-separated list
     } else if (isHighValue && xpValue != null) {
-      title = 'High-value quest needs approval 🌟';
+      title = 'High-value task needs approval 🌟';
       body = '$childName completed $questName (+$xpValue XP)';
     } else {
       title = 'Approval needed from $childName ✋';
@@ -176,14 +176,14 @@ class NotificationTemplates {
         title = 'Bonus earned! ⭐';
         body = '$questName approved with +$bonusXp bonus XP for quality!';
       } else if (xpEarned != null && goldEarned != null) {
-        title = 'Quest approved! 🎉';
+        title = 'Task approved! 🎉';
         body = '$questName earned you +$xpEarned XP and $goldEarned gold';
       } else {
-        title = 'Quest approved! 🎉';
+        title = 'Task approved! 🎉';
         body = questName;
       }
     } else {
-      title = 'Quest needs rework 🔄';
+      title = 'Task needs rework 🔄';
       body = feedback != null ? '$questName — $feedback' : questName;
     }
 
@@ -237,7 +237,7 @@ class NotificationTemplates {
       id: _generateId(PushNotificationType.streakMilestone),
       type: PushNotificationType.streakMilestone,
       title: '$streakDays-day streak! 🔥',
-      body: 'You\'ve completed quests $streakDays days in a row. Amazing!',
+      body: 'You\'ve completed tasks $streakDays days in a row. Amazing!',
       priority: NotificationPriority.medium,
       deepLink: 'choresapp://profile?celebrate=streak',
       data: {
