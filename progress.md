@@ -89,3 +89,11 @@ Deliberately NOT done yet: `Runner.entitlements` + `CODE_SIGN_ENTITLEMENTS` in p
 - Dead code deleted: filteredQuestsStream, AssigneeFilterNotifier, filteredTasks provider, TaskSummaryWidget + notifier + entity + TaskSummaryState enum.
 - MainScreen tab index moved to BottomNavIndexNotifier so Home cards can switch tabs.
 - Gate: analyze 0 issues, tests 195/195 (was 169). NOT yet verified on device/simulator — visual pass of the new Home recommended alongside the pending Task 8 smoke.
+
+## Session 2026-07-15 (cont.) — Apple auth debug + family test plan
+- Device smoke: app UI good; Apple sign-in fails INSIDE Apple's sheet with "Sign-Up Not Completed" (screenshot) — before Firebase/our code runs, so NOT the null-email trap and NOT Firebase provider config.
+- Build 23 archive entitlement verified present (applesignin=Default). Firebase apple.com provider enabled (appleSignInConfig empty = fine for native flow).
+- Root-cause candidates from Apple dev forums (thread 122458): corrupt App ID capability config (confirmed fix: toggle capability off/on), Apple-side issues with new App IDs. Ours was API-created — prime suspect.
+- FIX APPLIED: deleted + re-created APPLE_ID_AUTH capability on NNL85B834X via ASC API (same settings: APPLE_ID_AUTH_APP_CONSENT/PRIMARY_APP_CONSENT). Server-side check, so no rebuild should be needed. AWAITING device retest; if still failing → Apple support ticket (server-side issue with new App IDs).
+- Family test plan written: docs/FAMILY_TEST_PLAN.md (8 phases, roster: Mahmud/Alima parents, Tazim/Ehsaan/Yamin/Amira kids) + shared artifact.
+- ASC API helper generalized: scratchpad asc.sh (GET/POST/DELETE with ES256 JWT, same key as deploy script).
