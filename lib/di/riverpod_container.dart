@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import '../core/environment_service.dart';
 
 // Domain repositories
@@ -13,6 +12,7 @@ import '../domain/repositories/task_completion_repository.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
+import '../data/services/photo_storage_service.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
@@ -86,6 +86,12 @@ CreateTaskUseCase createTaskUseCase(Ref ref) {
 ClaimTaskUseCase claimTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ClaimTaskUseCase(taskRepository);
+}
+
+@riverpod
+StartTaskUseCase startTaskUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return StartTaskUseCase(taskRepository);
 }
 
 @riverpod

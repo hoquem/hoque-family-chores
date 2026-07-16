@@ -146,6 +146,33 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> startTask(
+    FamilyId familyId,
+    TaskId taskId,
+    String beforePhotoUrl,
+  ) async {
+    try {
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'status': TaskStatus.inProgress.name,
+            'beforePhotoUrl': beforePhotoUrl,
+          });
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to start task: $e', code: 'TASK_START_ERROR');
+    }
+  }
+
+  @override
   Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
       final task = await getTask(familyId, taskId);

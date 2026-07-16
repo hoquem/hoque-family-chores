@@ -27,6 +27,16 @@ abstract class TaskRepository {
   /// Unassign a task
   Future<void> unassignTask(FamilyId familyId, TaskId taskId);
 
+  /// Start a task, recording the before photo captured at that moment.
+  ///
+  /// A targeted update: the whole-document write in [updateTask] would
+  /// clobber concurrent changes, and [Task.copyWith] cannot clear fields.
+  Future<void> startTask(
+    FamilyId familyId,
+    TaskId taskId,
+    String beforePhotoUrl,
+  );
+
   /// Complete a task
   Future<void> completeTask(FamilyId familyId, TaskId taskId);
 

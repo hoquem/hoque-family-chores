@@ -204,6 +204,24 @@ final claimTaskUseCaseProvider = AutoDisposeProvider<ClaimTaskUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClaimTaskUseCaseRef = AutoDisposeProviderRef<ClaimTaskUseCase>;
+String _$startTaskUseCaseHash() => r'3a6813af197da10a7ed9f8f2d995ed63c71b022b';
+
+/// See also [startTaskUseCase].
+@ProviderFor(startTaskUseCase)
+final startTaskUseCaseProvider = AutoDisposeProvider<StartTaskUseCase>.internal(
+  startTaskUseCase,
+  name: r'startTaskUseCaseProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$startTaskUseCaseHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StartTaskUseCaseRef = AutoDisposeProviderRef<StartTaskUseCase>;
 String _$completeTaskUseCaseHash() =>
     r'e4eff5ddb874b2c0c98e8f4d8a5c60cff9b77457';
 
