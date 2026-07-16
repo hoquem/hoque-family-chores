@@ -112,6 +112,10 @@ void main() {
       final t = _makeTask().copyWith(beforePhotoUrl: 'x');
       expect(t.copyWith(beforePhotoUrl: null).beforePhotoUrl, 'x');
     });
+
+    test('beforePhotoUrl participates in equality', () {
+      expect(_makeTask().copyWith(beforePhotoUrl: 'x'), isNot(equals(_makeTask())));
+    });
   });
 
   group('TaskDifficulty', () {

@@ -37,6 +37,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
     required UserId creatorId,
     User? assignedTo,
     DateTime? dueDate,
+    bool requiresPhotoProof = false,
   }) async {
     state = state.copyWith(isLoading: true, error: null, isSuccess: false);
 
@@ -64,6 +65,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
         createdById: creatorId,
         assignedToId: assignedTo?.id,
         tags: const [],
+        requiresPhotoProof: requiresPhotoProof,
       );
 
       result.fold(

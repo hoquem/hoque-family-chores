@@ -25,7 +25,9 @@ class CreateTaskUseCase {
   /// [createdById] - ID of the user creating the task
   /// [assignedToId] - ID of the user assigned to the task (optional)
   /// [tags] - List of tags for categorization
-  /// 
+  /// [requiresPhotoProof] - Whether the child must attach before/after photos
+  ///   (defaults to false, so existing callers are unaffected)
+  ///
   /// Returns [Task] on success or [Failure] on error
   Future<Either<Failure, Task>> call({
     required String title,
@@ -37,6 +39,7 @@ class CreateTaskUseCase {
     required UserId createdById,
     UserId? assignedToId,
     List<String> tags = const [],
+    bool requiresPhotoProof = false,
   }) async {
     try {
       // Validate input parameters
@@ -69,6 +72,7 @@ class CreateTaskUseCase {
         recurringPattern: null,
         lastCompletedAt: null,
         familyId: familyId,
+        requiresPhotoProof: requiresPhotoProof,
       );
 
       // Save task to repository

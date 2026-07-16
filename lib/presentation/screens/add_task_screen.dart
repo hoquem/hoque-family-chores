@@ -25,6 +25,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   DateTime? _dueDate;
   User? _selectedAssignee;
   TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
+  bool _requiresPhotoProof = false;
   final _logger = AppLogger();
 
   @override
@@ -83,6 +84,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
         creatorId: currentUser.id,
         assignedTo: _selectedAssignee,
         dueDate: _dueDate,
+        requiresPhotoProof: _requiresPhotoProof,
       );
 
       final creationState = ref.read(taskCreationNotifierProvider);
@@ -171,6 +173,21 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               key: const Key('task_difficulty_dropdown'),
               value: _selectedDifficulty,
               onChanged: (d) => setState(() => _selectedDifficulty = d),
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              key: const Key('photo_proof_switch'),
+              value: _requiresPhotoProof,
+              onChanged: (v) => setState(() => _requiresPhotoProof = v),
+              title: Text(
+                'Requires photo proof',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              subtitle: Text(
+                'Ask for a photo before starting and after finishing',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 16),
             // Family members dropdown
