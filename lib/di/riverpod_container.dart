@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import '../core/environment_service.dart';
 
 // Domain repositories
@@ -325,4 +326,14 @@ StreamNotificationsUseCase streamNotificationsUseCase(Ref ref) {
 ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
+}
+
+/// The photo upload/delete pipeline for task before/after photos.
+///
+/// A plain service, not a repository: it wraps Firebase Storage only and has
+/// no domain interface to satisfy. See
+/// ``lib/data/services/photo_storage_service.dart``.
+@riverpod
+PhotoStorageService photoStorageService(Ref ref) {
+  return PhotoStorageService();
 }
