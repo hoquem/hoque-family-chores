@@ -331,16 +331,44 @@ is opaque warm surfaces, never frosted blur.
 
 ### Buttons
 
+**State the colours in the theme.** Left to `ColorScheme.fromSeed`, M3 derives
+a light container with primary-coloured text from the light marigold seed —
+2.43:1 on the live "Create Task" button. Tokens being sound does not make
+buttons sound; `appLightTheme` now pins background and foreground on every
+button theme, and `token_contrast_test.dart` resolves the real `ButtonStyle`
+rather than raw token pairs.
+
+**The Fill Rule.** *Light fills take Ink; Deep fills take Cream.* There is no
+choosing. Measured:
+
+| Fill | Ink | Cream | Use |
+|---|---|---|---|
+| Marigold #E08A1E | **6.20:1** | 2.51:1 | Ink |
+| Star Gold #FFB300 | **9.28:1** | 1.68:1 | Ink |
+| Sprout #4CAF50 | **5.99:1** | 2.60:1 | Ink |
+| Sprout Deep #2E7D32 | 3.25:1 | **4.80:1** | Cream |
+| Brick #C6412A | 3.32:1 | **4.69:1** | Cream |
+| Brick Deep #9E3022 | 2.30:1 | **6.78:1** | Cream |
+| Carrot Deep #9E5600 | 3.00:1 | **5.20:1** | Cream |
+| **Marigold Deep #B86A12** | 4.05:1 | 3.85:1 | **not a fill — fails both** |
+
 - **Shape:** 16px corners (lg), min 48px height, 16px 24px padding.
 - **Primary (filled):** Marigold fill, **Ink** text (not white — marigold is
   light). For the one primary action per screen.
 - **Tonal:** Star-gold fill, Ink text. Secondary actions (e.g. "Join
   family").
-- **Outlined danger:** transparent, Brick text + Brick border. Reject /
-  cancel / delete.
+- **Outlined:** transparent, **Ink** label, Line border. Not the primary
+  colour: M3 defaults an outlined label to primary, and marigold on cream is
+  2.51:1.
+- **Outlined danger:** transparent, Brick text + Brick border (4.69:1 on
+  cream). Reject / cancel / delete.
 - **Text:** Ink-soft, no border. Tertiary (e.g. "Forgot Password?").
-- **Hover / Focus:** tonal shift to the deep variant (Toasted Marigold) +
-  a 2px marigold focus ring at 50% alpha. Press = Lifted shadow.
+- **Press:** M3's default overlay (10% of the foreground) darkens marigold to
+  ~#CD7F1D, where Ink still reads at 5.27:1. Plus the Lifted shadow.
+  An earlier revision said to shift to **Toasted Marigold** on hover/press —
+  don't. Marigold Deep is the one tone in the palette that fails with *both*
+  Ink and Cream, so it cannot carry a label at all. It is a pressed *accent*
+  and an icon tone, never a fill.
 - **States required:** default, hover, focus, active, disabled, loading.
   Loading = spinner in place of label, button dims to 60%.
 

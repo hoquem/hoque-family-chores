@@ -5,8 +5,8 @@
 // renders, so a token tweak that breaks legibility fails here rather than on a
 // kid's phone.
 import 'dart:math' as math;
-import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -101,6 +101,59 @@ void main() {
         expect(contrast(base, tint), lessThan(4.5),
             reason: '$label base tone unexpectedly passes; re-check DESIGN.md');
       });
+    });
+  });
+
+  group('buttons resolve to AA pairs', () {
+    // The token pairs above being sound does not make the buttons sound: what
+    // ships is whatever ColorScheme.fromSeed derives unless the theme states
+    // the colours. Marigold is a light seed, so M3 hands back a light
+    // container with coloured text — 2.43:1 on the live Create Task button.
+    // These resolve the real ButtonStyle, which is the only thing that catches
+    // it (see issue #132).
+    ButtonStyle styleOf(String name, ButtonStyle? s) {
+      expect(s, isNotNull, reason: '$name should be themed, not left to M3');
+      return s!;
+    }
+
+    void expectPair(String name, ButtonStyle style, Set<WidgetState> states) {
+      final bg = style.backgroundColor?.resolve(states);
+      final fg = style.foregroundColor?.resolve(states);
+      expect(bg, isNotNull, reason: '$name needs an explicit background');
+      expect(fg, isNotNull, reason: '$name needs an explicit foreground');
+      final r = contrast(fg!, bg!);
+      expect(r, greaterThanOrEqualTo(4.5),
+          reason: '$name is ${r.toStringAsFixed(2)}:1 for states $states');
+    }
+
+    test('ElevatedButton: default and pressed', () {
+      final s = styleOf('elevatedButton', appLightTheme.elevatedButtonTheme.style);
+      expectPair('elevatedButton', s, <WidgetState>{});
+      expectPair('elevatedButton', s, {WidgetState.pressed});
+    });
+
+    test('FilledButton: default and pressed', () {
+      final s = styleOf('filledButton', appLightTheme.filledButtonTheme.style);
+      expectPair('filledButton', s, <WidgetState>{});
+      expectPair('filledButton', s, {WidgetState.pressed});
+    });
+
+    test('OutlinedButton label reads on the page', () {
+      // Transparent fill, so the label is measured against the page.
+      final s = styleOf('outlinedButton', appLightTheme.outlinedButtonTheme.style);
+      final fg = s.foregroundColor?.resolve(<WidgetState>{});
+      expect(fg, isNotNull, reason: 'outlinedButton needs an explicit label colour');
+      final r = contrast(fg!, t.cream);
+      expect(r, greaterThanOrEqualTo(4.5),
+          reason: 'outlined label is ${r.toStringAsFixed(2)}:1 on cream; M3 '
+              'defaults it to primary (marigold), which is 2.51:1');
+    });
+
+    test('marigoldDeep is not usable as a button fill', () {
+      // 4.05:1 with Ink, 3.85:1 with Cream — it fails both ways, so DESIGN.md's
+      // "pressed = marigold-deep" cannot be right. Pinned so nobody adopts it.
+      expect(contrast(t.ink, t.marigoldDeep), lessThan(4.5));
+      expect(contrast(t.cream, t.marigoldDeep), lessThan(4.5));
     });
   });
 

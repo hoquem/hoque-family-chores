@@ -216,17 +216,43 @@ final ThemeData appLightTheme = ThemeData(
   textTheme: kFridgeDoorTextTheme,
   primaryColor: kLightTokens.marigold,
   scaffoldBackgroundColor: kLightTokens.cream,
-  // Touch-target floor (PRODUCT.md): M3 buttons default to ~40px tall, below
-  // the 44px minimum for kids with developing motor control. Lift every
-  // button to 48px. Widget-level styleFrom overrides still win where set.
+  // Buttons state their colours. Left to ColorScheme.fromSeed, M3 derives a
+  // light container with primary-coloured text from the light marigold seed —
+  // which measured 2.43:1 on the live "Create Task" button, against a 4.5:1
+  // floor. Tokens being sound does not make buttons sound; what M3 *derives*
+  // has to be stated. See DESIGN.md §5 and issue #132.
+  //
+  // Sizes are the touch-target floor (PRODUCT.md): M3 defaults to ~40px tall,
+  // under the 44px minimum for kids with developing motor control.
+  // Widget-level styleFrom overrides still win where set.
   filledButtonTheme: FilledButtonThemeData(
-    style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+    style: FilledButton.styleFrom(
+      minimumSize: const Size(48, 48),
+      backgroundColor: kLightTokens.marigold,
+      foregroundColor: kLightTokens.ink,
+      disabledBackgroundColor: kLightTokens.line,
+      disabledForegroundColor: kLightTokens.inkMuted,
+    ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(minimumSize: const Size(48, 48)),
+    style: ElevatedButton.styleFrom(
+      minimumSize: const Size(48, 48),
+      backgroundColor: kLightTokens.marigold,
+      foregroundColor: kLightTokens.ink,
+      disabledBackgroundColor: kLightTokens.line,
+      disabledForegroundColor: kLightTokens.inkMuted,
+    ),
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+    style: OutlinedButton.styleFrom(
+      minimumSize: const Size(48, 48),
+      // Ink, not primary. M3 defaults an outlined label to the primary colour,
+      // and marigold on cream is 2.51:1. Danger buttons override to brick
+      // (4.69:1) at the call site.
+      foregroundColor: kLightTokens.ink,
+      disabledForegroundColor: kLightTokens.inkMuted,
+      side: BorderSide(color: kLightTokens.line),
+    ),
   ),
   extensions: const <ThemeExtension<dynamic>>[kLightTokens],
 );

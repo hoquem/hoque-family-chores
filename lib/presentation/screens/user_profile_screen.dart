@@ -166,7 +166,8 @@ class UserProfileScreen extends ConsumerWidget {
               label: const Text('Logout'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.tokens.brickDeep,
-                foregroundColor: context.tokens.ink,
+                // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                foregroundColor: context.tokens.cream,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {

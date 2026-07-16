@@ -254,7 +254,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
               onPressed: () => Navigator.pop(context, controller.text),
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.tokens.brickDeep,
-                foregroundColor: context.tokens.ink,
+                // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                foregroundColor: context.tokens.cream,
               ),
               child: const Text('Reject'),
             ),
@@ -346,7 +347,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 label: const Text('Done'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
-                  foregroundColor: context.tokens.ink,
+                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                  foregroundColor: context.tokens.cream,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -374,7 +376,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 label: const Text('Approve'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
-                  foregroundColor: context.tokens.ink,
+                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                  foregroundColor: context.tokens.cream,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -412,7 +415,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             label: const Text('Resubmit'),
             style: ElevatedButton.styleFrom(
               backgroundColor: context.tokens.carrotDeep,
-              foregroundColor: context.tokens.ink,
+              // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+              foregroundColor: context.tokens.cream,
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
