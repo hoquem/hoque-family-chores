@@ -95,6 +95,23 @@ void main() {
       final b = _makeTask(dueDate: date);
       expect(a, equals(b));
     });
+
+    test('requiresPhotoProof defaults to false', () {
+      expect(_makeTask().requiresPhotoProof, false);
+    });
+
+    test('beforePhotoUrl round-trips through copyWith', () {
+      final task = _makeTask().copyWith(beforePhotoUrl: 'https://example.com/before.jpg');
+      expect(task.beforePhotoUrl, 'https://example.com/before.jpg');
+    });
+
+    test('copyWith cannot clear beforePhotoUrl — documents the ?? idiom', () {
+      // Task.copyWith uses `x ?? this.x` throughout, so passing null is a no-op.
+      // Clearing must go through a direct Firestore field update. A later task
+      // depends on knowing this; if this test ever fails, that task is now wrong.
+      final t = _makeTask().copyWith(beforePhotoUrl: 'x');
+      expect(t.copyWith(beforePhotoUrl: null).beforePhotoUrl, 'x');
+    });
   });
 
   group('TaskDifficulty', () {

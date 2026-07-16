@@ -395,7 +395,9 @@ class FirebaseTaskRepository implements TaskRepository {
               : null,
       familyId: familyId,
       // Photo proof and approval fields
+      requiresPhotoProof: data['requiresPhotoProof'] as bool? ?? false,
       photoUrl: data['photoUrl'] as String?,
+      beforePhotoUrl: data['beforePhotoUrl'] as String?,
       submittedAt: data['submittedAt'] is Timestamp
           ? (data['submittedAt'] as Timestamp).toDate()
           : data['submittedAt'] != null
@@ -436,7 +438,9 @@ class FirebaseTaskRepository implements TaskRepository {
       'recurringPattern': task.recurringPattern,
       'lastCompletedAt': task.lastCompletedAt,
       // Photo proof and approval fields
+      'requiresPhotoProof': task.requiresPhotoProof,
       'photoUrl': task.photoUrl,
+      'beforePhotoUrl': task.beforePhotoUrl,
       'submittedAt': task.submittedAt,
       'submittedBy': task.submittedBy?.value,
       'aiRating': task.aiRating != null

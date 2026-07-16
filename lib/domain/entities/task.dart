@@ -39,7 +39,9 @@ class Task extends Equatable {
   final FamilyId familyId;
   
   // Photo proof and approval fields (Issue #109, #110)
+  final bool requiresPhotoProof;
   final String? photoUrl;
+  final String? beforePhotoUrl;
   final DateTime? submittedAt;
   final UserId? submittedBy;
   final AIRating? aiRating;
@@ -65,7 +67,9 @@ class Task extends Equatable {
     this.recurringPattern,
     this.lastCompletedAt,
     required this.familyId,
+    this.requiresPhotoProof = false,
     this.photoUrl,
+    this.beforePhotoUrl,
     this.submittedAt,
     this.submittedBy,
     this.aiRating,
@@ -93,7 +97,9 @@ class Task extends Equatable {
     String? recurringPattern,
     DateTime? lastCompletedAt,
     FamilyId? familyId,
+    bool? requiresPhotoProof,
     String? photoUrl,
+    String? beforePhotoUrl,
     DateTime? submittedAt,
     UserId? submittedBy,
     AIRating? aiRating,
@@ -119,7 +125,9 @@ class Task extends Equatable {
       recurringPattern: recurringPattern ?? this.recurringPattern,
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
       familyId: familyId ?? this.familyId,
+      requiresPhotoProof: requiresPhotoProof ?? this.requiresPhotoProof,
       photoUrl: photoUrl ?? this.photoUrl,
+      beforePhotoUrl: beforePhotoUrl ?? this.beforePhotoUrl,
       submittedAt: submittedAt ?? this.submittedAt,
       submittedBy: submittedBy ?? this.submittedBy,
       aiRating: aiRating ?? this.aiRating,
@@ -192,7 +200,9 @@ class Task extends Equatable {
         recurringPattern,
         lastCompletedAt,
         familyId,
+        requiresPhotoProof,
         photoUrl,
+        beforePhotoUrl,
         submittedAt,
         submittedBy,
         aiRating,
