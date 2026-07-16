@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Task before/after photos.
+//
+// Nothing in this app uploaded a file before this feature, so these are the
+// project's first Storage rules. Without them every upload hits default-deny
+// AT RUNTIME while the test suite stays green, because the tests mock the
+// upload — see docs/superpowers/specs/2026-07-16-before-after-photos-design.md.
+//
+// Photos are of children, in their homes. Read access is family-only, and only
+// the child a task is assigned to may attach or remove its photos.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Storage rules can read Firestore (cross-service rules). This costs one
+    // document read per request — the price of scoping by family without
+    // putting familyId in a custom claim. Mirrors isFamilyMember() in
+    // firestore.rules, which keys on the same memberIds array.
+    function isFamilyMember(familyId) {
+      return isSignedIn()
+        && request.auth.uid in
+             firestore.get(/databases/(default)/documents/families/$(familyId)).data.memberIds;
+    }
+
+    // Tasks are a subcollection: families/{familyId}/tasks/{taskId}.
+    // assignedToId is stored as a plain string (UserId.value), not a map.
+    function isAssignee(familyId, taskId) {
+      return isSignedIn()
+        && firestore.get(/databases/(default)/documents/families/$(familyId)/tasks/$(taskId))
+             .data.assignedToId == request.auth.uid;
+    }
+
+    function isAPhotoUnder(maxMb) {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < maxMb * 1024 * 1024;
+    }
+
+    // families/{familyId}/tasks/{taskId}/{before|after}-{timestamp}.jpg
+    // The shape is pinned by PhotoStorageService.pathFor and its test; if the
+    // two drift, uploads are denied at runtime and no test notices.
+    match /families/{familyId}/tasks/{taskId}/{photo} {
+
+      // Any family member may look: the parent has to see the pair to approve
+      // it, and siblings see the task list.
+      allow read: if isFamilyMember(familyId);
+
+      // Only the assignee attaches photos, and only to their own task. The 5MB
+      // cap is a backstop — PhotoStorageService already compresses to under
+      // 1MB and refuses rather than upload something bigger.
+      allow create, update: if isAssignee(familyId, taskId) && isAPhotoUnder(5);
+
+      // "Can't do it" hands a task back and must take the before photo with
+      // it, or the next child inherits a stranger's mess.
+      allow delete: if isAssignee(familyId, taskId);
+    }
+
+    // Everything else is denied. No implicit buckets, no stray paths.
+    match /{allOther=**} {
+      allow read, write: if false;
+    }
+  }
+}
