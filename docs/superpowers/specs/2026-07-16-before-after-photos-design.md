@@ -126,6 +126,13 @@ Making the before a precondition of Start is what removes the dead end: a kid
 can never be mid-chore and unable to finish, because they could not have
 started without it.
 
+**If the upload succeeds and the Firestore write then fails** (flaky kitchen
+wifi is the normal case here), the blob is orphaned. Fail loudly: surface the
+error, leave the status unchanged, and let the kid retry. Do not swallow it and
+do not leave the task half-started. A retry re-uploads and orphans one more
+blob; that is the honest trade until a retention policy exists, and it is
+preferable to a task stuck in a state the kid cannot explain.
+
 Five things the current code will fight, all easy to miss:
 
 - **`Task.copyWith` cannot clear a field to null.** It uses the
@@ -197,8 +204,12 @@ about, one layer down. The work is:
 - write `storage.rules`: a member of `{familyId}` may read; the assignee may
   write and delete under their own task; size and content-type capped
 - add the `storage` block to `firebase.json`
-- deploy the rules, and verify against the emulator (`firebase.json` already
-  has an `emulators` block)
+- add a **`storage` emulator** to `firebase.json`. The `emulators` block today
+  contains only `dataconnect` — there is no storage or firestore emulator, and
+  the emulator has never been used for rules testing. Do not assume this step
+  is free; it is the only thing standing between this feature and exactly the
+  runtime-only failure described above.
+- deploy the rules
 
 **Deletion is real work too.** "Can't do it" clears the before, and no delete
 API exists anywhere in the codebase — hence `delete` on the service, and a rule
@@ -206,12 +217,14 @@ that permits it.
 
 ## Platform permissions
 
-`image_picker` with `ImageSource.camera` needs both, and neither is declared:
-
-- **iOS:** `NSCameraUsageDescription` in `ios/Runner/Info.plist`. Absent today,
-  so the camera crashes on first use. Copy must be parent-legible: it appears in
-  a system prompt on a child's phone.
-- **Android:** camera permission in the manifest.
+- **iOS:** `NSCameraUsageDescription` must be added to `ios/Runner/Info.plist`.
+  It is absent — the plist has no usage-description key at all — so the camera
+  crashes on first use. The copy must be parent-legible: it appears in a system
+  prompt on a child's phone.
+- **Android: add nothing.** `image_picker` delegates to the camera app via an
+  intent and needs no `CAMERA` manifest permission. Declaring one would be
+  actively harmful: it imposes a runtime-grant flow the app otherwise avoids
+  entirely.
 
 ## UI
 
@@ -229,15 +242,34 @@ that permits it.
   Approve/Reject buttons stay where they are — a parent should not approve a
   photo they have not opened.
 
+  **Use `CachedNetworkImage`, with explicit placeholder and error states.** It
+  is already a dependency (`^3.3.1`) and used nowhere; the app's only
+  `Image.network` (`user_profile_screen.dart:90`) is uncached and is a known P2
+  (#133). A photo that silently fails to load, on the screen where a parent
+  decides whether a child did their chore, is the worst place in the app for an
+  ambiguous blank.
+
 ## Testing
 
 - Widget tests at **320pt**: the before/after pair is a lot of image in a
   narrow column. Non-negotiable — the suite only recently started rendering at
   phone width.
-- `image_picker` mocked at its boundary; upload mocked at
-  `PhotoStorageService`. **Mocking the upload is exactly why storage rules
-  can be missing and every test still pass** — the rules need emulator
-  verification, not a unit test.
+- Three boundaries need mocking, not two:
+  - `image_picker`, at its platform-channel boundary.
+  - Upload, at `PhotoStorageService`. **Mocking the upload is exactly why
+    storage rules can be missing and every test still pass** — the rules need
+    emulator verification, not a unit test.
+  - **Image *display*** — the same reasoning applied to the read side, and the
+    harder half. Flutter's test `HttpClient` returns 400 for every request, so a
+    remote image throws under test. There is no `HttpOverrides` harness in
+    `test/`, no image-mocking package in `dev_dependencies`, and no injectable
+    `ImageProvider` seam: **no remote image has ever rendered in this suite**.
+    Every fixture sets `photoUrl: null`, which is why nobody has hit it. The
+    320pt tests above put two remote images at the centre of the screen, so this
+    must be solved before those tests can exist. Budget it as its own task — add
+    `mocktail_image_network` (or an equivalent `HttpOverrides` harness) to
+    `dev_dependencies`. This is a known-hard Flutter problem, not "one more
+    mock".
 - **The existing BDD task-management flows must pass untouched.** The flag is
   off by default, so any change there means this leaked into the default path.
 - Round-trip test: flag on → start → complete → both URLs present on the
