@@ -1,11 +1,11 @@
 {
-    "name": "hoque_family_chores",
-    "short_name": "hoque_family_chores",
+    "name": "Home Chores Star",
+    "short_name": "Chores Star",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FBF7F0",
+    "theme_color": "#E08A1E",
+    "description": "Make family chores trackable and fun: missions, streaks and stars for kids, a clear approval queue for parents.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

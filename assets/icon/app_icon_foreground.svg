@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Android adaptive foreground: transparent; background is a separate layer
+       (app_icon_background.svg) that the launcher parallaxes independently.
+       flutter_launcher_icons already wraps this drawable in a 16% inset, so
+       this scale is tuned to sit ON TOP of that, not to duplicate it. Content
+       bbox 644x576 centred on (512,520); at 1.05 its diagonal lands ~90% of
+       the circular mask, filling the tile without clipping the eaves. -->
+  <g transform="translate(512,512) scale(1.05) translate(-512,-520)">
+    <path d="M 512,232 L 834,492 L 834,808 L 190,808 L 190,492 Z"
+          fill="#FBF7F0" stroke="#241D14" stroke-width="34" stroke-linejoin="round"/>
+    <path d="M 512,378 Q 546,508 674,542 Q 546,576 512,706 Q 478,576 350,542 Q 478,508 512,378 Z"
+          fill="#FFB300" stroke="#241D14" stroke-width="26" stroke-linejoin="round"/>
+  </g>
+</svg>
