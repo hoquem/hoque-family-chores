@@ -418,15 +418,24 @@ This is the fridge door's main column — it must parse in one glance for a
 
 **Flutter implementation notes.** Depth = `BoxShadow` on a `BoxDecoration`
 (Ambient/Lifted) or Material tonal `elevation`; **never `BackdropFilter`**
-for depth (the No-Glass Rule). Motion uses `Curves.easeOutQuart` /
-`Curves.easeOutExpo`, 150–250ms, gated by `MediaQuery.accessibleNavigation`
-so the OS reduced-motion setting disables celebration. The current
-`Curves.elasticOut` (CelebrationCard) and `AnimationController..repeat()`
-pulse (PendingApprovalBadge) are both prohibited. Color tokens become a
-`ThemeExtension<CustomColors>` (the existing `success`/`starGold` scaffold,
-extended with `marigold`, `ink`, `cream`, `line`, and the status set) read
-via `Theme.of(context).extension<CustomColors>()!`; `ColorScheme.fromSeed` is
-reseeded to marigold.
+for depth (the No-Glass Rule).
+
+Motion lives in `lib/presentation/theme/motion.dart`: `kMotionCurve`
+(`Curves.easeOutQuart`) and `kMotionDuration` (220ms), gated by
+`context.prefersReducedMotion`. Use the gate, don't re-derive it.
+
+An earlier revision of this note said to gate on
+`MediaQuery.accessibleNavigation` "so the OS reduced-motion setting disables
+celebration" — that is the wrong flag, and it is why nothing was gated for so
+long. `accessibleNavigation` means a screen reader is active;
+**`disableAnimations`** is the reduce-motion setting. `prefersReducedMotion`
+honours both, because movement under a screen reader is noise too.
+
+Colour tokens are a `ThemeExtension<CustomColors>` read via `context.tokens`;
+`ColorScheme.fromSeed` is reseeded to marigold. The type scale is
+`kFridgeDoorTextTheme`, stated explicitly rather than inherited — Material 3's
+geometry supplies `bodySmall` at 12px and `labelSmall` at 11px, and a floor the
+theme itself undercuts is not a floor.
 
 ## 6. Do's and Don'ts
 

@@ -450,7 +450,13 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 2.0,
-      child: InkWell(
+      // The whole card is the tap target for opening the task. Without a label
+      // a screen reader reads the contents and leaves the user to infer that
+      // the pile of text is also a button.
+      child: Semantics(
+        button: true,
+        label: 'Open task ${widget.task.title}, ${_getStatusText()}',
+        child: InkWell(
         borderRadius: BorderRadius.circular(12.0),
         onTap: () {
           Navigator.push(
@@ -524,10 +530,12 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                         const SizedBox(height: 4.0),
                         Text(
                           widget.task.description,
-                          style: TextStyle(
-                            fontSize: 12.0,
-                            color: context.tokens.inkSoft,
-                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium!
+                              .copyWith(color: context.tokens.inkSoft),
                         ),
                       ],
                     ],
@@ -543,12 +551,16 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
               const SizedBox(height: 8.0),
               Text(
                 _errorMessage ?? 'An error occurred',
-                style: TextStyle(color: context.tokens.brick, fontSize: 12.0),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium!
+                    .copyWith(color: context.tokens.brickDeep),
               ),
             ],
           ],
         ),
         ),
+      ),
       ),
     );
   }

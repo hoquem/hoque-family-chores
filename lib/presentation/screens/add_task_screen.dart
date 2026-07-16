@@ -255,7 +255,15 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            InkWell(
+            // An InkWell wrapping a field reads as text, not as something you
+            // can act on; say that it opens a picker.
+            Semantics(
+              button: true,
+              label: _dueDate == null
+                  ? 'Due date, none set'
+                  : 'Due date, ${DateFormat('MMMM d, yyyy').format(_dueDate!)}',
+              hint: 'Opens a date picker',
+              child: InkWell(
               onTap: () => _selectDate(context),
               child: InputDecorator(
                 decoration: InputDecoration(
@@ -275,6 +283,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       ? DateFormat('MMM d, y').format(_dueDate!)
                       : 'Select a date',
                 ),
+              ),
               ),
             ),
             const SizedBox(height: 24),

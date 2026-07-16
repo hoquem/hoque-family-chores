@@ -157,6 +157,47 @@ const CustomColors kLightTokens = CustomColors(
   line: Color(0xFFE8E0D2),
 );
 
+/// The "Fridge Door" type scale (DESIGN.md §3), stated explicitly.
+///
+/// Without this the app inherits Material 3's geometry, which hands out
+/// ``bodySmall`` at 12px and ``labelSmall`` at 11px — below the 14px Floor
+/// Rule. A floor that the theme itself undercuts is not a floor, so every
+/// slot is pinned at 14px or above: reaching for any named style now yields
+/// something a six-year-old can read.
+///
+/// Sizes skew larger than a typical product app on purpose (body is 16px, not
+/// 14px) for emerging readers. ``test/presentation/theme/type_scale_test.dart``
+/// asserts the floor and the scale.
+const TextTheme kFridgeDoorTextTheme = TextTheme(
+  // Display — the greeting, celebration titles. One per screen at most.
+  displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, height: 1.15),
+  displayMedium: TextStyle(fontSize: 36, fontWeight: FontWeight.w700, height: 1.15),
+  displaySmall: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, height: 1.2),
+
+  // Headline — screen titles, family name, the splash wordmark.
+  headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25),
+  headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, height: 1.25),
+  headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3),
+
+  // Title — card titles, section headers.
+  titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, height: 1.3),
+  titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.3),
+  titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.3),
+
+  // Body — 16px default; 14px for secondary. Never below.
+  bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.45),
+  bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, height: 1.4),
+  bodySmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, height: 1.4),
+
+  // Label — the Bold-Label Rule: 600, never 400, slightly tracked.
+  labelLarge: TextStyle(
+      fontSize: 14, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: 0.28),
+  labelMedium: TextStyle(
+      fontSize: 14, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: 0.28),
+  labelSmall: TextStyle(
+      fontSize: 14, fontWeight: FontWeight.w600, height: 1.2, letterSpacing: 0.28),
+);
+
 /// The app's light [ThemeData], seeding the "Fridge Door" [ColorScheme] and
 /// registering [kLightTokens] so ``context.tokens`` resolves everywhere.
 ///
@@ -172,6 +213,7 @@ final ThemeData appLightTheme = ThemeData(
     surface: kLightTokens.surface,
   ),
   useMaterial3: true,
+  textTheme: kFridgeDoorTextTheme,
   primaryColor: kLightTokens.marigold,
   scaffoldBackgroundColor: kLightTokens.cream,
   // Touch-target floor (PRODUCT.md): M3 buttons default to ~40px tall, below

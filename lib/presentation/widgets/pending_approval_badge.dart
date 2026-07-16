@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/value_objects/family_id.dart';
 import '../providers/riverpod/pending_approvals_notifier.dart';
 import '../theme/app_tokens.dart';
+import '../theme/motion.dart';
 
 /// Badge showing count of pending approvals
 class PendingApprovalBadge extends ConsumerWidget {
@@ -26,7 +27,10 @@ class PendingApprovalBadge extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return animate
+        // This badge pulses forever, so it is the most intrusive motion in the
+        // app for anyone who has asked their phone to stop moving things. The
+        // count is the information; the pulse is only emphasis.
+        return animate && !context.prefersReducedMotion
             ? _PulsatingBadge(count: count)
             : _StaticBadge(count: count);
       },
@@ -43,24 +47,30 @@ class _StaticBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: context.tokens.amberWarn,
-        shape: BoxShape.circle,
-      ),
-      constraints: const BoxConstraints(
-        minWidth: 24,
-        minHeight: 24,
-      ),
-      child: Text(
-        count > 9 ? '9+' : count.toString(),
-        style: TextStyle(
-          color: context.tokens.ink,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+    final shown = count > 9 ? '9+' : count.toString();
+    return Semantics(
+      // "3" on its own tells a screen-reader user nothing. The digits are a
+      // glyph; the meaning has to be said out loud.
+      label: '$count ${count == 1 ? 'task' : 'tasks'} waiting for approval',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: context.tokens.amberWarn,
+          shape: BoxShape.circle,
         ),
-        textAlign: TextAlign.center,
+        // 28, not 24: the count is 14px now (the floor), and the circle has to
+        // hold "9+" without clipping it.
+        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+        child: Text(
+          shown,
+          style: TextStyle(
+            color: context.tokens.ink,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
