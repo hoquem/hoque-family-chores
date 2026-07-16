@@ -7,9 +7,13 @@ colors:
   star-gold: "#FFB300"
   coral: "#FF6B5C"
   sprout: "#4CAF50"
+  sprout-deep: "#2E7D32"
   amber-warn: "#F59E0B"
+  amber-warn-deep: "#935F06"
   carrot: "#FB8C00"
+  carrot-deep: "#9E5600"
   brick: "#C6412A"
+  brick-deep: "#9E3022"
   cream-bg: "#FBF7F0"
   surface: "#FCF9F4"
   ink: "#241D14"
@@ -90,10 +94,12 @@ components:
     rounded: "{rounded.lg}"
     padding: "{spacing.lg}"
   status-pill:
-    backgroundColor: "rgba(224,138,30,0.12)"
-    textColor: "{colors.marigold-deep}"
+    backgroundColor: "12% tint of the status color"
+    textColor: "{colors.ink}"
+    iconColor: "the status color's -deep variant"
     rounded: "{rounded.pill}"
-    padding: "6px 12px"
+    padding: "4px 10px"
+    typography: "{typography.label}"
   input:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -210,21 +216,29 @@ concrete, and it closes the 5-state mapping the current code fudges.
 
 ### Contrast Pairs (normative)
 
-Approximate ratios; the **prohibited** pairings are the ones the current code
-gets wrong (white text on amber/marigold FAB and tonal buttons).
+Computed from the token hexes, not estimated. An earlier revision of this
+table was eyeballed and three rows were wrong — one of them inverted a
+pass/fail and shipped a failing pairing as "AA". These are asserted by
+``test/presentation/theme/token_contrast_test.dart``; change a token and the
+test tells you what it costs.
 
 | Foreground | Background | Ratio | Use |
 |---|---|---|---|
-| Ink #241D14 | Cream #FBF7F0 | ~12.8:1 | body text (AAA) |
-| Ink-Soft #5C5346 | Cream #FBF7F0 | ~6.5:1 | secondary text (AA) |
-| Ink #241D14 | Marigold #E08A1E | ~7.5:1 | primary button text (AAA) |
-| Cream #FBF7F0 | Toasted Marigold #B86A12 | ~4.6:1 | white-text variant (AA) |
-| Ink #241D14 | Star Gold #FFB300 | ~9:1 | tonal button / FAB icon (AAA) |
-| Ink-Muted #8A8067 | Cream #FBF7F0 | ~3.3:1 | large text / hints only — never body |
+| Ink #241D14 | Cream #FBF7F0 | 15.60:1 | body text (AAA) |
+| Ink-Soft #5C5346 | Cream #FBF7F0 | 7.07:1 | secondary text (AA) |
+| Ink #241D14 | Marigold #E08A1E | 6.20:1 | primary button text (AA) |
+| Ink #241D14 | Star Gold #FFB300 | 9.28:1 | tonal button / FAB icon (AAA) |
+| Ink-Muted #8A8067 | Cream #FBF7F0 | 3.67:1 | large text / hints only — never body |
+| Ink #241D14 | any 12% status tint | 13.2–14.3:1 | status pill label |
+| status -deep | its own 12% tint | 4.3–5.7:1 | status pill icon (needs 3:1) |
 
-**Prohibited:** white on Marigold (~2.1:1) and white on Star Gold (~2:1). The
-current amber FAB / green+white buttons fail; the `colorize` pass must switch
-them to Ink text.
+**Prohibited:** white on Marigold (2.68:1) and white on Star Gold (1.79:1) —
+both far under 4.5:1. Use Ink on every light brand surface.
+
+**Also prohibited:** Cream on Toasted Marigold. A previous revision listed this
+at "~4.6:1 (AA)" as the white-text variant; it is actually **3.85:1 and fails**
+for body text. There is no white-text variant in this palette — marigold-deep
+is a background for Ink text and a tone for icons, not a way to get white text.
 
 ### Dark Theme (planned; not yet in code)
 
@@ -246,6 +260,12 @@ coral celebration plus a coral button has failed.
 **The Status-Never-Alone Rule.** No status is conveyed by color alone. Every
 status pill carries an icon and a word (e.g. ⏳ "Waiting", ✓ "Done"). This is
 young-reader legibility made structural; it is not optional.
+
+**The Ink-Label Rule.** Status text is Ink, never the status color. A
+full-saturation hue on a 12% tint of itself tops out at 3.97:1 and bottoms out
+at 1.84:1, so a pill that "looks like its status" is the least readable text in
+the app — for the readers least able to cope with it. The hue lives in the tint
+and the icon; the word is Ink. See §2 Contrast Pairs.
 
 ## 3. Typography
 
@@ -326,11 +346,27 @@ is opaque warm surfaces, never frosted blur.
 
 ### Chips / Status Pills
 
+Implemented once, in ``lib/presentation/widgets/status_pill.dart``. Build the
+pill by using that widget, not by re-deriving the mapping at the call site —
+three call sites each rolled their own and all three drifted.
+
 - **Style:** full pill (999px), alpha-12% tint of the status color as
-  background, full-saturation status color as text and a leading icon and a
-  word. Never a bare colored dot.
+  background, an **Ink** label at 14px/600, and a leading icon in the status
+  color's **-deep** variant. Never a bare colored dot.
+- **Why the label is Ink, not the status color.** A full-saturation status
+  color on a 12% tint of itself cannot reach AA: amber lands at 1.84:1,
+  carrot 2.01:1, sprout 2.33:1, and even brick only 3.97:1, against a 4.5:1
+  floor. Ink on the same tint is 13–14:1. Identity still comes from the icon
+  and the word; the hue conveys aliveness through the tint and the icon, which
+  is all the Status-Never-Alone Rule asks of it.
+- **Why the icon is the -deep variant.** As a meaningful graphic it owes 3:1
+  (WCAG 1.4.11); the base tones give 1.84–2.33:1 on their own tint. The deep
+  siblings clear it at 4.3–5.7:1.
 - **State:** per task status (Sprout/Amber/Carrot/Brick); each pill ships
   with its icon + label by default.
+- ``test/presentation/theme/token_contrast_test.dart`` asserts all of the
+  above against the real token values, including that the base tones still
+  fail — so "just use the status color" cannot quietly come back.
 
 ### Cards / Containers
 

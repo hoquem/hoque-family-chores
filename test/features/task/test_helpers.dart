@@ -79,8 +79,10 @@ ProviderContainer _container(WidgetTester tester) {
 /// Pumps the TaskListScreen with mock provider overrides and sets the
 /// auth state to an authenticated parent user.
 Future<void> pumpTestApp(WidgetTester tester, {User? user}) async {
-  // Use a wide viewport to avoid layout overflow in long dropdown labels.
-  tester.view.physicalSize = const Size(1200, 900);
+  // A real phone, not a desktop canvas. The suite used to pump 1200x900
+  // "to avoid layout overflow in long dropdown labels", which meant no test
+  // ever saw a width any user has. See add_task_effort_fits_test.dart.
+  tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
     tester.view.resetPhysicalSize();

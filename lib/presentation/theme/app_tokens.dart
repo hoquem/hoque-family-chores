@@ -2,10 +2,20 @@ import 'package:flutter/material.dart';
 
 /// Brand + neutral + status tokens for the "Fridge Door" palette.
 ///
-/// See ``DESIGN.md``. Status colors are always paired with an icon and a
-/// label (the Status-Never-Alone Rule); the ``*Deep`` variants are AA-safe
-/// button and snackbar backgrounds, paired with dark ``onPrimary`` text
-/// inherited from the marigold-seeded [ColorScheme] (never white-on-light).
+/// See ``DESIGN.md``. Status colors are always paired with an icon and a label
+/// (the Status-Never-Alone Rule).
+///
+/// The ``*Deep`` variants do two jobs: they are snackbar/button backgrounds
+/// that clear AA against the light text M3 puts on them (sprout 5.13:1,
+/// carrot 5.55:1, brick 7.24:1, amberWarn 5.41:1), and they are the icon tone
+/// on a 12% tint of their base, where the base itself only manages 1.8–2.3:1.
+///
+/// [marigoldDeep] is the exception and is **not** a light-text background:
+/// 4.11:1 with white, 3.85:1 with cream. It is a pressed state for the
+/// marigold primary, which carries Ink text. There is no white-text variant in
+/// this palette.
+///
+/// ``test/presentation/theme/token_contrast_test.dart`` holds these to account.
 class CustomColors extends ThemeExtension<CustomColors> {
   // Brand
   final Color marigold;
@@ -17,6 +27,7 @@ class CustomColors extends ThemeExtension<CustomColors> {
   final Color sprout;
   final Color sproutDeep;
   final Color amberWarn;
+  final Color amberWarnDeep;
   final Color carrot;
   final Color carrotDeep;
   final Color brick;
@@ -38,6 +49,7 @@ class CustomColors extends ThemeExtension<CustomColors> {
     required this.sprout,
     required this.sproutDeep,
     required this.amberWarn,
+    required this.amberWarnDeep,
     required this.carrot,
     required this.carrotDeep,
     required this.brick,
@@ -59,6 +71,7 @@ class CustomColors extends ThemeExtension<CustomColors> {
     Color? sprout,
     Color? sproutDeep,
     Color? amberWarn,
+    Color? amberWarnDeep,
     Color? carrot,
     Color? carrotDeep,
     Color? brick,
@@ -78,6 +91,7 @@ class CustomColors extends ThemeExtension<CustomColors> {
       sprout: sprout ?? this.sprout,
       sproutDeep: sproutDeep ?? this.sproutDeep,
       amberWarn: amberWarn ?? this.amberWarn,
+      amberWarnDeep: amberWarnDeep ?? this.amberWarnDeep,
       carrot: carrot ?? this.carrot,
       carrotDeep: carrotDeep ?? this.carrotDeep,
       brick: brick ?? this.brick,
@@ -104,6 +118,7 @@ class CustomColors extends ThemeExtension<CustomColors> {
       sprout: Color.lerp(sprout, other.sprout, t)!,
       sproutDeep: Color.lerp(sproutDeep, other.sproutDeep, t)!,
       amberWarn: Color.lerp(amberWarn, other.amberWarn, t)!,
+      amberWarnDeep: Color.lerp(amberWarnDeep, other.amberWarnDeep, t)!,
       carrot: Color.lerp(carrot, other.carrot, t)!,
       carrotDeep: Color.lerp(carrotDeep, other.carrotDeep, t)!,
       brick: Color.lerp(brick, other.brick, t)!,
@@ -129,6 +144,7 @@ const CustomColors kLightTokens = CustomColors(
   sprout: Color(0xFF4CAF50),
   sproutDeep: Color(0xFF2E7D32),
   amberWarn: Color(0xFFF59E0B),
+  amberWarnDeep: Color(0xFF935F06),
   carrot: Color(0xFFFB8C00),
   carrotDeep: Color(0xFF9E5600),
   brick: Color(0xFFC6412A),

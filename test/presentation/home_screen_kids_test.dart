@@ -99,7 +99,10 @@ Future<ProviderContainer> _pumpHome(
   MockTaskRepository? taskRepository,
   Widget home = const HomeScreen(),
 }) async {
-  tester.view.physicalSize = const Size(1200, 2000);
+  // Phone width, generous height: the kids' home hub is a long scroll and the
+  // tests assert on cards below the fold, but the width must be one a child
+  // actually holds.
+  tester.view.physicalSize = const Size(390, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
     tester.view.resetPhysicalSize();

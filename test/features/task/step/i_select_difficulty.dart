@@ -1,26 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Difficulty label prefixes used in the AddTaskScreen dropdown.
+/// The short label each difficulty is offered under in the effort selector.
 const _difficultyLabels = {
-  'easy': 'Small (S)',
-  'medium': 'Medium (M)',
-  'hard': 'Large (L)',
-  'challenging': 'Extra Large (XL)',
+  'easy': 'S',
+  'medium': 'M',
+  'hard': 'L',
+  'challenging': 'XL',
 };
 
 /// Usage: I select difficulty {difficulty}
+///
+/// Effort size is a four-way segmented control, not a dropdown: one tap on the
+/// chip, no menu to open. It was a dropdown whose labels truncated on every
+/// phone; see ``test/presentation/add_task_effort_fits_test.dart``.
 Future<void> iSelectDifficulty(WidgetTester tester, String difficulty) async {
-  final dropdown = find.byKey(const Key('task_difficulty_dropdown'));
-  expect(dropdown, findsOneWidget);
-  await tester.tap(dropdown);
-  await tester.pumpAndSettle();
+  final field = find.byKey(const Key('task_difficulty_dropdown'));
+  expect(field, findsOneWidget, reason: 'effort size selector should be shown');
 
-  // The dropdown items show full descriptions like
-  // "Small (S) - Quick tasks, 5-15 minutes (10 ⭐)".
-  // Match by the prefix label.
-  final prefix = _difficultyLabels[difficulty] ?? difficulty;
-  final option = find.textContaining(prefix).last;
-  await tester.tap(option);
+  final label = _difficultyLabels[difficulty] ?? difficulty;
+  final chip = find.descendant(of: field, matching: find.text(label));
+  expect(chip, findsOneWidget, reason: 'no "$label" effort chip found');
+
+  await tester.tap(chip);
   await tester.pumpAndSettle();
 }
