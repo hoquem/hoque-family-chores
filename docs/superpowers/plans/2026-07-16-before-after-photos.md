@@ -19,7 +19,8 @@ Four facts about this codebase that will cost you an hour each if you learn them
 1. **`Task.copyWith` cannot set a field to `null`.** Every line is `x ?? this.x` (`lib/domain/entities/task.dart:118-126`). `copyWith(beforePhotoUrl: null)` is a **silent no-op**. To clear a field, write Firestore directly, as `unassignTask` does.
 2. **`completeTask(familyId, taskId)` takes no photo argument.** It does a targeted status + `completedAt` update. `photoUrl` reaches Firestore only through the whole-document `toFirestore` in `createTask`/`updateTask`.
 3. **`TaskStatus` is exhaustively switched in 7 places.** Dart's exhaustiveness checking will find them all when you add a value — let the compiler drive Task 1.
-4. **No remote image has ever rendered in this test suite.** Flutter's test `HttpClient` returns 400 for everything. Task 11 exists solely to fix this, and Task 13 cannot be written before it.
+4. **No remote image has ever rendered in this test suite.** Flutter's test `HttpClient` returns 400 for everything. Task 11 exists solely to fix this, and **Task 12** cannot be written before it.
+5. **There is already a "Done" button in the `assigned` arm** (`task_list_tile.dart:343`) and `CompleteTaskUseCase` already permits `assigned`. Adding Start is not enough — **both paths must be closed for proof tasks, or a kid taps Done and skips the before entirely** while every test stays green. Tasks 7 and 8 do this; do not treat them as additive.
 
 ## File structure
 
@@ -92,10 +93,14 @@ Expected: compile error — `inProgress` isn't a `TaskStatus` value.
 
 Run: `flutter analyze`
 It will list each non-exhaustive switch. Fix each, per DESIGN.md's status table:
-- `status_pill.dart` — tone `t.carrot`, iconTone `t.carrotDeep`, icon `Icons.play_circle`
+- `status_pill.dart` — tone `t.carrot`, iconTone `t.carrotDeep`, icon `Icons.play_circle`.
+  This is **identical to the `assigned` arm** (lines 35, 44, 52), so the two pills differ
+  only by their caller-supplied label. That is deliberate: DESIGN.md groups them as one
+  row, "Assigned / in-progress". The word carries the distinction, which is what the
+  Status-Never-Alone Rule asks of it. Do not invent a new hue.
 - `task_details_screen.dart:29` `_statusLabel` — `'In progress'`
 - `home_stats.dart:49` — treat as active work, same arm as `assigned`
-- `task_list_tile.dart:326` (`_buildActionButtons`) — `return null` for now; Task 7 fills it
+- `task_list_tile.dart:326` (`_buildActionButtons`) — `return null` for now. **Task 9 fills this arm** (Done + "Can't do it"); Task 7 changes the *`assigned`* arm. Do not conflate them: leaving this arm empty is what traps a kid in `inProgress`.
 - `task_list_tile.dart:435` (`_getStatusText`) — `'In progress'`
 
 - [ ] **Step 5: Verify**
@@ -125,12 +130,19 @@ Nothing reaches it yet."
 
 - [ ] **Step 1: Write the failing test**
 
+`Task`'s constructor has 9 required parameters and **there is no shared fixture** —
+`test/features/task/test_helpers.dart` has none. Add a local private factory in
+this file, copying the shape of `_task({...})` in
+`test/domain/services/home_stats_test.dart:16` (`TestData.testTask` in
+`test/widget_test.dart:37` is the other precedent).
+
 ```dart
 // test/domain/entities/task_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
-// Reuse whatever Task factory the existing tests use; see
-// test/features/task/test_helpers.dart for the fixture pattern.
+
+// Local factory — see home_stats_test.dart:16 for the pattern to copy.
+Task makeTask({bool requiresPhotoProof = false}) => Task(/* ...9 required args... */);
 
 void main() {
   test('requiresPhotoProof defaults to false so existing tasks are unchanged', () {
@@ -213,6 +225,12 @@ task is unaffected. photoUrl (existing, already persisted) stays the after."
 flutter pub add image_picker
 ```
 
+Then check it did not compound #129: the Android release build is **already
+broken** for an unrelated dependency (`flutter_local_notifications`). Run
+`flutter build appbundle --release` and confirm the failure is still only #129's
+`bigLargeIcon` error and nothing from `image_picker`. It is expected to fail —
+you are checking *how*.
+
 Android needs **nothing**: `image_picker` uses an intent. Do **not** add a `CAMERA` permission — it would impose a runtime-grant flow the app otherwise avoids.
 
 - [ ] **Step 2: Add the iOS usage string**
@@ -279,15 +297,21 @@ The path is family-scoped **on purpose** — the old `quest_photos/{taskId}/` ca
 
 ---
 
-### Task 7: The Start button
+### Task 7: Start **replaces** Done in the `assigned` arm
+
+The `assigned` arm renders "Done" (`task_list_tile.dart:343`, `_handleMarkComplete`). If Start is merely *added*, a kid taps Done and the before never happens — the feature bypassed, every test green. **Start replaces Done for proof tasks.** This task is a swap, not an addition.
 
 **Files:** Modify `lib/presentation/widgets/task_list_tile.dart:326`; Test: `test/presentation/task_list_tile_start_test.dart`
 
-- [ ] **Step 1: Write the failing test** at 320pt — an `assigned` + `requiresPhotoProof` task shows Start; an `assigned` task **without** the flag does not.
-- [ ] **Step 2: Run it, watch it fail.**
-- [ ] **Step 3: Implement** — in the `assigned` arm, when `widget.task.requiresPhotoProof`, render a Start button (`Icons.play_circle`, label `Start`). Its handler: `ImagePicker().pickImage(source: ImageSource.camera)` → **if null, do nothing and do not change status** (no photo, no start) → `PhotoStorageService.upload(kind: before)` → `StartTaskUseCase`.
-- [ ] **Step 4:** If the upload succeeds and the write then fails, **surface the error and leave the status alone**. Do not swallow it. The blob is orphaned; that is the accepted trade (see spec).
-- [ ] **Step 5: Verify and commit** `feat(task): Start action captures the before photo`
+- [ ] **Step 1: Write the failing test** at 320pt. Three cases, and the second is the one that matters:
+  - `assigned` + `requiresPhotoProof` → Start **is shown**
+  - `assigned` + `requiresPhotoProof` → **Done is ABSENT** (`expect(find.text('Done'), findsNothing)`) — this is the bypass test
+  - `assigned` **without** the flag → Done shown, Start absent (nothing regresses)
+- [ ] **Step 2: Run it, watch it fail** — the second case fails: Done is currently always rendered.
+- [ ] **Step 3: Implement** — in the `assigned` arm, branch on `widget.task.requiresPhotoProof`: if set, render Start (`Icons.play_circle`, label `Start`) *instead of* Done; otherwise leave today's Done exactly as it is.
+- [ ] **Step 4: Wire the handler** — `ImagePicker().pickImage(source: ImageSource.camera)` → **if null, do nothing and do not change status** (no photo, no start) → `PhotoStorageService.upload(kind: before)` → `StartTaskUseCase`.
+- [ ] **Step 5:** If the upload succeeds and the write then fails, **surface the error and leave the status alone**. Do not swallow it. The blob is orphaned; that is the accepted trade (see spec).
+- [ ] **Step 6: Verify and commit** `feat(task): Start replaces Done on photo-proof tasks`
 
 ---
 
@@ -295,23 +319,36 @@ The path is family-scoped **on purpose** — the old `quest_photos/{taskId}/` ca
 
 **Files:** Modify `lib/domain/usecases/task/complete_task_usecase.dart:36-38`, `lib/domain/repositories/task_repository.dart`, `lib/presentation/widgets/task_list_tile.dart`
 
-- [ ] **Step 1: Write the failing test** — completing from `inProgress` succeeds and sets `photoUrl`; a proof task completed with no photo returns a failure.
-- [ ] **Step 2: Run it, watch it fail** — it fails on the guard, which rejects `inProgress`. **This is the single most likely way to ship this broken.**
-- [ ] **Step 3:** Relax the guard to allow `inProgress`. Add `setAfterPhoto` (or extend `completeTask`) — `completeTask` takes no photo argument today and does a targeted update, so the write must be threaded deliberately.
-- [ ] **Step 4:** In the tile's complete handler, capture → upload (`kind: after`) → complete.
-- [ ] **Step 5: Verify and commit** `fix(task): allow completing from inProgress, and store the after photo`
+The guard is **not just widened, it is also tightened.** Today it permits `assigned`; for a proof task that is the second bypass — Task 7 closes the UI path, this closes the domain path. Both are needed: the UI is not a security boundary, and a bug elsewhere must not be able to complete a proof task with no before.
+
+- [ ] **Step 1: Write the failing tests** — four cases:
+  - proof task, from `inProgress` → succeeds, sets `photoUrl`
+  - **proof task, from `assigned` → returns `Left(BusinessFailure)`** (the bypass test)
+  - proof task, from `needsRevision` → succeeds. **Keep this allowed**: rework overwrites `photoUrl` while `beforePhotoUrl` persists (spec decision 4). A kid redoing a rejected chore must not be forced to re-photograph a mess that no longer exists.
+  - non-proof task, from `assigned` → succeeds, unchanged
+- [ ] **Step 2: Run them, watch them fail** — the guard rejects `inProgress` and permits `assigned`. **This is the single most likely way to ship this broken.**
+- [ ] **Step 3:** Rewrite the guard at `complete_task_usecase.dart:36-38`:
+  - `requiresPhotoProof` → allow only `inProgress` or `needsRevision`
+  - otherwise → allow `assigned` or `needsRevision` (today's behaviour, untouched)
+- [ ] **Step 4:** Add `setAfterPhoto` (or extend `completeTask`) — `completeTask` takes no photo argument today and does a targeted update, so the write must be threaded deliberately.
+- [ ] **Step 5:** In the tile's complete handler, capture → upload (`kind: after`) → complete.
+- [ ] **Step 6: Verify and commit** `fix(task): a photo-proof task can only be completed from inProgress`
 
 ---
 
-### Task 9: "Can't do it" clears the before
+### Task 9: The `inProgress` arm — Done, and "Can't do it"
 
-**Files:** Modify `lib/presentation/widgets/task_list_tile.dart:326`, `lib/data/repositories/firebase_task_repository.dart`
+**This is the task that makes `inProgress` escapable.** Task 1 parked it as `return null`. Until this lands, a kid who Starts is trapped in a state with no buttons — the exact dead end Start exists to prevent, and Task 10's data-level round-trip will not catch it because it never renders the tile.
 
-- [ ] **Step 1: Write the failing test** — returning an `inProgress` task to `available` leaves `beforePhotoUrl` null.
-- [ ] **Step 2: Run it, watch it fail.**
-- [ ] **Step 3:** Make "Can't do it" reachable from `inProgress` — today it renders **only** in the `assigned` arm, so a kid who starts is trapped.
+**Files:** Modify `lib/presentation/widgets/task_list_tile.dart:326`, `lib/data/repositories/firebase_task_repository.dart`; Test: `test/presentation/task_list_tile_in_progress_test.dart`
+
+- [ ] **Step 1: Write the failing tests** at 320pt:
+  - an `inProgress` task assigned to me shows **Done** and **Can't do it**
+  - returning an `inProgress` task to `available` leaves `beforePhotoUrl` **null**
+- [ ] **Step 2: Run them, watch them fail** — the arm returns `null`, so no buttons exist.
+- [ ] **Step 3:** Fill the `inProgress` arm: Done (`_handleMarkComplete`, wired to Task 8's after-photo capture) and "Can't do it" (`_handleCantDoIt`). Today "Can't do it" renders **only** in the `assigned` arm.
 - [ ] **Step 4:** Clear the before with a **direct Firestore field update** (`{'beforePhotoUrl': null, 'status': ...}`), as `unassignTask` does. **`copyWith(beforePhotoUrl: null)` is a silent no-op** — the `?? this.x` idiom. Then `PhotoStorageService.delete`, or the next kid inherits a stranger's before.
-- [ ] **Step 5: Verify and commit** `fix(task): clear and delete the before photo on Can't do it`
+- [ ] **Step 5: Verify and commit** `fix(task): a started task can be finished or handed back`
 
 ---
 
@@ -322,7 +359,7 @@ The path is family-scoped **on purpose** — the old `quest_photos/{taskId}/` ca
 
 ---
 
-### Task 11: An image-rendering test harness (**blocks Task 13**)
+### Task 11: An image-rendering test harness (**blocks Task 12**)
 
 **No remote image has ever rendered in this suite.** Flutter's test `HttpClient` returns 400 for every request, so a remote image throws. Every fixture sets `photoUrl: null`, which is why nobody has hit it. This is a known-hard Flutter problem — budget it as real work, not one more mock.
 
@@ -361,4 +398,5 @@ Tests passing is not the same as it working. See `.claude` memory: get the devic
 - [ ] `flutter analyze` clean; `flutter test` green at phone width
 - [ ] The existing BDD task-management flows pass **untouched** — the flag is off by default, so any change there means this leaked into the default path
 - [ ] Storage rules deployed and verified on a device
+- [ ] `flutter build appbundle --release` fails **only** on #129, with nothing new from `image_picker`
 - [ ] Issue #130 updated with what shipped, and with the correction that #109 never shipped a photo flow
