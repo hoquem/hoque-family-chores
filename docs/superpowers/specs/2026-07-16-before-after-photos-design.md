@@ -39,9 +39,13 @@ making it the more real of the two.
 
 **Decision: build on `Task`. Leave `TaskCompletion` untouched and dead.**
 `Task` already persists `photoUrl` and already carries the approval fields, so
-reusing it means no new repository wiring, no second write path, and no
-migration. `TaskCompletion` is not deleted here — that is a separate cleanup
-(see Out of scope), and deleting it is not needed to ship this.
+reusing it means no second entity, no migration, and no new write path *for the
+field itself*.
+
+It does **not** mean the upload is free — see Photo storage below. The one
+compress → upload → download-URL pipeline in the codebase
+(`FirebaseTaskCompletionRepository.uploadPhoto`) lives inside the layer being
+left dead, and `TaskRepository` has no photo method at all.
 
 This is also the cautionary tale for the work below: a modelled-but-unwired
 layer looks finished and rots silently, because no UI or test ever touches it.
@@ -122,7 +126,18 @@ Making the before a precondition of Start is what removes the dead end: a kid
 can never be mid-chore and unable to finish, because they could not have
 started without it.
 
-Three things the current code will fight, all easy to miss:
+Five things the current code will fight, all easy to miss:
+
+- **`Task.copyWith` cannot clear a field to null.** It uses the
+  `photoUrl ?? this.photoUrl` idiom throughout (`task.dart:118-126`), so
+  `copyWith(beforePhotoUrl: null)` for "Can't do it" is a **silent no-op** — the
+  before survives and the next kid inherits it. Follow `unassignTask`, which
+  nulls fields with a direct Firestore field update rather than `copyWith`.
+- **`completeTask(familyId, taskId)` takes no photo argument** and does a
+  targeted update of status + `completedAt` only. `photoUrl` reaches Firestore
+  only via the full-document `toFirestore` in `createTask`/`updateTask`. The
+  after-photo write has to be threaded through deliberately; it will not ride
+  along.
 
 - **`CompleteTaskUseCase` guards on status.** It rejects anything that is not
   `assigned` or `needsRevision`, so `inProgress` must be added or every
@@ -134,6 +149,69 @@ Three things the current code will fight, all easy to miss:
 - **Start is a new action with a new use case.** There is no existing
   `StartTaskUseCase`; the transition, its guard (only the assignee, only from
   `assigned`) and its repository call are all new.
+
+## Photo storage
+
+The data question was settled above; this is the capability question, and it is
+where the real work is. **Nothing in this app has ever uploaded a file on the
+live path**, so none of this exists in a usable place.
+
+**New: `lib/data/services/photo_storage_service.dart`.** One class, two methods:
+
+```
+Future<Either<Failure, String>> upload({required File photo, required FamilyId familyId,
+                                        required TaskId taskId, required PhotoKind kind})
+Future<Either<Failure, void>>   delete(String downloadUrl)
+```
+
+It owns compress → upload → download-URL, and delete. The compression settings
+in `FirebaseTaskCompletionRepository.uploadPhoto:24-84` (quality 85, min 1920px,
+`FlutterImageCompress`) are sound and should be carried over.
+
+**Why a new service rather than extracting the existing one:** the existing
+pipeline sits inside the dead `TaskCompletion` layer, which is scheduled for
+deletion. Extracting from it means touching code this spec declares untouched
+and coupling live code to a dying class. Copying ~40 lines and deleting the
+original with its layer is cheaper than the alternative. This is deliberate,
+temporary duplication with a named end: the cleanup issue that removes
+`TaskCompletion` removes the duplicate.
+
+**Path convention changes.** The existing path is
+`quest_photos/${taskId}/$timestamp.jpg`, which is wrong twice: "quest" is
+pre-rename vocabulary, and it is **not family-scoped**, so no security rule can
+restrict a family to its own photos. Use:
+
+```
+families/{familyId}/tasks/{taskId}/{before|after}-{timestamp}.jpg
+```
+
+Nothing has ever written to the old path, so there is nothing to migrate.
+
+**Storage rules do not exist and must be written and deployed.** There is no
+`storage.rules` file and `firebase.json` has no `storage` block — the project
+has only ever needed Firestore rules. **The first upload will hit default-deny
+and the feature will fail at runtime while every test passes**, because tests
+mock the upload. This is the same modelled-but-unwired rot this spec warns
+about, one layer down. The work is:
+
+- write `storage.rules`: a member of `{familyId}` may read; the assignee may
+  write and delete under their own task; size and content-type capped
+- add the `storage` block to `firebase.json`
+- deploy the rules, and verify against the emulator (`firebase.json` already
+  has an `emulators` block)
+
+**Deletion is real work too.** "Can't do it" clears the before, and no delete
+API exists anywhere in the codebase — hence `delete` on the service, and a rule
+that permits it.
+
+## Platform permissions
+
+`image_picker` with `ImageSource.camera` needs both, and neither is declared:
+
+- **iOS:** `NSCameraUsageDescription` in `ios/Runner/Info.plist`. Absent today,
+  so the camera crashes on first use. Copy must be parent-legible: it appears in
+  a system prompt on a child's phone.
+- **Android:** camera permission in the manifest.
 
 ## UI
 
@@ -156,7 +234,10 @@ Three things the current code will fight, all easy to miss:
 - Widget tests at **320pt**: the before/after pair is a lot of image in a
   narrow column. Non-negotiable — the suite only recently started rendering at
   phone width.
-- `image_picker` mocked at its boundary; upload mocked at the repository.
+- `image_picker` mocked at its boundary; upload mocked at
+  `PhotoStorageService`. **Mocking the upload is exactly why storage rules
+  can be missing and every test still pass** — the rules need emulator
+  verification, not a unit test.
 - **The existing BDD task-management flows must pass untouched.** The flag is
   off by default, so any change there means this leaked into the default path.
 - Round-trip test: flag on → start → complete → both URLs present on the
