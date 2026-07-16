@@ -31,6 +31,8 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         return 'Available';
       case TaskStatus.assigned:
         return 'Assigned';
+      case TaskStatus.inProgress:
+        return 'In progress';
       case TaskStatus.pendingApproval:
         return 'Pending Approval';
       case TaskStatus.needsRevision:

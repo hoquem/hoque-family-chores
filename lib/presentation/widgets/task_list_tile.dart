@@ -365,6 +365,11 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         }
         return null;
 
+      case TaskStatus.inProgress:
+        // Nothing reaches this state yet; a later task adds Done + "Can't
+        // do it" here.
+        return null;
+
       case TaskStatus.pendingApproval:
         if (_isAdmin) {
           return Row(
@@ -437,6 +442,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return 'Available';
       case TaskStatus.assigned:
         return 'Assigned';
+      case TaskStatus.inProgress:
+        return 'In progress';
       case TaskStatus.pendingApproval:
         return 'Pending Approval';
       case TaskStatus.completed:

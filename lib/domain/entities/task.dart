@@ -208,6 +208,7 @@ class Task extends Equatable {
 enum TaskStatus {
   available, // For anyone to claim
   assigned, // Claimed by a user
+  inProgress, // Started; before-photo taken if the task requires proof
   pendingApproval, // Submitted for review
   needsRevision, // Rejected by a parent, needs changes
   completed, // Approved and finished
