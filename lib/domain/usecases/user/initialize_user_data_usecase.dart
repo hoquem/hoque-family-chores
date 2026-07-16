@@ -15,16 +15,19 @@ class InitializeUserDataUseCase {
   InitializeUserDataUseCase(this._userRepository);
 
   /// Initializes user data with default values
-  /// 
+  ///
   /// [userId] - ID of the user to initialize
   /// [name] - Name of the user
   /// [email] - Email of the user
-  /// 
+  /// [role] - Role to assign; OAuth adults pass [UserRole.parent]
+  ///
   /// Returns [User] on success or [Failure] on error
   Future<Either<Failure, User>> call({
     required UserId userId,
     required String name,
-    required String email,
+    // Null for children, who join anonymously and have no email address.
+    String? email,
+    UserRole role = UserRole.child,
   }) async {
     try {
       // Validate user ID
@@ -37,8 +40,8 @@ class InitializeUserDataUseCase {
         return Left(ValidationFailure('User name cannot be empty'));
       }
 
-      // Validate email
-      if (email.trim().isEmpty) {
+      // Validate email when given (adults); absent is valid for children.
+      if (email != null && email.trim().isEmpty) {
         return Left(ValidationFailure('User email cannot be empty'));
       }
 
@@ -46,9 +49,9 @@ class InitializeUserDataUseCase {
       final user = User(
         id: userId,
         name: name,
-        email: Email(email),
-        familyId: FamilyId(''), // Will be set when user joins a family
-        role: UserRole.child, // Default role
+        email: email == null ? null : Email(email),
+        familyId: FamilyId.empty, // Will be set when user joins a family
+        role: role,
         points: Points(0),
         joinedAt: DateTime.now(),
         updatedAt: DateTime.now(),

@@ -234,7 +234,7 @@ class _FamilyNotifierProviderElement
 }
 
 String _$familyMembersNotifierHash() =>
-    r'5d18888807bf6523df0433c3ee8e94364e1e0a54';
+    r'3bf9cae933d959297fae20635ee8b59720985571';
 
 abstract class _$FamilyMembersNotifier
     extends BuildlessAutoDisposeAsyncNotifier<List<User>> {

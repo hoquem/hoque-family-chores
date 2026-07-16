@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Android adaptive background: the Fridge Door warm gradient, full bleed.
+       Kept as an image rather than a flat colour so Android matches iOS. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FB8C00"/>
+      <stop offset="0.55" stop-color="#E08A1E"/>
+      <stop offset="1" stop-color="#C6412A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#g)"/>
+</svg>

@@ -251,7 +251,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
   Map<String, dynamic> _mapUserToFirestore(User user) {
     return {
       'name': user.name,
-      'email': user.email.value,
+      'email': user.email?.value,
       'photoUrl': user.photoUrl,
       'familyId': user.familyId.value,
       'role': user.role.name,

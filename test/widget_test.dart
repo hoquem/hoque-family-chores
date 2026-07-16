@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart' as domain;
 import 'package:hoque_family_chores/domain/entities/family.dart';
-import 'package:hoque_family_chores/domain/entities/task_summary.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
@@ -48,17 +47,6 @@ class TestData {
     createdAt: DateTime(2020, 1, 1),
   );
 
-  static final TaskSummary testTaskSummary = TaskSummary(
-    totalTasks: 5,
-    completedTasks: 3,
-    pendingTasks: 1,
-    availableTasks: 1,
-    needsRevisionTasks: 0,
-    assignedTasks: 1,
-    dueToday: 0,
-    pointsEarned: 30,
-    completionPercentage: 60,
-  );
 }
 
 class TestHelpers {
@@ -99,11 +87,6 @@ void main() {
       expect(TestData.testTask.status, TaskStatus.available);
     });
 
-    test('TestData has valid test task summary', () {
-      expect(TestData.testTaskSummary.totalTasks, 5);
-      expect(TestData.testTaskSummary.completedTasks, 3);
-      expect(TestData.testTaskSummary.completionPercentage, 60);
-    });
   });
 
   group('Widget Tests', () {

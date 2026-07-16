@@ -13,40 +13,13 @@ import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:hoque_family_chores/core/fresh_install_guard.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
-
-// Custom theme colors extension
-class CustomColors extends ThemeExtension<CustomColors> {
-  final Color success;
-  final Color starGold;
-
-  const CustomColors({
-    required this.success,
-    required this.starGold,
-  });
-
-  @override
-  CustomColors copyWith({Color? success, Color? starGold}) {
-    return CustomColors(
-      success: success ?? this.success,
-      starGold: starGold ?? this.starGold,
-    );
-  }
-
-  @override
-  CustomColors lerp(ThemeExtension<CustomColors>? other, double t) {
-    if (other is! CustomColors) {
-      return this;
-    }
-    return CustomColors(
-      success: Color.lerp(success, other.success, t)!,
-      starGold: Color.lerp(starGold, other.starGold, t)!,
-    );
-  }
-}
-
 // Push notifications background handler
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -92,6 +65,15 @@ void main() async {
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
       logger.i("[Startup] Firestore offline persistence enabled.");
+
+      // The iOS keychain keeps the Firebase session across app deletion; a
+      // fresh install must start signed out, not resurrect the old session.
+      final prefs = await SharedPreferences.getInstance();
+      await FreshInstallGuard.run(
+        prefs: prefs,
+        signOut: () => FirebaseAuth.instance.signOut(),
+      );
+      logger.i("[Startup] Fresh-install guard completed.");
     } catch (e, s) {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       runApp(ErrorApp(error: e));
@@ -118,7 +100,7 @@ void main() async {
     ErrorWidget.builder = (FlutterErrorDetails details) {
       return Material(
         child: Center(
-          child: Text('Something went wrong', style: TextStyle(color: Colors.red)),
+          child: Text('Something went wrong', style: const TextStyle(color: Color(0xFFC6412A))),
         ),
       );
     };
@@ -147,23 +129,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Hoque Family Chores',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
-          primary: const Color(0xFF6750A4),
-          secondary: const Color(0xFFFFB300),
-          error: const Color(0xFFF44336),
-        ),
-        useMaterial3: true,
-        primaryColor: const Color(0xFF6750A4),
-        extensions: const <ThemeExtension<dynamic>>[
-          CustomColors(
-            success: Color(0xFF4CAF50),
-            starGold: Color(0xFFFFB300),
-          ),
-        ],
-      ),
+      title: 'Chores Star',
+      // "Fridge Door" palette (DESIGN.md): marigold seed, star-gold secondary,
+      // coral tertiary, brick error, warm-cream surfaces. fromSeed derives
+      // onPrimary as dark (marigold is light), so default FilledButton text is
+      // already AA-safe Ink — never override to white.
+      theme: appLightTheme,
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
@@ -203,7 +174,7 @@ class ErrorApp extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                const Icon(Icons.error_outline, color: Color(0xFFC6412A), size: 60),
                 const SizedBox(height: 16),
                 const Text(
                   'An error occurred during startup',
@@ -212,7 +183,7 @@ class ErrorApp extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   error.toString(),
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: Color(0xFFC6412A)),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -254,7 +225,7 @@ class _SplashScreenState extends State<_SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.home_rounded, size: 64, color: Color(0xFF6750A4)),
+              const Icon(Icons.home_rounded, size: 64, color: Color(0xFFE08A1E)),
               const SizedBox(height: 24),
               const Text(
                 'Our Family Chores',
@@ -264,9 +235,9 @@ class _SplashScreenState extends State<_SplashScreen> {
               if (!_timedOut) ...[
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
-                const Text('Connecting...', style: TextStyle(color: Colors.grey)),
+                const Text('Connecting...', style: TextStyle(color: Color(0xFF8A8067))),
               ] else ...[
-                const Icon(Icons.cloud_off, size: 48, color: Colors.orange),
+                const Icon(Icons.cloud_off, size: 48, color: Color(0xFFF59E0B)),
                 const SizedBox(height: 16),
                 const Text(
                   'Unable to connect to the server.\n\nPlease check your internet connection and try again.',

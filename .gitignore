@@ -12,6 +12,10 @@
 .swiftpm/
 migrate_working_dir/
 
+# Local tool caches (Firebase CLI state, impeccable design cache)
+.firebase/
+.impeccable/
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -62,3 +66,7 @@ app.*.map.json
 
 # Node dependencies
 scripts/node_modules/
+
+# lib/ is ignored in the user-global gitignore (Python convention);
+# it is the Dart source root here — always track it.
+!lib/

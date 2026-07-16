@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths-ignore: ['**.md', 'docs/**']
+  pull_request:
+
+env:
+  # Keep in step with the Flutter version used for releases (see BUILD_STATUS.md)
+  FLUTTER_VERSION: '3.32.5'
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test

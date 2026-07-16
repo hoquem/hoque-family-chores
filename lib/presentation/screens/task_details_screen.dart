@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 
@@ -24,17 +25,20 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Task get task => widget.task;
 
   Color _statusColor(TaskStatus status) {
+    // Fridge Door status mapping (DESIGN.md): available is neutral (not yet
+    // alive); warm hues mark live work. Always paired with icon + label.
+    final t = context.tokens;
     switch (status) {
       case TaskStatus.available:
-        return Colors.blue;
+        return t.inkSoft;
       case TaskStatus.assigned:
-        return Colors.orange;
+        return t.carrot;
       case TaskStatus.pendingApproval:
-        return Colors.purple;
+        return t.amberWarn;
       case TaskStatus.needsRevision:
-        return Colors.red;
+        return t.brick;
       case TaskStatus.completed:
-        return Colors.green;
+        return t.sprout;
     }
   }
 
@@ -67,15 +71,18 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   }
 
   Color _difficultyColor(TaskDifficulty difficulty) {
+    // Effort gradient: small/easy → big/challenging, green → amber → orange
+    // → red. Reads as increasing effort, stays in the warm family.
+    final t = context.tokens;
     switch (difficulty) {
       case TaskDifficulty.easy:
-        return Colors.green;
+        return t.sprout;
       case TaskDifficulty.medium:
-        return Colors.orange;
+        return t.amberWarn;
       case TaskDifficulty.hard:
-        return Colors.deepOrange;
+        return t.carrot;
       case TaskDifficulty.challenging:
-        return Colors.red;
+        return t.brick;
     }
   }
 
@@ -87,9 +94,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           .claimTask(task.id.value, currentUser.id, task.familyId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('✅ Task claimed!'),
-            backgroundColor: Colors.green,
+            backgroundColor: context.tokens.sproutDeep,
           ),
         );
         Navigator.of(context).pop(true); // Return true to indicate change
@@ -100,7 +107,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to claim task: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -117,9 +124,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           .completeTask(task.id.value, currentUser.id, task.familyId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('✅ Task submitted for approval!'),
-            backgroundColor: Colors.green,
+            backgroundColor: context.tokens.sproutDeep,
           ),
         );
         Navigator.of(context).pop(true);
@@ -130,7 +137,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to complete task: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -147,9 +154,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           .approveTask(task.id.value, currentUser.id, task.familyId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('✅ Task approved!'),
-            backgroundColor: Colors.green,
+            backgroundColor: context.tokens.sproutDeep,
           ),
         );
         Navigator.of(context).pop(true);
@@ -160,7 +167,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to approve task: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -207,9 +214,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           .rejectTask(task.id.value);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Task sent back for revision'),
-            backgroundColor: Colors.orange,
+            backgroundColor: context.tokens.carrotDeep,
           ),
         );
         Navigator.of(context).pop(true);
@@ -220,7 +227,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to reject task: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -248,29 +255,28 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title & Status Header
+                  // One card carries the task identity: title, status +
+                  // difficulty pills, and the points/due-date meta. No more
+                  // card-per-section (DESIGN.md: one card groups; dividers
+                  // separate).
                   _buildHeader(),
-                  const SizedBox(height: 24),
-
-                  // Info Cards
-                  _buildInfoCards(),
-                  const SizedBox(height: 24),
-
-                  // Description
-                  _buildDescriptionSection(),
-                  const SizedBox(height: 24),
-
-                  // Tags
-                  if (task.tags.isNotEmpty) ...[
-                    _buildTagsSection(),
-                    const SizedBox(height: 24),
+                  if (task.description.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    _buildDescriptionSection(),
                   ],
-
-                  // Timeline
+                  if (task.tags.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    _buildTagsSection(),
+                  ],
+                  const SizedBox(height: 20),
+                  const Divider(),
+                  const SizedBox(height: 16),
                   _buildTimelineSection(),
                   const SizedBox(height: 32),
-
-                  // Action Buttons
                   _buildActionButtons(
                     currentUser: currentUser,
                     isAdmin: isAdmin,
@@ -284,6 +290,17 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   }
 
   Widget _buildHeader() {
+    final t = context.tokens;
+    final dateFormat = DateFormat('MMM d, yyyy');
+    final bool isOverdue = task.isOverdue;
+    final statusColor = _statusColor(task.status);
+    final difficultyColor = _difficultyColor(task.difficulty);
+
+    // Points + due date sit inline under the pills, not as twin hero-metric
+    // cards. The number is still there, just no longer the loudest thing on
+    // the screen.
+    final metaStyle = TextStyle(color: t.inkSoft, fontSize: 14);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -304,25 +321,20 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _statusColor(task.status).withValues(alpha: 0.15),
+                    color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color:
-                            _statusColor(task.status).withValues(alpha: 0.5)),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.circle,
-                        size: 10,
-                        color: _statusColor(task.status),
-                      ),
+                      Icon(Icons.circle, size: 10, color: statusColor),
                       const SizedBox(width: 6),
                       Text(
                         _statusLabel(task.status),
                         style: TextStyle(
-                          color: _statusColor(task.status),
+                          color: statusColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -334,8 +346,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _difficultyColor(task.difficulty)
-                        .withValues(alpha: 0.15),
+                    color: difficultyColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -344,13 +355,13 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                       Icon(
                         _difficultyIcon(task.difficulty),
                         size: 16,
-                        color: _difficultyColor(task.difficulty),
+                        color: difficultyColor,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         task.difficulty.displayName,
                         style: TextStyle(
-                          color: _difficultyColor(task.difficulty),
+                          color: difficultyColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -359,208 +370,141 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.star, color: t.starGold, size: 18),
+                const SizedBox(width: 4),
+                Text('${task.points.value} pts', style: metaStyle),
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.calendar_today,
+                  color: isOverdue ? t.brick : t.inkSoft,
+                  size: 18,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  dateFormat.format(task.dueDate),
+                  style: isOverdue
+                      ? metaStyle.copyWith(
+                          color: t.brick, fontWeight: FontWeight.bold)
+                      : metaStyle,
+                ),
+                if (isOverdue) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '· OVERDUE',
+                    style: TextStyle(
+                      color: t.brick,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoCards() {
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final bool isOverdue = task.isOverdue;
-
-    return Row(
+  /// A flat labelled section (no card): icon + title row, then content.
+  /// Used for Description, Tags, and Timeline, separated by [Divider]s in
+  /// [build]. Keeps the screen to one card total.
+  Widget _buildSection({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    final t = context.tokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Points Card
-        Expanded(
-          child: Card(
-            color: Colors.amber.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 32),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${task.points.value}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    'Points',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
+        Row(
+          children: [
+            Icon(icon, size: 20, color: t.inkMuted),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+          ],
         ),
-        // Due Date Card
-        Expanded(
-          child: Card(
-            color: isOverdue ? Colors.red.shade50 : Colors.blue.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    color: isOverdue ? Colors.red : Colors.blue,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    dateFormat.format(task.dueDate),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isOverdue ? Colors.red : null,
-                    ),
-                  ),
-                  Text(
-                    isOverdue ? 'OVERDUE' : 'Due Date',
-                    style: TextStyle(
-                      color: isOverdue ? Colors.red : Colors.grey,
-                      fontWeight: isOverdue ? FontWeight.bold : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        const SizedBox(height: 12),
+        child,
       ],
     );
   }
 
   Widget _buildDescriptionSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.description, size: 20, color: Colors.grey),
-                SizedBox(width: 8),
-                Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              task.description.isEmpty
-                  ? 'No description provided.'
-                  : task.description,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: task.description.isEmpty ? Colors.grey : null,
-              ),
-            ),
-          ],
-        ),
+    return _buildSection(
+      icon: Icons.description,
+      title: 'Description',
+      child: Text(
+        task.description,
+        style: const TextStyle(fontSize: 15, height: 1.5),
       ),
     );
   }
 
   Widget _buildTagsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.label, size: 20, color: Colors.grey),
-                SizedBox(width: 8),
-                Text(
-                  'Tags',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: task.tags.map((tag) {
-                return Chip(
-                  label: Text(tag),
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.5),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return _buildSection(
+      icon: Icons.label,
+      title: 'Tags',
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: task.tags.map((tag) {
+          return Chip(
+            label: Text(tag),
+            backgroundColor: Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withValues(alpha: 0.5),
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildTimelineSection() {
     final dateTimeFormat = DateFormat('MMM d, yyyy • h:mm a');
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.timeline, size: 20, color: Colors.grey),
-                SizedBox(width: 8),
-                Text(
-                  'Timeline',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+    final t = context.tokens;
+    return _buildSection(
+      icon: Icons.timeline,
+      title: 'Timeline',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _timelineRow(
+            icon: Icons.add_circle_outline,
+            label: 'Created',
+            date: dateTimeFormat.format(task.createdAt),
+            color: t.inkSoft,
+          ),
+          if (task.completedAt != null) ...[
+            const SizedBox(height: 8),
             _timelineRow(
-              icon: Icons.add_circle_outline,
-              label: 'Created',
-              date: dateTimeFormat.format(task.createdAt),
-              color: Colors.blue,
+              icon: Icons.check_circle_outline,
+              label: 'Completed',
+              date: dateTimeFormat.format(task.completedAt!),
+              color: t.sprout,
             ),
-            if (task.completedAt != null) ...[
-              const SizedBox(height: 8),
-              _timelineRow(
-                icon: Icons.check_circle_outline,
-                label: 'Completed',
-                date: dateTimeFormat.format(task.completedAt!),
-                color: Colors.green,
-              ),
-            ],
-            if (task.recurringPattern != null) ...[
-              const SizedBox(height: 8),
-              _timelineRow(
-                icon: Icons.repeat,
-                label: 'Recurring',
-                date: task.recurringPattern!,
-                color: Colors.purple,
-              ),
-            ],
           ],
-        ),
+          if (task.recurringPattern != null) ...[
+            const SizedBox(height: 8),
+            _timelineRow(
+              icon: Icons.repeat,
+              label: 'Recurring',
+              date: task.recurringPattern!,
+              color: t.marigold,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -582,7 +526,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         Expanded(
           child: Text(
             date,
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: context.tokens.inkMuted),
           ),
         ),
       ],
@@ -622,7 +566,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             icon: const Icon(Icons.check),
             label: const Text('Mark as Done'),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: context.tokens.sproutDeep,
             ),
           ),
         ),
@@ -639,7 +583,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             icon: const Icon(Icons.refresh),
             label: const Text('Resubmit for Approval'),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange,
+              backgroundColor: context.tokens.carrotDeep,
             ),
           ),
         ),
@@ -657,7 +601,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 icon: const Icon(Icons.thumb_up),
                 label: const Text('Approve'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: context.tokens.sproutDeep,
                 ),
               ),
             ),
@@ -665,11 +609,11 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _handleRejectTask,
-                icon: const Icon(Icons.thumb_down, color: Colors.red),
-                label: const Text('Reject',
-                    style: TextStyle(color: Colors.red)),
+                icon: Icon(Icons.thumb_down, color: context.tokens.brick),
+                label: Text('Reject',
+                    style: TextStyle(color: context.tokens.brick)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
+                  side: BorderSide(color: context.tokens.brick),
                 ),
               ),
             ),
@@ -685,19 +629,19 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.shade50,
+            color: context.tokens.sprout.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.shade200),
+            border: Border.all(color: context.tokens.sprout.withValues(alpha: 0.4)),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
+              Icon(Icons.check_circle, color: context.tokens.sproutDeep),
+              const SizedBox(width: 8),
               Text(
                 'Task Completed! 🎉',
                 style: TextStyle(
-                  color: Colors.green,
+                  color: context.tokens.sproutDeep,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),

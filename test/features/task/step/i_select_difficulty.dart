@@ -17,7 +17,7 @@ Future<void> iSelectDifficulty(WidgetTester tester, String difficulty) async {
   await tester.pumpAndSettle();
 
   // The dropdown items show full descriptions like
-  // "Small (S) - Quick quests, 5-15 minutes (10 ⭐)".
+  // "Small (S) - Quick tasks, 5-15 minutes (10 ⭐)".
   // Match by the prefix label.
   final prefix = _difficultyLabels[difficulty] ?? difficulty;
   final option = find.textContaining(prefix).last;

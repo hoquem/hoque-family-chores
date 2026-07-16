@@ -159,24 +159,35 @@ class FamilyNotifier extends _$FamilyNotifier {
 class FamilyMembersNotifier extends _$FamilyMembersNotifier {
   final _logger = AppLogger();
 
+  /// Attempts beyond the first for permission-denied failures. Right after a
+  /// family is created, Firestore latency compensation hands the app the
+  /// profile's new familyId before the server has committed it, so the first
+  /// members query can be denied by rules against not-yet-current data.
+  static const _permissionRetries = 2;
+  static const _retryDelay = Duration(seconds: 1);
+
   @override
   Future<List<User>> build(FamilyId familyId) async {
     _logger.d('FamilyMembersNotifier: Building for family $familyId');
-    
-    try {
-      final getFamilyMembersUseCase = ref.watch(getFamilyMembersUseCaseProvider);
+
+    final getFamilyMembersUseCase = ref.watch(getFamilyMembersUseCaseProvider);
+    for (var attempt = 0; ; attempt++) {
       final result = await getFamilyMembersUseCase.call(familyId: familyId);
-      
-      return result.fold(
-        (failure) => throw Exception(failure.message),
-        (members) {
-          _logger.d('FamilyMembersNotifier: Loaded ${members.length} members');
-          return members;
-        },
-      );
-    } catch (e) {
-      _logger.e('FamilyMembersNotifier: Error loading family members', error: e);
-      throw Exception('Failed to load family members: $e');
+      final failure = result.fold((f) => f, (_) => null);
+      if (failure == null) {
+        final members = result.getOrElse(() => []);
+        _logger.d('FamilyMembersNotifier: Loaded ${members.length} members');
+        return members;
+      }
+      final isPermissionDenied = failure.message.contains('permission-denied');
+      if (!isPermissionDenied || attempt >= _permissionRetries) {
+        _logger.e('FamilyMembersNotifier: Error loading family members',
+            error: failure.message);
+        throw Exception('Failed to load family members: ${failure.message}');
+      }
+      _logger.w('FamilyMembersNotifier: permission denied (attempt '
+          '${attempt + 1}), retrying — likely the post-write consistency window');
+      await Future.delayed(_retryDelay);
     }
   }
 

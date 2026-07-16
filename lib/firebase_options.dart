@@ -41,7 +41,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC9i3pa5K5R8ECfLcezD70PPJWi4VTiAfE',
+    apiKey: 'AIzaSyA2y9Lq09v3r4iECNv5wEHNu-QDIJym5Ig',
     appId: '1:232697993893:web:943a0eec63d731c11c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',
@@ -51,15 +51,15 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDT-HzQtxI5BX-lIVhn6b0wmZzUFKcGHgM',
-    appId: '1:232697993893:android:53f6e476701dd9361c4b4c',
+    apiKey: 'AIzaSyDCmU9rtayHuIjMZe2kumNoZAKIohhxpCY',
+    appId: '1:232697993893:android:6dc56236c63f3ccd1c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',
     storageBucket: 'hoque-family-chores-app.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCPQIXr5ugCY5AWt7FFSYyChbDA2E5gyLA',
+    apiKey: 'AIzaSyBB0NPEEqZ8hTa4GJBeh_93Uf6R6r_EssM',
     appId: '1:232697993893:ios:fc1dcbe6a4d09d9a1c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCPQIXr5ugCY5AWt7FFSYyChbDA2E5gyLA',
+    apiKey: 'AIzaSyBB0NPEEqZ8hTa4GJBeh_93Uf6R6r_EssM',
     appId: '1:232697993893:ios:b281934fead2e0fe1c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyC9i3pa5K5R8ECfLcezD70PPJWi4VTiAfE',
+    apiKey: 'AIzaSyA2y9Lq09v3r4iECNv5wEHNu-QDIJym5Ig',
     appId: '1:232697993893:web:1803ba795e3b121c1c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',

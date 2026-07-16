@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FB8C00"/>
+      <stop offset="0.55" stop-color="#E08A1E"/>
+      <stop offset="1" stop-color="#C6412A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#g)"/>
+  <path d="M 512,232 L 834,492 L 834,808 L 190,808 L 190,492 Z"
+        fill="#FBF7F0" stroke="#241D14" stroke-width="34" stroke-linejoin="round"/>
+  <!-- equal-arm 4-point sparkle: reads as star AND shine -->
+  <path d="M 512,378 Q 546,508 674,542 Q 546,576 512,706 Q 478,576 350,542 Q 478,508 512,378 Z"
+        fill="#FFB300" stroke="#241D14" stroke-width="26" stroke-linejoin="round"/>
+</svg>

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
+import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
@@ -184,6 +186,162 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Signs in with Apple. A first-time adult becomes a [UserRole.parent].
+  Future<void> signInWithApple() =>
+      _oauth(() => ref.read(authRepositoryProvider).signInWithApple());
+
+  /// Signs in with Google. A first-time adult becomes a [UserRole.parent].
+  Future<void> signInWithGoogle() =>
+      _oauth(() => ref.read(authRepositoryProvider).signInWithGoogle());
+
+  /// Runs an OAuth [signIn] and reconciles the resulting Firebase session with
+  /// the Firestore profile.
+  Future<void> _oauth(Future<dynamic> Function() signIn) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.authenticating,
+    );
+
+    try {
+      await _afterOAuth(await signIn());
+    } on AuthException catch (e) {
+      if (e.code == 'SIGN_IN_CANCELLED') {
+        // The user dismissed the provider sheet. That is a choice, not a
+        // failure, so it must not surface as an error.
+        _logger.d('AuthNotifier: OAuth sign-in cancelled by user');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: null,
+          status: AuthStatus.unauthenticated,
+        );
+        return;
+      }
+      _logger.e('AuthNotifier: OAuth sign-in failed', error: e.message);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+        status: AuthStatus.error,
+      );
+    } catch (e) {
+      _logger.e('AuthNotifier: Unexpected error during OAuth sign in', error: e);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'An unexpected error occurred: $e',
+        status: AuthStatus.error,
+      );
+    }
+  }
+
+  /// Creates the Firestore profile for a first-time OAuth user, then starts the
+  /// profile stream. An existing profile is left untouched, so a returning
+  /// child is never promoted to parent.
+  Future<void> _afterOAuth(dynamic firebaseUser) async {
+    final userId = UserId(firebaseUser.uid as String);
+
+    final lookup = await ref
+        .read(getUserProfileUseCaseProvider)
+        .call(userId: userId);
+
+    // Only a NotFoundFailure means "new user". Any other failure is a real
+    // problem (network, permissions) and must not be mistaken for one.
+    final lookupFailure = lookup.fold((failure) => failure, (_) => null);
+    if (lookupFailure != null && lookupFailure is! NotFoundFailure) {
+      _logger.e('AuthNotifier: Could not read profile after OAuth',
+          error: lookupFailure.message);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: lookupFailure.message,
+        status: AuthStatus.error,
+      );
+      return;
+    }
+
+    if (lookupFailure is NotFoundFailure) {
+      final email = firebaseUser.email as String?;
+      if (email == null || email.trim().isEmpty) {
+        _logger.e('AuthNotifier: OAuth provider returned no email');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Could not get your email address from the sign-in '
+              'provider. Please try the other provider (Apple/Google).',
+          status: AuthStatus.error,
+        );
+        return;
+      }
+
+      final displayName = firebaseUser.displayName as String?;
+      final initResult = await ref.read(initializeUserDataUseCaseProvider).call(
+            userId: userId,
+            name: displayName?.trim().isNotEmpty == true
+                ? displayName!.trim()
+                : email.split('@').first,
+            email: email.trim().toLowerCase(),
+            role: UserRole.parent,
+          );
+
+      final initFailure = initResult.fold((failure) => failure, (_) => null);
+      if (initFailure != null) {
+        _logger.e('AuthNotifier: Failed to create OAuth user profile',
+            error: initFailure.message);
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: initFailure.message,
+          status: AuthStatus.error,
+        );
+        return;
+      }
+      _logger.d('AuthNotifier: Created parent profile for user $userId');
+    }
+
+    _startUserProfileStream(userId);
+    state = state.copyWith(
+      isLoading: false,
+      status: AuthStatus.authenticated,
+    );
+  }
+
+  /// Joins a family as a child: anonymous account + profile + membership.
+  ///
+  /// On failure the use case has already rolled the anonymous account back,
+  /// so the state returns to unauthenticated with the error message set.
+  Future<void> joinFamilyAsChild({
+    required String name,
+    required String inviteCode,
+  }) async {
+    _logger.d('AuthNotifier: Child joining family with code $inviteCode');
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.authenticating,
+    );
+
+    final result = await ref
+        .read(joinFamilyAsChildUseCaseProvider)
+        .call(name: name, inviteCode: inviteCode);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Child join failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+          status: AuthStatus.unauthenticated,
+        );
+      },
+      (_) {
+        final userId =
+            UserId(ref.read(authRepositoryProvider).currentUser.uid as String);
+        _logger.d('AuthNotifier: Child joined family as $userId');
+        _startUserProfileStream(userId);
+        state = state.copyWith(
+          isLoading: false,
+          status: AuthStatus.authenticated,
+        );
+      },
+    );
+  }
+
   /// Signs out the current user.
   Future<void> signOut() async {
     _logger.d('AuthNotifier: Signing out user');
@@ -216,6 +374,47 @@ class AuthNotifier extends _$AuthNotifier {
         errorMessage: 'Error signing out: $e',
       );
     }
+  }
+
+  /// Permanently deletes the signed-in user's account and profile.
+  ///
+  /// On success the state becomes unauthenticated (authStateChanges routing
+  /// returns the app to the login screen). On failure — most commonly
+  /// Firebase requiring a recent sign-in — the session survives and
+  /// `errorMessage` carries the explanation.
+  Future<void> deleteAccount() async {
+    final user = state.user;
+    if (user == null) {
+      _logger.w('AuthNotifier: Cannot delete account - no user profile');
+      state = state.copyWith(
+        errorMessage: 'No signed-in user to delete',
+      );
+      return;
+    }
+
+    _logger.d('AuthNotifier: Deleting account for ${user.id}');
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    final result =
+        await ref.read(deleteAccountUseCaseProvider).call(user: user);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Account deletion failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+        );
+      },
+      (_) {
+        _logger.d('AuthNotifier: Account deleted');
+        _stopUserProfileStream();
+        state = const AuthState(
+          status: AuthStatus.unauthenticated,
+          isLoading: false,
+        );
+      },
+    );
   }
 
   /// Refreshes the user profile.
@@ -320,7 +519,7 @@ class AuthNotifier extends _$AuthNotifier {
   String? get displayName => state.user?.name;
 
   /// Gets the current user's email.
-  String? get userEmail => state.user?.email.value;
+  String? get userEmail => state.user?.email?.value;
 
   /// Gets the current user's photo URL.
   String? get photoUrl => state.user?.photoUrl;

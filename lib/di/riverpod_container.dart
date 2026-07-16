@@ -139,6 +139,16 @@ JoinFamilyUseCase joinFamilyUseCase(Ref ref) {
 }
 
 @riverpod
+JoinFamilyAsChildUseCase joinFamilyAsChildUseCase(Ref ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return JoinFamilyAsChildUseCase(
+    authRepository,
+    ref.watch(initializeUserDataUseCaseProvider),
+    ref.watch(joinFamilyUseCaseProvider),
+  );
+}
+
+@riverpod
 AddMemberUseCase addMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return AddMemberUseCase(familyRepository);
@@ -246,6 +256,19 @@ GetFamilyMembersUseCase getFamilyMembersUseCase(Ref ref) {
 UpdateFamilyMemberUseCase updateFamilyMemberUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return UpdateFamilyMemberUseCase(familyRepository);
+}
+
+@riverpod
+ChangePasswordUseCase changePasswordUseCase(Ref ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return ChangePasswordUseCase(authRepository);
+}
+
+@riverpod
+DeleteAccountUseCase deleteAccountUseCase(Ref ref) {
+  final userRepository = ref.watch(userRepositoryProvider);
+  final authRepository = ref.watch(authRepositoryProvider);
+  return DeleteAccountUseCase(userRepository, authRepository);
 }
 
 // User Use Cases

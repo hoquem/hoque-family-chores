@@ -73,8 +73,23 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 - Spec: docs/superpowers/specs/2026-07-09-auth-redesign-design.md (approved, 3-iteration review; reconciled to real TaskStatus enum {available,assigned,pendingApproval,needsRevision,completed})
 - Plans: docs/superpowers/plans/2026-07-09-auth-phase1-oauth-parents.md (free, ships first) + 2026-07-09-auth-phase2-accountless-kids.md (Blaze)
 - Plan review iter 1: 2 blockers (B1 fake task-status vocab; B2 email '' fallback) + should-fixes → all fixed (real enum throughout; loud email failure; v2 functions API; role-collapse file list; retire client approveTask; split coarse tasks; invite rotation)
-- Plan review iter 2 running
-- NEXT: user reviews plan → choose execution mode (subagent-driven vs inline)
+- Plan review iter 2: blockers confirmed closed; fixed residual text (Task 9 rules guidance named fake fields; Task 4 context.app→request.app; named Task.points concretely). Converged.
+- Committed + pushed (b17df87). Spec + both plans on origin/main.
+
+### Phase 1 execution (subagent-driven) — branch feature/auth-phase1-oauth
+- [x] Task 0: branch created; deps sign_in_with_apple/google_sign_in/crypto added + pub get; committed
+- [x] Task 2: Apple nonce helper (lib/data/auth/apple_nonce.dart) — 3 tests pass, analyze clean, commit 6bca47a. Verified.
+- [x] Task 3: extend AuthRepository (authStateChanges + signInWithApple/Google) + mock — 2 tests, commit 9e9f25f
+- [ ] Task 1 (iOS native config: Firebase Console enable Apple+Google, re-download GoogleService-Info.plist, Xcode Sign-in-with-Apple capability, Google URL scheme) — USER-GATED, batch at end
+- [x] Task 4: OAuth in FirebaseAuthRepository, commit 5717962. mapOAuthError extracted to lib/data/auth/oauth_error_mapper.dart (pure, 2 tests) since firebase_auth_mocks is absent. `hide generateNonce` on the sign_in_with_apple import (it exports the same name). Live OAuth flows NOT verified — Task 8 on-device.
+- [x] BUG FOUND + FIXED (commit 20862ae): FamilyId('') threw ArgumentError → InitializeUserDataUseCase ALWAYS returned ServerFailure → email/password sign-up never created a profile doc and ended in AuthStatus.error. Same throw in _mapFirestoreToUser for family-less profiles. Added FamilyId.empty sentinel (constructor still rejects ''). Likely broken in shipped build 1.0.0+10.
+- [x] Task 5: role param on InitializeUserDataUseCase (default child), commit 544b94c. 3 tests; email validation untouched.
+- [x] Task 6: AuthNotifier OAuth methods, commit 6a1ed8b. 4 tests. Only NotFoundFailure ⇒ new user; null email fails loudly; SIGN_IN_CANCELLED → unauthenticated, no error banner. Existing profile keeps its role (returning child never promoted).
+  - Test harness gotcha: authNotifierProvider is autoDispose — a test MUST hold `container.listen(...)` or the notifier is rebuilt between reads and assertions observe build() re-deriving state from the mock's mutated currentUser (3 tests initially passed for the wrong reason).
+- [x] Task 7: login screen OAuth buttons + "or use email" divider, commit 6aa9466. 3 widget tests drive the real notifier through mock repos. Email form kept.
+- [ ] Task 8 (verify + on-device smoke + build 1.0.0+11 → TestFlight) — USER-GATED device/deploy
+- Gate after Task 7: analyze 0 issues, 126/126 tests pass
+- NOTE: global gitignore ignores lib/ → new lib/ files need `git add -f`
 - Key decisions banked: task reward field NOT renamed (kept as-is, disambiguated by collection path); guardian role removed (parent+child only); account-collision = error-only no auto-link
 - Decision: parents = Apple/Google OAuth (+ email kept for demo); kids = own device via family code + PIN
 - Decision: kid identity = Firebase custom token (uid = childId), claims {role:child, familyId}; NOT anonymous
@@ -92,3 +107,41 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 
 ## Decisions
 - Keep scope strictly MVP: no new features, only fix broken core flows
+
+## Feature: Child Join Flow (2026-07-13)
+
+### Design
+**Model**: a child is an anonymous Firebase account + a normal profile doc
+(role=child, email=null). Same uid-based identity as adults, so tasks,
+points, approvals, and security rules work unchanged. No email/password.
+
+**Join sequence** (JoinFamilyAsChildUseCase):
+1. Validate name + code format (before touching auth).
+2. authRepository.signInAnonymously() → anon uid.
+3. initializeUserData(uid, name, role: child, email: none).
+4. JoinFamilyUseCase(code, uid, role: child) — reuses invite lookup via
+   familyInvites/{code} (rules: get allowed for any signed-in incl. anon).
+5. Any failure after step 2 → delete the anonymous user and surface the
+   failure. This prevents the orphan state "signed in with no profile",
+   which the router would otherwise turn into a stuck home screen.
+
+**Domain change**: User.email becomes Email? (children have none).
+- Mapper: missing email → null; present-but-invalid → USER_DATA_MALFORMED.
+- initializeUserData: email becomes optional.
+- UI guards: profile/edit screens hide email when null.
+
+**Rules**: no changes needed (verified against deployed rules):
+familyInvites get = isSignedIn; users create = own uid; families update =
+non-member may add self to memberIds.
+
+**Server config**: enable anonymous auth provider (Identity Toolkit API).
+
+**Known limits (accepted v1)**: reinstalling the app loses a child's
+anonymous account (rejoin creates a fresh member; stale member remains
+until removed); child device is the account.
+
+### Phases
+1. Domain: nullable email + mapper + initializeUserData (TDD)
+2. JoinFamilyAsChildUseCase + AuthNotifier.joinFamilyAsChild (TDD)
+3. UI: ChildJoinScreen + login button + null-email guards (TDD)
+4. Enable anon provider, full gate, commit, deploy build 22

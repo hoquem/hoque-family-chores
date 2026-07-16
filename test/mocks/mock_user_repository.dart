@@ -68,9 +68,12 @@ class MockUserRepository implements UserRepository {
   }
 
   @override
-  Stream<User?> streamUserProfile(UserId userId) {
-    return _userStreamController.stream
-        .where((user) => user?.id == userId);
+  Stream<User?> streamUserProfile(UserId userId) async* {
+    // Firestore snapshots deliver the current document immediately on
+    // listen; the mock must do the same or late subscribers wait forever.
+    yield _users.where((user) => user.id == userId).firstOrNull;
+    yield* _userStreamController.stream
+        .where((user) => user == null || user.id == userId);
   }
 
   @override
@@ -196,6 +199,12 @@ class MockUserRepository implements UserRepository {
       if (e is DataException) rethrow;
       throw ServerException('Failed to subtract points: $e', code: 'USER_SUBTRACT_POINTS_ERROR');
     }
+  }
+
+  /// Pushes an error into the profile stream, simulating a Firestore failure
+  /// or a malformed document that could not be parsed.
+  void emitProfileError(Object error) {
+    _userStreamController.addError(error);
   }
 
   /// Dispose the stream controller

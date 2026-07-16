@@ -22,7 +22,7 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 
 1. **App Store Connect record**: at appstoreconnect.apple.com → My Apps → "+" → New App.
    - Platform iOS, Bundle ID `com.hoque.hoqueFamilyChores`, SKU e.g. `hoque-family-chores`.
-2. **Host the privacy policy** and paste its URL into App Privacy. Easy option: GitHub Pages or a public gist of `docs/PRIVACY_POLICY.md`.
+2. **Privacy policy** — DONE (2026-07-11): hosted via GitHub Pages at https://hoquem.github.io/hoque-family-chores/PRIVACY_POLICY.html (Pages serves `main:/docs`) and set on both ASC appInfo localizations via `PATCH /v1/appInfoLocalizations` (privacyPolicyUrl).
 3. **App Privacy questionnaire**: declare collection of Email Address + Name (App Functionality, linked to identity), Crash Data (Crashlytics, not linked). No tracking.
 4. **Age rating questionnaire**: fill honestly; this is a utility app, expect 4+. Do NOT enroll in the "Kids" category (triggers stricter review; unnecessary for family-only use).
 5. Screenshots: 6.7" and 6.5" iPhone screenshots required (take from Simulator: `flutter run --release`, Cmd+S in Simulator).
@@ -31,7 +31,9 @@ Note: existing Firestore data needs no migration. New writes populate `familyInv
 
 Auth: App Store Connect API key `55A763B9XW` (Admin) at `~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8`, Issuer ID `2e924c90-75cb-4ef0-a036-574926a7b628`. Cloud signing — no local certificates needed.
 
-**Build numbers must exceed the highest ever uploaded** (currently 10; builds 3–10 exist on train 1.0.0). A duplicate build number uploads "successfully" but is silently dropped during processing.
+**Use `scripts/deploy_testflight.sh`** — it queries ASC for the highest existing build number, deploys highest+1, and polls until the build is VALID. Don't pick build numbers by hand: ASC history is full of surprises (builds 2–13 exist as of 2026-07-11), and until now `exportOptions.plist` implicitly had `manageAppVersionAndBuildNumber=true`, which silently renumbered duplicate builds at export (that's how IPAs labelled +11/+12 shipped as TestFlight builds 12/13). That key is now explicitly `false` so the uploaded number is always the built number, and `altool`'s "UPLOAD SUCCEEDED" still proves nothing — only a VALID processingState does.
+
+The manual pipeline below is what the script automates:
 
 ```bash
 # 1. Bump build number in pubspec.yaml (e.g. 1.0.0+11), then:

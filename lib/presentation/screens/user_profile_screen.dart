@@ -3,9 +3,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
+
+  /// Asks for confirmation, then deletes the account. On failure the session
+  /// survives and the error from [AuthState.errorMessage] is shown in a
+  /// SnackBar.
+  Future<void> _confirmDeleteAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'This permanently deletes your account and profile data. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: context.tokens.brick),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await ref.read(authNotifierProvider.notifier).deleteAccount();
+
+    if (!context.mounted) return;
+    final errorMessage = ref.read(authNotifierProvider).errorMessage;
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } else {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,12 +66,13 @@ class UserProfileScreen extends ConsumerWidget {
     }
 
     final displayName = currentUser.name;
-    final email = currentUser.email.value;
+    // Children join anonymously and have no email to show.
+    final email = currentUser.email?.value ?? '';
 
     return Scaffold(
       appBar: AppBar(
         // --- CHANGED --- Title updated to reflect its new purpose.
-        title: const Text('Profile & Settings'),
+        title: const Text('Profile'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -78,36 +126,36 @@ class UserProfileScreen extends ConsumerWidget {
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profile'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to an edit profile screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.notifications),
             title: const Text('Notifications'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to notification settings
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notification Settings coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.security),
             title: const Text('Security'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to security settings
-               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Security Settings coming soon!')),
-              );
-            },
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SecurityScreen()),
+            ),
           ),
           
+          ListTile(
+            leading: Icon(Icons.delete_forever, color: context.tokens.brick),
+            title: Text(
+              'Delete Account',
+              style: TextStyle(color: context.tokens.brick),
+            ),
+            onTap: () => _confirmDeleteAccount(context, ref),
+          ),
+
           const Divider(),
           const SizedBox(height: 16),
 
@@ -117,8 +165,8 @@ class UserProfileScreen extends ConsumerWidget {
               icon: const Icon(Icons.exit_to_app),
               label: const Text('Logout'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
+                backgroundColor: context.tokens.brickDeep,
+                foregroundColor: context.tokens.ink,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {

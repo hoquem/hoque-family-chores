@@ -358,6 +358,27 @@ final joinFamilyUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef JoinFamilyUseCaseRef = AutoDisposeProviderRef<JoinFamilyUseCase>;
+String _$joinFamilyAsChildUseCaseHash() =>
+    r'6790e12e9a91fca36de62d510a07380a709a4913';
+
+/// See also [joinFamilyAsChildUseCase].
+@ProviderFor(joinFamilyAsChildUseCase)
+final joinFamilyAsChildUseCaseProvider =
+    AutoDisposeProvider<JoinFamilyAsChildUseCase>.internal(
+      joinFamilyAsChildUseCase,
+      name: r'joinFamilyAsChildUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$joinFamilyAsChildUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef JoinFamilyAsChildUseCaseRef =
+    AutoDisposeProviderRef<JoinFamilyAsChildUseCase>;
 String _$addMemberUseCaseHash() => r'4967437143fecc5dc2ce6d6fdfdd49d2159f2816';
 
 /// See also [addMemberUseCase].
@@ -717,6 +738,47 @@ final updateFamilyMemberUseCaseProvider =
 // ignore: unused_element
 typedef UpdateFamilyMemberUseCaseRef =
     AutoDisposeProviderRef<UpdateFamilyMemberUseCase>;
+String _$changePasswordUseCaseHash() =>
+    r'5ba45e95809483f7b01ea04aa27d1427dfcd9a22';
+
+/// See also [changePasswordUseCase].
+@ProviderFor(changePasswordUseCase)
+final changePasswordUseCaseProvider =
+    AutoDisposeProvider<ChangePasswordUseCase>.internal(
+      changePasswordUseCase,
+      name: r'changePasswordUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$changePasswordUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ChangePasswordUseCaseRef =
+    AutoDisposeProviderRef<ChangePasswordUseCase>;
+String _$deleteAccountUseCaseHash() =>
+    r'bbdc07faa667f87b2b8498e9dcc7deceb7689012';
+
+/// See also [deleteAccountUseCase].
+@ProviderFor(deleteAccountUseCase)
+final deleteAccountUseCaseProvider =
+    AutoDisposeProvider<DeleteAccountUseCase>.internal(
+      deleteAccountUseCase,
+      name: r'deleteAccountUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$deleteAccountUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef DeleteAccountUseCaseRef = AutoDisposeProviderRef<DeleteAccountUseCase>;
 String _$deleteUserUseCaseHash() => r'58c07ee8858bbf7d27e2b4cf2dd55d3ac9f9087f';
 
 /// See also [deleteUserUseCase].
