@@ -167,52 +167,10 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<TaskDifficulty>(
+            _EffortSizeField(
               key: const Key('task_difficulty_dropdown'),
-              // The long labels overflow narrow screens without this.
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Effort Size',
-                border: OutlineInputBorder(),
-                helperText: 'Select the effort size - stars are automatically set',
-              ),
               value: _selectedDifficulty,
-              items: TaskDifficulty.values.map((difficulty) {
-                String description;
-                int stars;
-                switch (difficulty) {
-                  case TaskDifficulty.easy:
-                    description = 'Small (S) - Quick tasks, 5-15 minutes';
-                    stars = 10;
-                    break;
-                  case TaskDifficulty.medium:
-                    description = 'Medium (M) - Moderate tasks, 15-30 minutes';
-                    stars = 25;
-                    break;
-                  case TaskDifficulty.hard:
-                    description = 'Large (L) - Complex tasks, 30-60 minutes';
-                    stars = 50;
-                    break;
-                  case TaskDifficulty.challenging:
-                    description = 'Extra Large (XL) - Major tasks, 60+ minutes';
-                    stars = 100;
-                    break;
-                }
-                return DropdownMenuItem<TaskDifficulty>(
-                  value: difficulty,
-                  child: Text(
-                    '$description ($stars ⭐)',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList(),
-              onChanged: (TaskDifficulty? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedDifficulty = newValue;
-                  });
-                }
-              },
+              onChanged: (d) => setState(() => _selectedDifficulty = d),
             ),
             const SizedBox(height: 16),
             // Family members dropdown
@@ -297,7 +255,15 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            InkWell(
+            // An InkWell wrapping a field reads as text, not as something you
+            // can act on; say that it opens a picker.
+            Semantics(
+              button: true,
+              label: _dueDate == null
+                  ? 'Due date, none set'
+                  : 'Due date, ${DateFormat('MMMM d, yyyy').format(_dueDate!)}',
+              hint: 'Opens a date picker',
+              child: InkWell(
               onTap: () => _selectDate(context),
               child: InputDecorator(
                 decoration: InputDecoration(
@@ -317,6 +283,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       ? DateFormat('MMM d, y').format(_dueDate!)
                       : 'Select a date',
                 ),
+              ),
               ),
             ),
             const SizedBox(height: 24),
@@ -350,6 +317,159 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Effort size as a four-way segmented control.
+///
+/// This was a dropdown whose items read "Extra Large (XL) - Major tasks, 60+
+/// minutes (100 ⭐)". At ~51 characters it truncated on every phone the app
+/// runs on (an iPhone SE fits roughly 30), and `TextOverflow.ellipsis` turned
+/// that into silent truncation rather than a visible error, hiding the star
+/// value — the one number a parent is choosing between.
+///
+/// Four options don't need a menu. Showing them side by side makes the size
+/// and its reward legible at 320pt, keeps every target ≥48px for the
+/// touch-target floor, and moves the prose to a caption that can wrap.
+class _EffortSizeField extends StatelessWidget {
+  const _EffortSizeField({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final TaskDifficulty value;
+  final ValueChanged<TaskDifficulty> onChanged;
+
+  static String shortLabel(TaskDifficulty d) => switch (d) {
+        TaskDifficulty.easy => 'S',
+        TaskDifficulty.medium => 'M',
+        TaskDifficulty.hard => 'L',
+        TaskDifficulty.challenging => 'XL',
+      };
+
+  static int stars(TaskDifficulty d) => switch (d) {
+        TaskDifficulty.easy => 10,
+        TaskDifficulty.medium => 25,
+        TaskDifficulty.hard => 50,
+        TaskDifficulty.challenging => 100,
+      };
+
+  static String description(TaskDifficulty d) => switch (d) {
+        TaskDifficulty.easy => 'Small — quick tasks, 5-15 minutes',
+        TaskDifficulty.medium => 'Medium — moderate tasks, 15-30 minutes',
+        TaskDifficulty.hard => 'Large — complex tasks, 30-60 minutes',
+        TaskDifficulty.challenging => 'Extra large — major tasks, 60+ minutes',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Effort Size',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.02,
+            color: t.inkSoft,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (final d in TaskDifficulty.values) ...[
+              Expanded(
+                child: _EffortChip(
+                  difficulty: d,
+                  selected: d == value,
+                  onTap: () => onChanged(d),
+                ),
+              ),
+              if (d != TaskDifficulty.values.last) const SizedBox(width: 8),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        // The prose that used to be crammed into the dropdown row. Full width
+        // and free to wrap, so it never needs an ellipsis.
+        Text(
+          description(value),
+          style: TextStyle(fontSize: 14, color: t.inkSoft),
+        ),
+      ],
+    );
+  }
+}
+
+class _EffortChip extends StatelessWidget {
+  const _EffortChip({
+    required this.difficulty,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TaskDifficulty difficulty;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final label = _EffortSizeField.shortLabel(difficulty);
+    final count = _EffortSizeField.stars(difficulty);
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${_EffortSizeField.description(difficulty)}, $count stars',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          // 48px floor is the touch target; the content sets the real height.
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          decoration: BoxDecoration(
+            color: selected ? t.marigold : t.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? t.marigold : t.line,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Selection is not carried by colour alone: the letter also goes
+              // bold and the border thickens.
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: selected ? t.ink : t.inkSoft,
+                ),
+              ),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '$count ⭐',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: selected ? t.ink : t.inkSoft,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

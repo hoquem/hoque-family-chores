@@ -6,6 +6,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 
@@ -23,24 +24,6 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   bool _isLoading = false;
 
   Task get task => widget.task;
-
-  Color _statusColor(TaskStatus status) {
-    // Fridge Door status mapping (DESIGN.md): available is neutral (not yet
-    // alive); warm hues mark live work. Always paired with icon + label.
-    final t = context.tokens;
-    switch (status) {
-      case TaskStatus.available:
-        return t.inkSoft;
-      case TaskStatus.assigned:
-        return t.carrot;
-      case TaskStatus.pendingApproval:
-        return t.amberWarn;
-      case TaskStatus.needsRevision:
-        return t.brick;
-      case TaskStatus.completed:
-        return t.sprout;
-    }
-  }
 
   String _statusLabel(TaskStatus status) {
     switch (status) {
@@ -293,7 +276,6 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     final t = context.tokens;
     final dateFormat = DateFormat('MMM d, yyyy');
     final bool isOverdue = task.isOverdue;
-    final statusColor = _statusColor(task.status);
     final difficultyColor = _difficultyColor(task.difficulty);
 
     // Points + due date sit inline under the pills, not as twin hero-metric
@@ -317,29 +299,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.circle, size: 10, color: statusColor),
-                      const SizedBox(width: 6),
-                      Text(
-                        _statusLabel(task.status),
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                StatusPill(
+                  status: task.status,
+                  label: _statusLabel(task.status),
                 ),
                 const SizedBox(width: 12),
                 Container(

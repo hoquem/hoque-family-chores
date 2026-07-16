@@ -7,6 +7,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/available_ta
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListTile extends ConsumerStatefulWidget {
@@ -253,7 +254,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
               onPressed: () => Navigator.pop(context, controller.text),
               style: ElevatedButton.styleFrom(
                 backgroundColor: context.tokens.brickDeep,
-                foregroundColor: context.tokens.ink,
+                // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                foregroundColor: context.tokens.cream,
               ),
               child: const Text('Reject'),
             ),
@@ -311,7 +313,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     }
   }
 
-  Widget _buildActionButtons() {
+  /// The actions for this task, or null when this status/role has none.
+  Widget? _buildActionButtons() {
     if (_isProcessing || widget.isUpdating) {
       return const SizedBox(
         width: 24,
@@ -344,7 +347,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 label: const Text('Done'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
-                  foregroundColor: context.tokens.ink,
+                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                  foregroundColor: context.tokens.cream,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -359,7 +363,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             ],
           );
         }
-        return const SizedBox.shrink();
+        return null;
 
       case TaskStatus.pendingApproval:
         if (_isAdmin) {
@@ -372,7 +376,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 label: const Text('Approve'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
-                  foregroundColor: context.tokens.ink,
+                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+                  foregroundColor: context.tokens.cream,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -392,24 +397,14 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             ],
           );
         }
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.tokens.amberWarn.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.hourglass_top, size: 16, color: context.tokens.amberWarn),
-              const SizedBox(width: 4),
-              Text(
-                'Awaiting\nApproval',
-                style: TextStyle(fontSize: 11, color: context.tokens.amberWarn),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+        // "Waiting" per DESIGN.md's status table, not "Awaiting Approval":
+        // this pill sits in the narrow action column beside the task title,
+        // where the longer wording overflows by ~51px on a 390pt phone. The
+        // old code reached for a hardcoded '\n' to force two lines; the
+        // shorter word is what the design system actually asks for.
+        return const StatusPill(
+          status: TaskStatus.pendingApproval,
+          label: 'Waiting',
         );
 
       case TaskStatus.needsRevision:
@@ -420,16 +415,19 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             label: const Text('Resubmit'),
             style: ElevatedButton.styleFrom(
               backgroundColor: context.tokens.carrotDeep,
-              foregroundColor: context.tokens.ink,
+              // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
+              foregroundColor: context.tokens.cream,
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           );
         }
-        return Icon(Icons.warning, color: context.tokens.amberWarn, size: 24);
+        return Icon(Icons.warning,
+            color: context.tokens.amberWarnDeep, size: 24);
 
       case TaskStatus.completed:
-        return Icon(Icons.check_circle, color: context.tokens.sprout, size: 24);
+        return Icon(Icons.check_circle,
+            color: context.tokens.sproutDeep, size: 24);
     }
   }
 
@@ -448,30 +446,21 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     }
   }
 
-  Color _getStatusColor() {
-    final t = context.tokens;
-    switch (widget.task.status) {
-      case TaskStatus.available:
-        return t.inkSoft; // neutral: not yet alive
-      case TaskStatus.assigned:
-        return t.carrot;
-      case TaskStatus.pendingApproval:
-        return t.amberWarn;
-      case TaskStatus.completed:
-        return t.sprout;
-      case TaskStatus.needsRevision:
-        return t.brick;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isCompleted = widget.task.status == TaskStatus.completed;
+    final actions = _buildActionButtons();
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       elevation: 2.0,
-      child: InkWell(
+      // The whole card is the tap target for opening the task. Without a label
+      // a screen reader reads the contents and leaves the user to infer that
+      // the pile of text is also a button.
+      child: Semantics(
+        button: true,
+        label: 'Open task ${widget.task.title}, ${_getStatusText()}',
+        child: InkWell(
         borderRadius: BorderRadius.circular(12.0),
         onTap: () {
           Navigator.push(
@@ -486,10 +475,16 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            // Actions sit on their own row below the task, not beside it.
+            // Side by side, an Approve + Reject pair left the title column
+            // 42.7px on a 390pt phone and the status pill overflowed it by
+            // 51px. The whole width belongs to the task; the actions get their
+            // own line underneath.
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
+                SizedBox(
+                  width: double.infinity,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -508,21 +503,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                       const SizedBox(height: 4.0),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0, vertical: 2.0),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor().withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12.0),
-                              border: Border.all(color: _getStatusColor()),
-                            ),
-                            child: Text(
-                              _getStatusText(),
-                              style: TextStyle(
-                                fontSize: 12.0,
-                                color: _getStatusColor(),
-                                fontWeight: FontWeight.w500,
-                              ),
+                          Flexible(
+                            child: StatusPill(
+                              status: widget.task.status,
+                              label: _getStatusText(),
                             ),
                           ),
                           const SizedBox(width: 8.0),
@@ -550,29 +534,37 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                         const SizedBox(height: 4.0),
                         Text(
                           widget.task.description,
-                          style: TextStyle(
-                            fontSize: 12.0,
-                            color: context.tokens.inkSoft,
-                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium!
+                              .copyWith(color: context.tokens.inkSoft),
                         ),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                _buildActionButtons(),
+                if (actions != null) ...[
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
               ],
             ),
             if (_isError) ...[
               const SizedBox(height: 8.0),
               Text(
                 _errorMessage ?? 'An error occurred',
-                style: TextStyle(color: context.tokens.brick, fontSize: 12.0),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium!
+                    .copyWith(color: context.tokens.brickDeep),
               ),
             ],
           ],
         ),
         ),
+      ),
       ),
     );
   }

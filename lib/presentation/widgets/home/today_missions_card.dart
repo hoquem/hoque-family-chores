@@ -54,14 +54,18 @@ class TodayMissionsCard extends StatelessWidget {
           ),
           ...missions.waiting.map(
             (task) => ListTile(
-              leading: Icon(Icons.hourglass_top, color: context.tokens.amberWarn),
+              // Deep tone, not the base: amberWarn on cream is 2.01:1, under
+              // the 3:1 WCAG floor for a meaningful icon.
+              leading:
+                  Icon(Icons.hourglass_top, color: context.tokens.amberWarnDeep),
               title: Text(task.title),
               subtitle: const Text('Waiting for approval ⏳'),
             ),
           ),
           ...missions.done.map(
             (task) => ListTile(
-              leading: Icon(Icons.check_circle, color: context.tokens.sprout),
+              // sprout on cream is 2.60:1; sproutDeep clears the 3:1 floor.
+              leading: Icon(Icons.check_circle, color: context.tokens.sproutDeep),
               title: Text(
                 task.title,
                 style: const TextStyle(

@@ -7,9 +7,13 @@ colors:
   star-gold: "#FFB300"
   coral: "#FF6B5C"
   sprout: "#4CAF50"
+  sprout-deep: "#2E7D32"
   amber-warn: "#F59E0B"
+  amber-warn-deep: "#935F06"
   carrot: "#FB8C00"
+  carrot-deep: "#9E5600"
   brick: "#C6412A"
+  brick-deep: "#9E3022"
   cream-bg: "#FBF7F0"
   surface: "#FCF9F4"
   ink: "#241D14"
@@ -90,10 +94,12 @@ components:
     rounded: "{rounded.lg}"
     padding: "{spacing.lg}"
   status-pill:
-    backgroundColor: "rgba(224,138,30,0.12)"
-    textColor: "{colors.marigold-deep}"
+    backgroundColor: "12% tint of the status color"
+    textColor: "{colors.ink}"
+    iconColor: "the status color's -deep variant"
     rounded: "{rounded.pill}"
-    padding: "6px 12px"
+    padding: "4px 10px"
+    typography: "{typography.label}"
   input:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -210,21 +216,29 @@ concrete, and it closes the 5-state mapping the current code fudges.
 
 ### Contrast Pairs (normative)
 
-Approximate ratios; the **prohibited** pairings are the ones the current code
-gets wrong (white text on amber/marigold FAB and tonal buttons).
+Computed from the token hexes, not estimated. An earlier revision of this
+table was eyeballed and three rows were wrong — one of them inverted a
+pass/fail and shipped a failing pairing as "AA". These are asserted by
+``test/presentation/theme/token_contrast_test.dart``; change a token and the
+test tells you what it costs.
 
 | Foreground | Background | Ratio | Use |
 |---|---|---|---|
-| Ink #241D14 | Cream #FBF7F0 | ~12.8:1 | body text (AAA) |
-| Ink-Soft #5C5346 | Cream #FBF7F0 | ~6.5:1 | secondary text (AA) |
-| Ink #241D14 | Marigold #E08A1E | ~7.5:1 | primary button text (AAA) |
-| Cream #FBF7F0 | Toasted Marigold #B86A12 | ~4.6:1 | white-text variant (AA) |
-| Ink #241D14 | Star Gold #FFB300 | ~9:1 | tonal button / FAB icon (AAA) |
-| Ink-Muted #8A8067 | Cream #FBF7F0 | ~3.3:1 | large text / hints only — never body |
+| Ink #241D14 | Cream #FBF7F0 | 15.60:1 | body text (AAA) |
+| Ink-Soft #5C5346 | Cream #FBF7F0 | 7.07:1 | secondary text (AA) |
+| Ink #241D14 | Marigold #E08A1E | 6.20:1 | primary button text (AA) |
+| Ink #241D14 | Star Gold #FFB300 | 9.28:1 | tonal button / FAB icon (AAA) |
+| Ink-Muted #8A8067 | Cream #FBF7F0 | 3.67:1 | large text / hints only — never body |
+| Ink #241D14 | any 12% status tint | 13.2–14.3:1 | status pill label |
+| status -deep | its own 12% tint | 4.3–5.7:1 | status pill icon (needs 3:1) |
 
-**Prohibited:** white on Marigold (~2.1:1) and white on Star Gold (~2:1). The
-current amber FAB / green+white buttons fail; the `colorize` pass must switch
-them to Ink text.
+**Prohibited:** white on Marigold (2.68:1) and white on Star Gold (1.79:1) —
+both far under 4.5:1. Use Ink on every light brand surface.
+
+**Also prohibited:** Cream on Toasted Marigold. A previous revision listed this
+at "~4.6:1 (AA)" as the white-text variant; it is actually **3.85:1 and fails**
+for body text. There is no white-text variant in this palette — marigold-deep
+is a background for Ink text and a tone for icons, not a way to get white text.
 
 ### Dark Theme (planned; not yet in code)
 
@@ -246,6 +260,12 @@ coral celebration plus a coral button has failed.
 **The Status-Never-Alone Rule.** No status is conveyed by color alone. Every
 status pill carries an icon and a word (e.g. ⏳ "Waiting", ✓ "Done"). This is
 young-reader legibility made structural; it is not optional.
+
+**The Ink-Label Rule.** Status text is Ink, never the status color. A
+full-saturation hue on a 12% tint of itself tops out at 3.97:1 and bottoms out
+at 1.84:1, so a pill that "looks like its status" is the least readable text in
+the app — for the readers least able to cope with it. The hue lives in the tint
+and the icon; the word is Ink. See §2 Contrast Pairs.
 
 ## 3. Typography
 
@@ -311,26 +331,70 @@ is opaque warm surfaces, never frosted blur.
 
 ### Buttons
 
+**State the colours in the theme.** Left to `ColorScheme.fromSeed`, M3 derives
+a light container with primary-coloured text from the light marigold seed —
+2.43:1 on the live "Create Task" button. Tokens being sound does not make
+buttons sound; `appLightTheme` now pins background and foreground on every
+button theme, and `token_contrast_test.dart` resolves the real `ButtonStyle`
+rather than raw token pairs.
+
+**The Fill Rule.** *Light fills take Ink; Deep fills take Cream.* There is no
+choosing. Measured:
+
+| Fill | Ink | Cream | Use |
+|---|---|---|---|
+| Marigold #E08A1E | **6.20:1** | 2.51:1 | Ink |
+| Star Gold #FFB300 | **9.28:1** | 1.68:1 | Ink |
+| Sprout #4CAF50 | **5.99:1** | 2.60:1 | Ink |
+| Sprout Deep #2E7D32 | 3.25:1 | **4.80:1** | Cream |
+| Brick #C6412A | 3.32:1 | **4.69:1** | Cream |
+| Brick Deep #9E3022 | 2.30:1 | **6.78:1** | Cream |
+| Carrot Deep #9E5600 | 3.00:1 | **5.20:1** | Cream |
+| **Marigold Deep #B86A12** | 4.05:1 | 3.85:1 | **not a fill — fails both** |
+
 - **Shape:** 16px corners (lg), min 48px height, 16px 24px padding.
 - **Primary (filled):** Marigold fill, **Ink** text (not white — marigold is
   light). For the one primary action per screen.
 - **Tonal:** Star-gold fill, Ink text. Secondary actions (e.g. "Join
   family").
-- **Outlined danger:** transparent, Brick text + Brick border. Reject /
-  cancel / delete.
+- **Outlined:** transparent, **Ink** label, Line border. Not the primary
+  colour: M3 defaults an outlined label to primary, and marigold on cream is
+  2.51:1.
+- **Outlined danger:** transparent, Brick text + Brick border (4.69:1 on
+  cream). Reject / cancel / delete.
 - **Text:** Ink-soft, no border. Tertiary (e.g. "Forgot Password?").
-- **Hover / Focus:** tonal shift to the deep variant (Toasted Marigold) +
-  a 2px marigold focus ring at 50% alpha. Press = Lifted shadow.
+- **Press:** M3's default overlay (10% of the foreground) darkens marigold to
+  ~#CD7F1D, where Ink still reads at 5.27:1. Plus the Lifted shadow.
+  An earlier revision said to shift to **Toasted Marigold** on hover/press —
+  don't. Marigold Deep is the one tone in the palette that fails with *both*
+  Ink and Cream, so it cannot carry a label at all. It is a pressed *accent*
+  and an icon tone, never a fill.
 - **States required:** default, hover, focus, active, disabled, loading.
   Loading = spinner in place of label, button dims to 60%.
 
 ### Chips / Status Pills
 
+Implemented once, in ``lib/presentation/widgets/status_pill.dart``. Build the
+pill by using that widget, not by re-deriving the mapping at the call site —
+three call sites each rolled their own and all three drifted.
+
 - **Style:** full pill (999px), alpha-12% tint of the status color as
-  background, full-saturation status color as text and a leading icon and a
-  word. Never a bare colored dot.
+  background, an **Ink** label at 14px/600, and a leading icon in the status
+  color's **-deep** variant. Never a bare colored dot.
+- **Why the label is Ink, not the status color.** A full-saturation status
+  color on a 12% tint of itself cannot reach AA: amber lands at 1.84:1,
+  carrot 2.01:1, sprout 2.33:1, and even brick only 3.97:1, against a 4.5:1
+  floor. Ink on the same tint is 13–14:1. Identity still comes from the icon
+  and the word; the hue conveys aliveness through the tint and the icon, which
+  is all the Status-Never-Alone Rule asks of it.
+- **Why the icon is the -deep variant.** As a meaningful graphic it owes 3:1
+  (WCAG 1.4.11); the base tones give 1.84–2.33:1 on their own tint. The deep
+  siblings clear it at 4.3–5.7:1.
 - **State:** per task status (Sprout/Amber/Carrot/Brick); each pill ships
   with its icon + label by default.
+- ``test/presentation/theme/token_contrast_test.dart`` asserts all of the
+  above against the real token values, including that the base tones still
+  fail — so "just use the status color" cannot quietly come back.
 
 ### Cards / Containers
 
@@ -382,15 +446,24 @@ This is the fridge door's main column — it must parse in one glance for a
 
 **Flutter implementation notes.** Depth = `BoxShadow` on a `BoxDecoration`
 (Ambient/Lifted) or Material tonal `elevation`; **never `BackdropFilter`**
-for depth (the No-Glass Rule). Motion uses `Curves.easeOutQuart` /
-`Curves.easeOutExpo`, 150–250ms, gated by `MediaQuery.accessibleNavigation`
-so the OS reduced-motion setting disables celebration. The current
-`Curves.elasticOut` (CelebrationCard) and `AnimationController..repeat()`
-pulse (PendingApprovalBadge) are both prohibited. Color tokens become a
-`ThemeExtension<CustomColors>` (the existing `success`/`starGold` scaffold,
-extended with `marigold`, `ink`, `cream`, `line`, and the status set) read
-via `Theme.of(context).extension<CustomColors>()!`; `ColorScheme.fromSeed` is
-reseeded to marigold.
+for depth (the No-Glass Rule).
+
+Motion lives in `lib/presentation/theme/motion.dart`: `kMotionCurve`
+(`Curves.easeOutQuart`) and `kMotionDuration` (220ms), gated by
+`context.prefersReducedMotion`. Use the gate, don't re-derive it.
+
+An earlier revision of this note said to gate on
+`MediaQuery.accessibleNavigation` "so the OS reduced-motion setting disables
+celebration" — that is the wrong flag, and it is why nothing was gated for so
+long. `accessibleNavigation` means a screen reader is active;
+**`disableAnimations`** is the reduce-motion setting. `prefersReducedMotion`
+honours both, because movement under a screen reader is noise too.
+
+Colour tokens are a `ThemeExtension<CustomColors>` read via `context.tokens`;
+`ColorScheme.fromSeed` is reseeded to marigold. The type scale is
+`kFridgeDoorTextTheme`, stated explicitly rather than inherited — Material 3's
+geometry supplies `bodySmall` at 12px and `labelSmall` at 11px, and a floor the
+theme itself undercuts is not a floor.
 
 ## 6. Do's and Don'ts
 

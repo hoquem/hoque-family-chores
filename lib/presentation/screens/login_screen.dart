@@ -36,9 +36,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
+        // Email sign-in hides behind a long-press on the title. The gesture
+        // has no visual affordance, so without an explicit Semantics action a
+        // screen-reader user cannot discover it or perform it — PRODUCT.md
+        // requires the label + action on every non-standard gesture.
+        title: Semantics(
+          label: 'Login',
+          hint: _showEmailAuth
+              ? 'Long press to hide email sign in'
+              : 'Long press to show email sign in',
           onLongPress: () => setState(() => _showEmailAuth = !_showEmailAuth),
-          child: const Text('Login'),
+          excludeSemantics: true,
+          child: GestureDetector(
+            onLongPress: () => setState(() => _showEmailAuth = !_showEmailAuth),
+            child: const Text('Login'),
+          ),
         ),
       ),
       // Scrollable: with the email section revealed (and the keyboard up on
