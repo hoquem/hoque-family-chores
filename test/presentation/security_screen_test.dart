@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
@@ -26,7 +27,7 @@ Future<MockAuthRepository> _pump(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: SecurityScreen()),
+      child: MaterialApp(theme: appLightTheme, home: SecurityScreen()),
     ),
   );
   await tester.pump();

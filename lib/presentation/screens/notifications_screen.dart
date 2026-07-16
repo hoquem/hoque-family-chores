@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/repositories/notification_repository.
     as domain;
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 /// The user's notification inbox: newest first, tap to mark read,
 /// swipe to delete.
@@ -54,10 +55,10 @@ class _NotificationTile extends ConsumerWidget {
       key: ValueKey(notification.id),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Colors.red,
+        color: context.tokens.brickDeep,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: Icon(Icons.delete, color: context.tokens.cream),
       ),
       onDismissed: (_) => ref
           .read(deleteNotificationUseCaseProvider)
@@ -67,7 +68,7 @@ class _NotificationTile extends ConsumerWidget {
           notification.isRead
               ? Icons.notifications_none
               : Icons.notifications_active,
-          color: notification.isRead ? Colors.grey : Colors.amber,
+          color: notification.isRead ? context.tokens.inkMuted : context.tokens.amberWarn,
         ),
         title: Text(
           notification.title,

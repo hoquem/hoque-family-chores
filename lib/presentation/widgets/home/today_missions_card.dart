@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/services/home_stats.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 /// The child's tasks for today: open ones first, then those waiting for
 /// approval, then today's finished ones.
@@ -53,14 +54,14 @@ class TodayMissionsCard extends StatelessWidget {
           ),
           ...missions.waiting.map(
             (task) => ListTile(
-              leading: const Icon(Icons.hourglass_top, color: Colors.amber),
+              leading: Icon(Icons.hourglass_top, color: context.tokens.amberWarn),
               title: Text(task.title),
               subtitle: const Text('Waiting for approval ⏳'),
             ),
           ),
           ...missions.done.map(
             (task) => ListTile(
-              leading: const Icon(Icons.check_circle, color: Colors.green),
+              leading: Icon(Icons.check_circle, color: context.tokens.sprout),
               title: Text(
                 task.title,
                 style: const TextStyle(

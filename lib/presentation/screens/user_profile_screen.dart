@@ -6,6 +6,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 class UserProfileScreen extends ConsumerWidget {
   const UserProfileScreen({super.key});
@@ -31,7 +32,7 @@ class UserProfileScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: context.tokens.brick),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
@@ -147,10 +148,10 @@ class UserProfileScreen extends ConsumerWidget {
           ),
           
           ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text(
+            leading: Icon(Icons.delete_forever, color: context.tokens.brick),
+            title: Text(
               'Delete Account',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: context.tokens.brick),
             ),
             onTap: () => _confirmDeleteAccount(context, ref),
           ),
@@ -164,8 +165,8 @@ class UserProfileScreen extends ConsumerWidget {
               icon: const Icon(Icons.exit_to_app),
               label: const Text('Logout'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
+                backgroundColor: context.tokens.brickDeep,
+                foregroundColor: context.tokens.ink,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {

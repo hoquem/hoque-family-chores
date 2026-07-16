@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_onboarding_notifier.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 /// Family tab: create/join a family, or view the current family's details.
@@ -99,7 +100,7 @@ class _FamilyOnboardingViewState extends ConsumerState<_FamilyOnboardingView> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Icon(Icons.family_restroom, size: 64, color: Colors.grey),
+          Icon(Icons.family_restroom, size: 64, color: context.tokens.inkMuted),
           const SizedBox(height: 8),
           Text(
             'Set up your family',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
@@ -16,7 +17,7 @@ Future<MockAuthRepository> _pumpLoginScreen(WidgetTester tester) async {
         authRepositoryProvider.overrideWith((_) => auth),
         userRepositoryProvider.overrideWith((_) => MockUserRepository()),
       ],
-      child: const MaterialApp(home: LoginScreen()),
+      child: MaterialApp(theme: appLightTheme, home: LoginScreen()),
     ),
   );
   return auth;

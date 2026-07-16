@@ -4,6 +4,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_creation_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -63,9 +64,9 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
 
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User not properly authenticated'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('User not properly authenticated'),
+          backgroundColor: context.tokens.brickDeep,
         ),
       );
       return;
@@ -104,7 +105,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error creating task: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -260,8 +261,8 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 error: (error, stack) => Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    border: Border.all(color: Colors.red.shade200),
+                    color: context.tokens.brick.withValues(alpha: 0.12),
+                    border: Border.all(color: context.tokens.brick.withValues(alpha: 0.4)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -269,7 +270,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       Expanded(
                         child: Text(
                           'Could not load family members.',
-                          style: TextStyle(color: Colors.red.shade700),
+                          style: TextStyle(color: context.tokens.brick),
                         ),
                       ),
                       TextButton(
@@ -338,13 +339,13 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red.shade200),
+                  color: context.tokens.brick.withValues(alpha: 0.12),
+                  border: Border.all(color: context.tokens.brick.withValues(alpha: 0.4)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   taskCreationState.error!,
-                  style: TextStyle(color: Colors.red.shade700),
+                  style: TextStyle(color: context.tokens.brick),
                 ),
               ),
             ],

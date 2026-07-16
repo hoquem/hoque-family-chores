@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -23,7 +24,7 @@ class BottomNavBar extends StatelessWidget {
       },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Theme.of(context).primaryColor,
-      unselectedItemColor: Colors.grey,
+      unselectedItemColor: context.tokens.inkMuted,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.task), label: 'Tasks'),

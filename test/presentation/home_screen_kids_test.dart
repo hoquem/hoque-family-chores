@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
@@ -130,7 +131,7 @@ Future<ProviderContainer> _pumpHome(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(home: home),
+      child: MaterialApp(theme: appLightTheme, home: home),
     ),
   );
 

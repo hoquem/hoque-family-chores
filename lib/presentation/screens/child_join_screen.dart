@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 /// Lets a child join their family with just a first name and the family's
 /// invite code — no email or password. An anonymous account is created
@@ -48,7 +49,7 @@ class _ChildJoinScreenState extends ConsumerState<ChildJoinScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.family_restroom, size: 64, color: Colors.grey),
+            Icon(Icons.family_restroom, size: 64, color: context.tokens.inkMuted),
             const SizedBox(height: 16),
             const Text(
               'Ask a parent for your family code, then type it in with '
@@ -82,7 +83,7 @@ class _ChildJoinScreenState extends ConsumerState<ChildJoinScreen> {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
                   authState.errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: context.tokens.brick),
                   textAlign: TextAlign.center,
                 ),
               ),

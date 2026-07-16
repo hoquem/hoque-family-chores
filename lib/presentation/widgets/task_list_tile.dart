@@ -6,6 +6,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 class TaskListTile extends ConsumerStatefulWidget {
@@ -140,9 +141,9 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Task submitted for approval!'),
-            backgroundColor: Colors.green,
+            backgroundColor: context.tokens.sproutDeep,
           ),
         );
       }
@@ -158,7 +159,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -191,9 +192,9 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Task approved! Points awarded.'),
-            backgroundColor: Colors.green,
+            backgroundColor: context.tokens.sproutDeep,
           ),
         );
       }
@@ -209,7 +210,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -251,8 +252,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, controller.text),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: context.tokens.brickDeep,
+                foregroundColor: context.tokens.ink,
               ),
               child: const Text('Reject'),
             ),
@@ -281,9 +282,9 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Task sent back for revision.'),
-            backgroundColor: Colors.orange,
+            backgroundColor: context.tokens.carrotDeep,
           ),
         );
       }
@@ -299,7 +300,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.brickDeep,
           ),
         );
       }
@@ -327,7 +328,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           label: const Text('Claim'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
+            foregroundColor: context.tokens.ink,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
         );
@@ -342,8 +343,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 icon: const Icon(Icons.check, size: 16),
                 label: const Text('Done'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.tokens.sproutDeep,
+                  foregroundColor: context.tokens.ink,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -353,9 +354,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 onPressed: _handleCantDoIt,
                 icon: const Icon(Icons.undo, size: 20),
                 tooltip: "Can't do it — return to available",
-                color: Colors.orange,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                color: context.tokens.amberWarn,
               ),
             ],
           );
@@ -372,8 +371,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 icon: const Icon(Icons.thumb_up, size: 16),
                 label: const Text('Approve'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.tokens.sproutDeep,
+                  foregroundColor: context.tokens.ink,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -384,8 +383,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 icon: const Icon(Icons.thumb_down, size: 16),
                 label: const Text('Reject'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: context.tokens.brick,
+                  side: BorderSide(color: context.tokens.brick),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
@@ -396,17 +395,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.purple.withValues(alpha: 0.1),
+            color: context.tokens.amberWarn.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.hourglass_top, size: 16, color: Colors.purple),
-              SizedBox(width: 4),
+              Icon(Icons.hourglass_top, size: 16, color: context.tokens.amberWarn),
+              const SizedBox(width: 4),
               Text(
                 'Awaiting\nApproval',
-                style: TextStyle(fontSize: 11, color: Colors.purple),
+                style: TextStyle(fontSize: 11, color: context.tokens.amberWarn),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -420,17 +419,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             icon: const Icon(Icons.refresh, size: 16),
             label: const Text('Resubmit'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: context.tokens.carrotDeep,
+              foregroundColor: context.tokens.ink,
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           );
         }
-        return const Icon(Icons.warning, color: Colors.orange, size: 24);
+        return Icon(Icons.warning, color: context.tokens.amberWarn, size: 24);
 
       case TaskStatus.completed:
-        return const Icon(Icons.check_circle, color: Colors.green, size: 24);
+        return Icon(Icons.check_circle, color: context.tokens.sprout, size: 24);
     }
   }
 
@@ -450,17 +449,18 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   }
 
   Color _getStatusColor() {
+    final t = context.tokens;
     switch (widget.task.status) {
       case TaskStatus.available:
-        return Colors.blue;
+        return t.inkSoft; // neutral: not yet alive
       case TaskStatus.assigned:
-        return Colors.orange;
+        return t.carrot;
       case TaskStatus.pendingApproval:
-        return Colors.purple;
+        return t.amberWarn;
       case TaskStatus.completed:
-        return Colors.green;
+        return t.sprout;
       case TaskStatus.needsRevision:
-        return Colors.red;
+        return t.brick;
     }
   }
 
@@ -500,7 +500,9 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           fontWeight: FontWeight.bold,
                           decoration:
                               isCompleted ? TextDecoration.lineThrough : null,
-                          color: isCompleted ? Colors.grey : Colors.black,
+                          color: isCompleted
+                              ? context.tokens.inkMuted
+                              : context.tokens.ink,
                         ),
                       ),
                       const SizedBox(height: 4.0),
@@ -528,7 +530,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                             '${widget.task.points} pts',
                             style: TextStyle(
                               fontSize: 14.0,
-                              color: Colors.grey[600],
+                              color: context.tokens.inkSoft,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -540,7 +542,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           'Assigned to: ${widget.user.name}',
                           style: TextStyle(
                             fontSize: 14.0,
-                            color: Colors.grey[600],
+                            color: context.tokens.inkSoft,
                           ),
                         ),
                       ],
@@ -550,7 +552,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           widget.task.description,
                           style: TextStyle(
                             fontSize: 12.0,
-                            color: Colors.grey[500],
+                            color: context.tokens.inkSoft,
                           ),
                         ),
                       ],
@@ -565,7 +567,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
               const SizedBox(height: 8.0),
               Text(
                 _errorMessage ?? 'An error occurred',
-                style: const TextStyle(color: Colors.red, fontSize: 12.0),
+                style: TextStyle(color: context.tokens.brick, fontSize: 12.0),
               ),
             ],
           ],

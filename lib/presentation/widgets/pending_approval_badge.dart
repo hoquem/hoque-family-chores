@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/value_objects/family_id.dart';
 import '../providers/riverpod/pending_approvals_notifier.dart';
+import '../theme/app_tokens.dart';
 
 /// Badge showing count of pending approvals
 class PendingApprovalBadge extends ConsumerWidget {
@@ -44,8 +45,8 @@ class _StaticBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(6),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFB300),
+      decoration: BoxDecoration(
+        color: context.tokens.amberWarn,
         shape: BoxShape.circle,
       ),
       constraints: const BoxConstraints(
@@ -54,8 +55,8 @@ class _StaticBadge extends StatelessWidget {
       ),
       child: Text(
         count > 9 ? '9+' : count.toString(),
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: context.tokens.ink,
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),

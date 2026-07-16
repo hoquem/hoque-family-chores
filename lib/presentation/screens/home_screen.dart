@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/greeting_header.dart';
@@ -50,7 +51,7 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                Icon(Icons.error_outline, size: 64, color: context.tokens.brick),
                 const SizedBox(height: 16),
                 const Text(
                   'Could not load your profile',
@@ -85,7 +86,7 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.family_restroom, size: 64, color: Colors.grey),
+              Icon(Icons.family_restroom, size: 64, color: context.tokens.inkMuted),
               const SizedBox(height: 16),
               Text(
                 'Welcome, ${currentUser.name}!',
@@ -114,7 +115,7 @@ class HomeScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                Icon(Icons.error_outline, size: 48, color: context.tokens.brick),
                 const SizedBox(height: 8),
                 const Text(
                   'Could not load tasks',

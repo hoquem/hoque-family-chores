@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 /// Account security: shows how the user signs in and, for email/password
 /// accounts, lets them change the password.
@@ -117,7 +118,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: context.tokens.brick),
                 ),
               ),
             const SizedBox(height: 24),

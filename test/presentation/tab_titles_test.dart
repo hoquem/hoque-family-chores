@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
@@ -32,7 +33,7 @@ Future<void> _pumpMainScreenSignedIn(WidgetTester tester) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: MainScreen()),
+      child: MaterialApp(theme: appLightTheme, home: MainScreen()),
     ),
   );
 

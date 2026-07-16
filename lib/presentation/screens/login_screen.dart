@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/child_join_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/registration_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -59,7 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               icon: const Icon(Icons.account_circle),
               label: const Text('Continue with Google'),
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                minimumSize: const Size.fromHeight(48),
               ),
             ),
             const SizedBox(height: 12),
@@ -70,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               icon: const Icon(Icons.child_care),
               label: const Text("I'm a kid — join my family"),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                minimumSize: const Size.fromHeight(48),
               ),
             ),
             if (authState.isLoading)
@@ -84,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 padding: const EdgeInsets.only(top: 16.0),
                 child: Text(
                   authState.errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: context.tokens.brick),
                   textAlign: TextAlign.center,
                 ),
               ),

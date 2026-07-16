@@ -6,6 +6,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -164,11 +165,11 @@ class TaskListScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              Icon(Icons.error_outline, color: context.tokens.brick, size: 48),
               const SizedBox(height: 16),
               Text(
                 'Error loading tasks:',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.red),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: context.tokens.brick),
               ),
               const SizedBox(height: 8),
               Text(
@@ -232,17 +233,17 @@ class TaskListScreen extends ConsumerWidget {
                 child: Text('Completed'),
               ),
             ],
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.filter_list),
-            ),
+            // icon: renders a default 48x48 IconButton (was a ~32px padded
+            // Icon via child: — below the touch-target floor).
+            icon: const Icon(Icons.filter_list),
           ),
         ],
       ),
       body: _buildTaskList(context, ref, familyId),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToAddTask(context),
-        backgroundColor: const Color(0xFFFFB300),
+        backgroundColor: context.tokens.starGold,
+        foregroundColor: context.tokens.ink,
         tooltip: 'Add Task',
         child: const Icon(Icons.add),
       ),
