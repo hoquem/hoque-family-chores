@@ -17,10 +17,18 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Storage rules can read Firestore (cross-service rules). This costs one
-    // document read per request — the price of scoping by family without
-    // putting familyId in a custom claim. Mirrors isFamilyMember() in
-    // firestore.rules, which keys on the same memberIds array.
+    // Storage rules can read Firestore (cross-service rules). Two costs worth
+    // knowing before copying this pattern:
+    //
+    //  - one Firestore document read per Storage request. That is the price of
+    //    scoping by family without putting familyId in a custom claim.
+    //  - an IAM role on the Storage service account. `firebase deploy --only
+    //    storage` prompts to grant it the first time ("Cloud Storage for
+    //    Firebase needs an IAM Role to use cross-service rules"). Granted for
+    //    this project on 2026-07-16. A fresh project, or a CI service account
+    //    that cannot grant roles, will need this handled explicitly.
+    //
+    // Mirrors isFamilyMember() in firestore.rules, keyed on the same memberIds.
     function isFamilyMember(familyId) {
       return isSignedIn()
         && request.auth.uid in
