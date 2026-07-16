@@ -19,7 +19,7 @@ ISSUER_ID="2e924c90-75cb-4ef0-a036-574926a7b628"
 KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
 ASC_APP_ID="6746752194"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-IPA_PATH="$REPO_ROOT/build/ios/ipa/hoque_family_chores.ipa"
+IPA_DIR="$REPO_ROOT/build/ios/ipa"
 ARCHIVE_PATH="$REPO_ROOT/build/ios/archive/Runner.xcarchive"
 
 b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
@@ -89,11 +89,42 @@ KEY_FLAGS=(-allowProvisioningUpdates
   -authenticationKeyID "$KEY_ID"
   -authenticationKeyIssuerID "$ISSUER_ID")
 
+# Xcode names the exported .ipa after CFBundleName, so the filename changes
+# whenever the app is renamed. Wipe both outputs first: a stale .ipa from a
+# previous run is otherwise indistinguishable from this run's, and uploading
+# one gets rejected as a duplicate build (burned +27).
+rm -rf "$IPA_DIR" "$ARCHIVE_PATH"
+
 flutter build ios --config-only --release
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE_PATH" archive "${KEY_FLAGS[@]}"
 xcodebuild -exportArchive -archivePath "$ARCHIVE_PATH" \
-  -exportOptionsPlist ios/exportOptions.plist -exportPath build/ios/ipa "${KEY_FLAGS[@]}"
+  -exportOptionsPlist ios/exportOptions.plist -exportPath "$IPA_DIR" "${KEY_FLAGS[@]}"
+
+# Discover the .ipa rather than assuming its name; demand exactly one so an
+# unexpected extra file is an error, never a silent wrong-file upload.
+shopt -s nullglob
+ipas=("$IPA_DIR"/*.ipa)
+shopt -u nullglob
+if [ ${#ipas[@]} -ne 1 ]; then
+  echo "ERROR: expected exactly one .ipa in $IPA_DIR, found ${#ipas[@]}" >&2
+  printf '  %s\n' "${ipas[@]}" >&2
+  exit 1
+fi
+IPA_PATH="${ipas[0]}"
+
+# The artifact must carry the build number we intend to ship. Without this the
+# only symptom of a wrong upload is an opaque -19232 duplicate-version error.
+tmp=$(mktemp -d)
+unzip -q -o "$IPA_PATH" 'Payload/*.app/Info.plist' -d "$tmp"
+built=$(plutil -extract CFBundleVersion raw "$tmp"/Payload/*.app/Info.plist)
+rm -rf "$tmp"
+if [ "$built" != "$next" ]; then
+  echo "ERROR: $(basename "$IPA_PATH") is build $built, expected $next" >&2
+  exit 1
+fi
+echo "Uploading $(basename "$IPA_PATH") (build $built)"
+
 xcrun altool --upload-app -f "$IPA_PATH" -t ios \
   --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
 
