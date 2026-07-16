@@ -38,9 +38,14 @@ class FirebaseAuthRepository implements AuthRepository {
         ],
         nonce: sha256OfString(rawNonce),
       );
+      // firebase_auth >= 5.2.0 requires Apple's authorizationCode as the
+      // OAuth accessToken in addition to idToken + rawNonce; omitting it
+      // makes Firebase reject the credential as "Invalid OAuth response
+      // from apple.com". See firebase/flutterfire#13235.
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
       );
       final cred = await _auth.signInWithCredential(oauthCredential);
       return cred.user!;
