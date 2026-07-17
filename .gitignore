@@ -70,3 +70,8 @@ scripts/node_modules/
 # lib/ is ignored in the user-global gitignore (Python convention);
 # it is the Dart source root here — always track it.
 !lib/
+
+# Play Store deploy: the API service-account key is a credential; the venv is
+# a local build artifact. Neither ever gets committed.
+/scripts/.play-venv/
+/scripts/play-service-account.json
