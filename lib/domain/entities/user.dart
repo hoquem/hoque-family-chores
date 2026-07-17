@@ -12,6 +12,11 @@ class User extends Equatable {
   /// Null for children, who join anonymously with no email address.
   final Email? email;
   final String? photoUrl;
+
+  /// A single emoji the user picked as their avatar. Takes precedence over
+  /// [photoUrl] and the name initial when set. Empty or null means "use the
+  /// initial" — passing `avatarEmoji: ''` through [copyWith] clears it.
+  final String? avatarEmoji;
   final FamilyId familyId;
   final UserRole role;
   final Points points;
@@ -23,6 +28,7 @@ class User extends Equatable {
     required this.name,
     this.email,
     this.photoUrl,
+    this.avatarEmoji,
     required this.familyId,
     required this.role,
     required this.points,
@@ -36,6 +42,7 @@ class User extends Equatable {
     String? name,
     Email? email,
     String? photoUrl,
+    String? avatarEmoji,
     FamilyId? familyId,
     UserRole? role,
     Points? points,
@@ -47,6 +54,7 @@ class User extends Equatable {
       name: name ?? this.name,
       email: email ?? this.email,
       photoUrl: photoUrl ?? this.photoUrl,
+      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
       familyId: familyId ?? this.familyId,
       role: role ?? this.role,
       points: points ?? this.points,
@@ -76,6 +84,7 @@ class User extends Equatable {
         name,
         email,
         photoUrl,
+        avatarEmoji,
         familyId,
         role,
         points,

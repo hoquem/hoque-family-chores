@@ -25,6 +25,9 @@ class UpdateUserProfileUseCase {
     String? name,
     String? email,
     String? photoUrl,
+    // The chosen emoji avatar. null leaves it unchanged; '' clears it back to
+    // the name initial; an emoji sets it.
+    String? avatarEmoji,
   }) async {
     try {
       // Get current user
@@ -47,6 +50,7 @@ class UpdateUserProfileUseCase {
         name: name?.trim() ?? currentUser.name,
         email: email != null ? Email(email.trim().toLowerCase()) : currentUser.email,
         photoUrl: photoUrl,
+        avatarEmoji: avatarEmoji,
         updatedAt: DateTime.now(),
       );
 

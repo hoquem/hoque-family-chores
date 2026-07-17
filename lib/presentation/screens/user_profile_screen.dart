@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -81,24 +82,7 @@ class UserProfileScreen extends ConsumerWidget {
           Center(
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Theme.of(context).primaryColorLight,
-                  child: currentUser.photoUrl != null && currentUser.photoUrl!.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(50),
-                          child: Image.network(
-                            currentUser.photoUrl!,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : Text(
-                          displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-                          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
-                        ),
-                ),
+                UserAvatar(user: currentUser, radius: 50),
                 const SizedBox(height: 16),
                 Text(
                   displayName,

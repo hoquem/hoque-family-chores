@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/home_stats.dart';
+import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 
 /// Friendly avatar + greeting row at the top of the Home screen.
 class GreetingHeader extends StatelessWidget {
@@ -15,13 +16,7 @@ class GreetingHeader extends StatelessWidget {
 
     return Row(
       children: [
-        CircleAvatar(
-          radius: 28,
-          child: Text(
-            firstName.isEmpty ? '?' : firstName[0].toUpperCase(),
-            style: const TextStyle(fontSize: 24),
-          ),
-        ),
+        UserAvatar(user: user, radius: 28),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
