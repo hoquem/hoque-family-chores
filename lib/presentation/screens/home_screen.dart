@@ -169,6 +169,11 @@ class HomeScreen extends ConsumerWidget {
                 .read(taskListNotifierProvider(currentUser.familyId).notifier)
                 .completeTask(
                     task.id.value, currentUser.id, currentUser.familyId),
+            // Same claim path the Tasks tab uses; the task becomes theirs and
+            // moves into their missions on the next build.
+            onClaim: (task) => ref
+                .read(taskListNotifierProvider(currentUser.familyId).notifier)
+                .claimTask(task.id.value, currentUser.id, currentUser.familyId),
           ),
           const SizedBox(height: 8),
           if (currentUser.isParent)

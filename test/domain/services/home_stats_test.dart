@@ -52,6 +52,7 @@ User _member(String id, String name, {int points = 0}) {
 }
 
 void main() {
+  _claimableTests();
   group('todayMissions', () {
     test('includes my tasks due today and overdue, nothing else', () {
       final missions = todayMissions(
@@ -282,6 +283,68 @@ void main() {
       expect(levelProgress(0), 0.0);
       expect(levelProgress(150), 0.5);
       expect(levelProgress(99), closeTo(0.99, 0.001));
+    });
+  });
+}
+
+void _claimableTests() {
+  // The dead end this fixes: a child with nothing assigned sees "No missions
+  // today 🎈" on the one screen meant to make them open the app. Unclaimed
+  // family tasks are already in the list the home screen holds — they were just
+  // being dropped.
+  group('claimable', () {
+    test('offers unclaimed tasks due today', () {
+      final missions = todayMissions([
+        _task(id: 'free', status: TaskStatus.available, assignedTo: null),
+      ], _me, _now);
+
+      expect(missions.claimable.map((t) => t.id.value), ['free']);
+    });
+
+    test('never offers a task someone else has claimed', () {
+      final missions = todayMissions([
+        _task(id: 'theirs', status: TaskStatus.assigned, assignedTo: _sibling),
+      ], _me, _now);
+
+      expect(missions.claimable, isEmpty);
+    });
+
+    test('does not offer work due later — this card is about today', () {
+      final missions = todayMissions([
+        _task(
+          id: 'friday',
+          status: TaskStatus.available,
+          assignedTo: null,
+          due: _now.add(const Duration(days: 2)),
+        ),
+      ], _me, _now);
+
+      expect(missions.claimable, isEmpty,
+          reason: 'offering Friday\'s work under "Today\'s Missions" is a small '
+              'lie; coherence beats filling the space');
+    });
+
+    test('offers overdue unclaimed work', () {
+      final missions = todayMissions([
+        _task(
+          id: 'stale',
+          status: TaskStatus.available,
+          assignedTo: null,
+          due: _now.subtract(const Duration(days: 3)),
+        ),
+      ], _me, _now);
+
+      expect(missions.claimable.map((t) => t.id.value), ['stale'],
+          reason: 'an overdue unclaimed chore is exactly what wants picking up');
+    });
+
+    test('my own missions are not claimable', () {
+      final missions = todayMissions([
+        _task(id: 'mine', assignedTo: _me),
+      ], _me, _now);
+
+      expect(missions.toDo.map((t) => t.id.value), ['mine']);
+      expect(missions.claimable, isEmpty);
     });
   });
 }
