@@ -6,6 +6,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
@@ -334,6 +335,20 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 ),
               ],
             ),
+            // The photos, when there are two to compare. This is the whole
+            // point of the feature: the parent decides here, so the evidence
+            // belongs on this screen rather than behind another tap.
+            //
+            // Both must be present. A before with no after is a task still in
+            // progress; an after with no before proves nothing, which is the
+            // argument the feature rests on.
+            if (task.beforePhotoUrl != null && task.photoUrl != null) ...[
+              const SizedBox(height: 16),
+              BeforeAfterView(
+                beforeUrl: task.beforePhotoUrl!,
+                afterUrl: task.photoUrl!,
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
