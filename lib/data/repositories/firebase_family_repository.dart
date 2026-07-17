@@ -230,10 +230,17 @@ class FirebaseFamilyRepository implements FamilyRepository {
 
   /// Maps Firestore document data to domain User entity
   User _mapFirestoreToUser(Map<String, dynamic> data, String id) {
+    // Children join anonymously with no email. User.email is nullable for
+    // exactly that reason, so an absent one maps to null. The old code forced
+    // it through Email(''), which throws 'Invalid email format' — and because
+    // this runs inside a .map() over the whole family, one child took down the
+    // entire members list (and the add-task picker that shares this query).
+    // FirebaseUserRepository already parses email this way; this matches it.
+    final rawEmail = data['email'] as String?;
     return User(
       id: UserId(id),
       name: data['name'] as String? ?? '',
-      email: Email(data['email'] as String? ?? ''),
+      email: (rawEmail == null || rawEmail.isEmpty) ? null : Email(rawEmail),
       photoUrl: data['photoUrl'] as String?,
       familyId: FamilyId(data['familyId'] as String? ?? ''),
       role: _mapStringToUserRole(data['role'] as String? ?? 'child'),
