@@ -53,6 +53,23 @@ class ApproveTaskUseCase {
 
       // Award stars to the user who completed the task
       await _userRepository.addPoints(task.assignedToId!, task.points);
+
+      // The photos have now done their job: a parent has looked at them and
+      // judged. Keeping them past that point is pure storage cost, so
+      // retention runs Start-to-Approve — hours — rather than forever.
+      //
+      // Deliberately after the approval and deliberately swallowed. A parent
+      // tapping Approve is the core loop; a storage hiccup on kitchen wifi
+      // must not break it, and the task IS approved by this point. The cost of
+      // a failure here is one orphaned blob, which is a cost leak rather than
+      // a correctness bug — much cheaper than an approval that fails at the
+      // last step. This is the one place in this flow where an error is
+      // tolerated, and it is tolerated on purpose.
+      try {
+        await _taskRepository.clearPhotos(familyId, taskId);
+      } catch (_) {
+        // Intentionally ignored — see above. The blob outlives the task.
+      }
       
       // TODO: Update user streak (requires additional repository method)
       // TODO: Send push notification to child (requires NotificationRepository)

@@ -37,6 +37,15 @@ abstract class TaskRepository {
     String beforePhotoUrl,
   );
 
+  /// Delete a task's photos and clear their URLs.
+  ///
+  /// Photos exist to be judged; once a parent has approved, they are pure
+  /// cost. Called on approval, and when a started task is handed back.
+  ///
+  /// Clears the fields with a targeted write: [Task.copyWith] cannot set a
+  /// field to null (`x ?? this.x`), so it silently would not clear them.
+  Future<void> clearPhotos(FamilyId familyId, TaskId taskId);
+
   /// Complete a task
   Future<void> completeTask(FamilyId familyId, TaskId taskId);
 

@@ -212,6 +212,35 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> clearPhotos(FamilyId familyId, TaskId taskId) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index != -1) {
+      // copyWith cannot null a field, so rebuild without the photo URLs.
+      final t = _tasks[index];
+      _tasks[index] = Task(
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        status: t.status,
+        difficulty: t.difficulty,
+        dueDate: t.dueDate,
+        assignedToId: t.assignedToId,
+        createdById: t.createdById,
+        createdAt: t.createdAt,
+        completedAt: t.completedAt,
+        points: t.points,
+        tags: t.tags,
+        familyId: t.familyId,
+        requiresPhotoProof: t.requiresPhotoProof,
+        beforePhotoUrl: null,
+        photoUrl: null,
+      );
+    }
+  }
+
+  @override
   Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay

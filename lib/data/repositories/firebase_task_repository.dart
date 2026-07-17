@@ -7,13 +7,18 @@ import '../../domain/value_objects/family_id.dart';
 import '../../domain/value_objects/user_id.dart';
 import '../../domain/value_objects/points.dart';
 import '../../core/error/exceptions.dart';
+import '../services/photo_storage_service.dart';
 
 /// Firebase implementation of TaskRepository
 class FirebaseTaskRepository implements TaskRepository {
   final FirebaseFirestore _firestore;
+  final PhotoStorageService _photos;
 
-  FirebaseTaskRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseTaskRepository({
+    FirebaseFirestore? firestore,
+    PhotoStorageService? photoStorage,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _photos = photoStorage ?? PhotoStorageService();
 
   @override
   Future<List<Task>> getTasksForFamily(FamilyId familyId) async {
@@ -169,6 +174,46 @@ class FirebaseTaskRepository implements TaskRepository {
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to start task: $e', code: 'TASK_START_ERROR');
+    }
+  }
+
+  @override
+  Future<void> clearPhotos(FamilyId familyId, TaskId taskId) async {
+    try {
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+
+      // Blobs first: if the URLs were cleared first and a delete then failed,
+      // the blob would be unreachable and impossible to clean up later.
+      for (final url in [task.beforePhotoUrl, task.photoUrl]) {
+        if (url == null) continue;
+        final result = await _photos.delete(url);
+        result.fold(
+          (failure) => throw ServerException(
+            'Failed to delete task photo: ${failure.message}',
+            code: 'PHOTO_DELETE_ERROR',
+          ),
+          (_) {},
+        );
+      }
+
+      // A targeted null write. Task.copyWith cannot clear a field — every line
+      // is `x ?? this.x` — so it would silently leave the URLs in place.
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'beforePhotoUrl': null,
+            'photoUrl': null,
+          });
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to clear task photos: $e',
+          code: 'PHOTO_CLEAR_ERROR');
     }
   }
 
