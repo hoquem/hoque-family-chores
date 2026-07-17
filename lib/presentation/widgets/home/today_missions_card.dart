@@ -10,10 +10,18 @@ class TodayMissionsCard extends StatelessWidget {
     super.key,
     required this.missions,
     required this.onComplete,
+    required this.onClaim,
   });
+
+  /// How many spare tasks to offer at once. The home screen is a glance; the
+  /// Tasks tab is the backlog.
+  static const int _claimableShown = 3;
 
   final TodayMissions missions;
   final void Function(Task task) onComplete;
+
+  /// Called when the child picks up an unclaimed task.
+  final void Function(Task task) onClaim;
 
   bool get _isEmpty =>
       missions.toDo.isEmpty &&
@@ -36,7 +44,41 @@ class TodayMissionsCard extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
-          if (_isEmpty)
+          // Nothing of your own, but there is work going spare. Shown only in
+          // the true dead end — never alongside your own missions, and never
+          // when you have just finished them (that is the celebration card's
+          // moment, and "grab another!" mid-celebration reads as nagging).
+          if (_isEmpty && missions.claimable.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Text(
+                'Nothing assigned — grab one?',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: context.tokens.inkSoft),
+              ),
+            ),
+            // The home screen is a glance, not a backlog. The rest live on the
+            // Tasks tab.
+            ...missions.claimable.take(_claimableShown).map(
+                  (task) => ListTile(
+                    leading: IconButton(
+                      tooltip: 'I\'ll do it',
+                      icon: Icon(Icons.add_circle_outline,
+                          color: context.tokens.marigoldDeep),
+                      onPressed: () => onClaim(task),
+                    ),
+                    title: Text(task.title),
+                    trailing: Text(
+                      '+${task.points.value} ⭐',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+          ] else if (_isEmpty)
+            // Genuinely nothing to do and nothing to take. Honest, and still a
+            // dead end — self-tracked habits are what fix this properly.
             const ListTile(title: Text('No missions today 🎈')),
           ...missions.toDo.map(
             (task) => ListTile(
