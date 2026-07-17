@@ -8,6 +8,8 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // UI
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -150,7 +152,7 @@ class MyApp extends StatelessWidget {
             return const LoginScreen();
           }
           if (snapshot.hasData) {
-            return const MainScreen();
+            return const FamilyGate();
           }
           return const LoginScreen();
         },
@@ -196,6 +198,31 @@ class ErrorApp extends StatelessWidget {
 }
 
 /// Splash screen with timeout — if Firebase takes too long, show an error
+/// Sits between a live Firebase session and the app: a signed-in adult with no
+/// family gets the onboarding screen (create or join), not the tabs.
+///
+/// Keys on the streamed profile [AuthState.user], in order:
+///  - user == null → splash. `AuthNotifier.build` returns `authenticated`
+///    immediately for a restored session but leaves `user` null until the
+///    profile stream delivers it. Treating null as "no family" would flash
+///    onboarding at someone who actually has a family, so we wait.
+///  - familyId empty → onboarding (the hard gate: the tabs are unreachable
+///    until a family exists).
+///  - otherwise → the app.
+class FamilyGate extends ConsumerWidget {
+  const FamilyGate({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authNotifierProvider).user;
+    if (user == null) return const _SplashScreen();
+    if (user.familyId.value.isEmpty) {
+      return FamilyOnboardingScreen(currentUser: user);
+    }
+    return const MainScreen();
+  }
+}
+
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
 
