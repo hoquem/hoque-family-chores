@@ -15,6 +15,7 @@ import '../domain/usecases/reward/settle_redemption_usecase.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
+import '../data/services/photo_storage_service.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
@@ -110,6 +111,12 @@ CreateTaskUseCase createTaskUseCase(Ref ref) {
 ClaimTaskUseCase claimTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ClaimTaskUseCase(taskRepository);
+}
+
+@riverpod
+StartTaskUseCase startTaskUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return StartTaskUseCase(taskRepository);
 }
 
 @riverpod
@@ -349,4 +356,14 @@ StreamNotificationsUseCase streamNotificationsUseCase(Ref ref) {
 ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return ResetPasswordUseCase(authRepository);
+}
+
+/// The photo upload/delete pipeline for task before/after photos.
+///
+/// A plain service, not a repository: it wraps Firebase Storage only and has
+/// no domain interface to satisfy. See
+/// ``lib/data/services/photo_storage_service.dart``.
+@riverpod
+PhotoStorageService photoStorageService(Ref ref) {
+  return PhotoStorageService();
 }

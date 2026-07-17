@@ -13,9 +13,19 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/data/repositories/firebase_task_repository.dart';
+import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
+import 'package:mocktail/mocktail.dart';
+
+// approveTask never touches storage, but the repository's default
+// PhotoStorageService() reaches for FirebaseStorage.instance at construction and
+// throws with no Firebase app. A bare mock keeps the transaction under test.
+class _MockPhotoStorage extends Mock implements PhotoStorageService {}
+
+FirebaseTaskRepository _repo(FakeFirebaseFirestore db) =>
+    FirebaseTaskRepository(firestore: db, photoStorage: _MockPhotoStorage());
 
 final _familyId = FamilyId('fam1');
 final _taskId = TaskId('task1');
@@ -40,7 +50,7 @@ Future<(FakeFirebaseFirestore, FirebaseTaskRepository)> _seed({
     'assignedToId': assigneeId,
     'points': points,
   });
-  return (db, FirebaseTaskRepository(firestore: db));
+  return (db, _repo(db));
 }
 
 Future<int> _points(FakeFirebaseFirestore db) async =>
@@ -107,7 +117,7 @@ void main() {
 
   test('a missing task throws', () async {
     final db = FakeFirebaseFirestore();
-    final repo = FirebaseTaskRepository(firestore: db);
+    final repo = _repo(db);
 
     await expectLater(
       () => repo.approveTask(_familyId, TaskId('ghost')),

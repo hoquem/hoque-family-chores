@@ -67,6 +67,7 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
   for (final task in mine) {
     switch (task.status) {
       case TaskStatus.assigned:
+      case TaskStatus.inProgress:
       case TaskStatus.needsRevision:
         toDo.add(task);
       case TaskStatus.pendingApproval:

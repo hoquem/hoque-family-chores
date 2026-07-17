@@ -1,0 +1,95 @@
+rules_version = '2';
+
+// Task before/after photos.
+//
+// Nothing in this app uploaded a file before this feature, so these are the
+// project's first Storage rules. Without them every upload hits default-deny
+// AT RUNTIME while the test suite stays green, because the tests mock the
+// upload — see docs/superpowers/specs/2026-07-16-before-after-photos-design.md.
+//
+// Photos are of children, in their homes. Read access is family-only, and only
+// the child a task is assigned to may attach or remove its photos.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Storage rules can read Firestore (cross-service rules). Two costs worth
+    // knowing before copying this pattern:
+    //
+    //  - one Firestore document read per Storage request. That is the price of
+    //    scoping by family without putting familyId in a custom claim.
+    //  - an IAM role on the Storage service account. `firebase deploy --only
+    //    storage` prompts to grant it the first time ("Cloud Storage for
+    //    Firebase needs an IAM Role to use cross-service rules"). Granted for
+    //    this project on 2026-07-16. A fresh project, or a CI service account
+    //    that cannot grant roles, will need this handled explicitly.
+    //
+    // Mirrors isFamilyMember() in firestore.rules, keyed on the same memberIds.
+    function isFamilyMember(familyId) {
+      return isSignedIn()
+        && request.auth.uid in
+             firestore.get(/databases/(default)/documents/families/$(familyId)).data.memberIds;
+    }
+
+    // Tasks are a subcollection: families/{familyId}/tasks/{taskId}.
+    // assignedToId is stored as a plain string (UserId.value), not a map.
+    function isAssignee(familyId, taskId) {
+      return isSignedIn()
+        && firestore.get(/databases/(default)/documents/families/$(familyId)/tasks/$(taskId))
+             .data.assignedToId == request.auth.uid;
+    }
+
+    // A parent or guardian in this family. Mirrors the role check in
+    // firestore.rules (me().role in ['parent','guardian']), reading the same
+    // users/{uid}.role field.
+    function isFamilyParent(familyId) {
+      return isFamilyMember(familyId)
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid))
+             .data.role in ['parent', 'guardian'];
+    }
+
+    // JPEG specifically, not image/*. PhotoStorageService compresses every
+    // photo to JPEG before upload, so anything else reaching the bucket is a
+    // bug or an outside caller — either way it should be refused rather than
+    // stored and paid for.
+    function isAJpegUnder(maxMb) {
+      return request.resource.contentType == 'image/jpeg'
+        && request.resource.size < maxMb * 1024 * 1024;
+    }
+
+    // families/{familyId}/tasks/{taskId}/{before|after}-{timestamp}.jpg
+    // The shape is pinned by PhotoStorageService.pathFor and its test; if the
+    // two drift, uploads are denied at runtime and no test notices.
+    match /families/{familyId}/tasks/{taskId}/{photo} {
+
+      // Any family member may look: the parent has to see the pair to approve
+      // it, and siblings see the task list.
+      allow read: if isFamilyMember(familyId);
+
+      // Only the assignee attaches photos, and only to their own task. The 5MB
+      // cap is a backstop — PhotoStorageService already compresses to under
+      // 1MB and refuses rather than upload something bigger.
+      allow create, update: if isAssignee(familyId, taskId) && isAJpegUnder(5);
+
+      // Two people delete photos, for two different reasons:
+      //
+      //  - the assignee, when they hand a started task back ("Can't do it").
+      //    The before photo goes with it, or the next child inherits a
+      //    stranger's mess.
+      //  - a parent, when they approve. Photos exist to be judged; once
+      //    they have been, they are cost. Retention runs from Start to
+      //    Approve — hours, not forever — so steady-state storage is roughly
+      //    the tasks currently in flight rather than every chore ever done.
+      allow delete: if isAssignee(familyId, taskId) || isFamilyParent(familyId);
+    }
+
+    // Everything else is denied. No implicit buckets, no stray paths.
+    match /{allOther=**} {
+      allow read, write: if false;
+    }
+  }
+}

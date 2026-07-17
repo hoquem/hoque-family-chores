@@ -32,10 +32,31 @@ class CompleteTaskUseCase {
         return Left(NotFoundFailure('Task not found'));
       }
 
-      // Validate task can be completed (assigned, or resubmitted after revision)
-      if (task.status != TaskStatus.assigned &&
-          task.status != TaskStatus.needsRevision) {
-        return Left(BusinessFailure('Task must be assigned before it can be completed'));
+      // Which statuses may be completed from depends on whether the task
+      // demands photo proof.
+      //
+      // A photo-proof task must pass through `inProgress`, because that is
+      // where the before photo is captured — the before only exists before the
+      // work starts. Allowing `assigned` would let a caller complete a task
+      // that was never started and therefore has no before photo, which is the
+      // whole feature bypassed. The Start button already enforces this in the
+      // UI; it is enforced again here because the UI is not a security
+      // boundary.
+      //
+      // `needsRevision` stays open to both: rework replaces the after photo
+      // while the before persists (the room was only messy once), so demanding
+      // a re-Start would ask a child to photograph a mess that is long gone.
+      final completableFrom = task.requiresPhotoProof
+          ? const {TaskStatus.inProgress, TaskStatus.needsRevision}
+          : const {TaskStatus.assigned, TaskStatus.needsRevision};
+
+      if (!completableFrom.contains(task.status)) {
+        return Left(BusinessFailure(
+          task.requiresPhotoProof
+              ? 'This task needs a photo. Tap Start to take the "before" shot '
+                  'before finishing it.'
+              : 'Task must be assigned before it can be completed',
+        ));
       }
 
       if (task.assignedToId != userId) {

@@ -32,6 +32,7 @@ class StatusPill extends StatelessWidget {
   Color _tone(CustomColors t) => switch (status) {
         TaskStatus.available => t.inkSoft, // neutral: not yet alive
         TaskStatus.assigned => t.carrot,
+        TaskStatus.inProgress => t.carrot,
         TaskStatus.pendingApproval => t.amberWarn,
         TaskStatus.completed => t.sprout,
         TaskStatus.needsRevision => t.brick,
@@ -41,6 +42,7 @@ class StatusPill extends StatelessWidget {
   Color _iconTone(CustomColors t) => switch (status) {
         TaskStatus.available => t.inkSoft,
         TaskStatus.assigned => t.carrotDeep,
+        TaskStatus.inProgress => t.carrotDeep,
         TaskStatus.pendingApproval => t.amberWarnDeep,
         TaskStatus.completed => t.sproutDeep,
         TaskStatus.needsRevision => t.brickDeep,
@@ -49,6 +51,7 @@ class StatusPill extends StatelessWidget {
   IconData get _icon => switch (status) {
         TaskStatus.available => Icons.circle_outlined,
         TaskStatus.assigned => Icons.play_circle,
+        TaskStatus.inProgress => Icons.play_circle,
         TaskStatus.pendingApproval => Icons.hourglass_top,
         TaskStatus.completed => Icons.check_circle,
         TaskStatus.needsRevision => Icons.undo,

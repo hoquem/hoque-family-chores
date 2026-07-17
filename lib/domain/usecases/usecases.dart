@@ -1,6 +1,7 @@
 // Task Use Cases
 export 'task/create_task_usecase.dart';
 export 'task/claim_task_usecase.dart';
+export 'task/start_task_usecase.dart';
 export 'task/complete_task_usecase.dart';
 export 'task/approve_task_usecase.dart';
 export 'task/get_tasks_usecase.dart';

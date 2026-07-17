@@ -263,6 +263,24 @@ final claimTaskUseCaseProvider = AutoDisposeProvider<ClaimTaskUseCase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ClaimTaskUseCaseRef = AutoDisposeProviderRef<ClaimTaskUseCase>;
+String _$startTaskUseCaseHash() => r'3a6813af197da10a7ed9f8f2d995ed63c71b022b';
+
+/// See also [startTaskUseCase].
+@ProviderFor(startTaskUseCase)
+final startTaskUseCaseProvider = AutoDisposeProvider<StartTaskUseCase>.internal(
+  startTaskUseCase,
+  name: r'startTaskUseCaseProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$startTaskUseCaseHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef StartTaskUseCaseRef = AutoDisposeProviderRef<StartTaskUseCase>;
 String _$completeTaskUseCaseHash() =>
     r'e4eff5ddb874b2c0c98e8f4d8a5c60cff9b77457';
 
@@ -1024,5 +1042,31 @@ final resetPasswordUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ResetPasswordUseCaseRef = AutoDisposeProviderRef<ResetPasswordUseCase>;
+String _$photoStorageServiceHash() =>
+    r'62b737f2c4f106db793e71df0eda476ffc8c19ad';
+
+/// The photo upload/delete pipeline for task before/after photos.
+///
+/// A plain service, not a repository: it wraps Firebase Storage only and has
+/// no domain interface to satisfy. See
+/// ``lib/data/services/photo_storage_service.dart``.
+///
+/// Copied from [photoStorageService].
+@ProviderFor(photoStorageService)
+final photoStorageServiceProvider =
+    AutoDisposeProvider<PhotoStorageService>.internal(
+      photoStorageService,
+      name: r'photoStorageServiceProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$photoStorageServiceHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PhotoStorageServiceRef = AutoDisposeProviderRef<PhotoStorageService>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

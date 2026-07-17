@@ -27,6 +27,36 @@ abstract class TaskRepository {
   /// Unassign a task
   Future<void> unassignTask(FamilyId familyId, TaskId taskId);
 
+  /// Start a task, recording the before photo captured at that moment.
+  ///
+  /// A targeted update: the whole-document write in [updateTask] would
+  /// clobber concurrent changes, and [Task.copyWith] cannot clear fields.
+  Future<void> startTask(
+    FamilyId familyId,
+    TaskId taskId,
+    String beforePhotoUrl,
+  );
+
+  /// Delete a task's photos and clear their URLs.
+  ///
+  /// Photos exist to be judged; once a parent has approved, they are pure
+  /// cost. Called on approval, and when a started task is handed back.
+  ///
+  /// Clears the fields with a targeted write: [Task.copyWith] cannot set a
+  /// field to null (`x ?? this.x`), so it silently would not clear them.
+  Future<void> clearPhotos(FamilyId familyId, TaskId taskId);
+
+  /// Record the "after" photo for a task.
+  ///
+  /// Separate from [completeTask] because that does a targeted status write and
+  /// takes no photo; and because on rework the after is replaced while the
+  /// before persists, so the two photos have different lifetimes.
+  Future<void> setAfterPhoto(
+    FamilyId familyId,
+    TaskId taskId,
+    String photoUrl,
+  );
+
   /// Complete a task
   Future<void> completeTask(FamilyId familyId, TaskId taskId);
 

@@ -1,4 +1,8 @@
 // lib/presentation/widgets/task_list_tile.dart
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
@@ -124,8 +128,110 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     }
   }
 
+  /// Captures the before photo and starts the task.
+  ///
+  /// No photo, no start. If the child backs out of the camera the task is left
+  /// exactly as it was — a started task without a before photo would defeat
+  /// the point, and there is no second chance to photograph a mess once it has
+  /// been tidied.
+  Future<void> _handleStart() async {
+    final picked = await ImagePicker().pickImage(
+      // Camera only, never the gallery: the gallery turns photo proof into
+      // "find any tidy room on this phone", and opens a child's whole camera
+      // roll inside a chore app.
+      source: ImageSource.camera,
+    );
+    if (picked == null) return;
+
+    setState(() {
+      _isError = false;
+      _errorMessage = null;
+      _isProcessing = true;
+    });
+
+    try {
+      final upload = await ref.read(photoStorageServiceProvider).upload(
+            photo: File(picked.path),
+            familyId: widget.task.familyId,
+            taskId: widget.task.id,
+            kind: PhotoKind.before,
+          );
+
+      await upload.fold(
+        (failure) async {
+          setState(() {
+            _isError = true;
+            _errorMessage = failure.message;
+          });
+        },
+        (url) async {
+          final result = await ref.read(startTaskUseCaseProvider)(
+            taskId: widget.task.id,
+            userId: widget.user.id,
+            familyId: widget.task.familyId,
+            beforePhotoUrl: url,
+          );
+          result.fold(
+            (failure) {
+              // The photo uploaded but the task did not start. Say so and
+              // leave the status alone rather than half-starting it; the blob
+              // is orphaned, which is the accepted trade until retention
+              // exists. Never swallow this.
+              setState(() {
+                _isError = true;
+                _errorMessage = failure.message;
+              });
+            },
+            (_) => ref
+                .read(taskListNotifierProvider(widget.task.familyId).notifier)
+                .refresh(),
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
   Future<void> _handleMarkComplete() async {
     _logger.d('TaskListTile: Marking task ${widget.task.id} as complete');
+
+    // A photo-proof task needs its "after" shot before it can be submitted.
+    // Captured here rather than at Start for the obvious reason: the work has
+    // to happen first. Same rule as Start — no photo, no completion — because
+    // a proof task submitted without one gives the parent nothing to judge.
+    String? afterPhotoUrl;
+    if (widget.task.requiresPhotoProof) {
+      final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+      if (picked == null) return;
+
+      setState(() {
+        _isError = false;
+        _errorMessage = null;
+        _isProcessing = true;
+      });
+
+      final upload = await ref.read(photoStorageServiceProvider).upload(
+            photo: File(picked.path),
+            familyId: widget.task.familyId,
+            taskId: widget.task.id,
+            kind: PhotoKind.after,
+          );
+
+      final url = upload.fold((failure) {
+        setState(() {
+          _isError = true;
+          _errorMessage = failure.message;
+          _isProcessing = false;
+        });
+        return null;
+      }, (url) => url);
+
+      if (url == null) return;
+      afterPhotoUrl = url;
+    }
 
     setState(() {
       _isError = false;
@@ -137,6 +243,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       final familyId = widget.task.familyId;
       final notifier =
           ref.read(taskListNotifierProvider(familyId).notifier);
+
+      if (afterPhotoUrl != null) {
+        // Store the photo before flipping status: a task that reaches the
+        // approval queue without its "after" gives the parent nothing to look
+        // at, and they cannot tell it is still coming.
+        await ref.read(taskRepositoryProvider).setAfterPhoto(
+              familyId,
+              widget.task.id,
+              afterPhotoUrl,
+            );
+      }
 
       await notifier.completeTask(
         widget.task.id.value,
@@ -342,6 +459,61 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
       case TaskStatus.assigned:
         if (_isAssignedToMe) {
+          // A photo-proof task is STARTED, not completed, from here. Start
+          // replaces Done rather than joining it: leaving Done in place would
+          // let a child finish without ever taking the before photo, which is
+          // the entire point of the feature. The domain guard in
+          // CompleteTaskUseCase enforces the same rule, because the UI is not
+          // a security boundary.
+          final primary = widget.task.requiresPhotoProof
+              ? ElevatedButton.icon(
+                  onPressed: _handleStart,
+                  icon: const Icon(Icons.play_circle, size: 16),
+                  label: const Text('Start'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.tokens.carrotDeep,
+                    foregroundColor: context.tokens.cream,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                  ),
+                )
+              : ElevatedButton.icon(
+                  onPressed: _handleMarkComplete,
+                  icon: const Icon(Icons.check, size: 16),
+                  label: const Text('Done'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.tokens.sproutDeep,
+                    // Cream, not Ink: a *Deep fill is dark, so Ink on it is
+                    // under 4.5:1.
+                    foregroundColor: context.tokens.cream,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                  ),
+                );
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              primary,
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: _handleCantDoIt,
+                icon: const Icon(Icons.undo, size: 20),
+                tooltip: "Can't do it — return to available",
+                color: context.tokens.amberWarn,
+              ),
+            ],
+          );
+        }
+        return null;
+
+      case TaskStatus.inProgress:
+        // The before photo is already taken, so this is where a photo-proof
+        // task is finished or handed back. Both are required: an arm with only
+        // Done would trap a child who cannot do the chore after all, and an
+        // empty arm would trap them entirely — the dead end Start exists to
+        // prevent.
+        if (_isAssignedToMe) {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -351,7 +523,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 label: const Text('Done'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
-                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
                   foregroundColor: context.tokens.cream,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -441,6 +612,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return 'Available';
       case TaskStatus.assigned:
         return 'Assigned';
+      case TaskStatus.inProgress:
+        return 'In progress';
       case TaskStatus.pendingApproval:
         return 'Pending Approval';
       case TaskStatus.completed:
