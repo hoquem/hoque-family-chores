@@ -28,6 +28,10 @@ class BottomNavBar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.task), label: 'Tasks'),
+        // Beside Tasks on purpose: you earn on the left, you spend on the
+        // right. Stars bought nothing at all before this tab existed.
+        BottomNavigationBarItem(
+            icon: Icon(Icons.card_giftcard), label: 'Rewards'),
         BottomNavigationBarItem(icon: Icon(Icons.family_restroom), label: 'Family'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
