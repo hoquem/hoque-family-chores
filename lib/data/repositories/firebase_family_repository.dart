@@ -241,6 +241,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
       id: UserId(id),
       name: data['name'] as String? ?? '',
       email: (rawEmail == null || rawEmail.isEmpty) ? null : Email(rawEmail),
+      avatarEmoji: data['avatarEmoji'] as String?,
       photoUrl: data['photoUrl'] as String?,
       familyId: FamilyId(data['familyId'] as String? ?? ''),
       role: _mapStringToUserRole(data['role'] as String? ?? 'child'),

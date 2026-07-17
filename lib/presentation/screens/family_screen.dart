@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 /// Family tab: create/join a family, or view the current family's details.
@@ -132,13 +133,7 @@ class _FamilyDetailsView extends ConsumerWidget {
                       .map(
                         (member) => Card(
                           child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text(
-                                member.name.isNotEmpty
-                                    ? member.name[0].toUpperCase()
-                                    : '?',
-                              ),
-                            ),
+                            leading: UserAvatar(user: member),
                             title: Text(member.name),
                             subtitle: Text(member.role.displayName),
                             trailing: Text(

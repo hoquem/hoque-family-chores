@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 
 /// Edits the signed-in user's display name.
 ///
@@ -19,6 +20,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _initialized = false;
   bool _saving = false;
   String? _error;
+  // The pending avatar choice: null/'' shows the initial, an emoji shows it.
+  String? _avatarEmoji;
 
   @override
   void dispose() {
@@ -43,7 +46,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     final result = await ref
         .read(updateUserProfileUseCaseProvider)
-        .call(userId: user.id, name: name);
+        .call(userId: user.id, name: name, avatarEmoji: _avatarEmoji ?? '');
 
     if (!mounted) return;
     result.fold(
@@ -72,6 +75,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     if (!_initialized) {
       _nameController.text = user.name;
+      _avatarEmoji = user.avatarEmoji;
       _initialized = true;
     }
 
@@ -82,6 +86,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Center(
+              child: Column(
+                children: [
+                  InkWell(
+                    key: const Key('edit_avatar'),
+                    borderRadius: BorderRadius.circular(40),
+                    onTap: () async {
+                      final picked = await showAvatarEmojiPicker(
+                        context,
+                        current: _avatarEmoji,
+                      );
+                      // null = dismissed; '' = use initial; emoji = chosen.
+                      if (picked != null) {
+                        setState(() => _avatarEmoji = picked);
+                      }
+                    },
+                    child: UserAvatar(
+                      user: user.copyWith(avatarEmoji: _avatarEmoji ?? ''),
+                      radius: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap to change your avatar',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
