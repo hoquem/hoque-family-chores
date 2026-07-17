@@ -25,7 +25,11 @@ import 'firebase_options.dart';
 // Push notifications background handler
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // The background isolate has its own Firebase registry; guard here too so a
+  // native auto-init doesn't collide (same reason as main()).
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  }
   final logger = AppLogger();
   logger.i('[FCM Background] Message received: ${message.notification?.title}');
 }
@@ -48,10 +52,20 @@ void main() async {
 
     try {
       logger.i("[Startup] Connecting to Firebase...");
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      logger.i("[Startup] Firebase connected successfully.");
+      // On Android the google-services plugin auto-initialises the [DEFAULT]
+      // Firebase app natively (a ContentProvider reads google-services.json)
+      // before Dart's main() runs. Calling initializeApp() again then throws
+      // [core/duplicate-app] and crashes at startup. Initialise only if it has
+      // not happened yet — the native app carries the same project config as
+      // firebase_options.dart, so reusing it is correct, not a workaround.
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        logger.i("[Startup] Firebase connected successfully.");
+      } else {
+        logger.i("[Startup] Firebase already initialised natively; reusing [DEFAULT].");
+      }
 
       // Setup Crashlytics
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
