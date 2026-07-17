@@ -54,6 +54,36 @@ void main() {
     });
   });
 
+  group('compression budget', () {
+    // These constants failed on a real device: inherited from a layer that had
+    // never run, they rejected a normal iPhone photo outright. The compression
+    // itself needs a platform channel and cannot be tested here, but the budget
+    // it works to can be — and the budget was the bug.
+
+    test('the size cap sits inside what storage.rules will accept', () {
+      // The rule refuses over 5MB. A cap above it would mean the service
+      // happily uploads something the bucket then rejects.
+      expect(PhotoStorageService.maxBytes, lessThan(5 * 1024 * 1024));
+    });
+
+    test('quality steps descend, so each retry is actually smaller', () {
+      final steps = PhotoStorageService.qualitySteps;
+      expect(steps, isNotEmpty);
+      for (var i = 1; i < steps.length; i++) {
+        expect(steps[i], lessThan(steps[i - 1]),
+            reason: 'a step that does not go down is a wasted attempt');
+      }
+    });
+
+    test('there are enough steps to rescue a detailed photo', () {
+      // The old code had two: 85 then 70, then surrender. A cluttered room —
+      // exactly what a "before" is — got no further chance.
+      expect(PhotoStorageService.qualitySteps.length, greaterThanOrEqualTo(3));
+      expect(PhotoStorageService.qualitySteps.last, lessThanOrEqualTo(50),
+          reason: 'the last resort must be aggressive enough to be a resort');
+    });
+  });
+
   group('delete', () {
     late _MockStorage storage;
     late _MockRef ref;

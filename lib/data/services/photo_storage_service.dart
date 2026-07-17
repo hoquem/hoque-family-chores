@@ -19,10 +19,14 @@ enum PhotoKind {
 
 /// Uploads and deletes task photos in Firebase Storage.
 ///
-/// Nothing in this app uploaded a file on the live path before this service:
-/// the one existing pipeline sits inside ``FirebaseTaskCompletionRepository``,
-/// a layer that is dead and slated for deletion, so its compression settings
-/// are carried over here rather than imported.
+/// Nothing in this app uploaded a file on the live path before this service.
+/// The one existing pipeline sat inside ``FirebaseTaskCompletionRepository``, a
+/// layer that is dead and slated for deletion.
+///
+/// Its compression settings were copied here at first and **were wrong**: 1MB
+/// cap, 1920px, two attempts. On a device that rejected a normal iPhone photo
+/// outright. They had never been run, so nobody knew. Settings from unexecuted
+/// code are guesses wearing a uniform.
 ///
 /// **Storage paths are family-scoped**::
 ///
@@ -38,9 +42,31 @@ class PhotoStorageService {
 
   final FirebaseStorage _storage;
 
-  /// Firebase Storage's own cap for a single photo. Beyond this the upload is
-  /// refused rather than silently retried forever.
-  static const int _maxBytes = 1024 * 1024;
+  /// The largest photo we will upload. ``storage.rules`` refuses anything over
+  /// 5MB, so this sits well inside that.
+  ///
+  /// This was 1MB, inherited from the dead ``TaskCompletion`` layer along with
+  /// the compression settings. That number had never survived contact with a
+  /// real photo — nothing ever ran that code — and on a device it rejected the
+  /// after shot outright.
+  static const int maxBytes = 2 * 1024 * 1024;
+
+  /// Longest edge, after scaling.
+  ///
+  /// 1920 (also inherited) is far more than this needs: these photos are
+  /// glanced at on a phone by a parent deciding whether a floor got mopped,
+  /// never zoomed or printed. 1280 keeps a 12MP shot recognisable at roughly a
+  /// fifth of the pixels, which is the difference between an upload that works
+  /// on kitchen wifi and one that does not.
+  static const int maxDimension = 1280;
+
+  /// Quality steps, tried in order until one fits under [maxBytes].
+  ///
+  /// A ladder rather than two fixed attempts. The old code tried 85, then 70,
+  /// then gave up — so a photo of a cluttered room, which is precisely what a
+  /// "before" is, could fail with no recourse. 40 is visibly softer but still
+  /// answers the only question being asked of it: is the floor clean now?
+  static const List<int> qualitySteps = [85, 70, 55, 40];
 
   /// The Storage path for one photo.
   ///
@@ -107,28 +133,24 @@ class PhotoStorageService {
     }
   }
 
-  /// Compresses to under [_maxBytes], or returns null if it cannot.
+  /// Compresses to under [maxBytes], stepping quality down until it fits.
   ///
-  /// Two passes, matching the settings the dead layer arrived at: quality 85
-  /// first, then a harder 70 if the result is still too big. Returning null
-  /// rather than uploading an oversized blob keeps the failure loud.
+  /// Returns null only if even the lowest step is too big, which for a 1280px
+  /// JPEG means something is very wrong. Returning null rather than uploading
+  /// an oversized blob keeps that failure loud.
   Future<Uint8List?> _compress(File photo) async {
-    final first = await FlutterImageCompress.compressWithFile(
-      photo.path,
-      quality: 85,
-      minWidth: 1920,
-      minHeight: 1920,
-    );
-    if (first == null) return null;
-    if (first.length <= _maxBytes) return first;
-
-    final second = await FlutterImageCompress.compressWithFile(
-      photo.path,
-      quality: 70,
-      minWidth: 1920,
-      minHeight: 1920,
-    );
-    if (second == null || second.length > _maxBytes) return null;
-    return second;
+    for (final quality in qualitySteps) {
+      final bytes = await FlutterImageCompress.compressWithFile(
+        photo.path,
+        quality: quality,
+        minWidth: maxDimension,
+        minHeight: maxDimension,
+      );
+      // A null here is the plugin failing outright, not the photo being too
+      // big — retrying at a lower quality would not help.
+      if (bytes == null) return null;
+      if (bytes.length <= maxBytes) return bytes;
+    }
+    return null;
   }
 }
