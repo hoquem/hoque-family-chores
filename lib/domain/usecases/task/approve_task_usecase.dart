@@ -3,7 +3,6 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../entities/task.dart';
 import '../../repositories/task_repository.dart';
-import '../../repositories/user_repository.dart';
 import '../../value_objects/task_id.dart';
 import '../../value_objects/user_id.dart';
 import '../../value_objects/family_id.dart';
@@ -11,9 +10,8 @@ import '../../value_objects/family_id.dart';
 /// Use case for approving a completed task
 class ApproveTaskUseCase {
   final TaskRepository _taskRepository;
-  final UserRepository _userRepository;
 
-  ApproveTaskUseCase(this._taskRepository, this._userRepository);
+  ApproveTaskUseCase(this._taskRepository);
 
   /// Approves a completed task and awards points
   /// 
@@ -63,16 +61,15 @@ class ApproveTaskUseCase {
         ));
       }
 
-      // Approve the task first: once the status leaves pendingApproval a
-      // retried approval fails validation, so points can't be awarded twice.
+      // Approve and award atomically. The checks above give friendly errors
+      // for the common cases; the repository transaction re-checks the status
+      // as the authoritative guard and awards the stars in the same commit, so
+      // an approval can never leave a child unpaid or pay them twice.
       await _taskRepository.approveTask(familyId, taskId);
 
-      // Award stars to the user who completed the task
-      await _userRepository.addPoints(task.assignedToId!, task.points);
-      
       // TODO: Update user streak (requires additional repository method)
       // TODO: Send push notification to child (requires NotificationRepository)
-      
+
       // Return the updated task
       final updatedTask = await _taskRepository.getTask(familyId, taskId);
       if (updatedTask == null) {

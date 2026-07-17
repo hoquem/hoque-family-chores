@@ -89,10 +89,53 @@ class FirebaseRewardRepository implements RewardRepository {
     RedemptionStatus outcome,
     DateTime settledAt,
   ) async {
+    // Settling and refunding are ONE transaction, deliberately.
+    //
+    // These used to be two writes in the use case: mark the claim settled, then
+    // call addPoints. Either order was unsafe. Refund-then-mark could double-pay
+    // if the mark failed; mark-then-refund (what shipped) lost the stars for
+    // good if the refund failed, because the retry then found the claim already
+    // settled and refused. Here the status flip and the star return commit
+    // together or not at all.
+    //
+    // The `transaction.get` is load-bearing: it puts the redemption in the
+    // transaction's read set, so two people tapping "Not yet" at once (or the
+    // lazy settle-on-read racing a manual tap) can't both pass the guard and
+    // both refund. The second attempt retries, re-reads status == refunded, and
+    // bails below. A blind increment would reopen exactly that double-refund.
+    final ref = _redemptions(familyId).doc(redemptionId);
+
     try {
-      await _redemptions(familyId).doc(redemptionId).update({
-        'status': outcome.name,
-        'settledAt': Timestamp.fromDate(settledAt),
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(ref);
+        if (!snapshot.exists) {
+          throw NotFoundException('Claim not found',
+              code: 'REDEMPTION_NOT_FOUND');
+        }
+        final data = snapshot.data()!;
+
+        if (data['status'] != RedemptionStatus.claimed.name) {
+          // Already fulfilled or refunded. Settling twice would refund a second
+          // time or take back an outing that already happened.
+          throw ValidationException('Claim is already settled',
+              code: 'REDEMPTION_ALREADY_SETTLED');
+        }
+
+        transaction.update(ref, {
+          'status': outcome.name,
+          'settledAt': Timestamp.fromDate(settledAt),
+        });
+
+        if (outcome == RedemptionStatus.refunded) {
+          final claimedBy = data['claimedBy'] as String?;
+          final cost = (data['cost'] as num?)?.toInt() ?? 0;
+          if (claimedBy != null) {
+            transaction.update(
+              _firestore.collection('users').doc(claimedBy),
+              {'points': FieldValue.increment(cost)},
+            );
+          }
+        }
       });
     } catch (e) {
       if (e is DataException) rethrow;

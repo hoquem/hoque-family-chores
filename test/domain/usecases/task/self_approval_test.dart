@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
-import 'package:hoque_family_chores/domain/repositories/user_repository.dart';
 import 'package:hoque_family_chores/domain/usecases/task/approve_task_usecase.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
@@ -23,8 +22,6 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepository {}
-
-class _MockUserRepository extends Mock implements UserRepository {}
 
 final _me = UserId('kid1');
 final _sibling = UserId('kid2');
@@ -55,21 +52,18 @@ void main() {
   });
 
   late _MockTaskRepository tasks;
-  late _MockUserRepository users;
 
   setUp(() {
     tasks = _MockTaskRepository();
-    users = _MockUserRepository();
     when(() => tasks.getTask(_familyId, _taskId))
         .thenAnswer((_) async => _pending(assignedTo: _me));
     when(() => tasks.approveTask(any(), any())).thenAnswer((_) async {});
     when(() => tasks.rejectTask(any(), any())).thenAnswer((_) async {});
-    when(() => users.addPoints(any(), any())).thenAnswer((_) async {});
   });
 
   group('approving', () {
     test('I cannot approve my own task — no minting stars', () async {
-      final result = await ApproveTaskUseCase(tasks, users)(
+      final result = await ApproveTaskUseCase(tasks)(
         taskId: _taskId,
         approverId: _me,
         familyId: _familyId,
@@ -80,24 +74,26 @@ void main() {
         (f) => expect(f, isA<PermissionFailure>()),
         (_) => fail('a self-approval must never succeed'),
       );
+      // The guard stops the approval before it reaches the repository, so no
+      // stars are ever awarded. The award itself is the transaction's job and
+      // is tested against a real Firestore in the repository suite.
       verifyNever(() => tasks.approveTask(any(), any()));
-      verifyNever(() => users.addPoints(any(), any()));
     });
 
     test('a sibling can approve — the family is peers, not a hierarchy',
         () async {
-      final result = await ApproveTaskUseCase(tasks, users)(
+      final result = await ApproveTaskUseCase(tasks)(
         taskId: _taskId,
         approverId: _sibling,
         familyId: _familyId,
       );
 
       expect(result.isRight(), isTrue);
-      verify(() => users.addPoints(_me, any())).called(1);
+      verify(() => tasks.approveTask(_familyId, _taskId)).called(1);
     });
 
     test('a parent can still approve', () async {
-      final result = await ApproveTaskUseCase(tasks, users)(
+      final result = await ApproveTaskUseCase(tasks)(
         taskId: _taskId,
         approverId: _parent,
         familyId: _familyId,

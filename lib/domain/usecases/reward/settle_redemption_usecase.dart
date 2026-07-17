@@ -4,7 +4,6 @@ import '../../../core/error/exceptions.dart';
 import '../../../core/error/failures.dart';
 import '../../entities/redemption.dart';
 import '../../repositories/reward_repository.dart';
-import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
 
 /// Closes a claim: it happened, or it didn't and the stars go back.
@@ -15,10 +14,9 @@ import '../../value_objects/user_id.dart';
 /// park trip counted would be the app taking the family's side against the
 /// child, which is the opposite of what it is for.
 class SettleRedemptionUseCase {
-  SettleRedemptionUseCase(this._rewards, this._users);
+  SettleRedemptionUseCase(this._rewards);
 
   final RewardRepository _rewards;
-  final UserRepository _users;
 
   /// [happened] false refunds the stars.
   Future<Either<Failure, Unit>> call({
@@ -43,19 +41,16 @@ class SettleRedemptionUseCase {
       final outcome =
           happened ? RedemptionStatus.fulfilled : RedemptionStatus.refunded;
 
-      // Record the outcome before moving stars. If the refund succeeded and
-      // this then failed, the claim would still read as outstanding and could
-      // be refunded again — stars from nothing.
+      // Settle and, when refunding, return the stars in one transaction. The
+      // isOutstanding check above is a friendly early exit; the repository
+      // re-reads the status inside the transaction as the real guard, so a
+      // claim can never be refunded twice or settled into a lost refund.
       await _rewards.settleRedemption(
         redemption.familyId,
         redemption.id,
         outcome,
         now,
       );
-
-      if (!happened) {
-        await _users.addPoints(redemption.claimedBy, redemption.cost);
-      }
 
       return const Right(unit);
     } on DataException catch (e) {

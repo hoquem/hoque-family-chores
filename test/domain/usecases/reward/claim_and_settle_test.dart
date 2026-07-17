@@ -168,9 +168,16 @@ void main() {
     });
   });
 
+  // Settling is now one atomic repository call: the status flip and the refund
+  // commit together, and the repository re-reads the status inside the
+  // transaction as the real double-settle guard. So these tests assert the use
+  // case's *authorization and dispatch* — who may settle, and that it hands the
+  // right outcome to the repository. That the refund actually moves stars, and
+  // that a second settle is refused mid-race, is proved against a real
+  // Firestore in firebase_reward_repository_settle_test.dart.
   group('settling', () {
-    test('it happened: stars stay spent', () async {
-      final result = await SettleRedemptionUseCase(rewards, users)(
+    test('it happened: marked fulfilled, no refund', () async {
+      final result = await SettleRedemptionUseCase(rewards)(
         redemption: _claim(),
         actor: _me,
         happened: true,
@@ -180,11 +187,10 @@ void main() {
       expect(result.isRight(), isTrue);
       verify(() => rewards.settleRedemption(
           _familyId, 'rd1', RedemptionStatus.fulfilled, _now)).called(1);
-      verifyNever(() => users.addPoints(any(), any()));
     });
 
-    test('it did not happen: the stars go back', () async {
-      final result = await SettleRedemptionUseCase(rewards, users)(
+    test('it did not happen: marked refunded', () async {
+      final result = await SettleRedemptionUseCase(rewards)(
         redemption: _claim(),
         actor: _me,
         happened: false,
@@ -192,29 +198,14 @@ void main() {
       );
 
       expect(result.isRight(), isTrue);
-      verify(() => users.addPoints(_me, Points(200))).called(1);
-    });
-
-    test('records the outcome BEFORE refunding', () async {
-      // If the refund landed and this then failed, the claim would still read
-      // as outstanding and could be refunded again — stars from nothing.
-      await SettleRedemptionUseCase(rewards, users)(
-        redemption: _claim(),
-        actor: _me,
-        happened: false,
-        now: _now,
-      );
-
-      verifyInOrder([
-        () => rewards.settleRedemption(any(), any(), any(), any()),
-        () => users.addPoints(_me, Points(200)),
-      ]);
+      verify(() => rewards.settleRedemption(
+          _familyId, 'rd1', RedemptionStatus.refunded, _now)).called(1);
     });
 
     test('only the claimant may judge — not even a parent', () async {
       // A parent insisting the park trip counted would be the app taking the
       // family's side against the child.
-      final result = await SettleRedemptionUseCase(rewards, users)(
+      final result = await SettleRedemptionUseCase(rewards)(
         redemption: _claim(by: _me),
         actor: _sibling,
         happened: true,
@@ -226,9 +217,11 @@ void main() {
       verifyNever(() => rewards.settleRedemption(any(), any(), any(), any()));
     });
 
-    test('an already-settled claim cannot be settled again', () async {
-      // Double-refunding is the exploit: claim, refund, refund again.
-      final result = await SettleRedemptionUseCase(rewards, users)(
+    test('an already-settled claim is refused before it reaches the repo',
+        () async {
+      // Double-refunding is the exploit: claim, refund, refund again. The
+      // friendly guard stops it here; the transaction stops the race version.
+      final result = await SettleRedemptionUseCase(rewards)(
         redemption: _claim(status: RedemptionStatus.refunded),
         actor: _me,
         happened: false,
@@ -236,7 +229,7 @@ void main() {
       );
 
       expect(result.isLeft(), isTrue);
-      verifyNever(() => users.addPoints(any(), any()));
+      verifyNever(() => rewards.settleRedemption(any(), any(), any(), any()));
     });
   });
 }

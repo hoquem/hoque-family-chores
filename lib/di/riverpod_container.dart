@@ -89,7 +89,6 @@ ClaimRewardUseCase claimRewardUseCase(Ref ref) {
 SettleRedemptionUseCase settleRedemptionUseCase(Ref ref) {
   return SettleRedemptionUseCase(
     ref.watch(rewardRepositoryProvider),
-    ref.watch(userRepositoryProvider),
   );
 }
 
@@ -122,8 +121,7 @@ CompleteTaskUseCase completeTaskUseCase(Ref ref) {
 @riverpod
 ApproveTaskUseCase approveTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
-  final userRepository = ref.watch(userRepositoryProvider);
-  return ApproveTaskUseCase(taskRepository, userRepository);
+  return ApproveTaskUseCase(taskRepository);
 }
 
 @riverpod

@@ -183,7 +183,7 @@ final claimRewardUseCaseProvider =
 // ignore: unused_element
 typedef ClaimRewardUseCaseRef = AutoDisposeProviderRef<ClaimRewardUseCase>;
 String _$settleRedemptionUseCaseHash() =>
-    r'f0cbc61b3b6374e46efff0ba8505dcae7301735f';
+    r'4d89f41cdb8bac5f932f01d82eeb2d4c979a64b7';
 
 /// See also [settleRedemptionUseCase].
 @ProviderFor(settleRedemptionUseCase)
@@ -284,7 +284,7 @@ final completeTaskUseCaseProvider =
 // ignore: unused_element
 typedef CompleteTaskUseCaseRef = AutoDisposeProviderRef<CompleteTaskUseCase>;
 String _$approveTaskUseCaseHash() =>
-    r'acc73a1d329102108b28369c357ea03015c98d9b';
+    r'06aabf329911316625a89d7c88256cb161e0de36';
 
 /// See also [approveTaskUseCase].
 @ProviderFor(approveTaskUseCase)
