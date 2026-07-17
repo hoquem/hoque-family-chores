@@ -46,6 +46,17 @@ abstract class TaskRepository {
   /// field to null (`x ?? this.x`), so it silently would not clear them.
   Future<void> clearPhotos(FamilyId familyId, TaskId taskId);
 
+  /// Record the "after" photo for a task.
+  ///
+  /// Separate from [completeTask] because that does a targeted status write and
+  /// takes no photo; and because on rework the after is replaced while the
+  /// before persists, so the two photos have different lifetimes.
+  Future<void> setAfterPhoto(
+    FamilyId familyId,
+    TaskId taskId,
+    String photoUrl,
+  );
+
   /// Complete a task
   Future<void> completeTask(FamilyId familyId, TaskId taskId);
 

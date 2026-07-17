@@ -241,6 +241,19 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> setAfterPhoto(
+    FamilyId familyId,
+    TaskId taskId,
+    String photoUrl,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index != -1) {
+      _tasks[index] = _tasks[index].copyWith(photoUrl: photoUrl);
+    }
+  }
+
+  @override
   Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay

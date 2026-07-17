@@ -218,6 +218,34 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> setAfterPhoto(
+    FamilyId familyId,
+    TaskId taskId,
+    String photoUrl,
+  ) async {
+    try {
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+
+      // Targeted write. The whole-document toFirestore in updateTask would
+      // clobber concurrent changes, and on rework this simply overwrites the
+      // previous attempt's photo, which is correct: a parent judges the latest.
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({'photoUrl': photoUrl});
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to store task photo: $e',
+          code: 'PHOTO_STORE_ERROR');
+    }
+  }
+
+  @override
   Future<void> completeTask(FamilyId familyId, TaskId taskId) async {
     try {
       final task = await getTask(familyId, taskId);

@@ -194,6 +194,41 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   Future<void> _handleMarkComplete() async {
     _logger.d('TaskListTile: Marking task ${widget.task.id} as complete');
 
+    // A photo-proof task needs its "after" shot before it can be submitted.
+    // Captured here rather than at Start for the obvious reason: the work has
+    // to happen first. Same rule as Start — no photo, no completion — because
+    // a proof task submitted without one gives the parent nothing to judge.
+    String? afterPhotoUrl;
+    if (widget.task.requiresPhotoProof) {
+      final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+      if (picked == null) return;
+
+      setState(() {
+        _isError = false;
+        _errorMessage = null;
+        _isProcessing = true;
+      });
+
+      final upload = await ref.read(photoStorageServiceProvider).upload(
+            photo: File(picked.path),
+            familyId: widget.task.familyId,
+            taskId: widget.task.id,
+            kind: PhotoKind.after,
+          );
+
+      final url = upload.fold((failure) {
+        setState(() {
+          _isError = true;
+          _errorMessage = failure.message;
+          _isProcessing = false;
+        });
+        return null;
+      }, (url) => url);
+
+      if (url == null) return;
+      afterPhotoUrl = url;
+    }
+
     setState(() {
       _isError = false;
       _errorMessage = null;
@@ -204,6 +239,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       final familyId = widget.task.familyId;
       final notifier =
           ref.read(taskListNotifierProvider(familyId).notifier);
+
+      if (afterPhotoUrl != null) {
+        // Store the photo before flipping status: a task that reaches the
+        // approval queue without its "after" gives the parent nothing to look
+        // at, and they cannot tell it is still coming.
+        await ref.read(taskRepositoryProvider).setAfterPhoto(
+              familyId,
+              widget.task.id,
+              afterPhotoUrl,
+            );
+      }
 
       await notifier.completeTask(
         widget.task.id.value,
