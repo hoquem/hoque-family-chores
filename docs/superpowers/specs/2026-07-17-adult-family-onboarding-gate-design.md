@@ -49,16 +49,27 @@ pick their adult role. No new backend, no new rules.
 ### 1. The gate (`_FamilyGate`) — the only new routing
 
 A small widget in the authenticated branch of `main.dart` that watches
-`authNotifierProvider`:
+`authNotifierProvider` and branches on **`state.user`**, in this exact order:
 
-- profile still loading → existing splash/spinner;
-- signed in **and** `user.familyId.isEmpty` → `FamilyOnboardingScreen`;
-- signed in **and** has a family → `MainScreen` (today's behaviour).
+1. `state.user == null` → **splash** (`_SplashScreen`). This is the loading
+   window: `build()` returns `status: authenticated` immediately for a restored
+   session but `user` stays null until the profile stream delivers it
+   (`auth_notifier.dart:52-57`). **Keying on `user == null` here is
+   load-bearing** — if the gate treated a null user as "no family" it would
+   flash the onboarding screen at a user who actually has a family (or, worse,
+   the reverse). Wait for the profile.
+2. `state.user != null && user.familyId.isEmpty` → `FamilyOnboardingScreen`.
+3. `state.user != null && family present` → `MainScreen` (today's behaviour).
 
 Because it watches the streamed profile, completing a create or join flips
 `familyId` from empty to set and the gate swaps to `MainScreen` automatically —
 no manual navigation. The gate carries a **Sign out** action for the
 wrong-account case.
+
+Note on `main.dart` today: it routes on `FirebaseAuth.authStateChanges()`
+(`hasData → MainScreen`), which is the raw Firebase session, not the profile.
+`_FamilyGate` replaces `const MainScreen()` in that `hasData` branch and adds
+the profile-aware three-way split above.
 
 No `go_router` change: `main.dart` currently routes with a `StreamBuilder`;
 `_FamilyGate` slots into the `hasData` branch.
