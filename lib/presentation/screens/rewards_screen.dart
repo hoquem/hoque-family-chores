@@ -7,6 +7,7 @@ import '../../domain/entities/reward.dart';
 import '../../domain/value_objects/user_id.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/rewards_notifier.dart';
+import '../../utils/logger.dart';
 import '../theme/app_tokens.dart';
 import 'add_reward_screen.dart';
 
@@ -68,9 +69,19 @@ class RewardsScreen extends ConsumerWidget {
                     padding: EdgeInsets.all(32),
                     child: CircularProgressIndicator(),
                   )),
-              error: (e, _) => _ErrorCard(
-                onRetry: () => ref.invalidate(familyRewardsProvider(user.familyId)),
-              ),
+              error: (e, stack) {
+                // Log the reason. Swallowing it left "Could not load rewards"
+                // on screen with nothing anywhere saying why — the first time
+                // this failed on a device, the cause (undeployed Firestore
+                // rules) was invisible.
+                logger.e('[RewardsScreen] rewards stream failed',
+                    error: e, stackTrace: stack);
+                return _ErrorCard(
+                  reason: e.toString(),
+                  onRetry: () =>
+                      ref.invalidate(familyRewardsProvider(user.familyId)),
+                );
+              },
               data: (list) => list.isEmpty
                   ? const _EmptyRewards()
                   : Column(
@@ -286,9 +297,13 @@ class _EmptyRewards extends StatelessWidget {
 }
 
 class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.onRetry});
+  const _ErrorCard({required this.onRetry, required this.reason});
 
   final VoidCallback onRetry;
+
+  /// Shown, not just logged. A parent hitting this can read it to me down the
+  /// phone; "Could not load rewards" on its own is unactionable for everyone.
+  final String reason;
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +314,12 @@ class _ErrorCard extends StatelessWidget {
           Icon(Icons.error_outline, size: 48, color: context.tokens.brick),
           const SizedBox(height: 8),
           const Text('Could not load rewards'),
+          const SizedBox(height: 8),
+          Text(
+            reason,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: context.tokens.inkSoft),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
         ],
