@@ -44,8 +44,24 @@ class ApproveTaskUseCase {
         return Left(BusinessFailure('Task has no assignee'));
       }
 
-      // TODO: Validate that approverId is a parent/guardian
-      // This would require checking user role in UserRepository
+      // You cannot judge your own chore.
+      //
+      // Anyone in the family may approve — a family is peers, not a hierarchy,
+      // and a sibling signing off a sibling's work is the point. But the
+      // approver must not be the person who did it: otherwise a child creates
+      // "Tidy room, 100⭐", assigns it to themselves, taps Done, taps Approve,
+      // and mints stars from nothing. Those stars buy real family time through
+      // Rewards, so this is the rule holding the whole economy honest.
+      //
+      // This replaces a TODO that proposed a parent/guardian check. That was
+      // both stricter than wanted and never implemented, so until now the only
+      // thing stopping a self-approval was a hidden button — and the UI is not
+      // a security boundary.
+      if (task.assignedToId == approverId) {
+        return Left(PermissionFailure(
+          'You need someone else in the family to check this one off.',
+        ));
+      }
 
       // Approve the task first: once the status leaves pendingApproval a
       // retried approval fails validation, so points can't be awarded twice.

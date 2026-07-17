@@ -4,6 +4,7 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/home_stats.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
@@ -176,11 +177,13 @@ class HomeScreen extends ConsumerWidget {
                 .claimTask(task.id.value, currentUser.id, currentUser.familyId),
           ),
           const SizedBox(height: 8),
-          if (currentUser.isParent)
+          // Anyone can sign off a task now, so anyone sees the queue — but only
+          // work they're allowed to judge. Counting your own would tell a child
+          // "1 waiting for you" about a chore they cannot act on, which is
+          // worse than not showing it at all.
+          if (_awaitingMyJudgement(tasks, currentUser.id) > 0)
             ApprovalQueueCard(
-              count: tasks
-                  .where((t) => t.status == TaskStatus.pendingApproval)
-                  .length,
+              count: _awaitingMyJudgement(tasks, currentUser.id),
               onTap: () {
                 ref
                     .read(taskFilterNotifierProvider.notifier)
@@ -226,3 +229,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
+
+/// Tasks waiting for approval that [userId] is allowed to sign off.
+///
+/// Excludes their own: you cannot judge your own chore, so counting it would
+/// promise an action they cannot take.
+int _awaitingMyJudgement(List<Task> tasks, UserId userId) => tasks
+    .where((t) =>
+        t.status == TaskStatus.pendingApproval && t.assignedToId != userId)
+    .length;
