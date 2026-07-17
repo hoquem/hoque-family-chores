@@ -458,8 +458,36 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return null;
 
       case TaskStatus.inProgress:
-        // Nothing reaches this state yet; a later task adds Done + "Can't
-        // do it" here.
+        // The before photo is already taken, so this is where a photo-proof
+        // task is finished or handed back. Both are required: an arm with only
+        // Done would trap a child who cannot do the chore after all, and an
+        // empty arm would trap them entirely — the dead end Start exists to
+        // prevent.
+        if (_isAssignedToMe) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _handleMarkComplete,
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('Done'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.tokens.sproutDeep,
+                  foregroundColor: context.tokens.cream,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: _handleCantDoIt,
+                icon: const Icon(Icons.undo, size: 20),
+                tooltip: "Can't do it — return to available",
+                color: context.tokens.amberWarn,
+              ),
+            ],
+          );
+        }
         return null;
 
       case TaskStatus.pendingApproval:
