@@ -9,6 +9,9 @@ import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/notification_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/task_completion_repository.dart';
+import '../domain/repositories/reward_repository.dart';
+import '../domain/usecases/reward/claim_reward_usecase.dart';
+import '../domain/usecases/reward/settle_redemption_usecase.dart';
 
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
@@ -65,6 +68,29 @@ NotificationRepository notificationRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[NotificationRepository] as NotificationRepository;
+}
+
+@riverpod
+RewardRepository rewardRepository(Ref ref) {
+  final factory = ref.watch(repositoryFactoryProvider);
+  final repositories = factory.createRepositories();
+  return repositories[RewardRepository] as RewardRepository;
+}
+
+@riverpod
+ClaimRewardUseCase claimRewardUseCase(Ref ref) {
+  return ClaimRewardUseCase(
+    ref.watch(rewardRepositoryProvider),
+    ref.watch(userRepositoryProvider),
+  );
+}
+
+@riverpod
+SettleRedemptionUseCase settleRedemptionUseCase(Ref ref) {
+  return SettleRedemptionUseCase(
+    ref.watch(rewardRepositoryProvider),
+    ref.watch(userRepositoryProvider),
+  );
 }
 
 @riverpod

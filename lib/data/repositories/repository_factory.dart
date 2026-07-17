@@ -5,6 +5,7 @@ import '../../domain/repositories/user_repository.dart';
 import '../../domain/repositories/family_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/task_completion_repository.dart';
+import '../../domain/repositories/reward_repository.dart';
 
 // Firebase implementations
 import 'firebase_task_repository.dart';
@@ -13,6 +14,7 @@ import 'firebase_user_repository.dart';
 import 'firebase_family_repository.dart';
 import 'firebase_notification_repository.dart';
 import 'firebase_task_completion_repository.dart';
+import 'firebase_reward_repository.dart';
 
 /// Factory for creating repository implementations based on environment
 class RepositoryFactory {
@@ -31,6 +33,7 @@ class RepositoryFactory {
       repositories[FamilyRepository] = FirebaseFamilyRepository();
       repositories[NotificationRepository] = FirebaseNotificationRepository();
       repositories[TaskCompletionRepository] = FirebaseTaskCompletionRepository();
+      repositories[RewardRepository] = FirebaseRewardRepository();
     } catch (e) {
       throw Exception('Failed to create repositories: $e');
     }
