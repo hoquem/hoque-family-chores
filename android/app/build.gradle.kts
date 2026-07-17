@@ -25,6 +25,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // flutter_local_notifications 17+ uses java.time APIs that aren't on
+        // older Android; desugaring back-ports them. Without this the release
+        // build fails checkReleaseAarMetadata. See #129.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -36,7 +40,10 @@ android {
         applicationId = "com.hoque.familychores" // Keep your existing applicationId
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion // <--- This is the updated line
+        // firebase-auth 23.x requires API 23+; Flutter's default (21) fails the
+        // manifest merge. 23 (Android 6.0, 2015) is a fine floor for a family
+        // app. See #129.
+        minSdk = maxOf(23, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion // Keep this as is
         versionCode = flutter.versionCode      // Keep this as is
         versionName = flutter.versionName      // Keep this as is
@@ -65,4 +72,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Back-ports java.time (and friends) that flutter_local_notifications 17+
+    // relies on, so the app runs on older Android. Required by the desugaring
+    // flag above. See #129.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

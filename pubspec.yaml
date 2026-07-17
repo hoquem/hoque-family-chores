@@ -63,7 +63,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   flutter_image_compress: ^2.3.0 # For image compression
   firebase_messaging: ^15.2.0 # For push notifications
-  flutter_local_notifications: ^16.3.0 # For local notifications
+  flutter_local_notifications: ^17.2.1 # 16.x fails to compile against compileSdk 34+ (bigLargeIcon ambiguity, #129); 17.2.1 fixes it and stays below the 19.x timezone bump
   timezone: ^0.9.4 # For scheduled notifications
   app_settings: ^5.2.0 # For app settings
   cached_network_image: ^3.3.1 # For image caching
