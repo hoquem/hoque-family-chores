@@ -241,6 +241,10 @@ class TaskListScreen extends ConsumerWidget {
       ),
       body: _buildTaskList(context, ref, familyId),
       floatingActionButton: FloatingActionButton(
+        // Distinct from the Rewards tab's FAB: both live in MainScreen's
+        // IndexedStack at once and would otherwise share Flutter's default
+        // hero tag.
+        heroTag: 'tasks_fab',
         onPressed: () => _navigateToAddTask(context),
         backgroundColor: context.tokens.starGold,
         foregroundColor: context.tokens.ink,

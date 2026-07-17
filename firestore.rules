@@ -57,6 +57,30 @@ service cloud.firestore {
       match /tasks/{taskId} {
         allow read, write: if isFamilyMember(familyId);
       }
+
+      // Rewards a family offers. Anyone in the family may add or remove one —
+      // a family is peers, not a hierarchy, and a child proposing "bike ride
+      // with Dad" is the feature working.
+      match /rewards/{rewardId} {
+        allow read, write: if isFamilyMember(familyId);
+      }
+
+      // Claims against those rewards.
+      //
+      // Deliberately as open as tasks, and worth saying why rather than
+      // leaving it to look lazy. The interesting rules here are not
+      // expressible at this layer: "you may only settle your own claim" and
+      // "a settled claim cannot be settled twice" both depend on comparing a
+      // write against existing state and on who claimed it. Those live in
+      // SettleRedemptionUseCase, with tests.
+      //
+      // What this layer must do is keep one family's promises out of another
+      // family's hands, and it does. Within a family, the stars are the real
+      // control: you cannot claim what you have not earned, and earning
+      // requires someone else to sign off your chore.
+      match /redemptions/{redemptionId} {
+        allow read, write: if isFamilyMember(familyId);
+      }
     }
 
     // Invite-code lookup documents: fetchable by code, never listable, and
