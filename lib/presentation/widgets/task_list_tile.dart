@@ -40,9 +40,13 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   String? _errorMessage;
   final _logger = AppLogger();
 
-  bool get _isAdmin =>
-      widget.user.role == UserRole.parent ||
-      widget.user.role == UserRole.guardian;
+  /// Whether this user may sign off this task.
+  ///
+  /// Anyone in the family can, except the person who did it — a family is
+  /// peers, not a hierarchy, and a sibling checking a sibling's work is the
+  /// point. This used to be parents-and-guardians only. The domain enforces
+  /// the same rule in ApproveTaskUseCase; this only hides a button.
+  bool get _canJudge => widget.task.assignedToId != widget.user.id;
 
   bool get _isAssignedToMe =>
       widget.task.assignedToId == widget.user.id;
@@ -537,7 +541,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return null;
 
       case TaskStatus.pendingApproval:
-        if (_isAdmin) {
+        if (_canJudge) {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [

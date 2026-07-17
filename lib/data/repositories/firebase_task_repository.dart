@@ -371,24 +371,58 @@ class FirebaseTaskRepository implements TaskRepository {
 
   @override
   Future<void> approveTask(FamilyId familyId, TaskId taskId) async {
-    // Note: This is a basic implementation. Full approval logic including
-    // awarding stars, updating streaks, and sending notifications should be
-    // handled by the ApproveTaskUseCase in the domain layer.
-    try {
-      final task = await getTask(familyId, taskId);
-      if (task == null) {
-        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
-      }
+    // Approving and awarding the stars are ONE transaction, deliberately.
+    //
+    // These used to be two writes in the use case: flip the status, then call
+    // addPoints. A crash or dropped connection between them left the task
+    // approved but the child unpaid — and because the retry then found the task
+    // no longer pendingApproval, the stars were lost for good. Here the status
+    // check and the award commit together or not at all.
+    //
+    // The `transaction.get` is load-bearing, not a convenience: it puts the
+    // task doc in the transaction's read set, so a second concurrent approval
+    // is forced to retry, re-reads status == completed, and bails at the guard
+    // below rather than awarding a second time. Do not replace it with a blind
+    // increment.
+    final taskRef = _firestore
+        .collection('families')
+        .doc(familyId.value)
+        .collection('tasks')
+        .doc(taskId.value);
 
-      await _firestore
-          .collection('families')
-          .doc(familyId.value)
-          .collection('tasks')
-          .doc(taskId.value)
-          .update({
-            'status': TaskStatus.completed.name,
-            'approvedAt': FieldValue.serverTimestamp(),
-          });
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(taskRef);
+        if (!snapshot.exists) {
+          throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+        }
+        final data = snapshot.data()!;
+
+        if (data['status'] != TaskStatus.pendingApproval.name) {
+          throw ValidationException(
+            'Task is not pending approval',
+            code: 'TASK_NOT_PENDING_APPROVAL',
+          );
+        }
+
+        final assigneeId = data['assignedToId'] as String?;
+        if (assigneeId == null) {
+          throw ValidationException(
+            'Task has no assignee to award stars to',
+            code: 'TASK_NO_ASSIGNEE',
+          );
+        }
+        final points = (data['points'] as num?)?.toInt() ?? 0;
+
+        transaction.update(taskRef, {
+          'status': TaskStatus.completed.name,
+          'approvedAt': FieldValue.serverTimestamp(),
+        });
+        transaction.update(
+          _firestore.collection('users').doc(assigneeId),
+          {'points': FieldValue.increment(points)},
+        );
+      });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to approve task: $e', code: 'TASK_APPROVE_ERROR');

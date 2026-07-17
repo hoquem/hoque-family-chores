@@ -18,10 +18,18 @@ class TodayMissions {
   /// Approved/completed today.
   final List<Task> done;
 
+  /// Unclaimed family tasks the user could pick up today.
+  ///
+  /// Shown only when the user has nothing of their own — see
+  /// ``TodayMissionsCard``. A child with no missions was otherwise met with a
+  /// dead end on the one screen meant to bring them back daily.
+  final List<Task> claimable;
+
   const TodayMissions({
     required this.toDo,
     required this.waiting,
     required this.done,
+    this.claimable = const [],
   });
 
   /// True when the day had missions and none are left to do.
@@ -41,6 +49,17 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
 
   final mine = tasks.where(
       (t) => t.assignedToId == userId && t.dueDate.isBefore(endOfToday));
+
+  // Unclaimed work anyone could take. Drawn from every task rather than
+  // `mine`, since an available task has no assignee and so never reaches the
+  // loop below. Same date window as the rest: offering Friday's chore under
+  // "Today's Missions" would be a small lie.
+  final claimable = tasks
+      .where((t) =>
+          t.status == TaskStatus.available &&
+          t.assignedToId == null &&
+          t.dueDate.isBefore(endOfToday))
+      .toList();
 
   final toDo = <Task>[];
   final waiting = <Task>[];
@@ -62,7 +81,12 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
         break; // Not claimed by anyone; not a personal mission.
     }
   }
-  return TodayMissions(toDo: toDo, waiting: waiting, done: done);
+  return TodayMissions(
+    toDo: toDo,
+    waiting: waiting,
+    done: done,
+    claimable: claimable,
+  );
 }
 
 /// Consecutive days (ending today, or yesterday when today has no

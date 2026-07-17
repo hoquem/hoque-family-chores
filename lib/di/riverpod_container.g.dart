@@ -144,6 +144,65 @@ final notificationRepositoryProvider =
 // ignore: unused_element
 typedef NotificationRepositoryRef =
     AutoDisposeProviderRef<NotificationRepository>;
+String _$rewardRepositoryHash() => r'4201d5fbc9090a0227a648da59a3f09a041f6d47';
+
+/// See also [rewardRepository].
+@ProviderFor(rewardRepository)
+final rewardRepositoryProvider = AutoDisposeProvider<RewardRepository>.internal(
+  rewardRepository,
+  name: r'rewardRepositoryProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$rewardRepositoryHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RewardRepositoryRef = AutoDisposeProviderRef<RewardRepository>;
+String _$claimRewardUseCaseHash() =>
+    r'8b99db9e253754624da64972fd4b74492316a3cb';
+
+/// See also [claimRewardUseCase].
+@ProviderFor(claimRewardUseCase)
+final claimRewardUseCaseProvider =
+    AutoDisposeProvider<ClaimRewardUseCase>.internal(
+      claimRewardUseCase,
+      name: r'claimRewardUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$claimRewardUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef ClaimRewardUseCaseRef = AutoDisposeProviderRef<ClaimRewardUseCase>;
+String _$settleRedemptionUseCaseHash() =>
+    r'4d89f41cdb8bac5f932f01d82eeb2d4c979a64b7';
+
+/// See also [settleRedemptionUseCase].
+@ProviderFor(settleRedemptionUseCase)
+final settleRedemptionUseCaseProvider =
+    AutoDisposeProvider<SettleRedemptionUseCase>.internal(
+      settleRedemptionUseCase,
+      name: r'settleRedemptionUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$settleRedemptionUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SettleRedemptionUseCaseRef =
+    AutoDisposeProviderRef<SettleRedemptionUseCase>;
 String _$taskCompletionRepositoryHash() =>
     r'c5bdd16ab6718c60b4b3a64dc655a0ca12ae2337';
 
@@ -243,7 +302,7 @@ final completeTaskUseCaseProvider =
 // ignore: unused_element
 typedef CompleteTaskUseCaseRef = AutoDisposeProviderRef<CompleteTaskUseCase>;
 String _$approveTaskUseCaseHash() =>
-    r'acc73a1d329102108b28369c357ea03015c98d9b';
+    r'06aabf329911316625a89d7c88256cb161e0de36';
 
 /// See also [approveTaskUseCase].
 @ProviderFor(approveTaskUseCase)

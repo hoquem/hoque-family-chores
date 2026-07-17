@@ -16,21 +16,18 @@ import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 
 import '../../mocks/mock_task_repository.dart';
-import '../../mocks/mock_user_repository.dart';
 
 const _before = 'https://example.com/before.jpg';
 const _after = 'https://example.com/after.jpg';
 
 void main() {
   late MockTaskRepository tasks;
-  late MockUserRepository users;
   late FamilyId familyId;
   late UserId kid;
   late TaskId taskId;
 
   setUp(() async {
     tasks = MockTaskRepository();
-    users = MockUserRepository();
     familyId = FamilyId('family_1');
     kid = UserId('user_2');
 
@@ -101,7 +98,7 @@ void main() {
       familyId: familyId,
     );
 
-    final approved = await ApproveTaskUseCase(tasks, users)(
+    final approved = await ApproveTaskUseCase(tasks)(
       taskId: taskId,
       approverId: UserId('user_1'),
       familyId: familyId,

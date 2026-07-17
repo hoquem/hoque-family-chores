@@ -99,13 +99,36 @@ class FirebaseUserRepository implements UserRepository {
   @override
   Future<void> subtractPoints(UserId userId, Points points) async {
     try {
-      final user = await getUserProfile(userId);
-      if (user == null) {
-        throw NotFoundException('User not found', code: 'USER_NOT_FOUND');
-      }
+      // A transaction, not read-then-write.
+      //
+      // addPoints uses FieldValue.increment and says why: "concurrent awards
+      // must not lose writes". This did the opposite — read the balance,
+      // compute, write it back — so two claims landing together could both see
+      // 200 stars and both spend them. Nobody had noticed because until
+      // Rewards nothing ever called this.
+      //
+      // increment(-n) would be atomic but cannot refuse to go negative, and a
+      // balance that can go below zero is worse than a lost write. So: read and
+      // write inside one transaction, and reject the spend there.
+      final ref = _firestore.collection('users').doc(userId.value);
 
-      final newPoints = user.points.subtract(points);
-      await updateUserPoints(userId, newPoints);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(ref);
+        if (!snapshot.exists) {
+          throw NotFoundException('User not found', code: 'USER_NOT_FOUND');
+        }
+
+        final current = (snapshot.data()?['points'] as num?)?.toInt() ?? 0;
+        final remaining = current - points.toInt();
+        if (remaining < 0) {
+          throw ValidationException(
+            'Not enough stars: $current available, ${points.toInt()} needed',
+            code: 'INSUFFICIENT_POINTS',
+          );
+        }
+
+        transaction.update(ref, {'points': remaining});
+      });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to subtract points: $e', code: 'USER_SUBTRACT_POINTS_ERROR');

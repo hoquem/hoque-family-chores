@@ -226,9 +226,14 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
-    final isAdmin = currentUser?.role.isAdmin ?? false;
     final isAssignedToMe =
         currentUser != null && task.assignedToId == currentUser.id;
+    // Anyone in the family may sign off a chore — except the person who did it.
+    // This is the same rule ApproveTaskUseCase enforces and the Tasks list tile
+    // shows (_canJudge). The detail screen used to gate on role.isAdmin, so a
+    // sibling saw a working Approve button in the list, tapped through to here,
+    // and it was gone. Match the tile; the domain layer is the real boundary.
+    final canJudge = currentUser != null && !isAssignedToMe;
 
     return Scaffold(
       appBar: AppBar(
@@ -265,7 +270,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   const SizedBox(height: 32),
                   _buildActionButtons(
                     currentUser: currentUser,
-                    isAdmin: isAdmin,
+                    canJudge: canJudge,
                     isAssignedToMe: isAssignedToMe,
                   ),
                   const SizedBox(height: 24),
@@ -514,7 +519,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
 
   Widget _buildActionButtons({
     required User? currentUser,
-    required bool isAdmin,
+    required bool canJudge,
     required bool isAssignedToMe,
   }) {
     if (currentUser == null) return const SizedBox.shrink();
@@ -569,8 +574,8 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       );
     }
 
-    // Pending approval & admin — approve/reject
-    if (task.status == TaskStatus.pendingApproval && isAdmin) {
+    // Pending approval, and I'm not the one who did it — approve/reject
+    if (task.status == TaskStatus.pendingApproval && canJudge) {
       buttons.add(
         Row(
           children: [

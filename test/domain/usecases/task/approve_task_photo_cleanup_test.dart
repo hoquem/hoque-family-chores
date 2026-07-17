@@ -1,15 +1,19 @@
-// Photos exist to be judged. Once a parent has approved, they are pure cost —
+// Photos exist to be judged. Once someone has approved, they are pure cost —
 // so approval deletes them, and retention runs Start-to-Approve (hours) rather
 // than forever.
 //
 // The subtle requirement is the negative one: cleanup must NEVER fail the
-// approval. A parent tapping Approve is the core loop; a storage hiccup on a
-// kitchen wifi must not break it. A failed delete orphans a blob, which is a
-// cost leak, not a correctness bug — the cheaper of the two.
+// approval. Tapping Approve is the core loop; a storage hiccup on a kitchen
+// wifi must not break it. A failed delete orphans a blob, which is a cost leak,
+// not a correctness bug — the cheaper of the two.
+//
+// The star award itself moved into the approveTask transaction (so approval and
+// payment commit together); these tests therefore assert the cleanup contract
+// and treat "approveTask was called" as "the child was paid". The award's own
+// atomicity is proved in firebase_task_repository_approve_test.dart.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
-import 'package:hoque_family_chores/domain/repositories/user_repository.dart';
 import 'package:hoque_family_chores/domain/usecases/task/approve_task_usecase.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
@@ -18,8 +22,6 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepository {}
-
-class _MockUserRepository extends Mock implements UserRepository {}
 
 final _kid = UserId('kid1');
 final _parent = UserId('parent1');
@@ -47,24 +49,19 @@ void main() {
   setUpAll(() {
     registerFallbackValue(FamilyId('fallback'));
     registerFallbackValue(TaskId('fallback'));
-    registerFallbackValue(UserId('fallback'));
-    registerFallbackValue(Points(0));
   });
 
   late _MockTaskRepository tasks;
-  late _MockUserRepository users;
   late ApproveTaskUseCase useCase;
 
   setUp(() {
     tasks = _MockTaskRepository();
-    users = _MockUserRepository();
-    useCase = ApproveTaskUseCase(tasks, users);
+    useCase = ApproveTaskUseCase(tasks);
 
     when(() => tasks.getTask(_familyId, _taskId))
         .thenAnswer((_) async => _task(status: TaskStatus.pendingApproval));
     when(() => tasks.approveTask(any(), any())).thenAnswer((_) async {});
     when(() => tasks.clearPhotos(any(), any())).thenAnswer((_) async {});
-    when(() => users.addPoints(any(), any())).thenAnswer((_) async {});
   });
 
   Future<void> approve() => useCase(
@@ -89,23 +86,25 @@ void main() {
     );
 
     expect(result.isRight(), isTrue,
-        reason: 'the parent tapped Approve and the task IS approved; a storage '
-            'hiccup must not break the core loop. The orphaned blob is a cost '
-            'leak, not a correctness bug.');
+        reason: 'the approver tapped Approve and the task IS approved; a '
+            'storage hiccup must not break the core loop. The orphaned blob is '
+            'a cost leak, not a correctness bug.');
   });
 
-  test('a failed cleanup still awards the points', () async {
+  test('a failed cleanup still approves and awards', () async {
+    // The award commits inside approveTask, which runs before cleanup — so a
+    // cleanup failure can never cost the child their stars.
     when(() => tasks.clearPhotos(any(), any()))
         .thenThrow(Exception('storage unreachable'));
 
     await approve();
 
-    verify(() => users.addPoints(_kid, any())).called(1);
+    verify(() => tasks.approveTask(_familyId, _taskId)).called(1);
   });
 
   test('cleanup runs after the approval, never before', () async {
     // Order matters: if the photos went first and the approval then failed,
-    // the parent would be left judging a task whose evidence had vanished.
+    // the approver would be left judging a task whose evidence had vanished.
     await approve();
     verifyInOrder([
       () => tasks.approveTask(_familyId, _taskId),

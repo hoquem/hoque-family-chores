@@ -4,6 +4,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_n
 import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/family_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/rewards_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -16,6 +17,7 @@ class MainScreen extends ConsumerWidget {
     // The full task manager (filters + add-task), not a read-only summary:
     // the Tasks tab is the only place tasks can be created and managed.
     TaskListScreen(),
+    RewardsScreen(),
     FamilyScreen(),
     UserProfileScreen(),
   ];
