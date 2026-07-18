@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -33,5 +34,31 @@ void main() {
         _plistValue(plist, 'STORAGE_BUCKET'));
     expect(DefaultFirebaseOptions.ios.iosBundleId,
         _plistValue(plist, 'BUNDLE_ID'));
+  });
+
+  // The Android google-services plugin auto-initializes Firebase from
+  // google-services.json BEFORE Dart runs; if DefaultFirebaseOptions.android
+  // disagrees, startup dies with core/duplicate-app. This is the exact drift
+  // that shipped and crashed Android (the iOS-only check above missed it).
+  test('Android DefaultFirebaseOptions match google-services.json', () {
+    final json = jsonDecode(
+      File('android/app/google-services.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+
+    final projectInfo = json['project_info'] as Map<String, dynamic>;
+    final client = (json['client'] as List).first as Map<String, dynamic>;
+    final appId =
+        (client['client_info'] as Map)['mobilesdk_app_id'] as String;
+    final apiKey =
+        ((client['api_key'] as List).first as Map)['current_key'] as String;
+
+    expect(DefaultFirebaseOptions.android.apiKey, apiKey);
+    expect(DefaultFirebaseOptions.android.appId, appId);
+    expect(DefaultFirebaseOptions.android.projectId,
+        projectInfo['project_id']);
+    expect(DefaultFirebaseOptions.android.storageBucket,
+        projectInfo['storage_bucket']);
+    expect(DefaultFirebaseOptions.android.messagingSenderId,
+        projectInfo['project_number']);
   });
 }
