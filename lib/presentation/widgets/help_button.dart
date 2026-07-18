@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/analytics.dart';
+import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/help_hint_notifier.dart';
 
 /// What one screen's help sheet says: a friendly title and a few plain-language
@@ -23,6 +25,17 @@ class HelpButton extends ConsumerWidget {
 
   void _open(BuildContext context, WidgetRef ref) {
     ref.read(helpHintSeenProvider.notifier).markSeen();
+    // Best-effort telemetry: reading auth or logging must never block help.
+    try {
+      final userId = ref.read(authNotifierProvider).user?.id.value;
+      if (userId != null) {
+        ref.read(analyticsProvider).log(
+          AnalyticsEventName.helpOpened,
+          userId: userId,
+          params: {'screen': content.title},
+        );
+      }
+    } catch (_) {/* telemetry is never fatal */}
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,

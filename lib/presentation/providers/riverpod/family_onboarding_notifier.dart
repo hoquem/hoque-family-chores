@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -53,6 +54,11 @@ class FamilyOnboardingNotifier extends _$FamilyOnboardingNotifier {
       },
       (family) {
         _logger.i('FamilyOnboarding: created family ${family.id}');
+        ref.read(analyticsProvider).log(
+              AnalyticsEventName.familyCreated,
+              userId: creatorId.value,
+              familyId: family.id.value,
+            );
         state = state.copyWith(isLoading: false, error: null);
         return true;
       },
@@ -84,6 +90,12 @@ class FamilyOnboardingNotifier extends _$FamilyOnboardingNotifier {
       },
       (family) {
         _logger.i('FamilyOnboarding: joined family ${family.id}');
+        ref.read(analyticsProvider).log(
+              AnalyticsEventName.familyJoined,
+              userId: userId.value,
+              familyId: family.id.value,
+              params: {'role': role.name},
+            );
         state = state.copyWith(isLoading: false, error: null);
         return true;
       },

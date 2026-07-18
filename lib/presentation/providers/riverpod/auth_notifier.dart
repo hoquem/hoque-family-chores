@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -93,6 +94,11 @@ class AuthNotifier extends _$AuthNotifier {
           // domain User. The domain profile arrives via the profile stream.
           final userId = UserId(firebaseUser.uid as String);
           _logger.d('AuthNotifier: Sign in successful for user $userId');
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.signedIn,
+                userId: userId.value,
+                params: const {'method': 'email'},
+              );
           _startUserProfileStream(userId);
           state = state.copyWith(
             isLoading: false,
@@ -294,6 +300,11 @@ class AuthNotifier extends _$AuthNotifier {
       _logger.d('AuthNotifier: Created parent profile for user $userId');
     }
 
+    ref.read(analyticsProvider).log(
+          AnalyticsEventName.signedIn,
+          userId: userId.value,
+          params: const {'method': 'oauth'},
+        );
     _startUserProfileStream(userId);
     state = state.copyWith(
       isLoading: false,
