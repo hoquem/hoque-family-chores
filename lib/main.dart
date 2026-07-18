@@ -25,10 +25,13 @@ import 'firebase_options.dart';
 // Push notifications background handler
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // The background isolate has its own Firebase registry; guard here too so a
-  // native auto-init doesn't collide (same reason as main()).
-  if (Firebase.apps.isEmpty) {
+  // Same idempotent init as main(): try, and treat duplicate-app as "already
+  // there". The background isolate has its own registry, but a native auto-init
+  // can still have created [DEFAULT] first.
+  try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
   }
   final logger = AppLogger();
   logger.i('[FCM Background] Message received: ${message.notification?.title}');
@@ -52,18 +55,25 @@ void main() async {
 
     try {
       logger.i("[Startup] Connecting to Firebase...");
-      // On Android the google-services plugin auto-initialises the [DEFAULT]
-      // Firebase app natively (a ContentProvider reads google-services.json)
-      // before Dart's main() runs. Calling initializeApp() again then throws
-      // [core/duplicate-app] and crashes at startup. Initialise only if it has
-      // not happened yet — the native app carries the same project config as
-      // firebase_options.dart, so reusing it is correct, not a workaround.
-      if (Firebase.apps.isEmpty) {
+      // A native auto-init can create the [DEFAULT] app before Dart's main()
+      // runs — Android's google-services ContentProvider, or iOS's
+      // FirebaseApp.configure in the AppDelegate. When it has, Dart's
+      // Firebase.apps list may STILL read empty here (it doesn't reflect the
+      // native app until firebase_core finishes wiring up), so a
+      // `Firebase.apps.isEmpty` guard is not reliable — it lets a second
+      // initializeApp() through, which then throws [core/duplicate-app] and
+      // crashes at startup (the earlier guard-based fix did exactly this).
+      //
+      // The robust, idempotent fix: try to initialise and treat a
+      // "duplicate-app" error as success. That error is proof the [DEFAULT] app
+      // already exists with the same project config, so we simply reuse it.
+      try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
         logger.i("[Startup] Firebase connected successfully.");
-      } else {
+      } on FirebaseException catch (e) {
+        if (e.code != 'duplicate-app') rethrow;
         logger.i("[Startup] Firebase already initialised natively; reusing [DEFAULT].");
       }
 
