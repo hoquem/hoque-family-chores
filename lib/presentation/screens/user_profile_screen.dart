@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
@@ -72,8 +73,8 @@ class UserProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        // --- CHANGED --- Title updated to reflect its new purpose.
         title: const Text('Profile'),
+        actions: const [HelpButton(content: kProfileHelp)],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),

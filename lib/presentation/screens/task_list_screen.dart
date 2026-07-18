@@ -7,6 +7,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -207,6 +208,7 @@ class TaskListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Tasks'),
         actions: [
+          const HelpButton(content: kTasksHelp),
           PopupMenuButton<TaskFilterType>(
             onSelected: (TaskFilterType filter) {
               ref.read(taskFilterNotifierProvider.notifier).setFilter(filter);
