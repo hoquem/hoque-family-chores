@@ -2,13 +2,11 @@
 
 _Last updated: 18 July 2026_
 
-> **Fill in before publishing:** legal/developer name, governing jurisdiction,
-> and (if any) business address. Placeholders are marked `[LIKE THIS]`. This
-> template is a starting point, not legal advice — have it reviewed by a
-> qualified professional before you rely on it.
+> **Note:** this is a starting-point template, not legal advice. Have it reviewed
+> by a qualified professional before you rely on it.
 
 These Terms & Conditions ("Terms") are a legal agreement between you and
-**[DEVELOPER NAME]** ("we", "us") governing your use of the Home Chores Star app
+**Mahmudul Hoque** ("we", "us") governing your use of the Home Chores Star app
 ("the App"). By downloading, creating an account, or using the App, you agree to
 these Terms. If you do not agree, do not use the App.
 
@@ -101,8 +99,7 @@ Continued use after changes take effect constitutes acceptance.
 
 ## 12. Governing Law
 
-These Terms are governed by the laws of **[JURISDICTION — e.g. England and
-Wales]**, and disputes are subject to the courts of that jurisdiction, without
+These Terms are governed by the laws of **England and Wales** (part of the United Kingdom), and disputes are subject to the courts of that jurisdiction, without
 affecting any mandatory consumer-protection rights you have where you live.
 
 ## 13. Contact

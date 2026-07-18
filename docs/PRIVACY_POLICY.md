@@ -2,12 +2,11 @@
 
 _Last updated: 18 July 2026_
 
-> **Fill in before publishing:** legal/developer name, business address (if any),
-> and the governing jurisdiction. Placeholders are marked `[LIKE THIS]`. This
-> template is a starting point, not legal advice — have it reviewed by a
-> qualified professional, especially the children's-data sections.
+> **Note:** this is a starting-point template, not legal advice. Have it reviewed
+> by a qualified professional before you rely on it, especially the children's-data
+> sections, and confirm the data-storage region matches your Firebase project.
 
-Home Chores Star ("the App", "we", "us"), provided by **[DEVELOPER NAME]**, is a
+Home Chores Star ("the App", "we", "us"), provided by **Mahmudul Hoque**, is a
 private family chore-management app. Parents and guardians set up a family, add
 chores, and children complete them to earn stars they can spend on family
 rewards. This policy explains what information the App collects, why, and the
@@ -64,7 +63,8 @@ Messaging, Crashlytics) as our data processor to host and operate the App, and
 **Apple** and **Google** to provide sign-in when you choose those methods. We do
 not share your information with anyone else except where required by law. Google
 processes data under its own terms and may store it on servers in
-**[COUNTRY/REGION — e.g. the United States]**; by using the App you consent to
+the United Kingdom, the European Economic Area, and other countries
+where Google operates (which may include the United States); by using the App you consent to
 this transfer.
 
 ## Children's Privacy
