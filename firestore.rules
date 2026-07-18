@@ -99,6 +99,13 @@ service cloud.firestore {
         && isFamilyMember(request.resource.data.familyId);
     }
 
+    // User feedback — APPEND-ONLY. A signed-in client may only submit; it can
+    // never read, edit, or delete. Read it in the Firebase console.
+    match /feedback/{feedbackId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if false;
+    }
+
     // Usage analytics — APPEND-ONLY. A signed-in client may only add an event;
     // it can never read, edit, or delete one. Analysis happens in
     // BigQuery/Looker Studio, not the app. Events carry the pseudonymous uid and

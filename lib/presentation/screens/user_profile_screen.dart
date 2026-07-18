@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/about_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
@@ -131,7 +132,15 @@ class UserProfileScreen extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const SecurityScreen()),
             ),
           ),
-          
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About & Feedback'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            ),
+          ),
+
           ListTile(
             leading: Icon(Icons.delete_forever, color: context.tokens.brick),
             title: Text(
