@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDT-HzQtxI5BX-lIVhn6b0wmZzUFKcGHgM',
+    apiKey: 'AIzaSyDCmU9rtayHuIjMZe2kumNoZAKIohhxpCY',
     appId: '1:232697993893:android:6dc56236c63f3ccd1c4b4c',
     messagingSenderId: '232697993893',
     projectId: 'hoque-family-chores-app',
