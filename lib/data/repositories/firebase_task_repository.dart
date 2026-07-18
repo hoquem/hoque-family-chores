@@ -218,6 +218,62 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> promoteAfterPhotoToBackground(
+      FamilyId familyId, TaskId taskId) async {
+    try {
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+      final afterUrl = task.photoUrl;
+      if (afterUrl == null) {
+        // Nothing to promote — behave like clearPhotos.
+        await clearPhotos(familyId, taskId);
+        return;
+      }
+
+      final familyRef =
+          _firestore.collection('families').doc(familyId.value);
+      final oldBackground =
+          (await familyRef.get()).data()?['backgroundPhotoUrl'] as String?;
+
+      // Point the family at the kept after-photo. This is the important write;
+      // it happens before any delete so the background is set even if cleanup
+      // later fails.
+      await familyRef.update({
+        'backgroundPhotoUrl': afterUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // The task no longer owns the after-photo (the family's background uses
+      // it now); clear its photo fields so nothing later deletes that file.
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({'beforePhotoUrl': null, 'photoUrl': null});
+
+      // Best-effort: retire the before-photo and the previous background blob.
+      for (final url in [task.beforePhotoUrl, oldBackground]) {
+        if (url == null || url == afterUrl) continue;
+        final result = await _photos.delete(url);
+        result.fold(
+          (failure) => throw ServerException(
+            'Failed to delete retired photo: ${failure.message}',
+            code: 'PHOTO_DELETE_ERROR',
+          ),
+          (_) {},
+        );
+      }
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to promote task photo: $e',
+          code: 'PHOTO_PROMOTE_ERROR');
+    }
+  }
+
+  @override
   Future<void> setAfterPhoto(
     FamilyId familyId,
     TaskId taskId,

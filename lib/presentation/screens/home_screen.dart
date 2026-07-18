@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
@@ -28,14 +31,34 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     logger.d("[HomeScreen] Building screen");
+    // The room the family just cleaned, behind everything: the latest approved
+    // "after" photo, blurred and dimmed so the content stays readable. Absent
+    // until a photo-proof chore is approved.
+    final user = ref.watch(authNotifierProvider).user;
+    final backgroundUrl = user == null
+        ? null
+        : ref.watch(familyNotifierProvider(user.familyId)).maybeWhen(
+              data: (family) => family.backgroundPhotoUrl,
+              orElse: () => null,
+            );
+    final hasBackground = backgroundUrl != null && backgroundUrl.isNotEmpty;
+
     // The AppBar keeps the content below the status bar/notch, matching
     // the other tabs.
     return Scaffold(
+      backgroundColor: hasBackground ? Colors.transparent : null,
       appBar: AppBar(
         title: const Text('Home'),
         actions: const [HelpButton(content: kHomeHelp)],
       ),
-      body: _buildBody(context, ref),
+      body: hasBackground
+          ? Stack(
+              children: [
+                Positioned.fill(child: _FamilyBackground(url: backgroundUrl)),
+                _buildBody(context, ref),
+              ],
+            )
+          : _buildBody(context, ref),
     );
   }
 
@@ -242,3 +265,32 @@ int _awaitingMyJudgement(List<Task> tasks, UserId userId) => tasks
     .where((t) =>
         t.status == TaskStatus.pendingApproval && t.assignedToId != userId)
     .length;
+
+/// The family's latest cleaned-room photo as a soft backdrop: blurred and
+/// tinted so foreground content keeps its contrast. Fails invisibly.
+class _FamilyBackground extends StatelessWidget {
+  const _FamilyBackground({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => const SizedBox.shrink(),
+          errorWidget: (_, __, ___) => const SizedBox.shrink(),
+        ),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            color: context.tokens.surface.withValues(alpha: 0.78),
+          ),
+        ),
+      ],
+    );
+  }
+}

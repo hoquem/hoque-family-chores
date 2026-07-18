@@ -241,6 +241,14 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> promoteAfterPhotoToBackground(
+      FamilyId familyId, TaskId taskId) async {
+    // The mock has no family store; promotion's observable effect on the task
+    // (its photo fields clear) matches clearPhotos, which is enough for tests.
+    await clearPhotos(familyId, taskId);
+  }
+
+  @override
   Future<void> setAfterPhoto(
     FamilyId familyId,
     TaskId taskId,

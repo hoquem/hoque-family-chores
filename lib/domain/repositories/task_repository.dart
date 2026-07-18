@@ -46,6 +46,14 @@ abstract class TaskRepository {
   /// field to null (`x ?? this.x`), so it silently would not clear them.
   Future<void> clearPhotos(FamilyId familyId, TaskId taskId);
 
+  /// Promotes a task's approved "after" photo to the family's Home background.
+  ///
+  /// Keeps the after-photo file, points `family.backgroundPhotoUrl` at it,
+  /// clears the task's photo fields (the family owns the file now), and deletes
+  /// the retired previous background plus this task's before-photo. If the task
+  /// has no after-photo this behaves like [clearPhotos].
+  Future<void> promoteAfterPhotoToBackground(FamilyId familyId, TaskId taskId);
+
   /// Record the "after" photo for a task.
   ///
   /// Separate from [completeTask] because that does a targeted status write and
