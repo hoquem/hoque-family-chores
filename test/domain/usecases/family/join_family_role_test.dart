@@ -37,8 +37,10 @@ User _adult(UserId id) => User(
     );
 
 void main() {
-  for (final role in [UserRole.parent, UserRole.guardian]) {
-    test('an adult joins by code as ${role.name}', () async {
+  // The onboarding picker produces parent (the "parent or guardian" choice) and
+  // child; guardian stays a valid backend role, so all three are covered.
+  for (final role in [UserRole.parent, UserRole.guardian, UserRole.child]) {
+    test('a user joins by code as ${role.name}', () async {
       final users = MockUserRepository();
       final families = MockFamilyRepository();
       await families.createFamily(_family());

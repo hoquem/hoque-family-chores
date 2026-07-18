@@ -185,18 +185,23 @@ class _FamilyOnboardingScreenState
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 4),
+                  // Parent and guardian are the same role under the hood (both
+                  // admin), so offering both was a cosmetic choice with no
+                  // effect. The distinction that matters is adult vs child: a
+                  // child earns stars and gets chores and can't approve. The
+                  // adult choice is stored as parent.
                   SegmentedButton<UserRole>(
                     key: const Key('join_role_selector'),
                     segments: const [
                       ButtonSegment(
                         value: UserRole.parent,
-                        label: Text('Parent'),
+                        label: Text('Parent or guardian'),
                         icon: Icon(Icons.person),
                       ),
                       ButtonSegment(
-                        value: UserRole.guardian,
-                        label: Text('Guardian'),
-                        icon: Icon(Icons.shield_outlined),
+                        value: UserRole.child,
+                        label: Text('Child'),
+                        icon: Icon(Icons.child_care),
                       ),
                     ],
                     selected: {_joinRole},
