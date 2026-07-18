@@ -210,6 +210,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
       photoUrl: data['photoUrl'] as String?,
+      backgroundPhotoUrl: data['backgroundPhotoUrl'] as String?,
       inviteCode: data['inviteCode'] as String? ?? '',
     );
   }
@@ -224,6 +225,7 @@ class FirebaseFamilyRepository implements FamilyRepository {
       'createdAt': family.createdAt,
       'updatedAt': family.updatedAt,
       'photoUrl': family.photoUrl,
+      'backgroundPhotoUrl': family.backgroundPhotoUrl,
       'inviteCode': family.inviteCode,
     };
   }

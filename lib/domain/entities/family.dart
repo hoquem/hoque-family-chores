@@ -13,6 +13,11 @@ class FamilyEntity extends Equatable {
   final DateTime updatedAt;
   final String? photoUrl;
 
+  /// The most recent approved "after" chore photo, shown as the Home-screen
+  /// background — the room the family just cleaned. Null until a photo-proof
+  /// chore is approved.
+  final String? backgroundPhotoUrl;
+
   /// Short code family members enter to join this family.
   final String inviteCode;
 
@@ -25,6 +30,7 @@ class FamilyEntity extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.photoUrl,
+    this.backgroundPhotoUrl,
     this.inviteCode = '',
   });
 
@@ -38,6 +44,7 @@ class FamilyEntity extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? photoUrl,
+    String? backgroundPhotoUrl,
     String? inviteCode,
   }) {
     return FamilyEntity(
@@ -49,6 +56,7 @@ class FamilyEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       photoUrl: photoUrl ?? this.photoUrl,
+      backgroundPhotoUrl: backgroundPhotoUrl ?? this.backgroundPhotoUrl,
       inviteCode: inviteCode ?? this.inviteCode,
     );
   }
@@ -104,6 +112,7 @@ class FamilyEntity extends Equatable {
         createdAt,
         updatedAt,
         photoUrl,
+        backgroundPhotoUrl,
         inviteCode,
       ];
 } 

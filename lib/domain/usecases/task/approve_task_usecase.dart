@@ -67,21 +67,27 @@ class ApproveTaskUseCase {
       // an approval can never leave a child unpaid or pay them twice.
       await _taskRepository.approveTask(familyId, taskId);
 
-      // The photos have now done their job: someone has looked at them and
-      // judged. Keeping them past that point is pure storage cost, so
-      // retention runs Start-to-Approve — hours — rather than forever.
+      // The after-photo has done its job as proof; now it earns a second life
+      // as the family's Home-screen background — the room they just cleaned.
+      // Promoting it keeps that one file and retires the previous background
+      // plus this task's before-photo. A chore with no after-photo just clears,
+      // as before.
       //
       // Deliberately after the approval and deliberately swallowed. Tapping
       // Approve is the core loop; a storage hiccup on kitchen wifi must not
       // break it, and the task IS approved by this point (the stars committed
-      // inside the transaction above). The cost of a failure here is one
-      // orphaned blob — a cost leak, not a correctness bug — much cheaper than
-      // an approval that fails at the last step. This is the one place in this
-      // flow where an error is tolerated, and it is tolerated on purpose.
+      // inside the transaction above). The cost of a failure here is a leaked
+      // blob — a cost leak, not a correctness bug — much cheaper than an
+      // approval that fails at the last step. This is the one place in this flow
+      // where an error is tolerated, and it is tolerated on purpose.
       try {
-        await _taskRepository.clearPhotos(familyId, taskId);
+        if (task.photoUrl != null) {
+          await _taskRepository.promoteAfterPhotoToBackground(familyId, taskId);
+        } else {
+          await _taskRepository.clearPhotos(familyId, taskId);
+        }
       } catch (_) {
-        // Intentionally ignored — see above. The blob outlives the task.
+        // Intentionally ignored — see above.
       }
 
       // TODO: Update user streak (requires additional repository method)

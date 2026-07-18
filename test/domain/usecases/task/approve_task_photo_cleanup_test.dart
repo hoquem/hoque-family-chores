@@ -1,16 +1,14 @@
-// Photos exist to be judged. Once someone has approved, they are pure cost —
-// so approval deletes them, and retention runs Start-to-Approve (hours) rather
-// than forever.
+// On approval the after-photo is no longer just deleted — it is PROMOTED to the
+// family's Home background (the room they just cleaned), which keeps that file
+// and retires the rest. A chore with no after-photo still just clears.
 //
-// The subtle requirement is the negative one: cleanup must NEVER fail the
-// approval. Tapping Approve is the core loop; a storage hiccup on a kitchen
-// wifi must not break it. A failed delete orphans a blob, which is a cost leak,
-// not a correctness bug — the cheaper of the two.
+// The subtle requirement is the negative one, unchanged: cleanup must NEVER fail
+// the approval. Tapping Approve is the core loop; a storage hiccup must not break
+// it. A failure there leaks a blob — a cost leak, not a correctness bug.
 //
-// The star award itself moved into the approveTask transaction (so approval and
-// payment commit together); these tests therefore assert the cleanup contract
-// and treat "approveTask was called" as "the child was paid". The award's own
-// atomicity is proved in firebase_task_repository_approve_test.dart.
+// The star award commits inside the approveTask transaction (before cleanup), so
+// "approveTask was called" means "the child was paid"; the award's atomicity is
+// proved in firebase_task_repository_approve_test.dart.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
@@ -28,7 +26,7 @@ final _parent = UserId('parent1');
 final _familyId = FamilyId('fam1');
 final _taskId = TaskId('task1');
 
-Task _task({required TaskStatus status}) => Task(
+Task _task({required TaskStatus status, String? afterPhoto}) => Task(
       id: _taskId,
       title: 'Mop the kitchen floor',
       description: '',
@@ -42,7 +40,7 @@ Task _task({required TaskStatus status}) => Task(
       familyId: _familyId,
       requiresPhotoProof: true,
       beforePhotoUrl: 'https://example.com/before.jpg',
-      photoUrl: 'https://example.com/after.jpg',
+      photoUrl: afterPhoto,
     );
 
 void main() {
@@ -57,12 +55,16 @@ void main() {
   setUp(() {
     tasks = _MockTaskRepository();
     useCase = ApproveTaskUseCase(tasks);
-
-    when(() => tasks.getTask(_familyId, _taskId))
-        .thenAnswer((_) async => _task(status: TaskStatus.pendingApproval));
     when(() => tasks.approveTask(any(), any())).thenAnswer((_) async {});
     when(() => tasks.clearPhotos(any(), any())).thenAnswer((_) async {});
+    when(() => tasks.promoteAfterPhotoToBackground(any(), any()))
+        .thenAnswer((_) async {});
   });
+
+  void seed({required TaskStatus status, String? afterPhoto}) {
+    when(() => tasks.getTask(_familyId, _taskId)).thenAnswer(
+        (_) async => _task(status: status, afterPhoto: afterPhoto));
+  }
 
   Future<void> approve() => useCase(
         taskId: _taskId,
@@ -70,13 +72,33 @@ void main() {
         familyId: _familyId,
       ).then((_) {});
 
-  test('approving deletes the photos', () async {
+  test('with an after-photo, approval promotes it to the family background',
+      () async {
+    seed(
+        status: TaskStatus.pendingApproval,
+        afterPhoto: 'https://example.com/after.jpg');
+
     await approve();
-    verify(() => tasks.clearPhotos(_familyId, _taskId)).called(1);
+
+    verify(() => tasks.promoteAfterPhotoToBackground(_familyId, _taskId))
+        .called(1);
+    verifyNever(() => tasks.clearPhotos(any(), any()));
   });
 
-  test('a failed cleanup does NOT fail the approval', () async {
-    when(() => tasks.clearPhotos(any(), any()))
+  test('with no after-photo, approval just clears', () async {
+    seed(status: TaskStatus.pendingApproval, afterPhoto: null);
+
+    await approve();
+
+    verify(() => tasks.clearPhotos(_familyId, _taskId)).called(1);
+    verifyNever(() => tasks.promoteAfterPhotoToBackground(any(), any()));
+  });
+
+  test('a failed promotion does NOT fail the approval', () async {
+    seed(
+        status: TaskStatus.pendingApproval,
+        afterPhoto: 'https://example.com/after.jpg');
+    when(() => tasks.promoteAfterPhotoToBackground(any(), any()))
         .thenThrow(Exception('storage unreachable'));
 
     final result = await useCase(
@@ -86,15 +108,14 @@ void main() {
     );
 
     expect(result.isRight(), isTrue,
-        reason: 'the approver tapped Approve and the task IS approved; a '
-            'storage hiccup must not break the core loop. The orphaned blob is '
-            'a cost leak, not a correctness bug.');
+        reason: 'the task IS approved; a storage hiccup must not break the loop');
   });
 
-  test('a failed cleanup still approves and awards', () async {
-    // The award commits inside approveTask, which runs before cleanup — so a
-    // cleanup failure can never cost the child their stars.
-    when(() => tasks.clearPhotos(any(), any()))
+  test('a failed promotion still approves and awards', () async {
+    seed(
+        status: TaskStatus.pendingApproval,
+        afterPhoto: 'https://example.com/after.jpg');
+    when(() => tasks.promoteAfterPhotoToBackground(any(), any()))
         .thenThrow(Exception('storage unreachable'));
 
     await approve();
@@ -103,18 +124,22 @@ void main() {
   });
 
   test('cleanup runs after the approval, never before', () async {
-    // Order matters: if the photos went first and the approval then failed,
-    // the approver would be left judging a task whose evidence had vanished.
+    seed(
+        status: TaskStatus.pendingApproval,
+        afterPhoto: 'https://example.com/after.jpg');
+
     await approve();
+
     verifyInOrder([
       () => tasks.approveTask(_familyId, _taskId),
-      () => tasks.clearPhotos(_familyId, _taskId),
+      () => tasks.promoteAfterPhotoToBackground(_familyId, _taskId),
     ]);
   });
 
   test('a task that cannot be approved keeps its photos', () async {
-    when(() => tasks.getTask(_familyId, _taskId))
-        .thenAnswer((_) async => _task(status: TaskStatus.inProgress));
+    seed(
+        status: TaskStatus.inProgress,
+        afterPhoto: 'https://example.com/after.jpg');
 
     final result = await useCase(
       taskId: _taskId,
@@ -123,6 +148,7 @@ void main() {
     );
 
     expect(result.isLeft(), isTrue);
+    verifyNever(() => tasks.promoteAfterPhotoToBackground(any(), any()));
     verifyNever(() => tasks.clearPhotos(any(), any()));
   });
 }
