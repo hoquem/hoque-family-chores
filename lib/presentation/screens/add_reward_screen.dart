@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/analytics.dart';
 import '../../di/riverpod_container.dart';
 import '../../domain/entities/reward.dart';
 import '../../domain/value_objects/points.dart';
@@ -145,6 +146,12 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
               createdBy: user.id,
               createdAt: DateTime.now(),
             ),
+          );
+      ref.read(analyticsProvider).log(
+            AnalyticsEventName.rewardCreated,
+            userId: user.id.value,
+            familyId: user.familyId.value,
+            params: {'cost': int.tryParse(_cost.text.trim()) ?? 0},
           );
       ref.invalidate(familyRewardsProvider(user.familyId));
       if (mounted) Navigator.of(context).pop();

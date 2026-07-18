@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
@@ -75,6 +76,12 @@ class TaskListNotifier extends _$TaskListNotifier {
         (failure) => throw Exception(failure.message),
         (_) {
           _logger.d('TaskListNotifier: Task created successfully');
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.taskCreated,
+                userId: task.createdById?.value ?? '',
+                familyId: task.familyId.value,
+                params: {'points': task.points.value},
+              );
           ref.invalidateSelf();
         },
       );
@@ -170,6 +177,11 @@ class TaskListNotifier extends _$TaskListNotifier {
         (failure) => throw Exception(failure.message),
         (_) {
           _logger.d('TaskListNotifier: Task completed successfully');
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.taskCompleted,
+                userId: userId.value,
+                familyId: familyId.value,
+              );
           ref.invalidateSelf();
         },
       );
@@ -195,6 +207,11 @@ class TaskListNotifier extends _$TaskListNotifier {
         (failure) => throw Exception(failure.message),
         (_) {
           _logger.d('TaskListNotifier: Task approved successfully');
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.taskApproved,
+                userId: approverId.value,
+                familyId: familyId.value,
+              );
           ref.invalidateSelf();
         },
       );

@@ -6,7 +6,7 @@ part of 'help_hint_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$helpHintSeenHash() => r'e28d19242314f1f38b9c313b6c48bc6f0be1ede7';
+String _$helpHintSeenHash() => r'bfeeb52e394a12b1c72ef67c64ed390a858f9548';
 
 /// Whether the user has ever opened a help sheet.
 ///

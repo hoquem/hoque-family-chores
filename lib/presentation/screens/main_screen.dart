@@ -6,6 +6,8 @@ import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/family_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/rewards_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
+import 'package:hoque_family_chores/core/analytics/analytics.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -35,6 +37,18 @@ class MainScreen extends ConsumerWidget {
         onTap: (index) {
           logger.i("[MainScreen] Navigation item tapped: $index");
           ref.read(bottomNavIndexNotifierProvider.notifier).setIndex(index);
+          // Best-effort telemetry: never let it block navigation.
+          try {
+            const tabs = ['home', 'tasks', 'rewards', 'family', 'profile'];
+            final userId = ref.read(authNotifierProvider).user?.id.value;
+            if (userId != null && index >= 0 && index < tabs.length) {
+              ref.read(analyticsProvider).log(
+                AnalyticsEventName.screenViewed,
+                userId: userId,
+                params: {'tab': tabs[index]},
+              );
+            }
+          } catch (_) {/* telemetry is never fatal */}
         },
       ),
     );

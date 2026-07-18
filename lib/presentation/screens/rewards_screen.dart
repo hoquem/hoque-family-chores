@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/analytics/analytics.dart';
 import '../../di/riverpod_container.dart';
 import '../../domain/entities/redemption.dart';
 import '../../domain/entities/reward.dart';
@@ -252,6 +253,12 @@ class _RewardTile extends ConsumerWidget {
         ),
       ),
       (_) {
+        ref.read(analyticsProvider).log(
+              AnalyticsEventName.rewardClaimed,
+              userId: user.id.value,
+              familyId: user.familyId.value,
+              params: {'cost': reward.cost.value},
+            );
         ref.invalidate(outstandingClaimsProvider(user.familyId, user.id));
         // The balance lives on the user profile, so it has to be re-read or
         // the screen shows stars that are already spent.
