@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
+import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -47,7 +48,10 @@ class _FamilyDetailsView extends ConsumerWidget {
         ref.watch(familyMembersNotifierProvider(currentUser.familyId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Family')),
+      appBar: AppBar(
+        title: const Text('Family'),
+        actions: const [HelpButton(content: kFamilyHelp)],
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(familyNotifierProvider(currentUser.familyId));

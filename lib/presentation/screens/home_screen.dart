@@ -16,6 +16,7 @@ import 'package:hoque_family_chores/presentation/widgets/home/greeting_header.da
 import 'package:hoque_family_chores/presentation/widgets/home/leaderboard_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/progress_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/today_missions_card.dart';
+import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
 /// The family hub: greeting, level progress, today's missions, and a
@@ -30,7 +31,10 @@ class HomeScreen extends ConsumerWidget {
     // The AppBar keeps the content below the status bar/notch, matching
     // the other tabs.
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: const [HelpButton(content: kHomeHelp)],
+      ),
       body: _buildBody(context, ref),
     );
   }

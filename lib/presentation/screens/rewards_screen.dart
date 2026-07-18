@@ -10,6 +10,7 @@ import '../providers/riverpod/rewards_notifier.dart';
 import '../../utils/logger.dart';
 import '../theme/app_tokens.dart';
 import 'add_reward_screen.dart';
+import '../widgets/help_button.dart';
 
 /// What stars are for.
 ///
@@ -32,7 +33,10 @@ class RewardsScreen extends ConsumerWidget {
     final owed = ref.watch(outstandingClaimsProvider(user.familyId, user.id));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Rewards')),
+      appBar: AppBar(
+        title: const Text('Rewards'),
+        actions: const [HelpButton(content: kRewardsHelp)],
+      ),
       floatingActionButton: FloatingActionButton(
         // MainScreen keeps every tab alive in an IndexedStack, so this FAB and
         // the Tasks tab's exist at the same time. Without distinct tags they
