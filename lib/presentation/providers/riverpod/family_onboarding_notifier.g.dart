@@ -7,7 +7,7 @@ part of 'family_onboarding_notifier.dart';
 // **************************************************************************
 
 String _$familyOnboardingNotifierHash() =>
-    r'3217d7e69d592260653990a57b7beace1869aa24';
+    r'05fd4f1ce05fd65c990b327911faea0a4874d721';
 
 /// Handles creating a family or joining one with an invite code.
 ///
