@@ -11,6 +11,10 @@ abstract class RewardRepository {
   /// Creates a reward. Anyone in the family may.
   Future<Reward> createReward(Reward reward);
 
+  /// Updates a reward's editable fields (title, cost, timeframe). Existing
+  /// claims are untouched — they carry their own copy of the title and cost.
+  Future<void> updateReward(Reward reward);
+
   /// Removes a reward from the list.
   ///
   /// Existing claims are untouched: they carry their own copy of the title and

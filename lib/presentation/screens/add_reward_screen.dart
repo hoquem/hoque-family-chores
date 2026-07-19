@@ -15,7 +15,10 @@ import '../theme/app_tokens.dart';
 /// with Dad" is the feature working, and the list is visible to everyone, which
 /// is the only control it needs.
 class AddRewardScreen extends ConsumerStatefulWidget {
-  const AddRewardScreen({super.key});
+  /// When non-null, the screen edits this reward instead of creating one.
+  final Reward? existingReward;
+
+  const AddRewardScreen({super.key, this.existingReward});
 
   @override
   ConsumerState<AddRewardScreen> createState() => _AddRewardScreenState();
@@ -27,6 +30,19 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
   final _cost = TextEditingController(text: '100');
   RewardTimeframe _timeframe = RewardTimeframe.openEnded;
   bool _saving = false;
+
+  bool get _isEditing => widget.existingReward != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.existingReward;
+    if (r != null) {
+      _title.text = r.title;
+      _cost.text = r.cost.value.toString();
+      _timeframe = r.timeframe;
+    }
+  }
 
   @override
   void dispose() {
@@ -40,7 +56,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
     final t = context.tokens;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add a Reward')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Reward' : 'Add a Reward')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -121,7 +137,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
                       width: 24,
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : const Text('Add Reward'),
+                  : Text(_isEditing ? 'Save Changes' : 'Add Reward'),
             ),
           ],
         ),
@@ -136,23 +152,34 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
 
     setState(() => _saving = true);
     try {
-      await ref.read(rewardRepositoryProvider).createReward(
-            Reward(
-              id: '',
-              familyId: user.familyId,
-              title: _title.text.trim(),
-              cost: Points(int.parse(_cost.text.trim())),
-              timeframe: _timeframe,
-              createdBy: user.id,
-              createdAt: DateTime.now(),
-            ),
-          );
-      ref.read(analyticsProvider).log(
-            AnalyticsEventName.rewardCreated,
-            userId: user.id.value,
-            familyId: user.familyId.value,
-            params: {'cost': int.tryParse(_cost.text.trim()) ?? 0},
-          );
+      final repo = ref.read(rewardRepositoryProvider);
+      if (_isEditing) {
+        await repo.updateReward(
+          widget.existingReward!.copyWith(
+            title: _title.text.trim(),
+            cost: Points(int.parse(_cost.text.trim())),
+            timeframe: _timeframe,
+          ),
+        );
+      } else {
+        await repo.createReward(
+          Reward(
+            id: '',
+            familyId: user.familyId,
+            title: _title.text.trim(),
+            cost: Points(int.parse(_cost.text.trim())),
+            timeframe: _timeframe,
+            createdBy: user.id,
+            createdAt: DateTime.now(),
+          ),
+        );
+        ref.read(analyticsProvider).log(
+              AnalyticsEventName.rewardCreated,
+              userId: user.id.value,
+              familyId: user.familyId.value,
+              params: {'cost': int.tryParse(_cost.text.trim()) ?? 0},
+            );
+      }
       ref.invalidate(familyRewardsProvider(user.familyId));
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -160,7 +187,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not add that: $e'),
+            content: Text('Could not save that: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );

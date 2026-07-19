@@ -51,6 +51,23 @@ class FirebaseRewardRepository implements RewardRepository {
   }
 
   @override
+  Future<void> updateReward(Reward reward) async {
+    try {
+      // Targeted write: only the editable fields, so createdBy/createdAt are
+      // never rewritten. Last-write-wins across concurrent edits.
+      await _rewards(reward.familyId).doc(reward.id).update({
+        'title': reward.title,
+        'cost': reward.cost.value,
+        'timeframe': reward.timeframe.name,
+      });
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to update reward: $e',
+          code: 'REWARD_UPDATE_ERROR');
+    }
+  }
+
+  @override
   Future<void> deleteReward(FamilyId familyId, String rewardId) async {
     try {
       await _rewards(familyId).doc(rewardId).delete();
