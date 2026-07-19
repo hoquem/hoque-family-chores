@@ -112,14 +112,9 @@ class AvailableTasksNotifier extends _$AvailableTasksNotifier {
     ).toList();
   }
 
-  /// Gets overdue tasks.
-  List<Task> get overdueTasks {
-    final now = DateTime.now();
-    
-    return availableTasks.where((task) => 
-      now.isAfter(task.dueDate)
-    ).toList();
-  }
+  /// Gets overdue tasks (date-only; a task due today is not overdue).
+  List<Task> get overdueTasks =>
+      availableTasks.where((task) => task.isOverdue).toList();
 
   /// Gets tasks with no due date.
   List<Task> get tasksWithNoDueDate {

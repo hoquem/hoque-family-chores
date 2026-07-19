@@ -88,14 +88,9 @@ class MyTasksNotifier extends _$MyTasksNotifier {
   /// Gets assigned tasks.
   List<Task> get assignedTasks => getTasksByStatus(TaskStatus.assigned);
 
-  /// Gets overdue tasks.
-  List<Task> get overdueTasks {
-    final now = DateTime.now();
-    return tasks.where((task) => 
-      now.isAfter(task.dueDate) &&
-      task.status != TaskStatus.completed
-    ).toList();
-  }
+  /// Gets overdue tasks (date-only; a task due today is not overdue).
+  List<Task> get overdueTasks =>
+      tasks.where((task) => task.isOverdue).toList();
 
   /// Gets tasks due today.
   List<Task> get tasksDueToday {

@@ -55,6 +55,13 @@ void main() {
     test('isOverdue returns false for future due date', () {
       expect(_makeTask().isOverdue, false);
     });
+    test('isOverdue returns false for a task due today (picker midnight)', () {
+      // Regression: the date picker returns midnight, so an instant-based
+      // isBefore(now) wrongly flagged same-day tasks as overdue.
+      final now = DateTime.now();
+      final task = _makeTask(dueDate: DateTime(now.year, now.month, now.day));
+      expect(task.isOverdue, false);
+    });
 
     test('isDueToday', () {
       final now = DateTime.now();

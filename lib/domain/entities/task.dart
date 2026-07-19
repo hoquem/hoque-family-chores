@@ -154,8 +154,18 @@ class Task extends Equatable {
   /// Check if task needs revision
   bool get needsRevision => status == TaskStatus.needsRevision;
 
-  /// Check if task is overdue
-  bool get isOverdue => dueDate.isBefore(DateTime.now()) && !isCompleted;
+  /// Check if task is overdue.
+  ///
+  /// Date-only comparison: a task is overdue only once its due *day* is strictly
+  /// before today. A task due today is never overdue while today is still in
+  /// progress — the date picker stores dueDate at midnight, so an instant-based
+  /// `isBefore(DateTime.now())` would wrongly flag every same-day task.
+  bool get isOverdue {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDateOnly.isBefore(today) && !isCompleted;
+  }
 
   /// Check if task is due today
   bool get isDueToday {
