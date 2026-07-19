@@ -5,10 +5,12 @@
   "type": "module",
   "description": "Emulator-based security-rules tests for firestore.rules (cross-family isolation).",
   "scripts": {
-    "test": "firebase emulators:exec --only firestore --project demo-hoque \"node family_isolation.test.mjs\""
+    "test": "firebase emulators:exec --only firestore --project demo-hoque \"node family_isolation.test.mjs\"",
+    "test:functions": "firebase emulators:exec --only functions,firestore,auth --project demo-hoque \"node functions_economy.test.mjs\""
   },
   "dependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
-    "firebase": "^10.14.1"
+    "firebase": "^10.14.1",
+    "firebase-admin": "^12.7.0"
   }
 }
