@@ -5,6 +5,7 @@ import '../../core/analytics/analytics.dart';
 import '../../di/riverpod_container.dart';
 import '../../domain/entities/redemption.dart';
 import '../../domain/entities/reward.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/value_objects/user_id.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/rewards_notifier.dart';
@@ -214,6 +215,8 @@ class _RewardTile extends ConsumerWidget {
     final t = context.tokens;
     final affordable = balance >= reward.cost.value;
     final short = reward.cost.value - balance;
+    final isParent =
+        ref.watch(authNotifierProvider).user?.role == UserRole.parent;
 
     return Card(
       child: ListTile(
@@ -226,12 +229,97 @@ class _RewardTile extends ConsumerWidget {
               : '$short ⭐ to go · ${reward.timeframe.label}',
           style: TextStyle(color: t.inkSoft),
         ),
-        trailing: FilledButton(
-          onPressed: affordable ? () => _claim(context, ref) : null,
-          child: Text('${reward.cost.value} ⭐'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FilledButton(
+              onPressed: affordable ? () => _claim(context, ref) : null,
+              child: Text('${reward.cost.value} ⭐'),
+            ),
+            if (isParent)
+              PopupMenuButton<String>(
+                tooltip: 'Edit or delete reward',
+                onSelected: (value) {
+                  if (value == 'edit') _edit(context);
+                  if (value == 'delete') _delete(context, ref);
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined),
+                        SizedBox(width: 12),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, color: t.brick),
+                        const SizedBox(width: 12),
+                        Text('Delete', style: TextStyle(color: t.brick)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
       ),
     );
+  }
+
+  void _edit(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddRewardScreen(existingReward: reward),
+      ),
+    );
+  }
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete reward?'),
+        content: Text(
+          '"${reward.title}" will be removed. Stars already claimed against it '
+          'are not affected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style:
+                FilledButton.styleFrom(backgroundColor: context.tokens.brick),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      await ref
+          .read(rewardRepositoryProvider)
+          .deleteReward(reward.familyId, reward.id);
+      ref.invalidate(familyRewardsProvider(reward.familyId));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not delete: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _claim(BuildContext context, WidgetRef ref) async {

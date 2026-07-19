@@ -1,0 +1,14 @@
+{
+  "name": "firestore-rules-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Emulator-based security-rules tests for firestore.rules (cross-family isolation).",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-hoque \"node family_isolation.test.mjs\""
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.14.1"
+  }
+}

@@ -51,6 +51,11 @@ class Task extends Equatable {
   final DateTime? rejectedAt;
   final String? rejectionReason;
 
+  /// Optimistic-concurrency counter. Bumped only when a task's editable detail
+  /// fields are edited, so a concurrent edit can be detected and refused.
+  /// Legacy tasks with no stored version read as 0.
+  final int version;
+
   const Task({
     required this.id,
     required this.title,
@@ -78,6 +83,7 @@ class Task extends Equatable {
     this.rejectedBy,
     this.rejectedAt,
     this.rejectionReason,
+    this.version = 0,
   });
 
   /// Creates a copy of this task with updated fields
@@ -108,6 +114,7 @@ class Task extends Equatable {
     UserId? rejectedBy,
     DateTime? rejectedAt,
     String? rejectionReason,
+    int? version,
   }) {
     return Task(
       id: id ?? this.id,
@@ -136,6 +143,7 @@ class Task extends Equatable {
       rejectedBy: rejectedBy ?? this.rejectedBy,
       rejectedAt: rejectedAt ?? this.rejectedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      version: version ?? this.version,
     );
   }
 
@@ -154,8 +162,18 @@ class Task extends Equatable {
   /// Check if task needs revision
   bool get needsRevision => status == TaskStatus.needsRevision;
 
-  /// Check if task is overdue
-  bool get isOverdue => dueDate.isBefore(DateTime.now()) && !isCompleted;
+  /// Check if task is overdue.
+  ///
+  /// Date-only comparison: a task is overdue only once its due *day* is strictly
+  /// before today. A task due today is never overdue while today is still in
+  /// progress — the date picker stores dueDate at midnight, so an instant-based
+  /// `isBefore(DateTime.now())` would wrongly flag every same-day task.
+  bool get isOverdue {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dueDateOnly = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDateOnly.isBefore(today) && !isCompleted;
+  }
 
   /// Check if task is due today
   bool get isDueToday {
@@ -211,6 +229,7 @@ class Task extends Equatable {
         rejectedBy,
         rejectedAt,
         rejectionReason,
+        version,
       ];
 }
 

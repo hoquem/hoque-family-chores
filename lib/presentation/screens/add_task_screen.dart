@@ -4,6 +4,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_creation_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -12,7 +13,12 @@ import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import for TimeoutException
 
 class AddTaskScreen extends ConsumerStatefulWidget {
-  const AddTaskScreen({super.key});
+  /// When non-null, the screen edits this existing task instead of creating a
+  /// new one (title, description, effort, due date, photo-proof). Assignment is
+  /// not changed here — that is done via claim/unclaim on the task.
+  final Task? existingTask;
+
+  const AddTaskScreen({super.key, this.existingTask});
 
   @override
   ConsumerState<AddTaskScreen> createState() => _AddTaskScreenState();
@@ -28,9 +34,25 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   bool _requiresPhotoProof = false;
   final _logger = AppLogger();
 
+  bool get _isEditing => widget.existingTask != null;
+
+  /// The task version this edit is based on. Lives in State (not the widget
+  /// field) so a "reload after conflict" can advance it — otherwise every retry
+  /// would re-submit the stale base and conflict forever.
+  int _baseVersion = 0;
+
   @override
   void initState() {
     super.initState();
+    final existing = widget.existingTask;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _descriptionController.text = existing.description;
+      _dueDate = existing.dueDate;
+      _selectedDifficulty = existing.difficulty;
+      _requiresPhotoProof = existing.requiresPhotoProof;
+      _baseVersion = existing.version;
+    }
     _loadFamilyMembers();
   }
 
@@ -70,6 +92,11 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
           backgroundColor: context.tokens.brickDeep,
         ),
       );
+      return;
+    }
+
+    if (_isEditing) {
+      await _saveEdits(currentUser);
       return;
     }
 
@@ -114,6 +141,89 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     }
   }
 
+  Future<void> _saveEdits(User currentUser) async {
+    final existing = widget.existingTask!;
+    _logger.i('Editing task ${existing.id.value} (base v$_baseVersion)');
+
+    final outcome = await ref
+        .read(taskListNotifierProvider(currentUser.familyId).notifier)
+        .editTaskDetails(
+          taskId: existing.id.value,
+          baseVersion: _baseVersion,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          difficulty: _selectedDifficulty,
+          dueDate: _dueDate ?? existing.dueDate,
+          requiresPhotoProof: _requiresPhotoProof,
+        );
+
+    if (!mounted) return;
+    switch (outcome) {
+      case TaskEditOutcome.success:
+        Navigator.of(context).pop(true);
+      case TaskEditOutcome.conflict:
+        await _handleEditConflict(currentUser);
+      case TaskEditOutcome.deleted:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('This task was removed by someone else.'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      case TaskEditOutcome.failure:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Could not save changes. Please try again.'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+    }
+  }
+
+  /// A concurrent edit landed first. Offer to reload the latest version so the
+  /// parent isn't stuck resubmitting a stale base version forever.
+  Future<void> _handleEditConflict(User currentUser) async {
+    final reload = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Task changed'),
+        content: const Text(
+          'Someone else changed this task while you were editing it. Reload the '
+          'latest version? Your unsaved changes here will be lost.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep editing'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reload'),
+          ),
+        ],
+      ),
+    );
+    if (reload == true) {
+      await _reloadFromServer(currentUser);
+    }
+  }
+
+  Future<void> _reloadFromServer(User currentUser) async {
+    final latest = await ref
+        .read(taskRepositoryProvider)
+        .getTask(currentUser.familyId, widget.existingTask!.id);
+    if (!mounted || latest == null) return;
+    setState(() {
+      _titleController.text = latest.title;
+      _descriptionController.text = latest.description;
+      _dueDate = latest.dueDate;
+      _selectedDifficulty = latest.difficulty;
+      _requiresPhotoProof = latest.requiresPhotoProof;
+      _baseVersion = latest.version;
+    });
+  }
+
   Future<void> _loadFamilyMembers() async {
     final authState = ref.read(authNotifierProvider);
     final currentUser = authState.user;
@@ -138,7 +248,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New Task')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Task' : 'Add New Task')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -190,8 +300,9 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 16),
-            // Family members dropdown
-            if (familyMembersAsync != null) ...[
+            // Family members dropdown — hidden when editing (assignment is
+            // changed via claim/unclaim on the task, not here).
+            if (!_isEditing && familyMembersAsync != null) ...[
               familyMembersAsync.when(
                 data: (familyMembers) => DropdownButtonFormField<User?>(
                   decoration: const InputDecoration(
@@ -260,7 +371,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   ),
                 ),
               ),
-            ] else ...[
+            ] else if (!_isEditing) ...[
               DropdownButtonFormField<User?>(
                 decoration: const InputDecoration(
                   labelText: 'Assign To (Optional)',
@@ -315,7 +426,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       width: 24,
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : const Text('Create Task'),
+                  : Text(_isEditing ? 'Save Changes' : 'Create Task'),
             ),
             // Show error if any
             if (taskCreationState.error != null) ...[

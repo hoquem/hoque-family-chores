@@ -15,6 +15,20 @@ abstract class FamilyRepository {
   /// Get a family by its invite code, or null if no family matches
   Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode);
 
+  /// Resolves an invite code to its family id via the familyInvites lookup,
+  /// without reading the family document (which now requires membership or a
+  /// join request). Returns null if the code is unknown.
+  Future<FamilyId?> resolveInviteCode(String inviteCode);
+
+  /// Records a validated join request proving [userId] holds [inviteCode] for
+  /// [familyId]. Must be called before adding the user to the family — the
+  /// security rules gate both the family read and the memberIds self-add on it.
+  Future<void> requestToJoinFamily(
+    FamilyId familyId,
+    UserId userId,
+    String inviteCode,
+  );
+
   /// Create a new family
   Future<void> createFamily(FamilyEntity family);
 

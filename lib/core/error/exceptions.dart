@@ -52,4 +52,10 @@ class ParsingException extends DataException {
 /// Exception thrown when there's a Firebase-specific error
 class FirebaseException extends DataException {
   const FirebaseException(String message, {String? code}) : super(message, code: code);
+}
+
+/// Exception thrown when an optimistic-concurrency check fails: the record was
+/// modified by someone else after it was read, so the write was refused.
+class ConflictException extends DataException {
+  const ConflictException(String message, {String? code}) : super(message, code: code);
 } 

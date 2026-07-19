@@ -199,15 +199,15 @@ UpdateUserProfileUseCase updateUserProfileUseCase(Ref ref) {
 
 // Additional Task Use Cases
 @riverpod
-UpdateTaskUseCase updateTaskUseCase(Ref ref) {
-  final taskRepository = ref.watch(taskRepositoryProvider);
-  return UpdateTaskUseCase(taskRepository);
-}
-
-@riverpod
 DeleteTaskUseCase deleteTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return DeleteTaskUseCase(taskRepository);
+}
+
+@riverpod
+EditTaskDetailsUseCase editTaskDetailsUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return EditTaskDetailsUseCase(taskRepository);
 }
 
 @riverpod

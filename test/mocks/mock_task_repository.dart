@@ -116,24 +116,6 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> updateTask(Task task) async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
-      
-      final index = _tasks.indexWhere((t) => t.id == task.id);
-      if (index != -1) {
-        _tasks[index] = task;
-        _taskStreamController.add(List.from(_tasks));
-      } else {
-        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
-      }
-    } catch (e) {
-      if (e is DataException) rethrow;
-      throw ServerException('Failed to update task: $e', code: 'TASK_UPDATE_ERROR');
-    }
-  }
-
-  @override
   Future<void> deleteTask(FamilyId familyId, TaskId taskId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
@@ -422,6 +404,42 @@ class MockTaskRepository implements TaskRepository {
       if (e is DataException) rethrow;
       throw ServerException('Failed to claim task: $e', code: 'TASK_CLAIM_ERROR');
     }
+  }
+
+  @override
+  Future<void> editTaskDetails({
+    required FamilyId familyId,
+    required TaskId taskId,
+    required int baseVersion,
+    required String title,
+    required String description,
+    required TaskDifficulty difficulty,
+    required Points points,
+    required DateTime dueDate,
+    required bool requiresPhotoProof,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index == -1) {
+      throw NotFoundException('This task was removed.', code: 'TASK_DELETED');
+    }
+    final current = _tasks[index];
+    if (current.version != baseVersion) {
+      throw ConflictException(
+        'This task was changed by someone else.',
+        code: 'TASK_CONFLICT',
+      );
+    }
+    _tasks[index] = current.copyWith(
+      title: title,
+      description: description,
+      difficulty: difficulty,
+      points: points,
+      dueDate: dueDate,
+      requiresPhotoProof: requiresPhotoProof,
+      version: current.version + 1,
+    );
+    _taskStreamController.add(List.from(_tasks));
   }
 
   /// Adds a task synchronously without delay. For test setup only.

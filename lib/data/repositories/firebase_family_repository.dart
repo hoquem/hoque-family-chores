@@ -47,6 +47,13 @@ class FirebaseFamilyRepository implements FamilyRepository {
 
   @override
   Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode) async {
+    final familyId = await resolveInviteCode(inviteCode);
+    if (familyId == null) return null;
+    return getFamily(familyId);
+  }
+
+  @override
+  Future<FamilyId?> resolveInviteCode(String inviteCode) async {
     try {
       // Invite codes resolve through familyInvites/{code}: security rules
       // allow fetching an invite by code but never listing families.
@@ -60,9 +67,29 @@ class FirebaseFamilyRepository implements FamilyRepository {
       final familyId = inviteDoc.data()?['familyId'] as String?;
       if (familyId == null || familyId.isEmpty) return null;
 
-      return getFamily(FamilyId(familyId));
+      return FamilyId(familyId);
     } catch (e) {
-      throw ServerException('Failed to look up invite code: $e', code: 'FAMILY_INVITE_LOOKUP_ERROR');
+      throw ServerException('Failed to look up invite code: $e',
+          code: 'FAMILY_INVITE_LOOKUP_ERROR');
+    }
+  }
+
+  @override
+  Future<void> requestToJoinFamily(
+    FamilyId familyId,
+    UserId userId,
+    String inviteCode,
+  ) async {
+    try {
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('joinRequests')
+          .doc(userId.value)
+          .set({'code': inviteCode});
+    } catch (e) {
+      throw ServerException('Failed to request to join family: $e',
+          code: 'FAMILY_JOIN_REQUEST_ERROR');
     }
   }
 

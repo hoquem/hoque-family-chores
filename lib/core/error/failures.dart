@@ -49,4 +49,10 @@ class NotFoundFailure extends Failure {
 /// Represents a business logic failure
 class BusinessFailure extends Failure {
   const BusinessFailure(String message, {String? code}) : super(message, code: code);
+}
+
+/// Represents an optimistic-concurrency conflict: the record changed after it
+/// was loaded, so the edit was refused and the caller should reload.
+class ConflictFailure extends Failure {
+  const ConflictFailure(String message, {String? code}) : super(message, code: code);
 } 

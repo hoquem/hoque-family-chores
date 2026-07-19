@@ -39,7 +39,17 @@ class JoinFamilyUseCase {
         return Left(BusinessFailure('You already belong to a family'));
       }
 
-      final family = await _familyRepository.getFamilyByInviteCode(code);
+      final familyId = await _familyRepository.resolveInviteCode(code);
+      if (familyId == null) {
+        return Left(NotFoundFailure('No family found for that invite code'));
+      }
+
+      // Prove we hold the invite code before reading or joining the family: the
+      // security rules gate both the family read and the memberIds self-add on
+      // this request, so a bare family id cannot join.
+      await _familyRepository.requestToJoinFamily(familyId, userId, code);
+
+      final family = await _familyRepository.getFamily(familyId);
       if (family == null) {
         return Left(NotFoundFailure('No family found for that invite code'));
       }

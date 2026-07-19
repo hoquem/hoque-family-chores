@@ -6,7 +6,7 @@ export 'task/complete_task_usecase.dart';
 export 'task/approve_task_usecase.dart';
 export 'task/get_tasks_usecase.dart';
 export 'task/stream_pending_approvals_usecase.dart';
-export 'task/update_task_usecase.dart';
+export 'task/edit_task_details_usecase.dart';
 export 'task/delete_task_usecase.dart';
 export 'task/assign_task_usecase.dart';
 export 'task/unassign_task_usecase.dart';
