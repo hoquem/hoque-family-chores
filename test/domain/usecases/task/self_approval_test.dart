@@ -11,7 +11,6 @@
 // a TODO, and only the UI hid the buttons from non-parents. A UI is not a
 // security boundary.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
 import 'package:hoque_family_chores/domain/usecases/task/approve_task_usecase.dart';
@@ -61,25 +60,12 @@ void main() {
     when(() => tasks.rejectTask(any(), any())).thenAnswer((_) async {});
   });
 
+  // Who may approve (a non-parent can't approve their own work; a parent may)
+  // is now enforced in the approveTask Cloud Function and covered by the
+  // emulator suite (test/rules/functions_economy.test.mjs). Here we only prove
+  // the use case delegates the approval to the repository (which calls the
+  // Function) and promotes/clears the photos afterwards.
   group('approving', () {
-    test('I cannot approve my own task — no minting stars', () async {
-      final result = await ApproveTaskUseCase(tasks)(
-        taskId: _taskId,
-        approverId: _me,
-        familyId: _familyId,
-      );
-
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (f) => expect(f, isA<PermissionFailure>()),
-        (_) => fail('a self-approval must never succeed'),
-      );
-      // The guard stops the approval before it reaches the repository, so no
-      // stars are ever awarded. The award itself is the transaction's job and
-      // is tested against a real Firestore in the repository suite.
-      verifyNever(() => tasks.approveTask(any(), any()));
-    });
-
     test('a sibling can approve — the family is peers, not a hierarchy',
         () async {
       final result = await ApproveTaskUseCase(tasks)(

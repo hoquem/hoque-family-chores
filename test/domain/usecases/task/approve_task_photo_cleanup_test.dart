@@ -10,6 +10,7 @@
 // "approveTask was called" means "the child was paid"; the award's atomicity is
 // proved in firebase_task_repository_approve_test.dart.
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
 import 'package:hoque_family_chores/domain/usecases/task/approve_task_usecase.dart';
@@ -136,10 +137,16 @@ void main() {
     ]);
   });
 
-  test('a task that cannot be approved keeps its photos', () async {
+  test('when the approval itself fails, the photos are left alone', () async {
+    // The approve Cloud Function rejects (e.g. wrong status); the repository
+    // surfaces that as a thrown exception, so the use case returns Left before
+    // it ever reaches the photo cleanup that follows a successful approval.
     seed(
-        status: TaskStatus.inProgress,
+        status: TaskStatus.pendingApproval,
         afterPhoto: 'https://example.com/after.jpg');
+    when(() => tasks.approveTask(any(), any())).thenThrow(
+      ValidationException('Task is not pending approval', code: 'x'),
+    );
 
     final result = await useCase(
       taskId: _taskId,

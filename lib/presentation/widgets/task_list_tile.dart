@@ -447,6 +447,8 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
     switch (widget.task.status) {
       case TaskStatus.available:
+        // You can't claim a chore you created yourself; a parent assigns it.
+        if (widget.task.createdById == widget.user.id) return null;
         return ElevatedButton.icon(
           onPressed: _handleTakeOwnership,
           icon: const Icon(Icons.person_add, size: 16),
