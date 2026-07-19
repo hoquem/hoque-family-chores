@@ -47,7 +47,6 @@ Future<List<Redemption>> outstandingClaims(
         redemption: claim,
         actor: claim.claimedBy,
         happened: false,
-        now: now,
       );
     } else {
       live.add(claim);

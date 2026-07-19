@@ -23,7 +23,6 @@ class SettleRedemptionUseCase {
     required Redemption redemption,
     required UserId actor,
     required bool happened,
-    required DateTime now,
   }) async {
     try {
       if (redemption.claimedBy != actor) {
@@ -38,18 +37,13 @@ class SettleRedemptionUseCase {
         return Left(BusinessFailure('That one is already settled.'));
       }
 
-      final outcome =
-          happened ? RedemptionStatus.fulfilled : RedemptionStatus.refunded;
-
-      // Settle and, when refunding, return the stars in one transaction. The
-      // isOutstanding check above is a friendly early exit; the repository
-      // re-reads the status inside the transaction as the real guard, so a
-      // claim can never be refunded twice or settled into a lost refund.
+      // The checks above are friendly early exits; the Cloud Function re-reads
+      // the status inside its transaction as the real guard (and returns the
+      // stars atomically on a refund), so a claim can never be refunded twice.
       await _rewards.settleRedemption(
         redemption.familyId,
         redemption.id,
-        outcome,
-        now,
+        happened: happened,
       );
 
       return const Right(unit);

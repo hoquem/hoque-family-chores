@@ -109,7 +109,11 @@ service cloud.firestore {
       // control: you cannot claim what you have not earned, and earning
       // requires someone else to sign off your chore.
       match /redemptions/{redemptionId} {
-        allow read, write: if isFamilyMember(familyId);
+        // Members can see the family's claims, but claiming and settling both
+        // move stars, so they only happen via the Cloud Functions (admin) — a
+        // client can neither record a claim it didn't pay for nor refund one.
+        allow read: if isFamilyMember(familyId);
+        allow write: if false;
       }
     }
 

@@ -24,16 +24,18 @@ abstract class RewardRepository {
   /// Claims made by this family, newest first.
   Stream<List<Redemption>> streamRedemptions(FamilyId familyId);
 
-  /// Records a claim. The caller has already taken the stars.
-  Future<Redemption> createRedemption(Redemption redemption);
+  /// Claims a reward: deducts the stars and records the redemption, server-side
+  /// (Cloud Function), so it can never spend stars the claimant doesn't have.
+  /// Returns the new redemption's id.
+  Future<String> claimReward(FamilyId familyId, String rewardId);
 
-  /// Marks a claim fulfilled or refunded.
+  /// Settles a claim (fulfilled or refunded) server-side. A refund returns the
+  /// stars. Only the claimant may settle their own claim.
   Future<void> settleRedemption(
     FamilyId familyId,
-    String redemptionId,
-    RedemptionStatus outcome,
-    DateTime settledAt,
-  );
+    String redemptionId, {
+    required bool happened,
+  });
 
   /// Outstanding claims for one person — what the family still owes them.
   Future<List<Redemption>> outstandingFor(FamilyId familyId, UserId userId);

@@ -7,18 +7,22 @@ import '../../domain/value_objects/family_id.dart';
 import '../../domain/value_objects/user_id.dart';
 import '../../domain/value_objects/points.dart';
 import '../../core/error/exceptions.dart';
+import '../services/economy_functions.dart';
 import '../services/photo_storage_service.dart';
 
 /// Firebase implementation of TaskRepository
 class FirebaseTaskRepository implements TaskRepository {
   final FirebaseFirestore _firestore;
   final PhotoStorageService _photos;
+  final EconomyFunctions _economy;
 
   FirebaseTaskRepository({
     FirebaseFirestore? firestore,
     PhotoStorageService? photoStorage,
+    EconomyFunctions? economy,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _photos = photoStorage ?? PhotoStorageService();
+        _photos = photoStorage ?? PhotoStorageService(),
+        _economy = economy ?? EconomyFunctions();
 
   @override
   Future<List<Task>> getTasksForFamily(FamilyId familyId) async {
@@ -470,64 +474,12 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> approveTask(FamilyId familyId, TaskId taskId) async {
-    // Approving and awarding the stars are ONE transaction, deliberately.
-    //
-    // These used to be two writes in the use case: flip the status, then call
-    // addPoints. A crash or dropped connection between them left the task
-    // approved but the child unpaid — and because the retry then found the task
-    // no longer pendingApproval, the stars were lost for good. Here the status
-    // check and the award commit together or not at all.
-    //
-    // The `transaction.get` is load-bearing, not a convenience: it puts the
-    // task doc in the transaction's read set, so a second concurrent approval
-    // is forced to retry, re-reads status == completed, and bails at the guard
-    // below rather than awarding a second time. Do not replace it with a blind
-    // increment.
-    final taskRef = _firestore
-        .collection('families')
-        .doc(familyId.value)
-        .collection('tasks')
-        .doc(taskId.value);
-
-    try {
-      await _firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(taskRef);
-        if (!snapshot.exists) {
-          throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
-        }
-        final data = snapshot.data()!;
-
-        if (data['status'] != TaskStatus.pendingApproval.name) {
-          throw ValidationException(
-            'Task is not pending approval',
-            code: 'TASK_NOT_PENDING_APPROVAL',
-          );
-        }
-
-        final assigneeId = data['assignedToId'] as String?;
-        if (assigneeId == null) {
-          throw ValidationException(
-            'Task has no assignee to award stars to',
-            code: 'TASK_NO_ASSIGNEE',
-          );
-        }
-        final points = (data['points'] as num?)?.toInt() ?? 0;
-
-        transaction.update(taskRef, {
-          'status': TaskStatus.completed.name,
-          'approvedAt': FieldValue.serverTimestamp(),
-        });
-        transaction.update(
-          _firestore.collection('users').doc(assigneeId),
-          {'points': FieldValue.increment(points)},
-        );
-      });
-    } catch (e) {
-      if (e is DataException) rethrow;
-      throw ServerException('Failed to approve task: $e', code: 'TASK_APPROVE_ERROR');
-    }
-  }
+  Future<void> approveTask(FamilyId familyId, TaskId taskId) =>
+      // Approving and awarding stars now happen server-side (Cloud Function):
+      // the client can't write `points`, and the Function runs the same
+      // in-transaction status re-read guard so nothing pays twice. Non-parents
+      // can't approve their own work; parents may (edit-mode override).
+      _economy.approveTask(familyId, taskId);
 
   @override
   Future<void> rejectTask(FamilyId familyId, TaskId taskId, {String? comments}) async {
