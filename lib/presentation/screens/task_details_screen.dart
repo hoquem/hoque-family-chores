@@ -1,6 +1,10 @@
 // lib/presentation/screens/task_details_screen.dart
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -196,9 +200,86 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     }
   }
 
-  Future<void> _handleCompleteTask(User currentUser) async {
+  /// Photo-proof tasks are STARTED here (before-photo), not completed. Mirrors
+  /// the task-list tile: no photo, no start. On success we return to the list,
+  /// where the task now shows in-progress and can be marked done.
+  Future<void> _handleStartTask(User currentUser) async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+    if (picked == null) return;
+
     setState(() => _isLoading = true);
     try {
+      final upload = await ref.read(photoStorageServiceProvider).upload(
+            photo: File(picked.path),
+            familyId: task.familyId,
+            taskId: task.id,
+            kind: PhotoKind.before,
+          );
+      await upload.fold(
+        (failure) async => _showError('Could not upload photo: ${failure.message}'),
+        (url) async {
+          final result = await ref.read(startTaskUseCaseProvider)(
+            taskId: task.id,
+            userId: currentUser.id,
+            familyId: task.familyId,
+            beforePhotoUrl: url,
+          );
+          result.fold(
+            (failure) => _showError('Could not start task: ${failure.message}'),
+            (_) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Before photo saved — finish the chore, then mark it done.'),
+                    backgroundColor: context.tokens.sproutDeep,
+                  ),
+                );
+                Navigator.of(context).pop(true);
+              }
+            },
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleCompleteTask(User currentUser) async {
+    // A photo-proof task needs its "after" shot before it can be submitted.
+    String? afterPhotoUrl;
+    if (task.requiresPhotoProof) {
+      final picked =
+          await ImagePicker().pickImage(source: ImageSource.camera);
+      if (picked == null) return;
+
+      setState(() => _isLoading = true);
+      final upload = await ref.read(photoStorageServiceProvider).upload(
+            photo: File(picked.path),
+            familyId: task.familyId,
+            taskId: task.id,
+            kind: PhotoKind.after,
+          );
+      final url = upload.fold((failure) {
+        _showError('Could not upload photo: ${failure.message}');
+        return null;
+      }, (url) => url);
+      if (url == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      afterPhotoUrl = url;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      if (afterPhotoUrl != null) {
+        // Store the photo before flipping status, so the approval queue never
+        // shows a proof task with no "after" to judge.
+        await ref
+            .read(taskRepositoryProvider)
+            .setAfterPhoto(task.familyId, task.id, afterPhotoUrl);
+      }
       await ref
           .read(taskListNotifierProvider(task.familyId).notifier)
           .completeTask(task.id.value, currentUser.id, task.familyId);
@@ -213,17 +294,20 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       }
     } catch (e) {
       _logger.e('Error completing task: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to complete task: $e'),
-            backgroundColor: context.tokens.brickDeep,
-          ),
-        );
-      }
+      _showError('Failed to complete task: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: context.tokens.brickDeep,
+      ),
+    );
   }
 
   Future<void> _handleApproveTask(User currentUser) async {
@@ -666,15 +750,43 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       );
     }
 
-    // Assigned to me — I can mark as done
+    // Assigned to me. A photo-proof task is STARTED here (before-photo); a plain
+    // task is marked done directly. This matches the task-list tile.
     if (task.status == TaskStatus.assigned && isAssignedToMe) {
+      buttons.add(
+        SizedBox(
+          width: double.infinity,
+          child: task.requiresPhotoProof
+              ? FilledButton.icon(
+                  onPressed: () => _handleStartTask(currentUser),
+                  icon: const Icon(Icons.play_circle),
+                  label: const Text('Start (take before photo)'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.tokens.carrotDeep,
+                  ),
+                )
+              : FilledButton.icon(
+                  onPressed: () => _handleCompleteTask(currentUser),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Mark as Done'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.tokens.sproutDeep,
+                  ),
+                ),
+        ),
+      );
+    }
+
+    // In progress (a photo-proof task already started) and mine — finish it by
+    // taking the after photo.
+    if (task.status == TaskStatus.inProgress && isAssignedToMe) {
       buttons.add(
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
             onPressed: () => _handleCompleteTask(currentUser),
             icon: const Icon(Icons.check),
-            label: const Text('Mark as Done'),
+            label: const Text('Mark as Done (take after photo)'),
             style: FilledButton.styleFrom(
               backgroundColor: context.tokens.sproutDeep,
             ),
@@ -700,9 +812,10 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       );
     }
 
-    // Assigned to me (or awaiting my resubmission) — I can give it back to the
-    // pool so someone else can claim it.
+    // Mine and not yet approved — I can give it back to the pool so someone
+    // else can claim it.
     if ((task.status == TaskStatus.assigned ||
+            task.status == TaskStatus.inProgress ||
             task.status == TaskStatus.needsRevision) &&
         isAssignedToMe) {
       buttons.add(
