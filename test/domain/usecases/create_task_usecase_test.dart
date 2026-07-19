@@ -85,4 +85,46 @@ void main() {
     final task = await captureTask();
     expect(task.requiresPhotoProof, isFalse);
   });
+
+  test('a task due TODAY is allowed (the date picker returns midnight)',
+      () async {
+    // The picker hands back 00:00 of the chosen day, so "today" is always
+    // earlier than `now`. Comparing full timestamps rejected every same-day
+    // task; the fix compares calendar days.
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+
+    final result = await useCase.call(
+      title: 'Tidy living room',
+      points: 10,
+      difficulty: TaskDifficulty.easy,
+      dueDate: todayMidnight,
+      familyId: FamilyId('fam_1'),
+      createdById: UserId('parent_1'),
+    );
+
+    expect(result.isRight(), isTrue,
+        reason: 'a chore due today is not in the past');
+  });
+
+  test('a task due YESTERDAY is still rejected', () async {
+    final now = DateTime.now();
+    final yesterday = DateTime(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+
+    final result = await useCase.call(
+      title: 'Too late',
+      points: 10,
+      difficulty: TaskDifficulty.easy,
+      dueDate: yesterday,
+      familyId: FamilyId('fam_1'),
+      createdById: UserId('parent_1'),
+    );
+
+    expect(result.isLeft(), isTrue);
+    result.fold(
+      (f) => expect(f.message, contains('past')),
+      (_) => fail('a past-day due date must be rejected'),
+    );
+  });
 }

@@ -111,8 +111,15 @@ class CreateTaskUseCase {
       return Left(ValidationFailure('Task points must be between 1 and 1000'));
     }
 
-    // Validate due date
-    if (dueDate.isBefore(DateTime.now())) {
+    // Validate due date by DAY, not by moment. The date picker returns midnight
+    // of the chosen day, so a task due *today* is 00:00 — which is always before
+    // `now`. Comparing the full timestamps therefore rejects every same-day
+    // task. Compare calendar days so "today" is allowed and only genuinely past
+    // days are refused.
+    final now = DateTime.now();
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    final today = DateTime(now.year, now.month, now.day);
+    if (dueDay.isBefore(today)) {
       return Left(ValidationFailure('Due date cannot be in the past'));
     }
 
