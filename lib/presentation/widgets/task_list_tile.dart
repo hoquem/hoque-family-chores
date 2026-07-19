@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
@@ -697,16 +698,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           ),
                         ],
                       ),
-                      if (widget.task.assignedToId != null) ...[
-                        const SizedBox(height: 4.0),
-                        Text(
-                          'Assigned to: ${widget.user.name}',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: context.tokens.inkSoft,
-                          ),
-                        ),
-                      ],
+                      _AssigneeLabel(
+                        task: widget.task,
+                        currentUser: widget.user,
+                      ),
                       if (widget.task.description.isNotEmpty) ...[
                         const SizedBox(height: 4.0),
                         Text(
@@ -742,6 +737,47 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         ),
         ),
       ),
+      ),
+    );
+  }
+}
+
+/// The "Assigned to: …" line. Resolves the task's real assignee from the family
+/// members (not the viewer — that bug made every assigned task read as "you").
+/// Renders nothing for an unassigned task.
+class _AssigneeLabel extends ConsumerWidget {
+  const _AssigneeLabel({required this.task, required this.currentUser});
+
+  final Task task;
+  final User currentUser;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assigneeId = task.assignedToId;
+    if (assigneeId == null) return const SizedBox.shrink();
+
+    final String name;
+    if (assigneeId == currentUser.id) {
+      name = 'you';
+    } else {
+      final membersAsync =
+          ref.watch(familyMembersNotifierProvider(task.familyId));
+      name = membersAsync.maybeWhen(
+        data: (members) {
+          for (final m in members) {
+            if (m.id == assigneeId) return m.name;
+          }
+          return 'someone in the family';
+        },
+        orElse: () => '…',
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: Text(
+        'Assigned to: $name',
+        style: TextStyle(fontSize: 14.0, color: context.tokens.inkSoft),
       ),
     );
   }
