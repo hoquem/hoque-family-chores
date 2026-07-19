@@ -27,11 +27,28 @@ class MockFamilyRepository implements FamilyRepository {
 
   @override
   Future<FamilyEntity?> getFamilyByInviteCode(String inviteCode) async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    final familyId = await resolveInviteCode(inviteCode);
+    if (familyId == null) return null;
+    return getFamily(familyId);
+  }
+
+  @override
+  Future<FamilyId?> resolveInviteCode(String inviteCode) async {
     for (final family in _families.values) {
-      if (family.inviteCode == inviteCode) return family;
+      if (family.inviteCode == inviteCode) return family.id;
     }
     return null;
+  }
+
+  final Map<String, String> joinRequests = {};
+
+  @override
+  Future<void> requestToJoinFamily(
+    FamilyId familyId,
+    UserId userId,
+    String inviteCode,
+  ) async {
+    joinRequests['${familyId.value}/${userId.value}'] = inviteCode;
   }
 
   @override

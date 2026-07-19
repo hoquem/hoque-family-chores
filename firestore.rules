@@ -37,22 +37,45 @@ service cloud.firestore {
       }
     }
 
+    // A join request proves the requester holds a valid invite CODE for this
+    // family: it can only be created if the supplied code resolves (via
+    // familyInvites) to this family. The family `get` and the memberIds
+    // self-add below both require this doc, so knowing a family's id alone is
+    // no longer enough to read or join it — you need the invite code.
+    function hasJoinRequest(familyId) {
+      return exists(/databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid));
+    }
+
     match /families/{familyId} {
-      // Direct fetch by id (ids are UUIDs; invite flow resolves id via
-      // familyInvites). Queries are member-only.
-      allow get: if isSignedIn();
+      // Readable by members, or by someone mid-join who has proven the code via
+      // a join request. Not open to every signed-in user: the family doc
+      // carries member ids and the invite code, so an id-only read is a leak.
+      allow get: if isSignedIn()
+        && (request.auth.uid in resource.data.memberIds
+            || hasJoinRequest(familyId));
       allow list: if isSignedIn() && request.auth.uid in resource.data.memberIds;
       allow create: if isSignedIn()
         && request.resource.data.creatorId == request.auth.uid
         && request.auth.uid in request.resource.data.memberIds;
-      // Members may update; non-members may only add themselves (invite join).
+      // Members may update; a non-member may only add themselves, and only with
+      // a join request (which required the invite code).
       allow update: if isSignedIn()
         && (request.auth.uid in resource.data.memberIds
             || (request.resource.data.diff(resource.data).affectedKeys()
                   .hasOnly(['memberIds', 'updatedAt'])
                 && request.resource.data.memberIds.hasAll(resource.data.memberIds)
-                && request.auth.uid in request.resource.data.memberIds));
+                && request.auth.uid in request.resource.data.memberIds
+                && hasJoinRequest(familyId)));
       allow delete: if isSignedIn() && resource.data.creatorId == request.auth.uid;
+
+      match /joinRequests/{uid} {
+        allow read: if isSignedIn() && request.auth.uid == uid;
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && exists(/databases/$(database)/documents/familyInvites/$(request.resource.data.code))
+          && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.code)).data.familyId == familyId;
+        allow update, delete: if false;
+      }
 
       match /tasks/{taskId} {
         allow read, write: if isFamilyMember(familyId);
