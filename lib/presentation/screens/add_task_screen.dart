@@ -209,6 +209,36 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     }
   }
 
+  Future<void> _handleUnassign() async {
+    final currentUser = ref.read(authNotifierProvider).user;
+    if (currentUser == null) return;
+    try {
+      _logger.i('Unassigning task ${widget.existingTask!.id.value}');
+      await ref
+          .read(taskListNotifierProvider(currentUser.familyId).notifier)
+          .unassignTask(widget.existingTask!.id.value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('↩️ Task returned to the pool'),
+            backgroundColor: context.tokens.carrotDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error unassigning task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to unassign: ${e.toString()}'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _reloadFromServer(User currentUser) async {
     final latest = await ref
         .read(taskRepositoryProvider)
@@ -428,6 +458,22 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     )
                   : Text(_isEditing ? 'Save Changes' : 'Create Task'),
             ),
+            // A parent editing a task can send it back to the pool. Shown only
+            // while it is actively assigned (not once completed/approved).
+            if (_isEditing &&
+                (widget.existingTask!.status == TaskStatus.assigned ||
+                    widget.existingTask!.status == TaskStatus.inProgress ||
+                    widget.existingTask!.status == TaskStatus.needsRevision)) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _handleUnassign,
+                icon: const Icon(Icons.person_remove_outlined),
+                label: const Text('Unassign (return to the pool)'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ],
             // Show error if any
             if (taskCreationState.error != null) ...[
               const SizedBox(height: 16),
