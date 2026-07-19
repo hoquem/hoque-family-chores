@@ -71,16 +71,60 @@ class FirebaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<void> updateTask(Task task) async {
+  Future<void> editTaskDetails({
+    required FamilyId familyId,
+    required TaskId taskId,
+    required int baseVersion,
+    required String title,
+    required String description,
+    required TaskDifficulty difficulty,
+    required Points points,
+    required DateTime dueDate,
+    required bool requiresPhotoProof,
+  }) async {
+    final taskRef = _firestore
+        .collection('families')
+        .doc(familyId.value)
+        .collection('tasks')
+        .doc(taskId.value);
+
     try {
-      await _firestore
-          .collection('families')
-          .doc(task.familyId.value)
-          .collection('tasks')
-          .doc(task.id.value)
-          .update(_mapTaskToFirestore(task));
+      // Optimistic concurrency: the whole read-compare-write runs inside the
+      // transaction, so Firestore serializes concurrent editors. Only the
+      // editable detail fields are written — a child's claim/completion (status,
+      // assignedToId, photos) is never touched. `version` is bumped only here,
+      // so a claim in another tab does not raise a false conflict.
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(taskRef);
+        if (!snapshot.exists) {
+          throw NotFoundException(
+            'This task was removed by someone else.',
+            code: 'TASK_DELETED',
+          );
+        }
+        final currentVersion =
+            (snapshot.data()?['version'] as num?)?.toInt() ?? 0;
+        if (currentVersion != baseVersion) {
+          throw ConflictException(
+            'This task was changed by someone else.',
+            code: 'TASK_CONFLICT',
+          );
+        }
+        transaction.update(taskRef, {
+          'title': title,
+          'description': description,
+          'difficulty': difficulty.name,
+          'points': points.toInt(),
+          'dueDate': dueDate,
+          'requiresPhotoProof': requiresPhotoProof,
+          'version': currentVersion + 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } on DataException {
+      rethrow;
     } catch (e) {
-      throw ServerException('Failed to update task: $e', code: 'TASK_UPDATE_ERROR');
+      throw ServerException('Failed to edit task: $e', code: 'TASK_EDIT_ERROR');
     }
   }
 
@@ -608,6 +652,7 @@ class FirebaseTaskRepository implements TaskRepository {
               ? DateTime.tryParse(data['rejectedAt'].toString())
               : null,
       rejectionReason: data['rejectionReason'] as String?,
+      version: (data['version'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -645,6 +690,7 @@ class FirebaseTaskRepository implements TaskRepository {
       'rejectedBy': task.rejectedBy?.value,
       'rejectedAt': task.rejectedAt,
       'rejectionReason': task.rejectionReason,
+      'version': task.version,
     };
   }
 } 

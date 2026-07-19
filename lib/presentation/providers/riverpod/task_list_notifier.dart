@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
+import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
@@ -9,6 +10,9 @@ import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
 part 'task_list_notifier.g.dart';
+
+/// Result of an optimistic-concurrency task edit.
+enum TaskEditOutcome { success, conflict, deleted, failure }
 
 /// Manages the list of tasks for a family with real-time updates.
 /// 
@@ -91,26 +95,6 @@ class TaskListNotifier extends _$TaskListNotifier {
     }
   }
 
-  /// Updates an existing task.
-  Future<void> updateTask(Task task) async {
-    _logger.d('TaskListNotifier: Updating task ${task.id}');
-    
-    try {
-      final updateTaskUseCase = ref.read(updateTaskUseCaseProvider);
-      final result = await updateTaskUseCase.call(task: task);
-      
-      result.fold(
-        (failure) => throw Exception(failure.message),
-        (_) {
-          _logger.d('TaskListNotifier: Task updated successfully');
-          ref.invalidateSelf();
-        },
-      );
-    } catch (e) {
-      _logger.e('TaskListNotifier: Error updating task', error: e);
-      throw Exception('Failed to update task: $e');
-    }
-  }
 
   /// Deletes a task.
   Future<void> deleteTask(String taskId) async {
@@ -134,6 +118,44 @@ class TaskListNotifier extends _$TaskListNotifier {
       _logger.e('TaskListNotifier: Error deleting task', error: e);
       throw Exception('Failed to delete task: $e');
     }
+  }
+
+  /// Edits a task's detail fields with optimistic concurrency. Returns a
+  /// [TaskEditOutcome] so the UI can tell a version conflict or a deleted task
+  /// apart from a generic failure.
+  Future<TaskEditOutcome> editTaskDetails({
+    required String taskId,
+    required int baseVersion,
+    required String title,
+    required String description,
+    required TaskDifficulty difficulty,
+    required DateTime dueDate,
+    required bool requiresPhotoProof,
+  }) async {
+    final useCase = ref.read(editTaskDetailsUseCaseProvider);
+    final result = await useCase.call(
+      familyId: familyId,
+      taskId: TaskId(taskId),
+      baseVersion: baseVersion,
+      title: title,
+      description: description,
+      difficulty: difficulty,
+      dueDate: dueDate,
+      requiresPhotoProof: requiresPhotoProof,
+    );
+    return result.fold(
+      (failure) {
+        _logger.w('TaskListNotifier: edit failed: ${failure.message}');
+        if (failure is ConflictFailure) return TaskEditOutcome.conflict;
+        if (failure is NotFoundFailure) return TaskEditOutcome.deleted;
+        return TaskEditOutcome.failure;
+      },
+      (_) {
+        _logger.d('TaskListNotifier: task edited successfully');
+        ref.invalidateSelf();
+        return TaskEditOutcome.success;
+      },
+    );
   }
 
   /// Claims a task for the current user.

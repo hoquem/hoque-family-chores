@@ -516,25 +516,6 @@ final updateUserProfileUseCaseProvider =
 // ignore: unused_element
 typedef UpdateUserProfileUseCaseRef =
     AutoDisposeProviderRef<UpdateUserProfileUseCase>;
-String _$updateTaskUseCaseHash() => r'79f901348b8ce9ebe93bc08a5ccb4c1e05fd6b03';
-
-/// See also [updateTaskUseCase].
-@ProviderFor(updateTaskUseCase)
-final updateTaskUseCaseProvider =
-    AutoDisposeProvider<UpdateTaskUseCase>.internal(
-      updateTaskUseCase,
-      name: r'updateTaskUseCaseProvider',
-      debugGetCreateSourceHash:
-          const bool.fromEnvironment('dart.vm.product')
-              ? null
-              : _$updateTaskUseCaseHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
-
-@Deprecated('Will be removed in 3.0. Use Ref instead')
-// ignore: unused_element
-typedef UpdateTaskUseCaseRef = AutoDisposeProviderRef<UpdateTaskUseCase>;
 String _$deleteTaskUseCaseHash() => r'fd2cdd31f9e167cef1fe57c695bebe27bb1fa3f0';
 
 /// See also [deleteTaskUseCase].
@@ -554,6 +535,27 @@ final deleteTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeleteTaskUseCaseRef = AutoDisposeProviderRef<DeleteTaskUseCase>;
+String _$editTaskDetailsUseCaseHash() =>
+    r'4c2eed102f25d8f8f6b3351ff9154c41b1f80820';
+
+/// See also [editTaskDetailsUseCase].
+@ProviderFor(editTaskDetailsUseCase)
+final editTaskDetailsUseCaseProvider =
+    AutoDisposeProvider<EditTaskDetailsUseCase>.internal(
+      editTaskDetailsUseCase,
+      name: r'editTaskDetailsUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$editTaskDetailsUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef EditTaskDetailsUseCaseRef =
+    AutoDisposeProviderRef<EditTaskDetailsUseCase>;
 String _$assignTaskUseCaseHash() => r'11b32e445f8e393aa3161d711969461f61716fc7';
 
 /// See also [assignTaskUseCase].

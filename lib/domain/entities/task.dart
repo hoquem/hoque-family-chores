@@ -51,6 +51,11 @@ class Task extends Equatable {
   final DateTime? rejectedAt;
   final String? rejectionReason;
 
+  /// Optimistic-concurrency counter. Bumped only when a task's editable detail
+  /// fields are edited, so a concurrent edit can be detected and refused.
+  /// Legacy tasks with no stored version read as 0.
+  final int version;
+
   const Task({
     required this.id,
     required this.title,
@@ -78,6 +83,7 @@ class Task extends Equatable {
     this.rejectedBy,
     this.rejectedAt,
     this.rejectionReason,
+    this.version = 0,
   });
 
   /// Creates a copy of this task with updated fields
@@ -108,6 +114,7 @@ class Task extends Equatable {
     UserId? rejectedBy,
     DateTime? rejectedAt,
     String? rejectionReason,
+    int? version,
   }) {
     return Task(
       id: id ?? this.id,
@@ -136,6 +143,7 @@ class Task extends Equatable {
       rejectedBy: rejectedBy ?? this.rejectedBy,
       rejectedAt: rejectedAt ?? this.rejectedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      version: version ?? this.version,
     );
   }
 
@@ -221,6 +229,7 @@ class Task extends Equatable {
         rejectedBy,
         rejectedAt,
         rejectionReason,
+        version,
       ];
 }
 

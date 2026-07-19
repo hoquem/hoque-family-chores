@@ -3,6 +3,7 @@ import '../entities/task.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
 import '../value_objects/task_id.dart';
+import '../value_objects/points.dart';
 
 /// Abstract interface for task data operations
 abstract class TaskRepository {
@@ -15,8 +16,22 @@ abstract class TaskRepository {
   /// Create a new task
   Future<Task> createTask(Task task);
 
-  /// Update an existing task
-  Future<void> updateTask(Task task);
+  /// Edit a task's user-editable detail fields with optimistic concurrency.
+  ///
+  /// Writes only these fields (never status/assignment/photos). Throws
+  /// [ConflictException] if the stored version no longer equals [baseVersion]
+  /// (another edit landed first) or [NotFoundException] if the task was deleted.
+  Future<void> editTaskDetails({
+    required FamilyId familyId,
+    required TaskId taskId,
+    required int baseVersion,
+    required String title,
+    required String description,
+    required TaskDifficulty difficulty,
+    required Points points,
+    required DateTime dueDate,
+    required bool requiresPhotoProof,
+  });
 
   /// Delete a task
   Future<void> deleteTask(FamilyId familyId, TaskId taskId);

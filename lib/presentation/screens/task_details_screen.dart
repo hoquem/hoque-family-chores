@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
@@ -129,6 +130,69 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleEditTask() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => AddTaskScreen(existingTask: task)),
+    );
+    // The task shown here is a stale snapshot once edited; bounce back to the
+    // list so it reloads with the saved values.
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _handleDeleteTask() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete task?'),
+        content: Text(
+          '"${task.title}" will be removed for everyone. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: context.tokens.brick),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(taskListNotifierProvider(task.familyId).notifier)
+          .deleteTask(task.id.value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Task deleted'),
+            backgroundColor: context.tokens.inkSoft,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error deleting task: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete task: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
     }
   }
 
@@ -268,6 +332,38 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Details'),
+        actions: [
+          if (currentUser?.role == UserRole.parent)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') _handleEditTask();
+                if (value == 'delete') _handleDeleteTask();
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined),
+                      SizedBox(width: 12),
+                      Text('Edit'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: context.tokens.brick),
+                      const SizedBox(width: 12),
+                      Text('Delete',
+                          style: TextStyle(color: context.tokens.brick)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
