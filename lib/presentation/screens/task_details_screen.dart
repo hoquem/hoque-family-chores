@@ -515,13 +515,17 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
+            // Wrap, not Row: a long status ("Pending Approval") plus a long
+            // difficulty ("Challenging") overflow the width on a phone, so let
+            // the difficulty pill drop to the next line instead of clipping.
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 StatusPill(
                   status: task.status,
                   label: _statusLabel(task.status),
                 ),
-                const SizedBox(width: 12),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
