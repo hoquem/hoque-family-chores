@@ -5,56 +5,73 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 
-Task _task(String id, TaskStatus status, DateTime createdAt) => Task(
-      id: TaskId(id),
-      title: id,
+Task _task(String title, TaskStatus status,
+        [DateTime? createdAt]) =>
+    Task(
+      id: TaskId(title),
+      title: title,
       description: '',
       status: status,
       difficulty: TaskDifficulty.easy,
       dueDate: DateTime(2026, 8, 1),
-      createdAt: createdAt,
+      createdAt: createdAt ?? DateTime(2026, 7, 1),
       points: Points(10),
       tags: const [],
       familyId: FamilyId('fam1'),
     );
 
 void main() {
-  test('unclaimed (available) tasks come before claimed ones', () {
-    final claimed = _task('claimed', TaskStatus.assigned, DateTime(2026, 7, 18));
-    final free = _task('free', TaskStatus.available, DateTime(2026, 7, 1));
+  test('groups: unclaimed, then claimed, then done (last)', () {
+    final done = _task('aaa done', TaskStatus.completed);
+    final claimed = _task('mmm claimed', TaskStatus.assigned);
+    final free = _task('zzz free', TaskStatus.available);
 
-    final ordered = tasksForDisplay([claimed, free]);
+    // Deliberately reversed alphabetically vs. the desired group order, so
+    // grouping — not the title — is what puts them in order.
+    final ordered = tasksForDisplay([done, claimed, free]);
 
-    expect(ordered.map((t) => t.title), ['free', 'claimed'],
-        reason: 'the free chore is on top even though it is older');
+    expect(ordered.map((t) => t.title),
+        ['zzz free', 'mmm claimed', 'aaa done'],
+        reason: 'unclaimed first, claimed next, completed last');
   });
 
-  test('within a group, newest first', () {
-    final older = _task('older', TaskStatus.available, DateTime(2026, 7, 1));
-    final newer = _task('newer', TaskStatus.available, DateTime(2026, 7, 18));
+  test('a completed task never sits at the top, even with a low title', () {
+    // The reported bug: a completed lowercase-titled task floated to the top.
+    final done = _task('apple', TaskStatus.completed);
+    final free = _task('oranges', TaskStatus.available);
 
-    final ordered = tasksForDisplay([older, newer]);
+    final ordered = tasksForDisplay([done, free]);
 
-    expect(ordered.map((t) => t.title), ['newer', 'older']);
+    expect(ordered.map((t) => t.title), ['oranges', 'apple']);
   });
 
-  test('available-first then newest-first across a mixed list', () {
+  test('within a group, titles sort alphabetically and case-insensitively', () {
     final input = [
-      _task('assigned-new', TaskStatus.assigned, DateTime(2026, 7, 18)),
-      _task('free-old', TaskStatus.available, DateTime(2026, 7, 2)),
-      _task('done-mid', TaskStatus.completed, DateTime(2026, 7, 10)),
-      _task('free-new', TaskStatus.available, DateTime(2026, 7, 15)),
+      _task('Zebra', TaskStatus.available),
+      _task('apple', TaskStatus.available),
+      _task('Mango', TaskStatus.available),
     ];
 
     final ordered = tasksForDisplay(input).map((t) => t.title).toList();
 
-    expect(ordered, ['free-new', 'free-old', 'assigned-new', 'done-mid']);
+    // Case-insensitive: a naive compareTo would put 'Zebra' before 'apple'.
+    expect(ordered, ['apple', 'Mango', 'Zebra']);
+  });
+
+  test('newest-first only breaks a title tie', () {
+    final older = _task('chores', TaskStatus.available, DateTime(2026, 7, 1));
+    final newer = _task('chores', TaskStatus.available, DateTime(2026, 7, 18));
+
+    final ordered = tasksForDisplay([older, newer]);
+
+    expect(ordered.map((t) => t.createdAt),
+        [DateTime(2026, 7, 18), DateTime(2026, 7, 1)]);
   });
 
   test('does not mutate the input list', () {
     final input = [
-      _task('a', TaskStatus.assigned, DateTime(2026, 7, 1)),
-      _task('b', TaskStatus.available, DateTime(2026, 7, 2)),
+      _task('a', TaskStatus.assigned),
+      _task('b', TaskStatus.available),
     ];
     final before = input.map((t) => t.title).toList();
 
