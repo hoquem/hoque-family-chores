@@ -102,6 +102,36 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     }
   }
 
+  Future<void> _handleUnclaimTask() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(taskListNotifierProvider(task.familyId).notifier)
+          .unassignTask(task.id.value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('↩️ Task returned to the pool'),
+            backgroundColor: context.tokens.carrotDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error unclaiming task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to return task: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleCompleteTask(User currentUser) async {
     setState(() => _isLoading = true);
     try {
@@ -569,6 +599,23 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: context.tokens.carrotDeep,
             ),
+          ),
+        ),
+      );
+    }
+
+    // Assigned to me (or awaiting my resubmission) — I can give it back to the
+    // pool so someone else can claim it.
+    if ((task.status == TaskStatus.assigned ||
+            task.status == TaskStatus.needsRevision) &&
+        isAssignedToMe) {
+      buttons.add(
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _handleUnclaimTask,
+            icon: const Icon(Icons.undo),
+            label: const Text('Unclaim (give back)'),
           ),
         ),
       );
