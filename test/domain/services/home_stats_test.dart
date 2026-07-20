@@ -19,6 +19,7 @@ Task _task({
   TaskStatus status = TaskStatus.assigned,
   DateTime? due,
   DateTime? completedAt,
+  DateTime? approvedAt,
   int points = 10,
 }) {
   return Task(
@@ -31,6 +32,7 @@ Task _task({
     assignedToId: assignedTo,
     createdAt: _now.subtract(const Duration(days: 14)),
     completedAt: completedAt,
+    approvedAt: approvedAt,
     points: Points(points),
     tags: const [],
     familyId: FamilyId('family_1'),
@@ -162,10 +164,30 @@ void main() {
         assignedTo: by ?? _me,
         status: TaskStatus.completed,
         due: when,
-        completedAt: when);
+        completedAt: when,
+        approvedAt: when);
 
     test('zero without any completions', () {
       expect(streakDays([_task(id: 'open', assignedTo: _me)], _me, _now), 0);
+    });
+
+    test('submitted-but-unapproved and rejected work do not count', () {
+      final tasks = [
+        // Submitted today, awaiting approval: has completedAt but no approvedAt.
+        _task(
+            id: 'pending',
+            assignedTo: _me,
+            status: TaskStatus.pendingApproval,
+            completedAt: _now),
+        // Rejected: bounced back, completedAt was never cleared.
+        _task(
+            id: 'rejected',
+            assignedTo: _me,
+            status: TaskStatus.needsRevision,
+            completedAt: _now),
+      ];
+      expect(streakDays(tasks, _me, _now), 0,
+          reason: 'a streak means stars earned, not work merely submitted');
     });
 
     test('counts consecutive days ending today', () {
@@ -222,26 +244,26 @@ void main() {
             id: 'j1',
             assignedTo: jane.id,
             status: TaskStatus.completed,
-            completedAt: DateTime(2026, 7, 13, 9),
+            approvedAt: DateTime(2026, 7, 13, 9),
             points: 25),
         // Bob: 10 + 50 this week, 100 last week (excluded).
         _task(
             id: 'b1',
             assignedTo: bob.id,
             status: TaskStatus.completed,
-            completedAt: DateTime(2026, 7, 14, 17),
+            approvedAt: DateTime(2026, 7, 14, 17),
             points: 10),
         _task(
             id: 'b2',
             assignedTo: bob.id,
             status: TaskStatus.completed,
-            completedAt: _now,
+            approvedAt: _now,
             points: 50),
         _task(
             id: 'b-old',
             assignedTo: bob.id,
             status: TaskStatus.completed,
-            completedAt: DateTime(2026, 7, 12, 12),
+            approvedAt: DateTime(2026, 7, 12, 12),
             points: 100),
       ];
 
@@ -252,6 +274,31 @@ void main() {
       expect(ranking.last.stars, 25);
     });
 
+    test('submitted-but-unapproved and rejected stars are not counted', () {
+      final kid = _member('kid', 'Kid');
+      final tasks = [
+        // Submitted this week, awaiting approval — no approvedAt yet.
+        _task(
+            id: 'pending',
+            assignedTo: kid.id,
+            status: TaskStatus.pendingApproval,
+            completedAt: _now,
+            points: 40),
+        // Rejected this week — completedAt lingers, but it was never approved.
+        _task(
+            id: 'rejected',
+            assignedTo: kid.id,
+            status: TaskStatus.needsRevision,
+            completedAt: _now,
+            points: 30),
+      ];
+
+      final ranking = weeklyStars(tasks, [kid], _now);
+
+      expect(ranking.single.stars, 0,
+          reason: 'the leaderboard must match the star economy: approved only');
+    });
+
     test('members without completions rank last with zero stars', () {
       final jane = _member('jane', 'Jane');
       final idle = _member('idle', 'Idle');
@@ -260,7 +307,7 @@ void main() {
             id: 'j1',
             assignedTo: jane.id,
             status: TaskStatus.completed,
-            completedAt: _now,
+            approvedAt: _now,
             points: 10),
       ];
 

@@ -90,11 +90,19 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
 }
 
 /// Consecutive days (ending today, or yesterday when today has no
-/// completion yet) on which the user completed at least one task.
+/// approval yet) on which the user had at least one task approved.
+///
+/// Keyed off approval, not submission: a task counts the day a parent
+/// approved it (``approvedAt``), so a streak means "earned stars", matching
+/// the balance and the weekly leaderboard. Submitted-but-pending and rejected
+/// work do not count.
 int streakDays(List<Task> tasks, UserId userId, DateTime now) {
   final completionDays = tasks
-      .where((t) => t.assignedToId == userId && t.completedAt != null)
-      .map((t) => _dayOf(t.completedAt!))
+      .where((t) =>
+          t.assignedToId == userId &&
+          t.status == TaskStatus.completed &&
+          t.approvedAt != null)
+      .map((t) => _dayOf(t.approvedAt!))
       .toSet();
 
   var day = _dayOf(now);
@@ -119,8 +127,12 @@ class MemberStars {
   const MemberStars({required this.member, required this.stars});
 }
 
-/// Stars each member earned from tasks completed since Monday 00:00,
+/// Stars each member earned from tasks approved since Monday 00:00,
 /// sorted from most to fewest.
+///
+/// Counts only approved work, keyed off ``approvedAt`` — the moment stars are
+/// actually awarded. Submitted-but-pending and rejected tasks are excluded, so
+/// the leaderboard can't disagree with the real star balance.
 List<MemberStars> weeklyStars(
     List<Task> tasks, List<User> members, DateTime now) {
   final weekStart =
@@ -130,8 +142,9 @@ List<MemberStars> weeklyStars(
     final stars = tasks
         .where((t) =>
             t.assignedToId == member.id &&
-            t.completedAt != null &&
-            !t.completedAt!.isBefore(weekStart))
+            t.status == TaskStatus.completed &&
+            t.approvedAt != null &&
+            !t.approvedAt!.isBefore(weekStart))
         .fold<int>(0, (sum, t) => sum + t.points.value);
     return MemberStars(member: member, stars: stars);
   }).toList()
