@@ -97,7 +97,7 @@ class UserProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Total Stars: ${currentUser.points.value} ⭐',
+                  '${currentUser.points.value} ⭐ to spend',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],

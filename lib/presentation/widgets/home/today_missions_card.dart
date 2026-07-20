@@ -83,7 +83,7 @@ class TodayMissionsCard extends StatelessWidget {
           ...missions.toDo.map(
             (task) => ListTile(
               leading: IconButton(
-                tooltip: 'Mark as done',
+                tooltip: "I've done it!",
                 icon: const Icon(Icons.circle_outlined),
                 onPressed: () => onComplete(task),
               ),

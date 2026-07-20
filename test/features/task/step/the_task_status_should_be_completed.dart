@@ -10,7 +10,7 @@ Future<void> theTaskStatusShouldBeCompleted(WidgetTester tester) async {
     matching: find.byType(Card),
   );
   expect(
-    find.descendant(of: pendingCard, matching: find.text('Completed')),
+    find.descendant(of: pendingCard, matching: find.text('Done')),
     findsOneWidget,
   );
 }

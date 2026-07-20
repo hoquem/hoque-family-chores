@@ -245,7 +245,7 @@ void main() {
 
     expect(find.text('All done for today! 🎉'), findsNothing);
 
-    await tester.tap(find.byTooltip('Mark as done'));
+    await tester.tap(find.byTooltip("I've done it!"));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(seconds: 1)); // celebration animation

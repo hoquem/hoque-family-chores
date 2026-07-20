@@ -79,7 +79,7 @@ void main() {
   group('a task I have started', () {
     testWidgets('can be finished', (tester) async {
       await _pumpTile(tester);
-      expect(find.text('Done'), findsOneWidget,
+      expect(find.text("I've done it!"), findsOneWidget,
           reason: 'without Done, starting a task strands the child in a state '
               'with no way out — the dead end Start exists to prevent');
     });
@@ -91,7 +91,7 @@ void main() {
 
     testWidgets('shows it is in progress', (tester) async {
       await _pumpTile(tester);
-      expect(find.text('In progress'), findsOneWidget);
+      expect(find.text('On it'), findsOneWidget);
       expect(find.byIcon(Icons.play_circle), findsWidgets);
     });
   });
@@ -99,7 +99,7 @@ void main() {
   group("someone else's started task", () {
     testWidgets('offers me nothing', (tester) async {
       await _pumpTile(tester, assignedTo: _someoneElse);
-      expect(find.text('Done'), findsNothing);
+      expect(find.text("I've done it!"), findsNothing);
       expect(find.byIcon(Icons.undo), findsNothing);
     });
   });

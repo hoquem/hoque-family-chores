@@ -14,7 +14,7 @@ Future<void> iTapTheClaimButton(WidgetTester tester) async {
 
   final claimButton = find.descendant(
     of: trashCard,
-    matching: find.text('Claim'),
+    matching: find.text("I'll do it!"),
   );
   expect(claimButton, findsOneWidget);
   await tester.tap(claimButton);

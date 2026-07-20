@@ -392,7 +392,7 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
           ref.invalidate(authNotifierProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Claimed! ${reward.title} 🎉'),
+              content: Text('You got it! ${reward.title} 🎉'),
               backgroundColor: context.tokens.sproutDeep,
             ),
           );

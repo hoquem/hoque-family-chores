@@ -265,7 +265,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task submitted for approval!'),
+            content: Text('✅ Sent for a check!'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -351,11 +351,11 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text('Reject Task'),
+          title: const Text('Send it back?'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Why are you rejecting this task?'),
+              const Text('Why send it back?'),
               const SizedBox(height: 12),
               TextField(
                 controller: controller,
@@ -379,7 +379,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
                 foregroundColor: context.tokens.cream,
               ),
-              child: const Text('Reject'),
+              child: const Text('Send back'),
             ),
           ],
         );
@@ -407,7 +407,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task sent back for revision.'),
+            content: Text('Sent back to have another go'),
             backgroundColor: context.tokens.carrotDeep,
           ),
         );
@@ -452,7 +452,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         return ElevatedButton.icon(
           onPressed: _handleTakeOwnership,
           icon: const Icon(Icons.person_add, size: 16),
-          label: const Text('Claim'),
+          label: const Text("I'll do it!"),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
             foregroundColor: context.tokens.ink,
@@ -483,7 +483,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
               : ElevatedButton.icon(
                   onPressed: _handleMarkComplete,
                   icon: const Icon(Icons.check, size: 16),
-                  label: const Text('Done'),
+                  label: const Text("I've done it!"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.tokens.sproutDeep,
                     // Cream, not Ink: a *Deep fill is dark, so Ink on it is
@@ -494,11 +494,12 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                   ),
                 );
 
-          return Row(
-            mainAxisSize: MainAxisSize.min,
+          return Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               primary,
-              const SizedBox(width: 4),
               IconButton(
                 onPressed: _handleCantDoIt,
                 icon: const Icon(Icons.undo, size: 20),
@@ -517,13 +518,15 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         // empty arm would trap them entirely — the dead end Start exists to
         // prevent.
         if (_isAssignedToMe) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
+          return Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               ElevatedButton.icon(
                 onPressed: _handleMarkComplete,
                 icon: const Icon(Icons.check, size: 16),
-                label: const Text('Done'),
+                label: const Text("I've done it!"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
                   foregroundColor: context.tokens.cream,
@@ -531,7 +534,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
               ),
-              const SizedBox(width: 4),
               IconButton(
                 onPressed: _handleCantDoIt,
                 icon: const Icon(Icons.undo, size: 20),
@@ -545,13 +547,15 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
       case TaskStatus.pendingApproval:
         if (_canJudge) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
+          return Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               ElevatedButton.icon(
                 onPressed: _handleApprove,
                 icon: const Icon(Icons.thumb_up, size: 16),
-                label: const Text('Approve'),
+                label: const Text('Give stars ⭐'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
                   // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
@@ -560,11 +564,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
               ),
-              const SizedBox(width: 4),
               OutlinedButton.icon(
                 onPressed: _handleReject,
                 icon: const Icon(Icons.thumb_down, size: 16),
-                label: const Text('Reject'),
+                label: const Text('Send back'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.tokens.brick,
                   side: BorderSide(color: context.tokens.brick),
@@ -585,7 +588,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           return ElevatedButton.icon(
             onPressed: _handleMarkComplete,
             icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Resubmit'),
+            label: const Text('Send again'),
             style: ElevatedButton.styleFrom(
               backgroundColor: context.tokens.carrotDeep,
               // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
@@ -607,17 +610,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   String _getStatusText() {
     switch (widget.task.status) {
       case TaskStatus.available:
-        return 'Available';
+        return 'Up for grabs';
       case TaskStatus.assigned:
         return 'Assigned';
       case TaskStatus.inProgress:
-        return 'In progress';
+        return 'On it';
       case TaskStatus.pendingApproval:
         return 'Pending Approval';
       case TaskStatus.completed:
-        return 'Completed';
+        return 'Done';
       case TaskStatus.needsRevision:
-        return 'Needs Revision';
+        return 'Have another go';
     }
   }
 

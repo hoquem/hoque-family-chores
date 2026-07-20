@@ -287,7 +287,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Approved — stars awarded'),
+            content: const Text('✅ Stars given!'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -317,7 +317,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('↩️ Task returned to the pool'),
+            content: const Text('↩️ Back to the family list'),
             backgroundColor: context.tokens.carrotDeep,
           ),
         );
@@ -440,7 +440,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   items: [
                     const DropdownMenuItem<User?>(
                       value: null,
-                      child: Text('Leave Unassigned'),
+                      child: Text('Anyone can do it'),
                     ),
                     if (currentUser != null)
                       DropdownMenuItem<User?>(
@@ -565,7 +565,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               OutlinedButton.icon(
                 onPressed: _handleUnassign,
                 icon: const Icon(Icons.person_remove_outlined),
-                label: const Text('Unassign (return to the pool)'),
+                label: const Text('Give it back'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
                 ),
@@ -594,7 +594,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               FilledButton.icon(
                 onPressed: _handleApprove,
                 icon: const Icon(Icons.thumb_up),
-                label: const Text('Approve (award the stars)'),
+                label: const Text('Give the stars ⭐'),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
                   backgroundColor: context.tokens.sproutDeep,

@@ -34,17 +34,17 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   String _statusLabel(TaskStatus status) {
     switch (status) {
       case TaskStatus.available:
-        return 'Available';
+        return 'Up for grabs';
       case TaskStatus.assigned:
         return 'Assigned';
       case TaskStatus.inProgress:
-        return 'In progress';
+        return 'On it';
       case TaskStatus.pendingApproval:
         return 'Pending Approval';
       case TaskStatus.needsRevision:
-        return 'Needs Revision';
+        return 'Have another go';
       case TaskStatus.completed:
-        return 'Completed';
+        return 'Done';
     }
   }
 
@@ -86,7 +86,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Task claimed!'),
+            content: Text("✅ It's yours!"),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -116,7 +116,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('↩️ Task returned to the pool'),
+            content: const Text('↩️ Back to the family list'),
             backgroundColor: context.tokens.carrotDeep,
           ),
         );
@@ -286,7 +286,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Task submitted for approval!'),
+            content: Text('✅ Sent for a check!'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -346,11 +346,11 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text('Reject Task'),
+          title: const Text('Send it back?'),
           content: TextField(
             controller: controller,
             decoration: const InputDecoration(
-              hintText: 'Reason for rejection (optional)',
+              hintText: 'Why send it back? (optional)',
               border: OutlineInputBorder(),
             ),
             maxLines: 3,
@@ -362,7 +362,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('Reject'),
+              child: const Text('Send back'),
             ),
           ],
         );
@@ -379,7 +379,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task sent back for revision'),
+            content: Text('Sent back to have another go'),
             backgroundColor: context.tokens.carrotDeep,
           ),
         );
@@ -688,7 +688,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
             const SizedBox(height: 8),
             _timelineRow(
               icon: Icons.check_circle_outline,
-              label: 'Completed',
+              label: 'Done',
               date: dateTimeFormat.format(task.completedAt!),
               color: t.sprout,
             ),
@@ -749,7 +749,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           child: FilledButton.icon(
             onPressed: () => _handleClaimTask(currentUser),
             icon: const Icon(Icons.add_task),
-            label: const Text('Claim This Task'),
+            label: const Text("I'll do it!"),
           ),
         ),
       );
@@ -773,7 +773,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               : FilledButton.icon(
                   onPressed: () => _handleCompleteTask(currentUser),
                   icon: const Icon(Icons.check),
-                  label: const Text('Mark as Done'),
+                  label: const Text("I've done it!"),
                   style: FilledButton.styleFrom(
                     backgroundColor: context.tokens.sproutDeep,
                   ),
@@ -791,7 +791,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           child: FilledButton.icon(
             onPressed: () => _handleCompleteTask(currentUser),
             icon: const Icon(Icons.check),
-            label: const Text('Mark as Done (take after photo)'),
+            label: const Text("I've done it! (take after photo)"),
             style: FilledButton.styleFrom(
               backgroundColor: context.tokens.sproutDeep,
             ),
@@ -808,7 +808,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           child: FilledButton.icon(
             onPressed: () => _handleCompleteTask(currentUser),
             icon: const Icon(Icons.refresh),
-            label: const Text('Resubmit for Approval'),
+            label: const Text('Send again'),
             style: FilledButton.styleFrom(
               backgroundColor: context.tokens.carrotDeep,
             ),
@@ -829,7 +829,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           child: OutlinedButton.icon(
             onPressed: _handleUnclaimTask,
             icon: const Icon(Icons.undo),
-            label: const Text('Unclaim (give back)'),
+            label: const Text('Give it back'),
           ),
         ),
       );
@@ -844,7 +844,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               child: FilledButton.icon(
                 onPressed: () => _handleApproveTask(currentUser),
                 icon: const Icon(Icons.thumb_up),
-                label: const Text('Approve'),
+                label: const Text('Give the stars ⭐'),
                 style: FilledButton.styleFrom(
                   backgroundColor: context.tokens.sproutDeep,
                 ),
@@ -855,7 +855,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               child: OutlinedButton.icon(
                 onPressed: _handleRejectTask,
                 icon: Icon(Icons.thumb_down, color: context.tokens.brick),
-                label: Text('Reject',
+                label: Text('Send back',
                     style: TextStyle(color: context.tokens.brick)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: context.tokens.brick),
@@ -884,7 +884,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               Icon(Icons.check_circle, color: context.tokens.sproutDeep),
               const SizedBox(width: 8),
               Text(
-                'Task Completed! 🎉',
+                'All done! 🎉',
                 style: TextStyle(
                   color: context.tokens.sproutDeep,
                   fontWeight: FontWeight.bold,

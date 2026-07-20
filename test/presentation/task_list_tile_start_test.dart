@@ -86,7 +86,7 @@ void main() {
     testWidgets('does NOT offer Done — the before photo cannot be skipped',
         (tester) async {
       await _pumpTile(tester, proof: true);
-      expect(find.text('Done'), findsNothing,
+      expect(find.text("I've done it!"), findsNothing,
           reason: 'Done in the assigned arm bypasses the before photo entirely; '
               'Start must replace it, not sit beside it');
     });
@@ -100,7 +100,7 @@ void main() {
   group('an ordinary task is untouched', () {
     testWidgets('still offers Done, and no Start', (tester) async {
       await _pumpTile(tester, proof: false);
-      expect(find.text('Done'), findsOneWidget);
+      expect(find.text("I've done it!"), findsOneWidget);
       expect(find.text('Start'), findsNothing);
     });
   });

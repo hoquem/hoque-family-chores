@@ -7,5 +7,5 @@ Future<void> pointsShouldBeAwardedToTheChild(WidgetTester tester) async {
   // which we verify in the previous step. Points are tracked by the user
   // repository. For BDD purposes, verifying the completed status confirms
   // the approval flow ran successfully.
-  expect(find.text('Completed'), findsWidgets);
+  expect(find.text('Done'), findsWidgets);
 }

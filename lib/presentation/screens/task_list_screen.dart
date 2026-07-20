@@ -233,7 +233,7 @@ class TaskListScreen extends ConsumerWidget {
               ),
               const PopupMenuItem(
                 value: TaskFilterType.available,
-                child: Text('Available'),
+                child: Text('Up for grabs'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.myTasks,
@@ -241,11 +241,11 @@ class TaskListScreen extends ConsumerWidget {
               ),
               const PopupMenuItem(
                 value: TaskFilterType.pendingApproval,
-                child: Text('Needs Approval'),
+                child: Text('To approve'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.completed,
-                child: Text('Completed'),
+                child: Text('Done'),
               ),
             ],
             // icon: renders a default 48x48 IconButton (was a ~32px padded
