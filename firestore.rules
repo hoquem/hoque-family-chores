@@ -23,10 +23,17 @@ service cloud.firestore {
       allow read: if isSignedIn()
         && (request.auth.uid == userId
             || resource.data.familyId == me().familyId);
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      // Self-updates (profile edits, joining a family) or a parent/guardian
-      // in the same family (awarding points on task approval).
+      // A new profile starts with zero stars; points are never client-set.
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && (!('points' in request.resource.data)
+            || request.resource.data.points == 0);
+      // Self-updates (profile edits, joining a family) or a parent/guardian in
+      // the same family (e.g. role changes). `points` is OFF LIMITS to every
+      // client: all star changes (earning, spending, refunds) go through the
+      // Cloud Functions, which write points with admin privileges. This is what
+      // keeps the economy honest — otherwise a child could set their own stars.
       allow update: if isSignedIn()
+        && request.resource.data.points == resource.data.points
         && (request.auth.uid == userId
             || (resource.data.familyId == me().familyId
                 && me().role in ['parent', 'guardian']));
@@ -102,7 +109,11 @@ service cloud.firestore {
       // control: you cannot claim what you have not earned, and earning
       // requires someone else to sign off your chore.
       match /redemptions/{redemptionId} {
-        allow read, write: if isFamilyMember(familyId);
+        // Members can see the family's claims, but claiming and settling both
+        // move stars, so they only happen via the Cloud Functions (admin) — a
+        // client can neither record a claim it didn't pay for nor refund one.
+        allow read: if isFamilyMember(familyId);
+        allow write: if false;
       }
     }
 

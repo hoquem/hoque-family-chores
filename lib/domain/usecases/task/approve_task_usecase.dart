@@ -26,45 +26,16 @@ class ApproveTaskUseCase {
     required FamilyId familyId,
   }) async {
     try {
-      // Get the task to validate it can be approved
+      // Get the task — only to decide what happens to its photos below. All the
+      // approval rules (status is pendingApproval, there is an assignee, and the
+      // approver is allowed) now live in the Cloud Function: a non-parent cannot
+      // approve their own work, but a parent/guardian may (the edit-screen
+      // override). The Function is the authoritative guard and awards the stars.
       final task = await _taskRepository.getTask(familyId, taskId);
-      if (task == null) {
-        return Left(NotFoundFailure('Task not found'));
-      }
 
-      // Validate task can be approved
-      if (task.status != TaskStatus.pendingApproval) {
-        return Left(BusinessFailure('Task must be pending approval'));
-      }
-
-      // Validate that task has an assignee to award stars to
-      if (task.assignedToId == null) {
-        return Left(BusinessFailure('Task has no assignee'));
-      }
-
-      // You cannot judge your own chore.
-      //
-      // Anyone in the family may approve — a family is peers, not a hierarchy,
-      // and a sibling signing off a sibling's work is the point. But the
-      // approver must not be the person who did it: otherwise a child creates
-      // "Tidy room, 100⭐", assigns it to themselves, taps Done, taps Approve,
-      // and mints stars from nothing. Those stars buy real family time through
-      // Rewards, so this is the rule holding the whole economy honest.
-      //
-      // This replaces a TODO that proposed a parent/guardian check. That was
-      // both stricter than wanted and never implemented, so until now the only
-      // thing stopping a self-approval was a hidden button — and the UI is not
-      // a security boundary.
-      if (task.assignedToId == approverId) {
-        return Left(PermissionFailure(
-          'You need someone else in the family to check this one off.',
-        ));
-      }
-
-      // Approve and award atomically. The checks above give friendly errors
-      // for the common cases; the repository transaction re-checks the status
-      // as the authoritative guard and awards the stars in the same commit, so
-      // an approval can never leave a child unpaid or pay them twice.
+      // Approve and award (server-side, atomic). The repository call reaches the
+      // Cloud Function, which re-reads the status inside its transaction so an
+      // approval can never leave a child unpaid or pay them twice.
       await _taskRepository.approveTask(familyId, taskId);
 
       // The after-photo has done its job as proof; now it earns a second life
@@ -81,7 +52,7 @@ class ApproveTaskUseCase {
       // approval that fails at the last step. This is the one place in this flow
       // where an error is tolerated, and it is tolerated on purpose.
       try {
-        if (task.photoUrl != null) {
+        if (task?.photoUrl != null) {
           await _taskRepository.promoteAfterPhotoToBackground(familyId, taskId);
         } else {
           await _taskRepository.clearPhotos(familyId, taskId);

@@ -195,7 +195,6 @@ class _OwedCard extends ConsumerWidget {
       redemption: claim,
       actor: userId,
       happened: happened,
-      now: DateTime.now(),
     );
     ref.invalidate(outstandingClaimsProvider(claim.familyId, userId));
     ref.invalidate(authNotifierProvider);
@@ -328,8 +327,6 @@ class _RewardTile extends ConsumerWidget {
 
     final result = await ref.read(claimRewardUseCaseProvider)(
       reward: reward,
-      claimedBy: user.id,
-      now: DateTime.now(),
     );
 
     if (!context.mounted) return;

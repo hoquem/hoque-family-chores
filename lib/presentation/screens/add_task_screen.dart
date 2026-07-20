@@ -209,6 +209,97 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     }
   }
 
+  Future<void> _handleAssignTo(AsyncValue<List<User>>? membersAsync) async {
+    final members = membersAsync?.asData?.value ?? const <User>[];
+    if (members.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No family members to assign to yet.')),
+      );
+      return;
+    }
+    final chosen = await showModalBottomSheet<User>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Assign to',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            ),
+            for (final m in members)
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(m.name),
+                onTap: () => Navigator.pop(ctx, m),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null) return;
+    final currentUser = ref.read(authNotifierProvider).user;
+    if (currentUser == null) return;
+    try {
+      await ref
+          .read(taskListNotifierProvider(currentUser.familyId).notifier)
+          .assignTask(widget.existingTask!.id.value, chosen.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Assigned to ${chosen.name}'),
+            backgroundColor: context.tokens.sproutDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error assigning task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to assign: ${e.toString()}'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleApprove() async {
+    final currentUser = ref.read(authNotifierProvider).user;
+    if (currentUser == null) return;
+    try {
+      await ref
+          .read(taskListNotifierProvider(currentUser.familyId).notifier)
+          .approveTask(
+            widget.existingTask!.id.value,
+            currentUser.id,
+            currentUser.familyId,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Approved — stars awarded'),
+            backgroundColor: context.tokens.sproutDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error approving task: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to approve: ${e.toString()}'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleUnassign() async {
     final currentUser = ref.read(authNotifierProvider).user;
     if (currentUser == null) return;
@@ -471,6 +562,36 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 label: const Text('Unassign (return to the pool)'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ],
+            // Parent override: assign the task to anyone. This is how a task a
+            // creator can't self-claim gets done.
+            if (_isEditing &&
+                widget.existingTask!.status != TaskStatus.completed &&
+                widget.existingTask!.status != TaskStatus.pendingApproval) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _handleAssignTo(familyMembersAsync),
+                icon: const Icon(Icons.person_add_alt),
+                label: const Text('Assign to…'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ],
+            // Parent override: approve a submitted task here, even one you did
+            // yourself (the normal Approve button hides for the doer).
+            if (_isEditing &&
+                widget.existingTask!.status == TaskStatus.pendingApproval) ...[
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _handleApprove,
+                icon: const Icon(Icons.thumb_up),
+                label: const Text('Approve (award the stars)'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: context.tokens.sproutDeep,
                 ),
               ),
             ],

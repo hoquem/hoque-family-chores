@@ -1,0 +1,13 @@
+{
+  "name": "functions",
+  "description": "Star-economy Cloud Functions for Home Chores Star",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
+  }
+}

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/error/exceptions.dart';
+import '../services/economy_functions.dart';
 import '../../domain/entities/redemption.dart';
 import '../../domain/entities/reward.dart';
 import '../../domain/repositories/reward_repository.dart';
@@ -13,10 +14,14 @@ import '../../domain/value_objects/user_id.dart';
 /// Sits beside `tasks` in the same family document so one security rule shape
 /// covers all three, and so a family's data stays in one subtree.
 class FirebaseRewardRepository implements RewardRepository {
-  FirebaseRewardRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirebaseRewardRepository({
+    FirebaseFirestore? firestore,
+    EconomyFunctions? economy,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _economy = economy ?? EconomyFunctions();
 
   final FirebaseFirestore _firestore;
+  final EconomyFunctions _economy;
 
   CollectionReference<Map<String, dynamic>> _rewards(FamilyId familyId) =>
       _firestore
@@ -86,80 +91,20 @@ class FirebaseRewardRepository implements RewardRepository {
         ..sort((a, b) => b.claimedAt.compareTo(a.claimedAt)));
 
   @override
-  Future<Redemption> createRedemption(Redemption redemption) async {
-    try {
-      final doc = _redemptions(redemption.familyId).doc();
-      await doc.set(_fromRedemption(redemption));
-      return _toRedemption(_fromRedemption(redemption), doc.id,
-          redemption.familyId);
-    } catch (e) {
-      if (e is DataException) rethrow;
-      throw ServerException('Failed to record claim: $e',
-          code: 'REDEMPTION_CREATE_ERROR');
-    }
-  }
+  Future<String> claimReward(FamilyId familyId, String rewardId) =>
+      // Deducting stars and recording the claim happen server-side (Cloud
+      // Function), atomically, so a claim can never overspend.
+      _economy.claimReward(familyId, rewardId);
 
   @override
   Future<void> settleRedemption(
     FamilyId familyId,
-    String redemptionId,
-    RedemptionStatus outcome,
-    DateTime settledAt,
-  ) async {
-    // Settling and refunding are ONE transaction, deliberately.
-    //
-    // These used to be two writes in the use case: mark the claim settled, then
-    // call addPoints. Either order was unsafe. Refund-then-mark could double-pay
-    // if the mark failed; mark-then-refund (what shipped) lost the stars for
-    // good if the refund failed, because the retry then found the claim already
-    // settled and refused. Here the status flip and the star return commit
-    // together or not at all.
-    //
-    // The `transaction.get` is load-bearing: it puts the redemption in the
-    // transaction's read set, so two people tapping "Not yet" at once (or the
-    // lazy settle-on-read racing a manual tap) can't both pass the guard and
-    // both refund. The second attempt retries, re-reads status == refunded, and
-    // bails below. A blind increment would reopen exactly that double-refund.
-    final ref = _redemptions(familyId).doc(redemptionId);
-
-    try {
-      await _firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(ref);
-        if (!snapshot.exists) {
-          throw NotFoundException('Claim not found',
-              code: 'REDEMPTION_NOT_FOUND');
-        }
-        final data = snapshot.data()!;
-
-        if (data['status'] != RedemptionStatus.claimed.name) {
-          // Already fulfilled or refunded. Settling twice would refund a second
-          // time or take back an outing that already happened.
-          throw ValidationException('Claim is already settled',
-              code: 'REDEMPTION_ALREADY_SETTLED');
-        }
-
-        transaction.update(ref, {
-          'status': outcome.name,
-          'settledAt': Timestamp.fromDate(settledAt),
-        });
-
-        if (outcome == RedemptionStatus.refunded) {
-          final claimedBy = data['claimedBy'] as String?;
-          final cost = (data['cost'] as num?)?.toInt() ?? 0;
-          if (claimedBy != null) {
-            transaction.update(
-              _firestore.collection('users').doc(claimedBy),
-              {'points': FieldValue.increment(cost)},
-            );
-          }
-        }
-      });
-    } catch (e) {
-      if (e is DataException) rethrow;
-      throw ServerException('Failed to settle claim: $e',
-          code: 'REDEMPTION_SETTLE_ERROR');
-    }
-  }
+    String redemptionId, {
+    required bool happened,
+  }) =>
+      // Status flip and refund happen server-side (Cloud Function) with the
+      // same in-transaction status re-read guard, so a claim can't refund twice.
+      _economy.settleRedemption(familyId, redemptionId, happened: happened);
 
   @override
   Future<List<Redemption>> outstandingFor(
@@ -205,18 +150,6 @@ class FirebaseRewardRepository implements RewardRepository {
         createdAt: _date(d['createdAt']) ?? DateTime.now(),
       );
 
-  Map<String, dynamic> _fromRedemption(Redemption r) => {
-        'rewardId': r.rewardId,
-        // Copies, not links. Repricing a reward must not rewrite what a claim
-        // already cost.
-        'rewardTitle': r.rewardTitle,
-        'cost': r.cost.value,
-        'claimedBy': r.claimedBy.value,
-        'claimedAt': Timestamp.fromDate(r.claimedAt),
-        'status': r.status.name,
-        'dueBy': r.dueBy == null ? null : Timestamp.fromDate(r.dueBy!),
-        'settledAt': r.settledAt == null ? null : Timestamp.fromDate(r.settledAt!),
-      };
 
   Redemption _toRedemption(
           Map<String, dynamic> d, String id, FamilyId familyId) =>

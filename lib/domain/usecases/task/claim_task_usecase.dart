@@ -37,6 +37,15 @@ class ClaimTaskUseCase {
         return Left(BusinessFailure('Task is not available for claiming'));
       }
 
+      // You can't claim a chore you created yourself — that would let one
+      // person create, do and (with a second person) approve their own stars.
+      // A parent can still assign it to anyone from the edit screen.
+      if (task.createdById == userId) {
+        return Left(PermissionFailure(
+          "You can't claim a task you created — a parent can assign it to someone.",
+        ));
+      }
+
       // Claim the task
       await _taskRepository.claimTask(familyId, taskId, userId);
       

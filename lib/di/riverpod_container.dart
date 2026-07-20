@@ -82,7 +82,6 @@ RewardRepository rewardRepository(Ref ref) {
 ClaimRewardUseCase claimRewardUseCase(Ref ref) {
   return ClaimRewardUseCase(
     ref.watch(rewardRepositoryProvider),
-    ref.watch(userRepositoryProvider),
   );
 }
 

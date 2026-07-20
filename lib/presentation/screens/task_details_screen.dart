@@ -740,8 +740,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
 
     final buttons = <Widget>[];
 
-    // Available task — anyone can claim
-    if (task.status == TaskStatus.available) {
+    // Available task — anyone can claim EXCEPT the person who created it.
+    if (task.status == TaskStatus.available &&
+        task.createdById != currentUser.id) {
       buttons.add(
         SizedBox(
           width: double.infinity,
