@@ -178,7 +178,7 @@ class _FamilyDetailsView extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Leave family?'),
         content: const Text(
-          "You'll lose access to this family's tasks and rewards. Your star "
+          "You'll lose access to this family's tasks and treats. Your star "
           'balance stays on your account. You can join again with an invite '
           'code.',
         ),

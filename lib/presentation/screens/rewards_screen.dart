@@ -26,7 +26,7 @@ class RewardsScreen extends ConsumerWidget {
     final user = ref.watch(authNotifierProvider).user;
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Rewards')),
+        appBar: AppBar(title: const Text('Treats')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -36,7 +36,7 @@ class RewardsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rewards'),
+        title: const Text('Treats'),
         actions: const [HelpButton(content: kRewardsHelp)],
       ),
       floatingActionButton: FloatingActionButton(
@@ -49,7 +49,7 @@ class RewardsScreen extends ConsumerWidget {
         ),
         backgroundColor: context.tokens.starGold,
         foregroundColor: context.tokens.ink,
-        tooltip: 'Add a reward',
+        tooltip: 'Add a treat',
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
@@ -278,7 +278,7 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
             ),
             if (isParent)
               PopupMenuButton<String>(
-                tooltip: 'Edit or delete reward',
+                tooltip: 'Edit or delete treat',
                 onSelected: (value) {
                   if (value == 'edit') _edit(context);
                   if (value == 'delete') _delete(context);
@@ -325,7 +325,7 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete reward?'),
+        title: const Text('Delete treat?'),
         content: Text(
           '"${reward.title}" will be removed. Stars already claimed against it '
           'are not affected.',
@@ -417,7 +417,7 @@ class _EmptyRewards extends StatelessWidget {
           Icon(Icons.card_giftcard, size: 56, color: t.inkMuted),
           const SizedBox(height: 12),
           Text(
-            'No rewards yet',
+            'No treats yet',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
@@ -454,7 +454,7 @@ class _ErrorCard extends StatelessWidget {
         children: [
           Icon(Icons.error_outline, size: 48, color: context.tokens.brick),
           const SizedBox(height: 8),
-          const Text('Could not load rewards'),
+          const Text('Could not load treats'),
           const SizedBox(height: 8),
           Text(
             reason,

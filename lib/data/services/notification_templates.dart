@@ -278,7 +278,7 @@ class NotificationTemplates {
     return PushNotificationPayload(
       id: _generateId(PushNotificationType.rewardRedemption, rewardId),
       type: PushNotificationType.rewardRedemption,
-      title: 'Reward redemption request 🎁',
+      title: 'Treat redemption request 🎁',
       body: '$childName wants to redeem $rewardName (costs $cost⭐) — approve?',
       priority: NotificationPriority.high,
       deepLink: 'choresapp://reward/$rewardId',

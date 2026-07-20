@@ -129,8 +129,8 @@ const kRewardsHelp = HelpContent(
   title: 'Spend your stars 🎁',
   points: [
     'Turn stars into fun family things — a walk, a game, a treat.',
-    'Anyone can add a reward. Tap + to suggest one.',
-    'When you have enough stars, tap a reward to claim it.',
+    'Anyone can add a treat. Tap + to suggest one.',
+    'When you have enough stars, tap a treat to claim it.',
   ],
 );
 

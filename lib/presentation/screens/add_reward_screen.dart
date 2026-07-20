@@ -56,7 +56,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
     final t = context.tokens;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Reward' : 'Add a Reward')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Treat' : 'Add a Treat')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -66,7 +66,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
               key: const Key('reward_title_field'),
               controller: _title,
               decoration: const InputDecoration(
-                labelText: 'Reward',
+                labelText: 'Treat',
                 hintText: 'Walk in the park',
                 border: OutlineInputBorder(),
               ),
@@ -137,7 +137,7 @@ class _AddRewardScreenState extends ConsumerState<AddRewardScreen> {
                       width: 24,
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : Text(_isEditing ? 'Save Changes' : 'Add Reward'),
+                  : Text(_isEditing ? 'Save Changes' : 'Add Treat'),
             ),
           ],
         ),
