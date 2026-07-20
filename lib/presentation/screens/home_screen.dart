@@ -132,7 +132,11 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
-    final tasksAsync = ref.watch(taskListNotifierProvider(currentUser.familyId));
+    // Stream, not the one-shot notifier: Home's missions, streak and
+    // leaderboard must update live when a chore is approved on another device
+    // (the award happens server-side now), not only on pull-to-refresh.
+    final tasksAsync =
+        ref.watch(taskListStreamProvider(currentUser.familyId));
     return tasksAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) {
@@ -152,7 +156,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => ref
-                      .invalidate(taskListNotifierProvider(currentUser.familyId)),
+                      .invalidate(taskListStreamProvider(currentUser.familyId)),
                   child: const Text('Retry'),
                 ),
               ],
@@ -176,7 +180,7 @@ class HomeScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(taskListNotifierProvider(currentUser.familyId));
+        ref.invalidate(taskListStreamProvider(currentUser.familyId));
         ref.invalidate(familyMembersNotifierProvider(currentUser.familyId));
       },
       child: ListView(

@@ -575,15 +575,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
             ],
           );
         }
-        // "Waiting" per DESIGN.md's status table, not "Awaiting Approval":
-        // this pill sits in the narrow action column beside the task title,
-        // where the longer wording overflows by ~51px on a 390pt phone. The
-        // old code reached for a hardcoded '\n' to force two lines; the
-        // shorter word is what the design system actually asks for.
-        return const StatusPill(
-          status: TaskStatus.pendingApproval,
-          label: 'Waiting',
-        );
+        // The doer has no action here (they can't approve their own work), and
+        // the meta row already shows the "Pending Approval" status pill — so a
+        // second "Waiting" pill in the action slot was just a duplicate.
+        return null;
 
       case TaskStatus.needsRevision:
         if (_isAssignedToMe) {

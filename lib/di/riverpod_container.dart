@@ -277,6 +277,13 @@ RemoveMemberUseCase removeMemberUseCase(Ref ref) {
 }
 
 @riverpod
+LeaveFamilyUseCase leaveFamilyUseCase(Ref ref) {
+  final familyRepository = ref.watch(familyRepositoryProvider);
+  final userRepository = ref.watch(userRepositoryProvider);
+  return LeaveFamilyUseCase(familyRepository, userRepository);
+}
+
+@riverpod
 GetFamilyMembersUseCase getFamilyMembersUseCase(Ref ref) {
   final familyRepository = ref.watch(familyRepositoryProvider);
   return GetFamilyMembersUseCase(familyRepository);

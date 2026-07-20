@@ -64,11 +64,17 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final existing = _dueDate;
+    // Editing an OVERDUE task: its due date is in the past, so firstDate must
+    // reach back to it or showDatePicker asserts (initialDate < firstDate).
+    final firstDate =
+        (existing != null && existing.isBefore(now)) ? existing : now;
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: existing ?? now,
+      firstDate: firstDate,
+      lastDate: now.add(const Duration(days: 365)),
     );
     if (picked != null && picked != _dueDate) {
       setState(() {

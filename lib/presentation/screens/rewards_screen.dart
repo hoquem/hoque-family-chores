@@ -173,12 +173,12 @@ class _OwedCard extends ConsumerWidget {
                 spacing: 4,
                 children: [
                   TextButton(
-                    onPressed: () => _settle(ref, claim, true),
+                    onPressed: () => _settle(context, ref, claim, true),
                     child: const Text('We did it'),
                   ),
                   TextButton(
                     style: TextButton.styleFrom(foregroundColor: t.brick),
-                    onPressed: () => _settle(ref, claim, false),
+                    onPressed: () => _settle(context, ref, claim, false),
                     child: const Text('Not yet'),
                   ),
                 ],
@@ -190,28 +190,60 @@ class _OwedCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _settle(WidgetRef ref, Redemption claim, bool happened) async {
-    await ref.read(settleRedemptionUseCaseProvider)(
+  Future<void> _settle(
+    BuildContext context,
+    WidgetRef ref,
+    Redemption claim,
+    bool happened,
+  ) async {
+    final result = await ref.read(settleRedemptionUseCaseProvider)(
       redemption: claim,
       actor: userId,
       happened: happened,
     );
-    ref.invalidate(outstandingClaimsProvider(claim.familyId, userId));
-    ref.invalidate(authNotifierProvider);
+    if (!context.mounted) return;
+    result.fold(
+      (failure) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(failure.message),
+          backgroundColor: context.tokens.brickDeep,
+        ),
+      ),
+      (_) {
+        ref.invalidate(outstandingClaimsProvider(claim.familyId, userId));
+        ref.invalidate(authNotifierProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(happened ? 'Nice — enjoy it! 🎉' : 'Stars refunded'),
+            backgroundColor: context.tokens.sproutDeep,
+          ),
+        );
+      },
+    );
   }
 
   String _shortDate(DateTime d) => '${d.day}/${d.month}';
 }
 
-class _RewardTile extends ConsumerWidget {
+class _RewardTile extends ConsumerStatefulWidget {
   const _RewardTile({required this.reward, required this.balance});
 
   final Reward reward;
   final int balance;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RewardTile> createState() => _RewardTileState();
+}
+
+class _RewardTileState extends ConsumerState<_RewardTile> {
+  // Guards against a double-tap claiming — and double-spending — the same reward.
+  bool _claiming = false;
+
+  @override
+  Widget build(BuildContext context) {
     final t = context.tokens;
+    final reward = widget.reward;
+    final balance = widget.balance;
     final affordable = balance >= reward.cost.value;
     final short = reward.cost.value - balance;
     final isParent =
@@ -232,15 +264,22 @@ class _RewardTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             FilledButton(
-              onPressed: affordable ? () => _claim(context, ref) : null,
-              child: Text('${reward.cost.value} ⭐'),
+              onPressed:
+                  (affordable && !_claiming) ? () => _claim(context) : null,
+              child: _claiming
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text('${reward.cost.value} ⭐'),
             ),
             if (isParent)
               PopupMenuButton<String>(
                 tooltip: 'Edit or delete reward',
                 onSelected: (value) {
                   if (value == 'edit') _edit(context);
-                  if (value == 'delete') _delete(context, ref);
+                  if (value == 'delete') _delete(context);
                 },
                 itemBuilder: (context) => [
                   const PopupMenuItem(
@@ -274,12 +313,13 @@ class _RewardTile extends ConsumerWidget {
   void _edit(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddRewardScreen(existingReward: reward),
+        builder: (_) => AddRewardScreen(existingReward: widget.reward),
       ),
     );
   }
 
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+  Future<void> _delete(BuildContext context) async {
+    final reward = widget.reward;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -321,41 +361,44 @@ class _RewardTile extends ConsumerWidget {
     }
   }
 
-  Future<void> _claim(BuildContext context, WidgetRef ref) async {
+  Future<void> _claim(BuildContext context) async {
     final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
+    final reward = widget.reward;
 
-    final result = await ref.read(claimRewardUseCaseProvider)(
-      reward: reward,
-    );
-
-    if (!context.mounted) return;
-    result.fold(
-      (failure) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(failure.message),
-          backgroundColor: context.tokens.brickDeep,
-        ),
-      ),
-      (_) {
-        ref.read(analyticsProvider).log(
-              AnalyticsEventName.rewardClaimed,
-              userId: user.id.value,
-              familyId: user.familyId.value,
-              params: {'cost': reward.cost.value},
-            );
-        ref.invalidate(outstandingClaimsProvider(user.familyId, user.id));
-        // The balance lives on the user profile, so it has to be re-read or
-        // the screen shows stars that are already spent.
-        ref.invalidate(authNotifierProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
+    setState(() => _claiming = true);
+    try {
+      final result = await ref.read(claimRewardUseCaseProvider)(reward: reward);
+      if (!context.mounted) return;
+      result.fold(
+        (failure) => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Claimed! ${reward.title} 🎉'),
-            backgroundColor: context.tokens.sproutDeep,
+            content: Text(failure.message),
+            backgroundColor: context.tokens.brickDeep,
           ),
-        );
-      },
-    );
+        ),
+        (_) {
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.rewardClaimed,
+                userId: user.id.value,
+                familyId: user.familyId.value,
+                params: {'cost': reward.cost.value},
+              );
+          ref.invalidate(outstandingClaimsProvider(user.familyId, user.id));
+          // The balance lives on the user profile, so it has to be re-read or
+          // the screen shows stars that are already spent.
+          ref.invalidate(authNotifierProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Claimed! ${reward.title} 🎉'),
+              backgroundColor: context.tokens.sproutDeep,
+            ),
+          );
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _claiming = false);
+    }
   }
 }
 

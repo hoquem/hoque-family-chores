@@ -30,8 +30,8 @@ const testEnv = await initializeTestEnvironment({
 
 await testEnv.withSecurityRulesDisabled(async (ctx) => {
   const db = ctx.firestore();
-  await setDoc(doc(db, 'users/alice'), { familyId: 'famA', role: 'parent' });
-  await setDoc(doc(db, 'users/bob'), { familyId: 'famB', role: 'parent' });
+  await setDoc(doc(db, 'users/alice'), { familyId: 'famA', role: 'parent', points: 0 });
+  await setDoc(doc(db, 'users/bob'), { familyId: 'famB', role: 'parent', points: 0 });
   await setDoc(doc(db, 'families/famA'), { memberIds: ['alice'], creatorId: 'alice', name: 'A', inviteCode: 'CODEA' });
   await setDoc(doc(db, 'families/famB'), { memberIds: ['bob'], creatorId: 'bob', name: 'B', inviteCode: 'CODEB' });
   await setDoc(doc(db, 'familyInvites/CODEB'), { familyId: 'famB' });
@@ -42,6 +42,7 @@ await testEnv.withSecurityRulesDisabled(async (ctx) => {
 });
 
 const alice = testEnv.authenticatedContext('alice').firestore();
+const bob = testEnv.authenticatedContext('bob').firestore(); // a member of family B
 
 let pass = 0, fail = 0;
 async function check(name, promise, shouldSucceed) {
@@ -68,11 +69,22 @@ await check('alice CANNOT get family B doc (no membership, no join request)', ge
 await check('alice CANNOT self-add to family B without a join request', updateDoc(doc(alice, 'families/famB'), { memberIds: ['bob', 'alice'], updatedAt: new Date() }), false);
 await check('alice CANNOT create a join request with the WRONG code', setDoc(doc(alice, 'families/famB/joinRequests/alice'), { code: 'NOPE99' }), false);
 
+console.log('\n-- Profile familyId + invite minting are tied to real membership --');
+// The PII-leak chain: point your own profile at a victim family, then read its
+// members. The familyId change must be refused for a family you are not in.
+await check('alice CANNOT set her own familyId to family B', updateDoc(doc(alice, 'users/alice'), { familyId: 'famB' }), false);
+await check('alice CANNOT forge an invite for family B (not a member)', setDoc(doc(alice, 'familyInvites/EVIL'), { familyId: 'famB' }), false);
+// A real member can still mint an invite for their own family, and clear their
+// own familyId (leaving).
+await check('bob (a member) CAN mint an invite for family B', setDoc(doc(bob, 'familyInvites/BOBCODE'), { familyId: 'famB' }), true);
+await check('a member CAN clear their own familyId (leaving)', updateDoc(doc(bob, 'users/bob'), { familyId: '' }), true);
+
 console.log('\n-- Legitimate invite-code join still works end to end --');
 await check('alice CAN create a join request with the correct code', setDoc(doc(alice, 'families/famB/joinRequests/alice'), { code: 'CODEB' }), true);
 await check('after the join request, alice CAN read the family B doc', getDoc(doc(alice, 'families/famB')), true);
 await check('after the join request, alice CAN add herself as a member', updateDoc(doc(alice, 'families/famB'), { memberIds: ['bob', 'alice'], updatedAt: new Date() }), true);
 await check('now a member, alice CAN read family B tasks', getDoc(doc(alice, 'families/famB/tasks/t1')), true);
+await check('now a member, alice CAN set her familyId to B (completing the join)', updateDoc(doc(alice, 'users/alice'), { familyId: 'famB' }), true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await testEnv.cleanup();

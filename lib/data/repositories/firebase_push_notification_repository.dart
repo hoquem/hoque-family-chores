@@ -471,7 +471,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       case 'high_priority':
         return 'Important Updates';
       case 'medium_priority':
-        return 'Quest Notifications';
+        return 'Task Notifications';
       case 'low_priority':
         return 'Achievements & Updates';
       default:
@@ -485,7 +485,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       case 'high_priority':
         return 'Approvals and time-sensitive notifications';
       case 'medium_priority':
-        return 'Quest assignments and reminders';
+        return 'Task assignments and reminders';
       case 'low_priority':
         return 'Levels, streaks, and family activity';
       default:

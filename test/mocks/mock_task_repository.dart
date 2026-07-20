@@ -319,8 +319,12 @@ class MockTaskRepository implements TaskRepository {
   }
 
   @override
-  Stream<List<Task>> streamTasks(FamilyId familyId) {
-    return _taskStreamController.stream
+  Stream<List<Task>> streamTasks(FamilyId familyId) async* {
+    // Deliver the current snapshot on subscribe, then follow live updates —
+    // matching Firestore's snapshots(), and unlike the bare broadcast stream
+    // which drops anything seeded before the listener attaches.
+    yield _tasks.where((task) => task.familyId == familyId).toList();
+    yield* _taskStreamController.stream
         .map((tasks) => tasks.where((task) => task.familyId == familyId).toList());
   }
 

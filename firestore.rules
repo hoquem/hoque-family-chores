@@ -23,20 +23,32 @@ service cloud.firestore {
       allow read: if isSignedIn()
         && (request.auth.uid == userId
             || resource.data.familyId == me().familyId);
-      // A new profile starts with zero stars; points are never client-set.
+      // A new profile starts with zero stars and no family; both are set later
+      // (points only ever by the Cloud Functions).
       allow create: if isSignedIn() && request.auth.uid == userId
         && (!('points' in request.resource.data)
-            || request.resource.data.points == 0);
+            || request.resource.data.points == 0)
+        && (!('familyId' in request.resource.data)
+            || request.resource.data.familyId == '');
       // Self-updates (profile edits, joining a family) or a parent/guardian in
-      // the same family (e.g. role changes). `points` is OFF LIMITS to every
-      // client: all star changes (earning, spending, refunds) go through the
-      // Cloud Functions, which write points with admin privileges. This is what
-      // keeps the economy honest — otherwise a child could set their own stars.
+      // the same family (e.g. role changes). Two things are locked down:
+      //  - `points` is OFF LIMITS to every client — all star changes go through
+      //    the Cloud Functions (admin). This keeps the economy honest.
+      //  - a self-update may only set `familyId` to a family you are ACTUALLY a
+      //    member of (or clear it) — otherwise anyone could point their profile
+      //    at a victim family and read its members' PII via the read rule above,
+      //    which keys off me().familyId.
       allow update: if isSignedIn()
         && request.resource.data.points == resource.data.points
-        && (request.auth.uid == userId
+        && ((request.auth.uid == userId
+              && (request.resource.data.familyId == resource.data.familyId
+                  || request.resource.data.familyId == ''
+                  || isFamilyMember(request.resource.data.familyId)))
             || (resource.data.familyId == me().familyId
-                && me().role in ['parent', 'guardian']));
+                && me().role in ['parent', 'guardian']
+                // A parent may edit a member (e.g. role) but not move them to
+                // another family — only the member changes their own familyId.
+                && request.resource.data.familyId == resource.data.familyId));
       allow delete: if isSignedIn() && request.auth.uid == userId;
 
       match /notifications/{notificationId} {
@@ -122,8 +134,12 @@ service cloud.firestore {
     match /familyInvites/{code} {
       allow get: if isSignedIn();
       allow list: if false;
+      // Only a member of the family may mint an invite for it. Without this,
+      // anyone who learned a family's id could forge a code, join through it,
+      // and (choosing the parent role) take the family over.
       allow create: if isSignedIn()
-        && request.resource.data.familyId is string;
+        && request.resource.data.familyId is string
+        && isFamilyMember(request.resource.data.familyId);
       allow update, delete: if false;
     }
 

@@ -237,23 +237,25 @@ class FamilyGate extends ConsumerWidget {
   }
 }
 
-class _SplashScreen extends StatefulWidget {
+class _SplashScreen extends ConsumerStatefulWidget {
   const _SplashScreen();
 
   @override
-  State<_SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<_SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<_SplashScreen> {
+class _SplashScreenState extends ConsumerState<_SplashScreen> {
   bool _timedOut = false;
 
   @override
   void initState() {
     super.initState();
+    _armTimeout();
+  }
+
+  void _armTimeout() {
     Future.delayed(const Duration(seconds: 10), () {
-      if (mounted) {
-        setState(() => _timedOut = true);
-      }
+      if (mounted) setState(() => _timedOut = true);
     });
   }
 
@@ -269,7 +271,7 @@ class _SplashScreenState extends State<_SplashScreen> {
               const Icon(Icons.home_rounded, size: 64, color: Color(0xFFE08A1E)),
               const SizedBox(height: 24),
               const Text(
-                'Our Family Chores',
+                'Home Chores Star',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
@@ -281,7 +283,7 @@ class _SplashScreenState extends State<_SplashScreen> {
                 const Icon(Icons.cloud_off, size: 48, color: Color(0xFFF59E0B)),
                 const SizedBox(height: 16),
                 const Text(
-                  'Unable to connect to the server.\n\nPlease check your internet connection and try again.',
+                  "Still setting things up.\n\nCheck your connection and retry — or sign out and back in.",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16),
                 ),
@@ -289,12 +291,18 @@ class _SplashScreenState extends State<_SplashScreen> {
                 ElevatedButton.icon(
                   onPressed: () {
                     setState(() => _timedOut = false);
-                    Future.delayed(const Duration(seconds: 10), () {
-                      if (mounted) setState(() => _timedOut = true);
-                    });
+                    _armTimeout();
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
+                ),
+                const SizedBox(height: 8),
+                // The real escape: a session that signed in but never got a
+                // profile would otherwise sit here forever.
+                TextButton(
+                  onPressed: () =>
+                      ref.read(authNotifierProvider.notifier).signOut(),
+                  child: const Text('Sign out'),
                 ),
               ],
             ],

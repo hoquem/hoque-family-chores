@@ -32,6 +32,7 @@ class TaskListScreen extends ConsumerWidget {
   }
 
   Future<void> _handleTaskStatusUpdate(
+    BuildContext context,
     WidgetRef ref,
     FamilyId familyId,
     String taskId,
@@ -62,6 +63,14 @@ class TaskListScreen extends ConsumerWidget {
         error: e,
         stackTrace: s,
       );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("That didn't work — please try again."),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
     }
   }
 
@@ -141,11 +150,11 @@ class TaskListScreen extends ConsumerWidget {
                     final newStatus = newValue 
                         ? TaskStatus.completed 
                         : TaskStatus.assigned;
-                    _handleTaskStatusUpdate(ref, familyId, task.id.value, newStatus, currentUser.id);
+                    _handleTaskStatusUpdate(context, ref, familyId, task.id.value, newStatus, currentUser.id);
                   }
                 },
                 onReturnToAvailable: () {
-                  _handleTaskStatusUpdate(ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
+                  _handleTaskStatusUpdate(context, ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
                 },
               );
             },

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../di/riverpod_container.dart';
+import 'auth_notifier.dart';
 import '../../../domain/entities/redemption.dart';
 import '../../../domain/entities/reward.dart';
 import '../../../domain/value_objects/family_id.dart';
@@ -39,6 +40,7 @@ Future<List<Redemption>> outstandingClaims(
   final now = DateTime.now();
 
   final live = <Redemption>[];
+  var refunded = false;
   for (final claim in all) {
     if (claim.isExpired(now)) {
       // The family let the deadline pass. Give the stars back rather than
@@ -48,9 +50,13 @@ Future<List<Redemption>> outstandingClaims(
         actor: claim.claimedBy,
         happened: false,
       );
+      refunded = true;
     } else {
       live.add(claim);
     }
   }
+  // A lazy refund put stars back on the profile — re-read it so the balance
+  // shown updates. The claim is now settled, so the next read won't loop.
+  if (refunded) ref.invalidate(authNotifierProvider);
   return live;
 }

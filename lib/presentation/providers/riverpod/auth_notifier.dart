@@ -255,10 +255,13 @@ class AuthNotifier extends _$AuthNotifier {
     if (lookupFailure != null && lookupFailure is! NotFoundFailure) {
       _logger.e('AuthNotifier: Could not read profile after OAuth',
           error: lookupFailure.message);
+      // Signed in but the profile couldn't be read — roll back rather than
+      // strand them on the splash.
+      await _signOutQuietly();
       state = state.copyWith(
         isLoading: false,
-        errorMessage: lookupFailure.message,
-        status: AuthStatus.error,
+        errorMessage: 'Could not load your account. Please try again.',
+        status: AuthStatus.unauthenticated,
       );
       return;
     }
@@ -290,10 +293,15 @@ class AuthNotifier extends _$AuthNotifier {
       if (initFailure != null) {
         _logger.e('AuthNotifier: Failed to create OAuth user profile',
             error: initFailure.message);
+        // Never leave a signed-in user with no profile — that strands them on
+        // the splash forever (FamilyGate keys on a null user). Roll the session
+        // back so they land on Login and can retry.
+        await _signOutQuietly();
         state = state.copyWith(
           isLoading: false,
-          errorMessage: initFailure.message,
-          status: AuthStatus.error,
+          errorMessage:
+              'Could not finish setting up your account. Please try again.',
+          status: AuthStatus.unauthenticated,
         );
         return;
       }
@@ -351,6 +359,44 @@ class AuthNotifier extends _$AuthNotifier {
         );
       },
     );
+  }
+
+  /// Leaves the family the current user belongs to.
+  ///
+  /// Returns ``null`` on success, or a human-readable error message on failure
+  /// so the caller can surface it. The user's profile stream clears the
+  /// ``familyId`` on success, which routes them back to family onboarding.
+  Future<String?> leaveFamily() async {
+    final user = state.user;
+    if (user == null) {
+      return 'You must be signed in to leave a family.';
+    }
+    _logger.d('AuthNotifier: ${user.id} leaving family ${user.familyId}');
+
+    final result =
+        await ref.read(leaveFamilyUseCaseProvider).call(userId: user.id);
+
+    return result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Leave family failed: ${failure.message}');
+        return failure.message;
+      },
+      (_) {
+        _logger.i('AuthNotifier: ${user.id} left their family');
+        return null;
+      },
+    );
+  }
+
+  /// Rolls back a signed-in Firebase session (best-effort) without touching the
+  /// app state — used when OAuth succeeded but the profile couldn't be set up,
+  /// to avoid stranding the user on the splash with no way out.
+  Future<void> _signOutQuietly() async {
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (e) {
+      _logger.w('AuthNotifier: sign-out during OAuth rollback failed: $e');
+    }
   }
 
   /// Signs out the current user.

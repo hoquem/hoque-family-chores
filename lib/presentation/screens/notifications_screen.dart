@@ -68,7 +68,9 @@ class _NotificationTile extends ConsumerWidget {
           notification.isRead
               ? Icons.notifications_none
               : Icons.notifications_active,
-          color: notification.isRead ? context.tokens.inkMuted : context.tokens.amberWarn,
+          color: notification.isRead
+              ? context.tokens.inkMuted
+              : context.tokens.amberWarnDeep,
         ),
         title: Text(
           notification.title,

@@ -89,6 +89,15 @@ class _FailingTaskRepository extends MockTaskRepository {
     }
     return super.getTasksForFamily(familyId);
   }
+
+  @override
+  Stream<List<Task>> streamTasks(FamilyId familyId) async* {
+    // Home watches the stream now, so the failure must arrive that way too.
+    if (failTasks) {
+      throw const ServerException('network unreachable', code: 'X');
+    }
+    yield* super.streamTasks(familyId);
+  }
 }
 
 Future<ProviderContainer> _pumpHome(

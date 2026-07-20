@@ -163,7 +163,7 @@ final rewardRepositoryProvider = AutoDisposeProvider<RewardRepository>.internal(
 // ignore: unused_element
 typedef RewardRepositoryRef = AutoDisposeProviderRef<RewardRepository>;
 String _$claimRewardUseCaseHash() =>
-    r'8b99db9e253754624da64972fd4b74492316a3cb';
+    r'cc6b29dd5c3422f8ec6cb38659467bf859a20e37';
 
 /// See also [claimRewardUseCase].
 @ProviderFor(claimRewardUseCase)
@@ -775,6 +775,26 @@ final removeMemberUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RemoveMemberUseCaseRef = AutoDisposeProviderRef<RemoveMemberUseCase>;
+String _$leaveFamilyUseCaseHash() =>
+    r'7e91e4a9974eca810806aa13f237e5b31f61e3fd';
+
+/// See also [leaveFamilyUseCase].
+@ProviderFor(leaveFamilyUseCase)
+final leaveFamilyUseCaseProvider =
+    AutoDisposeProvider<LeaveFamilyUseCase>.internal(
+      leaveFamilyUseCase,
+      name: r'leaveFamilyUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$leaveFamilyUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LeaveFamilyUseCaseRef = AutoDisposeProviderRef<LeaveFamilyUseCase>;
 String _$getFamilyMembersUseCaseHash() =>
     r'930bf389198021e51a67bacf096424e7b7667b30';
 

@@ -56,8 +56,8 @@ await check('a parent CANNOT change a child\'s points', updateDoc(doc(alice, 'us
 console.log('\n-- normal profile edits still work --');
 await check('a child CAN edit their own name', updateDoc(doc(bob, 'users/bob'), { name: 'Bobby' }), true);
 await check('a parent CAN edit a family member (non-points)', updateDoc(doc(alice, 'users/bob'), { role: 'guardian' }), true);
-await check('signing up with points > 0 is rejected', setDoc(doc(charlie, 'users/charlie'), { familyId: 'famA', role: 'child', points: 500 }), false);
-await check('signing up with points 0 is allowed', setDoc(doc(charlie, 'users/charlie'), { familyId: 'famA', role: 'child', points: 0 }), true);
+await check('signing up with points > 0 is rejected', setDoc(doc(charlie, 'users/charlie'), { familyId: '', role: 'child', points: 500 }), false);
+await check('signing up with points 0 is allowed', setDoc(doc(charlie, 'users/charlie'), { familyId: '', role: 'child', points: 0 }), true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await testEnv.cleanup();
