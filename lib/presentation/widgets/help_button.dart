@@ -121,7 +121,8 @@ const kTasksHelp = HelpContent(
   points: [
     "Every chore in your family lives here — yours and everyone else's.",
     'Tap the + button to add a new chore.',
-    "Do a chore, mark it done, then someone else checks it off and you get your stars.",
+    "Tap “I'll do it!” to grab a chore, do it, then tap “I've done it!”.",
+    'Someone else checks your work and gives you the stars.',
   ],
 );
 
@@ -130,7 +131,7 @@ const kRewardsHelp = HelpContent(
   points: [
     'Turn stars into fun family things — a walk, a game, a treat.',
     'Anyone can add a treat. Tap + to suggest one.',
-    'When you have enough stars, tap a treat to claim it.',
+    'When you have enough stars, tap a treat to get it.',
   ],
 );
 
