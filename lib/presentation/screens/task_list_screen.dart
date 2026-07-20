@@ -137,6 +137,8 @@ class TaskListScreen extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () => _refreshData(ref, familyId),
           child: ListView.builder(
+            // Bottom room so the add-task FAB never sits over the last tile.
+            padding: const EdgeInsets.only(bottom: 88),
             itemCount: tasks.length,
             itemBuilder: (context, index) {
               final task = tasks[index];

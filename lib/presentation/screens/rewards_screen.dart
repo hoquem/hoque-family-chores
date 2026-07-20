@@ -59,7 +59,9 @@ class RewardsScreen extends ConsumerWidget {
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          // Extra bottom room so the FAB never overlaps the last reward's
+          // actions (a plain 16 leaves the ⋯ menu under the button).
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
           children: [
             _BalanceCard(points: user.points.value),
             const SizedBox(height: 8),

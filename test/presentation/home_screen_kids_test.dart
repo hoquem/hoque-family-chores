@@ -34,6 +34,7 @@ Task _task({
   TaskStatus status = TaskStatus.assigned,
   DateTime? due,
   DateTime? completedAt,
+  DateTime? approvedAt,
   int points = 10,
 }) {
   return Task(
@@ -47,6 +48,10 @@ Task _task({
     createdById: UserId('user_1'),
     createdAt: DateTime.now().subtract(const Duration(days: 1)),
     completedAt: completedAt,
+    // A completed task is an approved one: streak and weekly stars key off
+    // approval, so mirror that here unless a case overrides it.
+    approvedAt: approvedAt ??
+        (status == TaskStatus.completed ? completedAt : null),
     points: Points(points),
     tags: const [],
     familyId: _familyId,

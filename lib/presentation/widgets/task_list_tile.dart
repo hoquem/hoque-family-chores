@@ -316,7 +316,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task approved! Points awarded.'),
+            content: Text('Task approved! Stars awarded.'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -686,7 +686,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           ),
                           const SizedBox(width: 8.0),
                           Text(
-                            '${widget.task.points} pts',
+                            '${widget.task.points} ⭐',
                             style: TextStyle(
                               fontSize: 14.0,
                               color: context.tokens.inkSoft,

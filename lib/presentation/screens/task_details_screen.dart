@@ -573,7 +573,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               children: [
                 Icon(Icons.star, color: t.starGold, size: 18),
                 const SizedBox(width: 4),
-                Text('${task.points.value} pts', style: metaStyle),
+                Text('${task.points.value} stars', style: metaStyle),
                 const SizedBox(width: 16),
                 Icon(
                   Icons.calendar_today,

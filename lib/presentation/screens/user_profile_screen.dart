@@ -97,7 +97,7 @@ class UserProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Total Points: ${currentUser.points.value}',
+                  'Total Stars: ${currentUser.points.value} ⭐',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
@@ -153,15 +153,16 @@ class UserProfileScreen extends ConsumerWidget {
           const Divider(),
           const SizedBox(height: 16),
 
-          // Logout Button Section
+          // Logout Button Section — a neutral outline, not a red fill: logging
+          // out is routine and reversible, so red is reserved for the one
+          // destructive control on this screen (Delete Account).
           Center(
-            child: ElevatedButton.icon(
+            child: OutlinedButton.icon(
               icon: const Icon(Icons.exit_to_app),
               label: const Text('Logout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.tokens.brickDeep,
-                // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
-                foregroundColor: context.tokens.cream,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.tokens.ink,
+                side: BorderSide(color: context.tokens.inkMuted),
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
               onPressed: () async {
