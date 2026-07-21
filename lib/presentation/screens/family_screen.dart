@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -79,35 +78,6 @@ class _FamilyDetailsView extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
-              const SizedBox(height: 16),
-              if (family.inviteCode.isNotEmpty)
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.key),
-                    title: const Text('Invite code'),
-                    subtitle: Text(
-                      family.inviteCode,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: 'Copy invite code',
-                      onPressed: () {
-                        Clipboard.setData(
-                          ClipboardData(text: family.inviteCode),
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Invite code copied'),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
               const SizedBox(height: 16),
               Text(
                 'Members',
