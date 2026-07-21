@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -49,7 +50,14 @@ class _FamilyDetailsView extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Family'),
-        actions: const [HelpButton(content: kFamilyHelp)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt),
+            tooltip: 'Invite someone',
+            onPressed: () => _showInviteCode(context, ref),
+          ),
+          const HelpButton(content: kFamilyHelp),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -128,4 +136,61 @@ class _FamilyDetailsView extends ConsumerWidget {
     );
   }
 
+  /// Shows the family's invite code so it can be shared with someone joining.
+  /// Kept as an on-demand action rather than an always-on card — inviting is
+  /// rare, but this is where people look for it.
+  Future<void> _showInviteCode(BuildContext context, WidgetRef ref) async {
+    String? code;
+    try {
+      final family =
+          await ref.read(familyNotifierProvider(currentUser.familyId).future);
+      code = family.inviteCode;
+    } catch (_) {
+      code = null;
+    }
+    if (!context.mounted) return;
+    if (code == null || code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load the invite code.")),
+      );
+      return;
+    }
+    final inviteCode = code;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Invite someone'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Share this code so they can join your family:'),
+            const SizedBox(height: 16),
+            SelectableText(
+              inviteCode,
+              style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: inviteCode));
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Invite code copied')),
+              );
+            },
+            child: const Text('Copy'),
+          ),
+        ],
+      ),
+    );
+  }
 }

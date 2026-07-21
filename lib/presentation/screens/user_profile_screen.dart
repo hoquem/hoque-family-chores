@@ -1,11 +1,8 @@
 // lib/presentation/screens/user_profile_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/about_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
@@ -58,66 +55,6 @@ class UserProfileScreen extends ConsumerWidget {
     } else {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
-  }
-
-  /// Shows the family's invite code so it can be shared with someone joining.
-  /// The code lives on the family, not the user, so it's fetched on demand.
-  Future<void> _showInviteCode(
-    BuildContext context,
-    WidgetRef ref,
-    FamilyId familyId,
-  ) async {
-    String? code;
-    try {
-      final family = await ref.read(familyNotifierProvider(familyId).future);
-      code = family.inviteCode;
-    } catch (_) {
-      code = null;
-    }
-    if (!context.mounted) return;
-    if (code == null || code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Couldn't load the invite code.")),
-      );
-      return;
-    }
-    final inviteCode = code;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Invite someone'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Share this code so they can join your family:'),
-            const SizedBox(height: 16),
-            SelectableText(
-              inviteCode,
-              style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
-                    letterSpacing: 3,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
-          ),
-          TextButton(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: inviteCode));
-              Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Invite code copied')),
-              );
-            },
-            child: const Text('Copy'),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Confirms intent, then leaves the family. On success the profile stream
@@ -246,21 +183,15 @@ class UserProfileScreen extends ConsumerWidget {
             ),
           ),
 
-          // Inviting and leaving are both rare, family-membership actions, so
-          // they live here rather than cluttering the Family screen (which is
-          // now just the member roster). Shown only when in a family.
-          if (currentUser.familyId.value.isNotEmpty) ...[
-            ListTile(
-              leading: const Icon(Icons.person_add_alt),
-              title: const Text('Invite someone'),
-              onTap: () => _showInviteCode(context, ref, currentUser.familyId),
-            ),
+          // Leaving is rare and reversible (you can rejoin with a code), so it
+          // lives here with the other account actions rather than on the Family
+          // screen — and only shows when you're actually in a family.
+          if (currentUser.familyId.value.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.group_remove),
               title: const Text('Leave family'),
               onTap: () => _confirmAndLeave(context, ref),
             ),
-          ],
 
           ListTile(
             leading: Icon(Icons.delete_forever, color: context.tokens.brick),
