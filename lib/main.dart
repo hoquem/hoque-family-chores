@@ -146,6 +146,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Chores Star',
+      debugShowCheckedModeBanner: false,
       // "Fridge Door" palette (DESIGN.md): marigold seed, star-gold secondary,
       // coral tertiary, brick error, warm-cream surfaces. fromSeed derives
       // onPrimary as dark (marigold is light), so default FilledButton text is
@@ -183,6 +184,7 @@ class ErrorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Center(
           child: Padding(
