@@ -151,17 +151,6 @@ class _FamilyDetailsView extends ConsumerWidget {
                       .toList(),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Divider(),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.logout),
-                label: const Text('Leave family'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                ),
-                onPressed: () => _confirmAndLeave(context, ref),
-              ),
             ],
           ),
         ),
@@ -169,45 +158,4 @@ class _FamilyDetailsView extends ConsumerWidget {
     );
   }
 
-  /// Confirms intent, then leaves the family. On success the user's profile
-  /// stream clears their ``familyId`` and the Family tab routes to onboarding;
-  /// on failure we surface the reason rather than silently swallowing it.
-  Future<void> _confirmAndLeave(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Leave family?'),
-        content: const Text(
-          "You'll lose access to this family's tasks and treats. Your star "
-          'balance stays on your account. You can join again with an invite '
-          'code.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.error,
-            ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Leave'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    final error = await ref.read(authNotifierProvider.notifier).leaveFamily();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error ?? 'You left the family.'),
-        backgroundColor:
-            error == null ? null : Theme.of(context).colorScheme.error,
-      ),
-    );
-  }
 }

@@ -57,6 +57,48 @@ class UserProfileScreen extends ConsumerWidget {
     }
   }
 
+  /// Confirms intent, then leaves the family. On success the profile stream
+  /// clears the user's ``familyId`` — this row disappears and the Family tab
+  /// routes to onboarding; on failure we surface the reason.
+  Future<void> _confirmAndLeave(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave family?'),
+        content: const Text(
+          "You'll lose access to this family's tasks and treats. Your star "
+          'balance stays on your account. You can join again with an invite '
+          'code.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final error = await ref.read(authNotifierProvider.notifier).leaveFamily();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'You left the family.'),
+        backgroundColor:
+            error == null ? null : Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
@@ -140,6 +182,16 @@ class UserProfileScreen extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const AboutScreen()),
             ),
           ),
+
+          // Leaving is rare and reversible (you can rejoin with a code), so it
+          // lives here with the other account actions rather than on the Family
+          // screen — and only shows when you're actually in a family.
+          if (currentUser.familyId.value.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.group_remove),
+              title: const Text('Leave family'),
+              onTap: () => _confirmAndLeave(context, ref),
+            ),
 
           ListTile(
             leading: Icon(Icons.delete_forever, color: context.tokens.brick),
