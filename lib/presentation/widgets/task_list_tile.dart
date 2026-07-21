@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/available_tasks_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
@@ -63,18 +62,15 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
 
     try {
       final familyId = widget.task.familyId;
-      final availableTasksNotifier =
-          ref.read(availableTasksNotifierProvider(familyId).notifier);
-      final taskListNotifier =
-          ref.read(taskListNotifierProvider(familyId).notifier);
-
-      await availableTasksNotifier.claimTask(
-        widget.task.id.value,
-        widget.user.id,
-        familyId,
-      );
-
-      await taskListNotifier.refresh();
+      // Claim through the notifier the Tasks tab actually watches. The
+      // available-tasks notifier isn't loaded on this screen, and its claim
+      // path null-checks its own (absent) state — so it threw *after* the
+      // claim had already gone through, reporting a false "failed" while the
+      // task really had been taken. This path refreshes the visible list via
+      // invalidateSelf, matching the details screen and home hub.
+      await ref
+          .read(taskListNotifierProvider(familyId).notifier)
+          .claimTask(widget.task.id.value, widget.user.id, familyId);
       _logger.i(
           'TaskListTile: Successfully took ownership of task ${widget.task.id}');
     } catch (e) {
@@ -82,7 +78,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       if (mounted) {
         setState(() {
           _isError = true;
-          _errorMessage = 'Failed to take ownership of task';
+          _errorMessage = "Couldn't take this one — please try again.";
         });
       }
     } finally {
