@@ -99,14 +99,14 @@ class TaskListNotifier extends _$TaskListNotifier {
   /// Deletes a task.
   Future<void> deleteTask(String taskId) async {
     _logger.d('TaskListNotifier: Deleting task $taskId');
-    
+
     try {
       final deleteTaskUseCase = ref.read(deleteTaskUseCaseProvider);
       final result = await deleteTaskUseCase.call(
         taskId: TaskId(taskId),
         familyId: familyId,
       );
-      
+
       result.fold(
         (failure) => throw Exception(failure.message),
         (_) {
@@ -117,6 +117,27 @@ class TaskListNotifier extends _$TaskListNotifier {
     } catch (e) {
       _logger.e('TaskListNotifier: Error deleting task', error: e);
       throw Exception('Failed to delete task: $e');
+    }
+  }
+
+  /// Removes a task's before/after photos (blobs + URLs); the task stays.
+  Future<void> clearPhotos(String taskId) async {
+    _logger.d('TaskListNotifier: Clearing photos for task $taskId');
+    try {
+      final result = await ref.read(clearTaskPhotosUseCaseProvider).call(
+            taskId: TaskId(taskId),
+            familyId: familyId,
+          );
+      result.fold(
+        (failure) => throw Exception(failure.message),
+        (_) {
+          _logger.d('TaskListNotifier: Task photos cleared');
+          ref.invalidateSelf();
+        },
+      );
+    } catch (e) {
+      _logger.e('TaskListNotifier: Error clearing task photos', error: e);
+      throw Exception('Failed to clear task photos: $e');
     }
   }
 

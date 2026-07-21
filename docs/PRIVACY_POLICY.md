@@ -30,8 +30,12 @@ rewards, and reward claims — stored so the App can function.
 
 **Photos (only if enabled).** For chores where a parent turns on "photo proof",
 the child may take a **before** and **after** photo. These are stored in Google
-Firebase Storage, visible only to members of that family, and are **deleted when
-the chore is approved**. Photos are used solely as proof of a completed chore.
+Firebase Storage, visible only to members of that family, and are used solely as
+proof of a completed chore. When the chore is approved, the before photo is
+removed and the after photo may become your family's Home-screen background. **All
+chore photos are automatically and permanently deleted 90 days after they are
+uploaded**, and a parent can delete a chore's photos sooner at any time from
+within the App (open the chore, then menu → Delete photos).
 
 **Notifications.** If you enable notifications, we use Firebase Cloud Messaging,
 which generates a device token so we can send reminders and approval alerts.

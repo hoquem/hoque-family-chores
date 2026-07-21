@@ -148,6 +148,61 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     }
   }
 
+  /// Removes just this chore's photos (blobs + URLs); the chore stays. Photos
+  /// also expire automatically after 90 days, but this is the immediate,
+  /// on-demand way to take them down.
+  Future<void> _handleClearPhotos() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete photos?'),
+        content: const Text(
+          "This removes this chore's before and after photos. The chore itself "
+          'stays. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: context.tokens.brick),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(taskListNotifierProvider(task.familyId).notifier)
+          .clearPhotos(task.id.value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Photos deleted'),
+            backgroundColor: context.tokens.inkSoft,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error clearing photos: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete photos: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleDeleteTask() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -422,6 +477,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               onSelected: (value) {
                 if (value == 'edit') _handleEditTask();
                 if (value == 'delete') _handleDeleteTask();
+                if (value == 'clearPhotos') _handleClearPhotos();
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -434,6 +490,17 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                     ],
                   ),
                 ),
+                if (task.beforePhotoUrl != null || task.photoUrl != null)
+                  const PopupMenuItem(
+                    value: 'clearPhotos',
+                    child: Row(
+                      children: [
+                        Icon(Icons.hide_image_outlined),
+                        SizedBox(width: 12),
+                        Text('Delete photos'),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'delete',
                   child: Row(
