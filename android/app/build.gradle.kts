@@ -19,7 +19,11 @@ plugins {
 
 android {
     namespace = "com.hoque.familychores"
-    compileSdk = flutter.compileSdkVersion
+    // Google Play requires apps to target Android 16 (API 36). Flutter 3.32.5's
+    // default (flutter.compileSdkVersion/targetSdkVersion) is below 36, so we
+    // pin both explicitly. AGP 8.7.0 + the installed android-36 platform support
+    // this without a Flutter upgrade.
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -44,7 +48,7 @@ android {
         // manifest merge. 23 (Android 6.0, 2015) is a fine floor for a family
         // app. See #129.
         minSdk = maxOf(23, flutter.minSdkVersion)
-        targetSdk = flutter.targetSdkVersion // Keep this as is
+        targetSdk = 36 // Google Play requirement: target Android 16 (API 36)
         versionCode = flutter.versionCode      // Keep this as is
         versionName = flutter.versionName      // Keep this as is
     }
