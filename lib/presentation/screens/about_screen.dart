@@ -95,7 +95,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
               children: [
                 const Icon(Icons.home_rounded, size: 56, color: Color(0xFFE08A1E)),
                 const SizedBox(height: 8),
-                Text('Home Chores Star',
+                Text('Chores Star',
                     style: Theme.of(context).textTheme.titleLarge),
                 if (_version.isNotEmpty)
                   Text('Version $_version',

@@ -1,4 +1,4 @@
-# Privacy Policy — Home Chores Star
+# Privacy Policy — Chores Star
 
 _Last updated: 18 July 2026_
 
@@ -6,7 +6,7 @@ _Last updated: 18 July 2026_
 > by a qualified professional before you rely on it, especially the children's-data
 > sections, and confirm the data-storage region matches your Firebase project.
 
-Home Chores Star ("the App", "we", "us"), provided by **Mahmudul Hoque**, is a
+Chores Star ("the App", "we", "us"), provided by **Mahmudul Hoque**, is a
 private family chore-management app. Parents and guardians set up a family, add
 chores, and children complete them to earn stars they can spend on family
 rewards. This policy explains what information the App collects, why, and the

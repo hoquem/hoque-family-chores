@@ -1,4 +1,4 @@
-# Terms & Conditions / End-User Licence Agreement — Home Chores Star
+# Terms & Conditions / End-User Licence Agreement — Chores Star
 
 _Last updated: 18 July 2026_
 
@@ -6,7 +6,7 @@ _Last updated: 18 July 2026_
 > by a qualified professional before you rely on it.
 
 These Terms & Conditions ("Terms") are a legal agreement between you and
-**Mahmudul Hoque** ("we", "us") governing your use of the Home Chores Star app
+**Mahmudul Hoque** ("we", "us") governing your use of the Chores Star app
 ("the App"). By downloading, creating an account, or using the App, you agree to
 these Terms. If you do not agree, do not use the App.
 

@@ -271,7 +271,7 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
               const Icon(Icons.home_rounded, size: 64, color: Color(0xFFE08A1E)),
               const SizedBox(height: 24),
               const Text(
-                'Home Chores Star',
+                'Chores Star',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
