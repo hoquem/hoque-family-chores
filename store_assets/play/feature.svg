@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FB8C00"/>
+      <stop offset="0.55" stop-color="#E08A1E"/>
+      <stop offset="1" stop-color="#C6412A"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <g fill="#FFD980" opacity="0.55">
+    <path d="M 905,70 Q 917,112 959,124 Q 917,136 905,178 Q 893,136 851,124 Q 893,112 905,70 Z"/>
+    <path d="M 470,430 Q 478,456 504,464 Q 478,472 470,498 Q 462,472 436,464 Q 462,456 470,430 Z"/>
+    <path d="M 980,330 Q 986,350 1006,356 Q 986,362 980,382 Q 974,362 954,356 Q 974,350 980,330 Z"/>
+  </g>
+  <!-- app glyph: cream house + gold star, ink outline -->
+  <g transform="translate(214,244) scale(0.48) translate(-512,-520)">
+    <path d="M 512,232 L 834,492 L 834,808 L 190,808 L 190,492 Z"
+          fill="#FBF7F0" stroke="#241D14" stroke-width="34" stroke-linejoin="round"/>
+    <path d="M 512,378 Q 546,508 674,542 Q 546,576 512,706 Q 478,576 350,542 Q 478,508 512,378 Z"
+          fill="#FFB300" stroke="#241D14" stroke-width="26" stroke-linejoin="round"/>
+  </g>
+  <text x="426" y="236" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif"
+        font-size="96" font-weight="700" fill="#FBF7F0">Chores Star</text>
+  <text x="430" y="300" font-family="Helvetica, Arial, sans-serif"
+        font-size="40" fill="#FBF7F0">Chores, stars &amp; family treats</text>
+  <text x="430" y="366" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif"
+        font-size="34" font-weight="700" fill="#241D14">Do chores  •  Earn stars  •  Get treats</text>
+</svg>
