@@ -65,7 +65,10 @@ families/{familyId}/taskRules/{ruleId}
 - **Layer 2 — In-app events** (no hardware): the existing economy Cloud Functions
   already fire on task-complete / reward-redeem; they emit an internal event that
   matches `inAppEvent` rules and spawns follow-on chores (task-completion chains,
-  a redeemed reward creating a setup chore).
+  a redeemed reward creating a setup chore). Note the lifecycle moment precisely:
+  the "task completed" economy event fires at **approval** time (`approveTask`),
+  not when the child submits (`pendingApproval`) — chain rules must hook approval
+  unless a rule explicitly wants the submission moment.
 - **Layer 2 — External feeds** (no hardware): the scheduled function also polls
   weather / calendar and matches `externalFeed` rules ("rain tomorrow → bring in
   the cushions", "guests Friday → tidy the lounge").
@@ -83,9 +86,13 @@ families/{familyId}/taskRules/{ruleId}
    family feature when combined with the reward economy. New rules default to
    *unassigned* ("up for grabs"); rotation is opt-in.
 2. **Idempotency is mandatory.** Every auto-create carries a key
-   (`ruleId + occurrence-window` for schedules, the event id for webhooks) so a
-   double scheduler tick or a chatty sensor cannot spawn duplicate chores. This
-   mirrors the atomicity care already in the economy code.
+   (`ruleId + occurrence-window` for schedules) so a double scheduler tick cannot
+   spawn duplicate chores. This mirrors the atomicity care already in the economy
+   code. For webhooks, do **not** trust sender-supplied event ids — Home
+   Assistant/IFTTT payloads don't inherently carry unique ids, and a chatty
+   sensor sends *distinct* requests, not duplicates of one id. Use a server-side
+   dedup window instead (e.g., `ruleId + time-bucket`, same pattern as
+   schedules).
 3. **Webhook security: token in a header, never the URL.** A per-family secret,
    stored hashed; the family pastes it into their home-automation tool. No
    secrets in query strings (consistent with the app's privacy stance).
@@ -106,9 +113,18 @@ So completed tasks must **not** be silently deleted. The rule:
 
 - **Soft-archive** anything history needs (completed/approved tasks): set an
   `archived` flag so it drops out of the active list but the record survives for
-  stats. Optionally roll stats into a per-family summary before any eventual
-  hard-delete, so deletion can never change a streak.
+  stats.
 - **Hard-delete** only genuinely disposable records.
+
+**⚠️ The single biggest correctness trap for a future planner:** streaks and the
+weekly leaderboard are computed **client-side from the fetched task list**
+(`lib/domain/services/home_stats.dart`). If the client query filters out
+archived tasks (the natural implementation of "drops out of the active list"),
+long streaks spanning beyond the archive window would silently truncate. When
+Pillar 2 gets its own spec, one of these MUST hold — it is not optional:
+(a) the stats computation still reads archived completed tasks, or
+(b) a per-family stats roll-up is **mandatory** before archiving anything a
+streak or leaderboard depends on.
 
 This is explicitly *not* a fallback that hides a problem — it is retention that
 preserves the data the app actually depends on.
@@ -117,7 +133,7 @@ preserves the data the app actually depends on.
 
 | Item | Trigger | Action |
 |------|---------|--------|
-| **Unclaimed task** ("up for grabs") | past due date + grace, or N days old with no claim | expire → `expired` status, then hard-delete after a short tail (ties into the existing overdue handling) |
+| **Unclaimed task** ("up for grabs") | past due date + grace, or N days old with no claim | expire → `expired` status, then hard-delete after a short tail (ties into the existing overdue handling). **Deploy-ordering constraint:** `expired` is a new `TaskStatus` enum value — old clients parsing an unknown status may break, so the client release must ship before/with the function (same lesson as firestore.rules shipping with the client build). |
 | **Completed / approved task** | approved + N days | **soft-archive** (drop from active list, keep for streak/stats) |
 | **Rejected task** | rejected + N days, not resubmitted | hard-delete |
 | **Treats / rewards** | time-limited treat past its window; or reward disabled | expire / hide |
