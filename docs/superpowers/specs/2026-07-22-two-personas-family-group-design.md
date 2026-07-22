@@ -27,8 +27,9 @@ personas** —
 ## Decisions (settled during brainstorm)
 
 1. **Depth: copy + roles reskin, not structural changes.** Same flows, same
-   engine, same Cloud Functions. Group mode changes wording, hides the kids'
-   trappings, and flattens roles. No new mechanics.
+   engine; server-side cost is two guarded branches (section 3), not new
+   mechanics. Group mode changes wording, hides the kids' trappings, and
+   flattens roles.
 2. **Economy in group mode: points + leaderboard, no Treats.** Earning points,
    streaks, and the weekly leaderboard stay (renamed from stars ⭐) — that is
    the fairness signal an HMO actually wants. The Treats/redemption tab is
@@ -176,9 +177,11 @@ Notes:
 
 - Task lifecycle, photo proof, overdue handling, ordering.
 - Server-side economy — points accrue identically; the only functions change
-  is the `approveTask` parent-override guard for group spaces (section 3).
+  is the `approveTask` parent-override guard for group spaces (section 3),
+  plus optionally the deferred `claimReward` guard (section 4).
 - Firestore security rules — except the group-space member-edit guard
-  (section 3). Both guards are no-ops for family spaces.
+  (section 3) and optionally a deferred rules-level child-join guard
+  (section 2). All guards are no-ops for family spaces.
 - Family persona pixel-for-pixel: **this feature must be provably zero-risk
   to the shipped family experience.**
 
