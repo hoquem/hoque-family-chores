@@ -50,7 +50,11 @@ groupType: "family" | "group"     # absent ⇒ "family"
 ```
 
 - **Zero migration:** every existing family document lacks the field and is
-  treated as `family`.
+  treated as `family` (deserialization is already a per-field-default map, so
+  this is a one-line fallback). Nuance: `updateFamily` writes the full map,
+  so old docs get `groupType: "family"` stamped in organically on their next
+  edit — the "absent ⇒ family" fallback must therefore be kept forever, since
+  backfill is never guaranteed complete.
 - All members of a space see the same persona; a user who later belongs to
   both a family and a flat-share gets the right skin in each.
 - The `families` collection, `familyId` value objects, and repository names
@@ -68,12 +72,20 @@ state) gains one prior question: *"Who is this space for?"* →
   child-join path (`child_join_screen.dart`). Untouched.
 - **Group** — creator names the space (`groupType: "group"`), gets the same
   invite code; joiners enter through the same invite-code flow as adults.
-  The child-join path is hidden in group spaces.
 
-Joining is persona-blind: the invite code resolves the space, and the space's
-`groupType` decides everything downstream.
+**Child joins are blocked at join time, not "hidden":** both child-role entry
+points live *before* the space is known (`ChildJoinScreen` is launched
+pre-auth from the login screen, and the onboarding join card shows its
+Parent/Child selector before the code resolves). So the guard runs once the
+invite code resolves the space: if `groupType == "group"`, a child-role join
+is rejected with a clear message. The family doc is already readable at that
+point in the join flow, so the check is feasible client-side; the
+implementation spec should decide whether to also enforce it in rules.
 
-### 3. Roles: reuse the existing enum, no rules changes
+Otherwise joining is persona-blind: the invite code resolves the space, and
+the space's `groupType` decides everything downstream.
+
+### 3. Roles: reuse the existing enum, two guarded exceptions
 
 `UserRole` (`lib/domain/entities/user.dart`) is
 `parent | child | guardian | other`, with `isAdmin => parent || guardian`.
@@ -82,23 +94,47 @@ already key off these.
 
 **In group mode every member is stored with an admin-capable role**
 (`parent` internally), *displayed* as "Member" ("Admin" for the creator).
-Consequences, all free:
+What comes free:
 
 - Everyone can create/edit/delete tasks — correct for adult peers.
-- The existing approval rule — any member **except the doer** approves —
-  already fits groups perfectly. No new approval mechanics.
-- **Zero Firestore-rules changes and zero Cloud Functions changes.** This is
-  the load-bearing simplification of the whole design; if it ever breaks
-  (e.g. rules later gain family-specific parent logic), the design must be
-  revisited rather than patched around.
+- The primary approval path — any member **except the doer** approves
+  (`_canJudge` gates on `task.assignedToId != user.id`) — already fits
+  groups. No new approval mechanics.
 - Role *display names* become persona-dependent (see PersonaStrings), since
   `UserRole.displayName` currently hardcodes "Parent"/"Child".
 
+What does **not** come free — two places where parent-specific logic exists
+today and an all-parent group changes its meaning. Both need a `groupType`
+guard; the honest claim is "**two small guarded changes**", not zero:
+
+1. **`approveTask` parent-override (Cloud Functions).** `functions/index.js`
+   blocks doer-approves-self only for *non-parent* roles — a parent may
+   approve their own task ("parent override"), and the edit screen surfaces
+   it. In an all-parent group, every member could claim, complete, and
+   self-award points — gutting exactly the fairness signal groups want. Fix:
+   the override branch is disabled when the space's `groupType == "group"`
+   (server-side, so it cannot be forged around by a modified client). The
+   family path is untouched.
+2. **Parent member-edit rule (firestore.rules).** Today a parent/guardian may
+   update any same-family member's user doc (name, avatar, email, even
+   `role` — everything except `points`/`familyId`). In an all-parent group,
+   every housemate could rename or demote every other housemate (demotion to
+   `child` would silently break their approval flow). Fix: in group spaces,
+   members may edit **only their own** user doc.
+
+These two guards are the entire server-side cost of the feature. If
+implementation uncovers a third parent-special path, the roles approach must
+be revisited rather than patched around.
+
 ### 4. PersonaStrings — the core build
 
-Family copy is currently hardcoded across widgets (`task_list_tile.dart`,
+Family copy is currently hardcoded across widgets — among them
+`task_list_tile.dart` (incl. "Task approved! Stars awarded."),
 `task_details_screen.dart`, `add_task_screen.dart`, `help_button.dart`,
-`rewards_notifier.dart`, …). The feature centralizes it: a **PersonaStrings**
+`rewards_screen.dart`, and the **"Treats" tab label in
+`bottom_nav_bar.dart`** (the exact thing group mode must hide). The
+implementation spec must start with a fresh full-repo string audit rather
+than trusting this list. The feature centralizes it: a **PersonaStrings**
 resolver (provider derived from the current space's `groupType`) that every
 screen reads instead of literals.
 
@@ -107,10 +143,10 @@ screen reads instead of literals.
 | Currency | stars ⭐ | points |
 | Claim | "I'll do it!" | "Claim" |
 | Complete | "I've done it!" | "Done" |
-| Approve | "Give the stars ⭐" | "Approve" |
+| Approve | "Give the stars ⭐" (tile variant: "Give stars ⭐") | "Approve" |
 | Reject | "Send back" | "Send back" |
 | Unclaimed | "Up for grabs" | "Up for grabs" (already neutral) |
-| Rewards tab | Treats | **hidden** |
+| Rewards tab | Treats | **hidden** (client-side only — see enforcement note) |
 | Home | kids' hub (missions, celebration) | neutral dashboard: "Today's tasks", streaks, leaderboard |
 | Roles | Parent / Child / Guardian | Admin / Member |
 
@@ -122,13 +158,27 @@ Notes:
   are persona-independent math).
 - Notification copy goes through the same resolver (a group member should not
   be told to "give the stars ⭐").
+- **Family copy has minor variants today** (tile says "Give stars ⭐", the
+  details/edit screens say "Give the stars ⭐"). The "byte-identical"
+  regression guard below means PersonaStrings must preserve each variant
+  as-is — or the implementation spec explicitly notes a deliberate
+  unification.
+- **Treats enforcement boundary:** hiding the tab is client-side. The
+  `claimReward`/`settleRedemption` callables remain reachable in group
+  spaces, and rules let members write reward docs. Exposure is low — a
+  member can only spend *their own* points, and the leaderboard is
+  task-derived so it is unaffected — but the implementation spec should
+  decide whether to add a `groupType` guard to `claimReward` for tidiness or
+  accept UI-hiding for v1.
 - Open question: keep or mute the celebration confetti in group mode.
 
 ### 5. What explicitly does NOT change
 
 - Task lifecycle, photo proof, overdue handling, ordering.
-- Server-side economy (`approveTask` etc.) — points accrue identically.
-- Firestore security rules.
+- Server-side economy — points accrue identically; the only functions change
+  is the `approveTask` parent-override guard for group spaces (section 3).
+- Firestore security rules — except the group-space member-edit guard
+  (section 3). Both guards are no-ops for family spaces.
 - Family persona pixel-for-pixel: **this feature must be provably zero-risk
   to the shipped family experience.**
 
