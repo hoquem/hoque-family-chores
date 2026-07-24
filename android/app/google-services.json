@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "232697993893-7kl8dm8apvalg91bvkf7ghi6gv08u1an.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hoque.familychores",
+            "certificate_hash": "a782b562bb2bc585300d630120ab8e7cef1567fb"
+          }
+        },
+        {
           "client_id": "232697993893-7ok2hcqhbtolja2em57pefvovnojqubm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
