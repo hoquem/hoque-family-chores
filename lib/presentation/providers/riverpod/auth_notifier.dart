@@ -348,10 +348,22 @@ class AuthNotifier extends _$AuthNotifier {
           status: AuthStatus.unauthenticated,
         );
       },
-      (_) {
+      (family) {
         final userId =
             UserId(ref.read(authRepositoryProvider).currentUser.uid as String);
         _logger.d('AuthNotifier: Child joined family as $userId');
+        final analytics = ref.read(analyticsProvider);
+        analytics.log(
+          AnalyticsEventName.signedIn,
+          userId: userId.value,
+          params: const {'method': 'anonymous'},
+        );
+        analytics.log(
+          AnalyticsEventName.familyJoined,
+          userId: userId.value,
+          familyId: family.id.value,
+          params: const {'role': 'child'},
+        );
         _startUserProfileStream(userId);
         state = state.copyWith(
           isLoading: false,
