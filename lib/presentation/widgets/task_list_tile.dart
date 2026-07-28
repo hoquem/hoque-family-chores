@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
@@ -698,6 +700,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                         task: widget.task,
                         currentUser: widget.user,
                       ),
+                      _CheckedByLabel(
+                        task: widget.task,
+                        currentUser: widget.user,
+                      ),
                       if (widget.task.description.isNotEmpty) ...[
                         const SizedBox(height: 4.0),
                         Text(
@@ -752,27 +758,62 @@ class _AssigneeLabel extends ConsumerWidget {
     final assigneeId = task.assignedToId;
     if (assigneeId == null) return const SizedBox.shrink();
 
-    final String name;
-    if (assigneeId == currentUser.id) {
-      name = 'you';
-    } else {
-      final membersAsync =
-          ref.watch(familyMembersNotifierProvider(task.familyId));
-      name = membersAsync.maybeWhen(
-        data: (members) {
-          for (final m in members) {
-            if (m.id == assigneeId) return m.name;
-          }
-          return 'someone in the family';
-        },
-        orElse: () => '…',
-      );
-    }
+    final name = _memberDisplayName(ref, task.familyId, assigneeId, currentUser);
 
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Text(
         'Assigned to: $name',
+        style: TextStyle(fontSize: 14.0, color: context.tokens.inkSoft),
+      ),
+    );
+  }
+}
+
+/// Resolves a family member's display name for a tile label: 'you' for the
+/// viewer, the member's name once the roster has loaded, '…' while it loads.
+String _memberDisplayName(
+  WidgetRef ref,
+  FamilyId familyId,
+  UserId memberId,
+  User currentUser,
+) {
+  if (memberId == currentUser.id) return 'you';
+  final membersAsync = ref.watch(familyMembersNotifierProvider(familyId));
+  return membersAsync.maybeWhen(
+    data: (members) {
+      for (final m in members) {
+        if (m.id == memberId) return m.name;
+      }
+      return 'someone in the family';
+    },
+    orElse: () => '…',
+  );
+}
+
+/// The "Checked by: …" line on a completed chore — the transparency half of
+/// peer approval: anyone but the doer may sign a chore off, so the family can
+/// see who did. Renders nothing when no approver is on record (chores
+/// completed before approvedBy existed).
+class _CheckedByLabel extends ConsumerWidget {
+  const _CheckedByLabel({required this.task, required this.currentUser});
+
+  final Task task;
+  final User currentUser;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final approverId = task.approvedBy;
+    if (task.status != TaskStatus.completed || approverId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final name = _memberDisplayName(ref, task.familyId, approverId, currentUser);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4.0),
+      child: Text(
+        'Checked by: $name',
         style: TextStyle(fontSize: 14.0, color: context.tokens.inkSoft),
       ),
     );
