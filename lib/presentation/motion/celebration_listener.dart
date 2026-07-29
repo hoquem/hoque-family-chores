@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_overlay.dart';
+import 'package:hoque_family_chores/presentation/motion/star_award_watcher.dart';
 
 /// Bridges the celebration queue to the screen: plays the queue's head as an
 /// overlay above [child], advancing when each one finishes. Mounted once,
@@ -13,6 +14,7 @@ class CelebrationListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(starAwardWatcherProvider);
     final queue = ref.watch(celebrationQueueProvider);
     return Stack(
       children: [
