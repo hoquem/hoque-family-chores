@@ -113,17 +113,30 @@ void main() {
     queue.celebrate(const StarsAwarded(10));
     queue.celebrate(const StreakMilestone(7));
 
-    expect(container.read(celebrationQueueProvider), const [
-      StarsAwarded(10),
-      StreakMilestone(7),
-    ]);
+    List<CelebrationKind> kinds() =>
+        container.read(celebrationQueueProvider).map((q) => q.kind).toList();
+
+    expect(kinds(), const [StarsAwarded(10), StreakMilestone(7)]);
 
     queue.advance();
-    expect(container.read(celebrationQueueProvider), const [StreakMilestone(7)]);
+    expect(kinds(), const [StreakMilestone(7)]);
     queue.advance();
-    expect(container.read(celebrationQueueProvider), isEmpty);
+    expect(kinds(), isEmpty);
     queue.advance(); // advancing an empty queue is a no-op, not a crash
-    expect(container.read(celebrationQueueProvider), isEmpty);
+    expect(kinds(), isEmpty);
+  });
+
+  test('each entry gets a unique sequence number, even for equal kinds', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final queue = container.read(celebrationQueueProvider.notifier);
+
+    queue.celebrate(const StarsAwarded(10));
+    queue.celebrate(const StarsAwarded(10)); // identical payoff twice
+    final entries = container.read(celebrationQueueProvider);
+    expect(entries[0].seq, isNot(entries[1].seq),
+        reason: 'the overlay keys off seq — equal kinds must still be '
+            'distinct entries or the second show never restarts');
   });
 
   test('kinds carry their payloads and compare by value', () {
@@ -179,14 +192,25 @@ class StreakMilestone extends CelebrationKind {
   int get hashCode => Object.hash(runtimeType, days);
 }
 
+/// A queued celebration. The sequence number exists for the overlay's widget
+/// key: two identical payoffs (e.g. +10 twice) must still restart the show.
+class QueuedCelebration {
+  const QueuedCelebration(this.seq, this.kind);
+  final int seq;
+  final CelebrationKind kind;
+}
+
 /// FIFO of pending celebrations. One plays at a time ("one celebration moment
 /// per screen", DESIGN.md); the listener advances it when the overlay ends.
 @Riverpod(keepAlive: true)
 class CelebrationQueue extends _$CelebrationQueue {
-  @override
-  List<CelebrationKind> build() => const [];
+  int _nextSeq = 0;
 
-  void celebrate(CelebrationKind kind) => state = [...state, kind];
+  @override
+  List<QueuedCelebration> build() => const [];
+
+  void celebrate(CelebrationKind kind) =>
+      state = [...state, QueuedCelebration(_nextSeq++, kind)];
 
   void advance() {
     if (state.isEmpty) return;
@@ -555,14 +579,22 @@ git commit -m "feat(motion): celebration overlay — burst, headline, haptic, re
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
+import '../mocks/mock_auth_repository.dart';
+
 void main() {
   testWidgets('two queued celebrations play sequentially, never stacked',
       (tester) async {
-    final container = ProviderContainer();
+    // The auth repository is mocked because Task 7 activates the star-award
+    // watcher inside CelebrationListener — without this override the real
+    // AuthNotifier.build would touch FirebaseAuth and crash the test.
+    final container = ProviderContainer(overrides: [
+      authRepositoryProvider.overrideWith((_) => MockAuthRepository()),
+    ]);
     addTearDown(container.dispose);
 
     await tester.pumpWidget(
@@ -631,9 +663,11 @@ class CelebrationListener extends ConsumerWidget {
         if (queue.isNotEmpty)
           Positioned.fill(
             child: CelebrationOverlayView(
-              // Key by identity so a queued duplicate still restarts the show.
-              key: ValueKey(queue.length * 31 + queue.first.hashCode),
-              kind: queue.first,
+              // Keyed by the enqueue sequence number: a NEW head (even an
+              // identical kind) restarts the show; a mid-show enqueue does
+              // not (the head's seq is unchanged).
+              key: ValueKey(queue.first.seq),
+              kind: queue.first.kind,
               onDone: () =>
                   ref.read(celebrationQueueProvider.notifier).advance(),
             ),
@@ -672,7 +706,7 @@ git commit -m "feat(motion): celebration listener above the tab stack"
 
 **Files:**
 - Modify: `lib/presentation/screens/rewards_screen.dart:383-397` (the success fold of `_claim`)
-- Test: extend `test/presentation/motion/celebration_queue_test.dart` is NOT the place — this is screen wiring; find the existing rewards screen test if one exists (`ls test/presentation/ | grep -i reward`) and extend it, otherwise add `test/presentation/rewards_claim_celebration_test.dart` following the style of `test/presentation/tasks_tab_test.dart` (mock repositories, real providers).
+- Test: create `test/presentation/rewards_claim_celebration_test.dart` (no rewards-screen test currently exists — verified) following the style of `test/presentation/tasks_tab_test.dart` (mock repositories, real providers).
 
 - [ ] **Step 1: Write the failing test** — claim a reward through the real notifier/use-case with mock repos, assert `celebrationQueueProvider` ends with `[TreatRedeemed('<title>')]`.
 
@@ -712,6 +746,7 @@ Test through a `ProviderContainer` with `authNotifierProvider` overridden to a c
 3. Points 60 → 45 (spend) → queue unchanged (decreases never celebrate).
 4. User id changes (sign-out/in) → baseline resets; the new user's first emission celebrates nothing.
 5. Same state emitted twice (rebuild) → no duplicate celebration.
+6. The real-world claim sequence: points 60 → (treat claimed, `authNotifierProvider` re-emits) 45 → 45 again → nothing celebrates from the watcher (the treat celebration comes from Task 6's local trigger, not from here).
 
 - [ ] **Step 2: Run to verify failure.**
 
@@ -762,6 +797,8 @@ class StarAwardWatcher extends _$StarAwardWatcher {
 
 Activate it in `CelebrationListener.build` (one line, keeps all wiring in the module): `ref.watch(starAwardWatcherProvider);`
 
+This is safe for Task 5's listener test because that test already overrides `authRepositoryProvider` with `MockAuthRepository` (the override was put there for exactly this moment — without it, the real `AuthNotifier.build` would touch FirebaseAuth and crash). Verify Task 5's test still passes after activation.
+
 - [ ] **Step 4: Codegen + tests**
 
 Run: `dart run build_runner build --delete-conflicting-outputs && flutter test test/presentation/motion/`
@@ -791,6 +828,9 @@ Milestones: `{3, 7, 14, 30, 50, 100}`.
 3. 3 → 4 → nothing (not a milestone).
 4. 6 → 7 → 7 reported again (home rebuild) → exactly one `StreakMilestone(7)`.
 5. 7 → 0 (streak broken) → nothing, and a later 0 → 3 celebrates again.
+6. **Deferral (crash guard):** a widget test that calls `report()` from inside a `build` method (a minimal `Consumer` whose builder reports a milestone crossing) and pumps a microtask — no "modify provider during build" exception, and the celebration lands in the queue afterwards. This is the case the pure-container tests can't catch.
+
+Because `report()` is called from `HomeScreen.build`, it must NEVER mutate `celebrationQueueProvider` synchronously — flutter_riverpod throws "Tried to modify a provider while the widget tree was building." The implementation defers.
 
 - [ ] **Step 2: Run to verify failure.**
 
@@ -820,9 +860,12 @@ class StreakMilestoneWatcher extends _$StreakMilestoneWatcher {
     _last = streakDays;
     if (previous == null) return; // baseline
     if (streakDays > previous && kStreakMilestones.contains(streakDays)) {
-      ref
+      // Deferred: report() is called from HomeScreen.build, and mutating a
+      // provider during build throws. A microtask lands after this frame's
+      // build phase.
+      Future.microtask(() => ref
           .read(celebrationQueueProvider.notifier)
-          .celebrate(StreakMilestone(streakDays));
+          .celebrate(StreakMilestone(streakDays)));
     }
   }
 }
@@ -846,10 +889,13 @@ git commit -am "feat(motion): streak milestone celebrations, session-baselined"
 
 ---
 
-### Task 9: Amend DESIGN.md + memory hygiene
+### Task 9: `CelebrationCard` adopts the vocabulary + amend DESIGN.md
 
 **Files:**
+- Modify: `lib/presentation/widgets/home/celebration_card.dart`
 - Modify: `DESIGN.md` (motion don'ts, ~line 505, and §"Motion" ~line 451)
+
+- [ ] **Step 0: CelebrationCard adoption (spec Phase 1 requirement).** The card already uses `kMotionCurve` and the reduced-motion gate, but hardcodes a 600ms entrance duration outside any named tier. Replace the hardcoded `Duration(milliseconds: 600)` with `kMotionEntranceDuration` so the card speaks the vocabulary. Run its existing test: `flutter test test/presentation/celebration_card_test.dart` → PASS (adjust any hardcoded 600ms expectation in the test to the token).
 
 - [ ] **Step 1: Amend the bounce-ban don't** to read:
 
