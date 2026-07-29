@@ -56,9 +56,11 @@ Exits are always faster than entrances: things leave quickly, arrive gently.
 | `spring` | ~500ms | easeOutBack | star scale-ups, treat card pop |
 | `celebrate` | ~700ms envelope | composed | full celebration sequence |
 
-**Enforcement:** the bouncy values are private to the celebration module
-(§2) — not exported from `motion.dart`'s public surface. Ordinary widgets
-can only reach the snappy tier. A structural test (§5) backs this up.
+**Enforcement — where each tier lives, plainly:** the snappy tier is defined
+in `theme/motion.dart`; the bouncy values are defined *inside the celebration
+module only* (`lib/presentation/motion/`, §2) and never appear in
+`theme/motion.dart` — defining them there would fail the structural test
+(§5). Ordinary widgets can only reach the snappy tier.
 
 **Reduced motion, decided once:** every animation passes through
 `context.prefersReducedMotion`. When true, snappy durations collapse to zero
@@ -81,7 +83,9 @@ celebrate(context, CelebrationKind kind);
   drawn by one `CustomPainter` on one ticker inside a `RepaintBoundary`
   (painted shapes, not widgets — one canvas pass, underlying screen never
   rebuilds);
-- a "+N ⭐" counter that rolls up;
+- a headline per kind — `starsAwarded`: "+N ⭐" rolling up;
+  `treatRedeemed`: the treat's name (stars were *spent*, so no "+N ⭐");
+  `streakMilestone`: "N-day streak!";
 - one medium haptic (`HapticFeedback.mediumImpact`).
 
 **Reduced-motion variant:** the "+N ⭐" fades in; no burst painter in the
@@ -98,7 +102,10 @@ Nothing loops; every animation is one-shot and disposed.
 - **Stream-driven:** a task you did flips to `completed`, or your star
   balance rises → *your* device celebrates when the event arrives. Dedupe by
   event (task id / balance transition), not by state, so rebuilds never
-  re-fire it.
+  re-fire it. **Cold start sets a baseline:** the first emission after app
+  launch records current state and celebrates nothing — a star award that
+  landed while the app was closed must not replay as a celebration on every
+  launch. Only deltas observed after the baseline celebrate.
 
 The approver gets a snappy confirmation only — it is not their payoff.
 
