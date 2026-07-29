@@ -10,6 +10,7 @@ import '../../domain/value_objects/user_id.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/rewards_notifier.dart';
 import '../../utils/logger.dart';
+import '../motion/celebration.dart';
 import '../theme/app_tokens.dart';
 import 'add_reward_screen.dart';
 import '../widgets/help_button.dart';
@@ -390,12 +391,8 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
           // The balance lives on the user profile, so it has to be re-read or
           // the screen shows stars that are already spent.
           ref.invalidate(authNotifierProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('You got it! ${reward.title} 🎉'),
-              backgroundColor: context.tokens.sproutDeep,
-            ),
-          );
+          ref.read(celebrationQueueProvider.notifier)
+              .celebrate(TreatRedeemed(reward.title));
         },
       );
     } finally {

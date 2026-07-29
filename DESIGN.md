@@ -452,6 +452,12 @@ Motion lives in `lib/presentation/theme/motion.dart`: `kMotionCurve`
 (`Curves.easeOutQuart`) and `kMotionDuration` (220ms), gated by
 `context.prefersReducedMotion`. Use the gate, don't re-derive it.
 
+The snappy tier adds `kMotionTapDuration` (120ms), `kMotionEntranceDuration`
+(250ms), and `kMotionExitDuration` (150ms) with matching `easeOutCubic` /
+`easeInCubic` curves. The bouncy tier (payoff celebrations only) is defined
+in `lib/presentation/motion/` and documented in
+`docs/superpowers/specs/2026-07-29-motion-ux-design.md`.
+
 An earlier revision of this note said to gate on
 `MediaQuery.accessibleNavigation` "so the OS reduced-motion setting disables
 celebration" — that is the wrong flag, and it is why nothing was gated for so
@@ -503,8 +509,13 @@ theme itself undercuts is not a floor.
   (`backdrop-filter`), or side-stripe borders (`border-left > 1px` as an
   accent). All prohibited.
 - **Don't** use bounce or elastic easing (`Curves.elasticOut`,
-  `Curves.bounceOut`). The current CelebrationCard's `elasticOut` is a
-  violation.
+  `Curves.bounceOut`) in everyday motion. ONE exception, owner-approved
+  (2026-07-29): the three payoff celebrations (stars awarded, treat
+  redeemed, streak milestone) may use a single bounded overshoot
+  (`easeOutBack`), one-shot per event, ≤700ms, never perpetual, always
+  reduced-motion gated, and defined only inside `lib/presentation/motion/`
+  (enforced by `motion_carveout_test.dart`). "One celebration moment per
+  screen" still applies — celebrations queue, never stack.
 - **Don't** stack a Card per section (the current Task Details pattern). One
   card groups; dividers separate.
 - **Don't** convey status, urgency, or meaning by color alone — always icon +

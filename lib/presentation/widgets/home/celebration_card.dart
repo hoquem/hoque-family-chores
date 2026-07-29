@@ -31,7 +31,7 @@ class CelebrationCard extends StatelessWidget {
             else
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.4, end: 1),
-                duration: const Duration(milliseconds: 600),
+                duration: kMotionEntranceDuration,
                 // easeOutQuart, not elasticOut: DESIGN.md prohibits elastic and
                 // bounce easing. The pop still lands, it just doesn't wobble.
                 curve: kMotionCurve,

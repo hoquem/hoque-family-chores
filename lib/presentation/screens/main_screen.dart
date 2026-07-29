@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/screens/rewards_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -31,7 +32,9 @@ class MainScreen extends ConsumerWidget {
     final currentIndex = ref.watch(bottomNavIndexNotifierProvider);
 
     return Scaffold(
-      body: IndexedStack(index: currentIndex, children: _screens),
+      body: CelebrationListener(
+        child: IndexedStack(index: currentIndex, children: _screens),
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
