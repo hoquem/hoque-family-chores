@@ -12,6 +12,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
+import 'package:hoque_family_chores/presentation/motion/streak_milestone_watcher.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
@@ -177,6 +178,7 @@ class HomeScreen extends ConsumerWidget {
     final now = DateTime.now();
     final missions = todayMissions(tasks, currentUser.id, now);
     final streak = streakDays(tasks, currentUser.id, now);
+    ref.read(streakMilestoneWatcherProvider.notifier).report(streak);
 
     return RefreshIndicator(
       onRefresh: () async {

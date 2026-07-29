@@ -35,7 +35,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('overshoot curves appear only inside lib/presentation/motion/', () {
-    final banned = RegExp(r'\b(elasticOut|elasticIn|bounceOut|bounceIn|easeOutBack|easeInBack)\b');
+    final banned = RegExp(
+        r'\b(elastic(In|Out|InOut)|bounce(In|Out|InOut)|ease(In|Out|InOut)Back|Elastic(In|Out|InOut)Curve)\b');
     final offenders = <String>[];
     for (final f in Directory('lib')
         .listSync(recursive: true)
