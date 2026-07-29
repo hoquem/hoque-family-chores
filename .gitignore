@@ -78,3 +78,6 @@ scripts/node_modules/
 
 # Visual brainstorming session files
 .superpowers/
+
+# Git worktrees
+.worktrees/
