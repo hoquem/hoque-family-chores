@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/motion/entrance_stagger.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/task_list_tile.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -143,21 +144,24 @@ class TaskListScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final task = tasks[index];
 
-              return TaskListTile(
-                key: ValueKey(task.id.value),
-                task: task,
-                user: currentUser,
-                onToggleStatus: (bool? newValue) {
-                  if (newValue != null) {
-                    final newStatus = newValue 
-                        ? TaskStatus.completed 
-                        : TaskStatus.assigned;
-                    _handleTaskStatusUpdate(context, ref, familyId, task.id.value, newStatus, currentUser.id);
-                  }
-                },
-                onReturnToAvailable: () {
-                  _handleTaskStatusUpdate(context, ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
-                },
+              return EntranceStagger(
+                index: index,
+                child: TaskListTile(
+                  key: ValueKey(task.id.value),
+                  task: task,
+                  user: currentUser,
+                  onToggleStatus: (bool? newValue) {
+                    if (newValue != null) {
+                      final newStatus = newValue
+                          ? TaskStatus.completed
+                          : TaskStatus.assigned;
+                      _handleTaskStatusUpdate(context, ref, familyId, task.id.value, newStatus, currentUser.id);
+                    }
+                  },
+                  onReturnToAvailable: () {
+                    _handleTaskStatusUpdate(context, ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
+                  },
+                ),
               );
             },
           ),

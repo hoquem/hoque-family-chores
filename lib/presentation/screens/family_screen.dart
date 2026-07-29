@@ -5,6 +5,7 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
+import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -118,10 +119,9 @@ class _FamilyDetailsView extends ConsumerWidget {
                             leading: UserAvatar(user: member),
                             title: Text(member.name),
                             subtitle: Text(member.role.displayName),
-                            trailing: Text(
-                              '${member.points.toInt()} ⭐',
-                              style:
-                                  Theme.of(context).textTheme.titleMedium,
+                            trailing: DefaultTextStyle(
+                              style: Theme.of(context).textTheme.titleMedium!,
+                              child: AnimatedStarCount(member.points.toInt()),
                             ),
                           ),
                         ),
