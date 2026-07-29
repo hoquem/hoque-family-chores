@@ -6,7 +6,7 @@ part of 'star_award_watcher.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$starAwardWatcherHash() => r'9ce2fbda5d4670eeebb295dde62172857f4a4236';
+String _$starAwardWatcherHash() => r'2691380178769852572783c13eba24228e94be95';
 
 /// Watches the signed-in user's star balance and celebrates increases.
 ///
