@@ -13,6 +13,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/family_notif
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/theme/motion.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -721,7 +722,30 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                 ),
                 if (actions != null) ...[
                   const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerRight, child: actions),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AnimatedSwitcher(
+                      duration: context.prefersReducedMotion
+                          ? Duration.zero
+                          : kMotionDuration,
+                      switchInCurve: kMotionCurve,
+                      switchOutCurve: kMotionExitCurve,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.1, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      child: KeyedSubtree(
+                        key: ValueKey(widget.task.status),
+                        child: actions,
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
