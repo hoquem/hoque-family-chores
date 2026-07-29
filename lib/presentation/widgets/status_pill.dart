@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/theme/motion.dart';
 
 /// The alpha the pill tints its background with. Matches DESIGN.md §5 and is
 /// asserted by ``test/presentation/theme/token_contrast_test.dart``.
@@ -60,35 +61,48 @@ class StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
+    final child = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: _tone(t).withValues(alpha: kStatusPillTint),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icon, size: 16, color: _iconTone(t)),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: t.ink,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Semantics(
       label: 'Status: $label',
       container: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: _tone(t).withValues(alpha: kStatusPillTint),
-          borderRadius: BorderRadius.circular(999),
+      child: AnimatedSwitcher(
+        duration: context.prefersReducedMotion
+            ? Duration.zero
+            : kMotionDuration,
+        switchInCurve: kMotionCurve,
+        switchOutCurve: kMotionExitCurve,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: child,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_icon, size: 16, color: _iconTone(t)),
-            const SizedBox(width: 6),
-            // Flexible, not a hardcoded newline: the pill may sit in a narrow
-            // column and must degrade by ellipsis rather than by overflow.
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  // The 14px Floor Rule. Never below this: emerging readers.
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: t.ink,
-                ),
-              ),
-            ),
-          ],
+        child: KeyedSubtree(
+          key: ValueKey('<$status><$label>'),
+          child: child,
         ),
       ),
     );
