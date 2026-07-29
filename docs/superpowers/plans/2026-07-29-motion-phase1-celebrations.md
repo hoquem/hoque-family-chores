@@ -524,15 +524,19 @@ class _CelebrationOverlayViewState extends State<CelebrationOverlayView>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CustomPaint(
-                  size: const Size(320, 320),
-                  painter: StarBurstPainter(
-                    progress: t,
-                    colors: [
-                      context.tokens.starGold,
-                      context.tokens.sprout,
-                      context.tokens.brick,
-                    ],
+                // RepaintBoundary per spec §4: the burst repaints every frame;
+                // nothing outside it should.
+                RepaintBoundary(
+                  child: CustomPaint(
+                    size: const Size(320, 320),
+                    painter: StarBurstPainter(
+                      progress: t,
+                      colors: [
+                        context.tokens.starGold,
+                        context.tokens.sprout,
+                        context.tokens.brick,
+                      ],
+                    ),
                   ),
                 ),
                 Transform.scale(
@@ -549,7 +553,7 @@ class _CelebrationOverlayViewState extends State<CelebrationOverlayView>
 }
 ```
 
-NB: check the exact token getter names in `app_tokens.dart` (`starGold`, `sprout`, `brick` — adjust to what exists; the Fill Rule table in DESIGN.md §5 lists them). If `brick` isn't a token, use `brickDeep`.
+NB: token getters `starGold`, `sprout`, `brick` are verified to exist in `app_tokens.dart`. Conscious phase-1 fidelity choice: the spec's "+N ⭐ rolling up" is rendered as a scale pop here; the shared `AnimatedStarCount` roll-up primitive is a phase-2 item and the celebration adopts it then. Say so in the PR description.
 
 - [ ] **Step 4: Run the tests**
 
@@ -708,7 +712,7 @@ git commit -m "feat(motion): celebration listener above the tab stack"
 - Modify: `lib/presentation/screens/rewards_screen.dart:383-397` (the success fold of `_claim`)
 - Test: create `test/presentation/rewards_claim_celebration_test.dart` (no rewards-screen test currently exists — verified) following the style of `test/presentation/tasks_tab_test.dart` (mock repositories, real providers).
 
-- [ ] **Step 1: Write the failing test** — claim a reward through the real notifier/use-case with mock repos, assert `celebrationQueueProvider` ends with `[TreatRedeemed('<title>')]`.
+- [ ] **Step 1: Write the failing test** — claim a reward through the real notifier/use-case with mock repos, then assert the queue holds the treat celebration (entries are `QueuedCelebration`, so use the Task 2 shape): `expect(container.read(celebrationQueueProvider).map((q) => q.kind), [TreatRedeemed('<title>')])`.
 
 - [ ] **Step 2: Run to verify failure.**
 
