@@ -9,6 +9,7 @@ import 'package:hoque_family_chores/presentation/screens/notifications_screen.da
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
+import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 class UserProfileScreen extends ConsumerWidget {
@@ -138,9 +139,9 @@ class UserProfileScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${currentUser.points.value} ⭐ to spend',
-                  style: Theme.of(context).textTheme.titleMedium,
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.titleMedium!,
+                  child: AnimatedStarCount(currentUser.points.value),
                 ),
               ],
             ),
