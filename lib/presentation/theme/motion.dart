@@ -12,16 +12,28 @@ const Duration kMotionDuration = Duration(milliseconds: 220);
 /// DESIGN.md prohibits `Curves.elasticOut` / `Curves.bounceOut`.
 const Curve kMotionCurve = Curves.easeOutQuart;
 
-/// Snappy tier (spec §1). Everyday actions only — the bouncy tier is defined
-/// inside lib/presentation/motion/ and must never appear here (see
-/// motion_carveout_test.dart).
+// Snappy tier (spec §1). Everyday actions only — the bouncy tier is defined
+// inside lib/presentation/motion/ and must never appear here (see
+// motion_carveout_test.dart). Existing call sites keep [kMotionDuration];
+// new snappy-tier work uses the named consts below.
+
+/// Press feedback: near-instant, so taps feel wired to the finger.
 const Duration kMotionTapDuration = Duration(milliseconds: 120);
+
+/// Entrances take the top of the 150-250ms budget: arrive gently.
 const Duration kMotionEntranceDuration = Duration(milliseconds: 250);
 
 /// Exits are faster than entrances: things leave quickly, arrive gently.
 const Duration kMotionExitDuration = Duration(milliseconds: 150);
+
+/// Tap easing: ease-out, so feedback lands immediately and settles.
 const Curve kMotionTapCurve = Curves.easeOutCubic;
+
+/// Entrance easing: ease-out — arriving elements decelerate into place.
 const Curve kMotionEntranceCurve = Curves.easeOutCubic;
+
+/// Exit easing: ease-in — leaving elements accelerate away, pairing with
+/// [kMotionExitDuration] (leave quickly, arrive gently).
 const Curve kMotionExitCurve = Curves.easeInCubic;
 
 extension MotionContext on BuildContext {
