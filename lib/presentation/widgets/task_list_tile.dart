@@ -12,6 +12,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
+import 'package:hoque_family_chores/presentation/motion/snappy_press.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/theme/motion.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
@@ -628,26 +629,27 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     final bool isCompleted = widget.task.status == TaskStatus.completed;
     final actions = _buildActionButtons();
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      elevation: 2.0,
-      // The whole card is the tap target for opening the task. Without a label
-      // a screen reader reads the contents and leaves the user to infer that
-      // the pile of text is also a button.
-      child: Semantics(
-        button: true,
-        label: 'Open task ${widget.task.title}, ${_getStatusText()}',
-        child: InkWell(
-        borderRadius: BorderRadius.circular(12.0),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TaskDetailsScreen(task: widget.task),
-            ),
-          );
-        },
-        child: Padding(
+    return SnappyPress(
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        elevation: 2.0,
+        // The whole card is the tap target for opening the task. Without a label
+        // a screen reader reads the contents and leaves the user to infer that
+        // the pile of text is also a button.
+        child: Semantics(
+          button: true,
+          label: 'Open task ${widget.task.title}, ${_getStatusText()}',
+          child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TaskDetailsScreen(task: widget.task),
+              ),
+            );
+          },
+          child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -762,6 +764,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           ],
         ),
         ),
+      ),
       ),
       ),
     );

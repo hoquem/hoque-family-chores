@@ -10,6 +10,7 @@ import '../../domain/value_objects/user_id.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/rewards_notifier.dart';
 import '../../utils/logger.dart';
+import '../motion/snappy_press.dart';
 import '../theme/app_tokens.dart';
 import 'add_reward_screen.dart';
 import '../widgets/help_button.dart';
@@ -265,16 +266,18 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            FilledButton(
-              onPressed:
-                  (affordable && !_claiming) ? () => _claim(context) : null,
-              child: _claiming
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('${reward.cost.value} ⭐'),
+            SnappyPress(
+              child: FilledButton(
+                onPressed:
+                    (affordable && !_claiming) ? () => _claim(context) : null,
+                child: _claiming
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text('${reward.cost.value} ⭐'),
+              ),
             ),
             if (isParent)
               PopupMenuButton<String>(
