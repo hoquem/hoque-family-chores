@@ -75,3 +75,6 @@ scripts/node_modules/
 # a local build artifact. Neither ever gets committed.
 /scripts/.play-venv/
 /scripts/play-service-account.json
+
+# Visual brainstorming session files
+.superpowers/
