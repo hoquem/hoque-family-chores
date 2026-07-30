@@ -1,7 +1,7 @@
 # Project Status
 
-**Last updated:** 29 July 2026
-**Version:** 1.0.0+47 (`pubspec.yaml`)
+**Last updated:** 30 July 2026
+**Version:** 1.0.0+48 (`pubspec.yaml`)
 **Health:** `flutter analyze` clean · 371/371 tests green on `main`
 
 ---
@@ -17,8 +17,8 @@ next feature wave.
 | --- | --- |
 | **Apple App Store** | Version **1.0 / build 46** submitted 21 Jul 2026 — still `WAITING_FOR_REVIEW`. Release type is **AFTER_APPROVAL**: 1.0 goes live automatically the moment Apple approves. |
 | **TestFlight (external)** | **Approved and public.** Anyone can join: <https://testflight.apple.com/join/YKd8aNZz> |
-| **TestFlight (internal)** | Build 46, "Family" group auto-distributes. |
-| **Google Play** | Build **47** on the **closed alpha** track. Production is **gated** — see below. |
+| **TestFlight (internal)** | Build **48**, "Family" group auto-distributes. |
+| **Google Play** | Build **48** on the **internal** track. Production is **gated** — see below. |
 
 ### Google Play production is blocked (not a bug)
 
