@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -8,6 +9,7 @@ import '../../domain/repositories/push_notification_repository.dart';
 import '../../domain/entities/push_notification.dart';
 import '../../utils/logger.dart';
 import '../services/notification_preferences_service.dart';
+import '../../presentation/utils/navigator_key.dart';
 
 /// Firebase implementation of push notification repository
 class FirebasePushNotificationRepository implements PushNotificationRepository {
@@ -44,10 +46,13 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       final token = await getToken();
       _logger.i('[FCM] Device token: $token');
 
+      // Save initial token if we already know the user.
+      await _trySaveToken(token);
+
       // Listen to token refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+      _firebaseMessaging.onTokenRefresh.listen((newToken) async {
         _logger.i('[FCM] Token refreshed: $newToken');
-        // TODO: Send token to backend
+        await _trySaveToken(newToken);
       });
 
       // Handle foreground messages
@@ -72,6 +77,14 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       );
       rethrow;
     }
+  }
+
+  /// Saves the token to Firestore if a Firebase user is signed in.
+  Future<void> _trySaveToken(String? token) async {
+    if (token == null || token.isEmpty) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return;
+    await saveTokenToFirestore(uid, token);
   }
 
   /// Initialize local notifications plugin
@@ -334,7 +347,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       final deepLink = data['deepLink'] as String?;
       if (deepLink != null) {
         _logger.i('[FCM] Handling deep link: $deepLink');
-        // TODO: Implement deep link navigation
+        _navigateDeepLink(deepLink);
       }
     } catch (e, stackTrace) {
       _logger.e(
@@ -342,6 +355,33 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// Navigates to the screen indicated by a choresapp:// deep link.
+  void _navigateDeepLink(String deepLink) {
+    final uri = Uri.tryParse(deepLink);
+    if (uri == null) return;
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+
+    // Normalize to host-only for our simple scheme.
+    final host = uri.host;
+    switch (host) {
+      case 'home':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'tasks':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'rewards':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'profile':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      default:
+        _logger.w('[FCM] Unknown deep link host: $host');
     }
   }
 
