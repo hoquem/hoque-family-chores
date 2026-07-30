@@ -114,7 +114,7 @@ void main() {
     expect(find.text('0'), findsNWidgets(2)); // both stat counts are 0
   });
 
-  testWidgets('current tab shows assigned and created tasks', (tester) async {
+  testWidgets('current tab shows only tasks assigned to member', (tester) async {
     final member = _member('u1', 'Zafir');
     final tasks = [
       _task(id: 't1', title: 'Clean room', createdBy: UserId('u1'), assignedTo: UserId('u1'), status: TaskStatus.assigned),
@@ -126,7 +126,7 @@ void main() {
 
     expect(find.text('Clean room'), findsOneWidget);
     expect(find.text('Do dishes'), findsOneWidget);
-    expect(find.text('Take bins out'), findsOneWidget);
+    expect(find.text('Take bins out'), findsNothing);
   });
 
   testWidgets('completed tab shows finished tasks sorted by approvedAt desc', (tester) async {
@@ -226,7 +226,7 @@ void main() {
     expect(find.text('No completed chores yet'), findsOneWidget);
   });
 
-  testWidgets('tasks created by member appear even if not assigned to them', (tester) async {
+  testWidgets('tasks created by member but assigned to someone else do not appear', (tester) async {
     final member = _member('u1', 'Zafir');
     final tasks = [
       _task(id: 't1', title: 'Created by me', createdBy: UserId('u1'), assignedTo: UserId('u2'), status: TaskStatus.assigned),
@@ -234,6 +234,6 @@ void main() {
 
     await _pumpScreen(tester, member: member, tasks: tasks);
 
-    expect(find.text('Created by me'), findsOneWidget);
+    expect(find.text('Created by me'), findsNothing);
   });
 }
