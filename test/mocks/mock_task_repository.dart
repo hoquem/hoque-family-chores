@@ -473,6 +473,21 @@ class MockTaskRepository implements TaskRepository {
     }
   }
 
+  /// Expose the internal task list for test inspection.
+  List<Task> get tasks => List.unmodifiable(_tasks);
+
+  /// Deletes a task synchronously without delay. For test setup only.
+  void deleteTaskSync(TaskId taskId) {
+    _tasks.removeWhere((task) => task.id == taskId);
+    _taskStreamController.add(List.from(_tasks));
+  }
+
+  /// Clears all tasks synchronously. For test setup only.
+  void clearAllSync() {
+    _tasks.clear();
+    _taskStreamController.add([]);
+  }
+
   /// Dispose the stream controller
   void dispose() {
     _taskStreamController.close();
