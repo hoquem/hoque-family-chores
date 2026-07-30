@@ -54,6 +54,10 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      match /fcmTokens/{token} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // A join request proves the requester holds a valid invite CODE for this
