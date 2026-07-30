@@ -4,6 +4,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/user_repository.dart';
 import '../../domain/repositories/family_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
+import '../../domain/repositories/push_notification_repository.dart';
 import '../../domain/repositories/task_completion_repository.dart';
 import '../../domain/repositories/reward_repository.dart';
 
@@ -13,6 +14,7 @@ import 'firebase_auth_repository.dart';
 import 'firebase_user_repository.dart';
 import 'firebase_family_repository.dart';
 import 'firebase_notification_repository.dart';
+import 'firebase_push_notification_repository.dart';
 import 'firebase_task_completion_repository.dart';
 import 'firebase_reward_repository.dart';
 
@@ -32,6 +34,7 @@ class RepositoryFactory {
       repositories[UserRepository] = FirebaseUserRepository();
       repositories[FamilyRepository] = FirebaseFamilyRepository();
       repositories[NotificationRepository] = FirebaseNotificationRepository();
+      repositories[PushNotificationRepository] = FirebasePushNotificationRepository();
       repositories[TaskCompletionRepository] = FirebaseTaskCompletionRepository();
       repositories[RewardRepository] = FirebaseRewardRepository();
     } catch (e) {

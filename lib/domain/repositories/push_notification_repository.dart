@@ -34,4 +34,7 @@ abstract class PushNotificationRepository {
 
   /// Send test notification
   Future<void> sendTestNotification();
+
+  /// Update the platform app-icon badge count.
+  Future<void> updateBadgeCount(int count);
 }

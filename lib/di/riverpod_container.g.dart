@@ -144,6 +144,27 @@ final notificationRepositoryProvider =
 // ignore: unused_element
 typedef NotificationRepositoryRef =
     AutoDisposeProviderRef<NotificationRepository>;
+String _$pushNotificationRepositoryHash() =>
+    r'918ad526749d0636b2bd7c4c7df6a734b92c5b97';
+
+/// See also [pushNotificationRepository].
+@ProviderFor(pushNotificationRepository)
+final pushNotificationRepositoryProvider =
+    AutoDisposeProvider<PushNotificationRepository>.internal(
+      pushNotificationRepository,
+      name: r'pushNotificationRepositoryProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$pushNotificationRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PushNotificationRepositoryRef =
+    AutoDisposeProviderRef<PushNotificationRepository>;
 String _$rewardRepositoryHash() => r'4201d5fbc9090a0227a648da59a3f09a041f6d47';
 
 /// See also [rewardRepository].

@@ -135,4 +135,9 @@ class MockPushNotificationRepository implements PushNotificationRepository {
 
     await sendNotification(payload);
   }
+
+  @override
+  Future<void> updateBadgeCount(int count) async {
+    _logger.i('[MockFCM] Badge count updated to $count');
+  }
 }

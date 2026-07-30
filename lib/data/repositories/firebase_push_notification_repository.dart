@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,6 +9,7 @@ import '../../domain/repositories/push_notification_repository.dart';
 import '../../domain/entities/push_notification.dart';
 import '../../utils/logger.dart';
 import '../services/notification_preferences_service.dart';
+import '../../presentation/utils/navigator_key.dart';
 
 /// Firebase implementation of push notification repository
 class FirebasePushNotificationRepository implements PushNotificationRepository {
@@ -43,10 +46,13 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       final token = await getToken();
       _logger.i('[FCM] Device token: $token');
 
+      // Save initial token if we already know the user.
+      await _trySaveToken(token);
+
       // Listen to token refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+      _firebaseMessaging.onTokenRefresh.listen((newToken) async {
         _logger.i('[FCM] Token refreshed: $newToken');
-        // TODO: Send token to backend
+        await _trySaveToken(newToken);
       });
 
       // Handle foreground messages
@@ -73,13 +79,21 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
     }
   }
 
+  /// Saves the token to Firestore if a Firebase user is signed in.
+  Future<void> _trySaveToken(String? token) async {
+    if (token == null || token.isEmpty) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return;
+    await saveTokenToFirestore(uid, token);
+  }
+
   /// Initialize local notifications plugin
   Future<void> _initializeLocalNotifications() async {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
-      requestBadgePermission: false,
+      requestBadgePermission: true,
       requestSoundPermission: false,
     );
 
@@ -190,6 +204,29 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         stackTrace: stackTrace,
       );
       return null;
+    }
+  }
+
+  /// Saves the FCM token to Firestore under users/{userId}/fcmTokens
+  /// so Cloud Functions can send push notifications to this device.
+  Future<void> saveTokenToFirestore(String userId, String token) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('fcmTokens')
+          .doc(token)
+          .set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'platform': Theme.of(WidgetsBinding.instance.rootElement!).platform.toString(),
+      });
+      _logger.i('[FCM] Token saved to Firestore for user $userId');
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[FCM] Failed to save token to Firestore',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -310,7 +347,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       final deepLink = data['deepLink'] as String?;
       if (deepLink != null) {
         _logger.i('[FCM] Handling deep link: $deepLink');
-        // TODO: Implement deep link navigation
+        _navigateDeepLink(deepLink);
       }
     } catch (e, stackTrace) {
       _logger.e(
@@ -318,6 +355,65 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  @override
+  /// Updates the platform app-icon badge count.
+  ///
+  /// iOS: shows a silent notification with the badge number, then cancels it
+  /// so the badge updates without disturbing the user.
+  /// Android: launcher badges are tied to active notifications in the shade;
+  /// updating the badge without a visible notification requires a platform
+  /// channel or a dedicated badge plugin. TODO: add Android support.
+  Future<void> updateBadgeCount(int count) async {
+    try {
+      // iOS only for now — DarwinNotificationDetails supports badgeNumber.
+      const id = 0xBAD6E;
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: true,
+        presentSound: false,
+        badgeNumber: count,
+      );
+      final details = NotificationDetails(iOS: iosDetails);
+      await _localNotifications.show(id, '', '', details);
+      // Cancel immediately so nothing appears in the shade.
+      await _localNotifications.cancel(id);
+      _logger.i('[FCM] Badge count updated to $count');
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[FCM] Failed to update badge count',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Navigates to the screen indicated by a choresapp:// deep link.
+  void _navigateDeepLink(String deepLink) {
+    final uri = Uri.tryParse(deepLink);
+    if (uri == null) return;
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+
+    // Normalize to host-only for our simple scheme.
+    final host = uri.host;
+    switch (host) {
+      case 'home':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'tasks':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'rewards':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      case 'profile':
+        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        break;
+      default:
+        _logger.w('[FCM] Unknown deep link host: $host');
     }
   }
 
