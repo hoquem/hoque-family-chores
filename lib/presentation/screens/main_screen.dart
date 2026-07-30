@@ -16,6 +16,7 @@ import 'package:hoque_family_chores/presentation/motion/celebration_listener.dar
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import '../../di/riverpod_container.dart';
+import '../../data/repositories/firebase_push_notification_repository.dart';
 
 class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
@@ -30,6 +31,40 @@ class MainScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Consume any deep link that arrived while the app was terminated.
+    final pending = FirebasePushNotificationRepository.pendingDeepLink;
+    if (pending != null) {
+      FirebasePushNotificationRepository.pendingDeepLink = null;
+      final uri = Uri.tryParse(pending);
+      if (uri != null) {
+        final host = uri.host;
+        final nav = ref.read(bottomNavIndexNotifierProvider.notifier);
+        switch (host) {
+          case 'home':
+            nav.setIndex(0);
+            break;
+          case 'tasks':
+          case 'quest':
+          case 'approvals':
+            nav.setIndex(1);
+            break;
+          case 'rewards':
+          case 'reward':
+            nav.setIndex(2);
+            break;
+          case 'family':
+            nav.setIndex(3);
+            break;
+          case 'profile':
+            nav.setIndex(4);
+            break;
+          default:
+            logger.w('[MainScreen] Unknown pending deep link host: $host');
+        }
+        logger.i('[MainScreen] Consumed pending deep link: $pending');
+      }
+    }
+
     final currentIndex = ref.watch(bottomNavIndexNotifierProvider);
     final user = ref.watch(authNotifierProvider).user;
 

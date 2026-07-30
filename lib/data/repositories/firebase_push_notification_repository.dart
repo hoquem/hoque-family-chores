@@ -4,12 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../../domain/repositories/push_notification_repository.dart';
 import '../../domain/entities/push_notification.dart';
 import '../../utils/logger.dart';
 import '../services/notification_preferences_service.dart';
 import '../../presentation/utils/navigator_key.dart';
+import '../../presentation/providers/riverpod/bottom_nav_notifier.dart';
 
 /// Firebase implementation of push notification repository
 class FirebasePushNotificationRepository implements PushNotificationRepository {
@@ -390,27 +392,50 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
     }
   }
 
-  /// Navigates to the screen indicated by a choresapp:// deep link.
+  /// Pending deep link for when the app is launched from a terminated state
+  /// and the widget tree is not ready yet. [MainScreen] consumes this on build.
+  static String? pendingDeepLink;
+
+  /// Maps a `choresapp://` deep link to the correct bottom-navigation tab.
+  ///
+  /// The app uses an [IndexedStack] inside [MainScreen]; navigation is done by
+  /// updating [BottomNavIndexNotifier], not by pushing routes.
   void _navigateDeepLink(String deepLink) {
     final uri = Uri.tryParse(deepLink);
     if (uri == null) return;
-    final navigator = navigatorKey.currentState;
-    if (navigator == null) return;
 
-    // Normalize to host-only for our simple scheme.
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      // App was launched from terminated state and the tree isn't built yet.
+      // Store the link so MainScreen can handle it on first build.
+      pendingDeepLink = deepLink;
+      _logger.i('[FCM] Deep link deferred until app is ready: $deepLink');
+      return;
+    }
+
+    final container = ProviderScope.containerOf(context);
+    final notifier = container.read(bottomNavIndexNotifierProvider.notifier);
+
     final host = uri.host;
+
     switch (host) {
       case 'home':
-        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        notifier.setIndex(0);
         break;
       case 'tasks':
-        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+      case 'quest':
+      case 'approvals':
+        notifier.setIndex(1);
         break;
       case 'rewards':
-        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+      case 'reward':
+        notifier.setIndex(2);
+        break;
+      case 'family':
+        notifier.setIndex(3);
         break;
       case 'profile':
-        navigator.pushNamedAndRemoveUntil('/', (r) => false);
+        notifier.setIndex(4);
         break;
       default:
         _logger.w('[FCM] Unknown deep link host: $host');
