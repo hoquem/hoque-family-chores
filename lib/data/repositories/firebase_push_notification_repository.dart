@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -190,6 +191,29 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         stackTrace: stackTrace,
       );
       return null;
+    }
+  }
+
+  /// Saves the FCM token to Firestore under users/{userId}/fcmTokens
+  /// so Cloud Functions can send push notifications to this device.
+  Future<void> saveTokenToFirestore(String userId, String token) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('fcmTokens')
+          .doc(token)
+          .set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'platform': Theme.of(WidgetsBinding.instance.rootElement!).platform.toString(),
+      });
+      _logger.i('[FCM] Token saved to Firestore for user $userId');
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[FCM] Failed to save token to Firestore',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 

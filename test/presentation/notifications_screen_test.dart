@@ -89,6 +89,6 @@ void main() {
   testWidgets('empty state when there are no notifications', (tester) async {
     await _pumpScreen(tester);
 
-    expect(find.textContaining('No notifications'), findsOneWidget);
+    expect(find.textContaining('caught up'), findsOneWidget);
   });
 }

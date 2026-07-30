@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
-import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
-import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/pending_approvals_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/rewards_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/task_list_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/user_profile_screen.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -17,8 +21,6 @@ class MainScreen extends ConsumerWidget {
 
   static const List<Widget> _screens = [
     HomeScreen(),
-    // The full task manager (filters + add-task), not a read-only summary:
-    // the Tasks tab is the only place tasks can be created and managed.
     TaskListScreen(),
     RewardsScreen(),
     FamilyScreen(),
@@ -27,9 +29,10 @@ class MainScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Tab selection lives in a provider so other screens (e.g. Home's
-    // approval card) can switch tabs.
     final currentIndex = ref.watch(bottomNavIndexNotifierProvider);
+    final user = ref.watch(authNotifierProvider).user;
+
+    final badgeCounts = _computeBadgeCounts(ref, user);
 
     return Scaffold(
       body: CelebrationListener(
@@ -37,10 +40,10 @@ class MainScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: currentIndex,
+        badgeCounts: badgeCounts,
         onTap: (index) {
           logger.i("[MainScreen] Navigation item tapped: $index");
           ref.read(bottomNavIndexNotifierProvider.notifier).setIndex(index);
-          // Best-effort telemetry: never let it block navigation.
           try {
             const tabs = ['home', 'tasks', 'rewards', 'family', 'profile'];
             final userId = ref.read(authNotifierProvider).user?.id.value;
@@ -51,9 +54,48 @@ class MainScreen extends ConsumerWidget {
                 params: {'tab': tabs[index]},
               );
             }
-          } catch (_) {/* telemetry is never fatal */}
+          } catch (_) {}
         },
       ),
     );
+  }
+
+  Map<int, int> _computeBadgeCounts(WidgetRef ref, dynamic user) {
+    if (user == null) return const {};
+
+    final counts = <int, int>{};
+    final isParent = user.role.displayName.toLowerCase().contains('parent') ||
+        user.role.displayName.toLowerCase().contains('guardian');
+
+    // Unread notifications → Profile tab (index 4)
+    final notifications = ref.watch(notificationsProvider(user.id));
+    notifications.whenData((list) {
+      final unread = list.where((n) => !n.isRead).length;
+      if (unread > 0) counts[4] = unread;
+    });
+
+    // Tasks tab (index 1)
+    final tasks = ref.watch(taskListStreamProvider(user.familyId));
+    tasks.whenData((taskList) {
+      if (isParent) {
+        // Pending approvals
+        final pending = ref.watch(pendingApprovalsNotifierProvider(user.familyId));
+        pending.whenData((p) {
+          if (p.isNotEmpty) counts[1] = p.length;
+        });
+      } else {
+        // Available + assigned + needsRevision
+        final actionable = taskList.where((t) {
+          final isMine = t.assignedToId == user.id;
+          return t.status == TaskStatus.available ||
+              (isMine && (t.status == TaskStatus.assigned ||
+                  t.status == TaskStatus.inProgress ||
+                  t.status == TaskStatus.needsRevision));
+        }).length;
+        if (actionable > 0) counts[1] = actionable;
+      }
+    });
+
+    return counts;
   }
 }
