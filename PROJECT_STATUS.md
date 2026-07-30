@@ -1,8 +1,8 @@
 # Project Status
 
 **Last updated:** 30 July 2026
-**Version:** 1.0.0+48 (`pubspec.yaml`)
-**Health:** `flutter analyze` clean · 371/371 tests green on `main`
+**Version:** 1.0.0+49 (`pubspec.yaml`)
+**Health:** `flutter analyze` clean · 414/414 tests green on `main`
 
 ---
 
@@ -17,8 +17,8 @@ next feature wave.
 | --- | --- |
 | **Apple App Store** | Version **1.0 / build 46** submitted 21 Jul 2026 — still `WAITING_FOR_REVIEW`. Release type is **AFTER_APPROVAL**: 1.0 goes live automatically the moment Apple approves. |
 | **TestFlight (external)** | **Approved and public.** Anyone can join: <https://testflight.apple.com/join/YKd8aNZz> |
-| **TestFlight (internal)** | Build **48**, "Family" group auto-distributes. |
-| **Google Play** | Build **48** on the **internal** track. Production is **gated** — see below. |
+| **TestFlight (internal)** | Build **49**, "Family" group auto-distributes. |
+| **Google Play** | Build **49** on the **internal** track. Production is **gated** — see below. |
 
 ### Google Play production is blocked (not a bug)
 
@@ -143,15 +143,20 @@ slow loop, reserve it for release candidates. (iOS 26 debug builds still crash a
 
 ---
 
+## ✅ Recently completed
+
+- **Motion & animation, phase 1 (celebrations)** — shipped in `main`: celebration
+  queue, star-burst overlay, stream-driven star awards, treat-redemption
+  celebration, streak milestones, snappy-tier press/entrance/animated-star
+  primitives, and the structural carve-out guard.
+- **Analytics events on the child-join path (#155)** — `signedIn` and
+  `familyJoined` are emitted when a child joins via invite code.
+- **Checked-by line (#156)** — completed chores show `Checked by: <name>` on
+  the task tile.
+
 ## 🔄 In flight
 
-- **Motion & animation, phase 1 (celebrations)** — design spec and
-  implementation plan approved (`docs/superpowers/specs/`); work underway on
-  `feat/motion-phase1-celebrations` (celebration kinds + one-at-a-time queue,
-  snappy-tier motion vocabulary, structural carve-out guard).
-- **In `main` but not yet in any shipped build:** analytics events on the
-  child-join path (#155) and the checked-by line (#156). TestFlight is on 46,
-  Play on 47.
+Nothing currently in flight on `main`.
 
 ## 📋 Backlog
 
@@ -175,8 +180,9 @@ slow loop, reserve it for release candidates. (iOS 26 debug builds still crash a
 ## ▶️ Next
 
 1. Wait on Apple — 1.0 auto-releases on approval, nothing to do.
-2. Finish motion phase 1.
-3. Once iOS is live, resume the Play closed test to unlock production.
+2. Once iOS is live, resume the Play closed test to unlock production.
+3. From the backlog: invite-code hardening, TASK-468 (self-maintaining app), or
+   TASK-469 (Family & Group personas).
 
 ---
 

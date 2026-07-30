@@ -1,6 +1,6 @@
 # Motion & Animation — Design
 
-**Status:** approved, not started
+**Status:** phase 1 implemented in `main`; phase 2 partially implemented (snappy press, entrance stagger, animated star count); phase 3 deferred
 **Date:** 2026-07-29
 **Goal:** Give Chores Star a deliberate motion language — quiet, snappy
 feedback for everyday actions and a real celebration when stars pay off —
