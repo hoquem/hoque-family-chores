@@ -187,6 +187,7 @@ class _NotificationTile extends ConsumerWidget {
         leading: _NotificationIcon(
           isRead: notification.isRead,
           type: notification.type,
+          imageUrl: notification.imageUrl,
         ),
         title: Text(
           notification.title,
@@ -219,8 +220,13 @@ class _NotificationTile extends ConsumerWidget {
 class _NotificationIcon extends StatelessWidget {
   final bool isRead;
   final String? type;
+  final String? imageUrl;
 
-  const _NotificationIcon({required this.isRead, this.type});
+  const _NotificationIcon({
+    required this.isRead,
+    this.type,
+    this.imageUrl,
+  });
 
   IconData _icon() => switch (type) {
         'taskCreated' => Icons.add_task_outlined,
@@ -255,6 +261,15 @@ class _NotificationIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final photo = imageUrl;
+    if (photo != null && photo.isNotEmpty) {
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: NetworkImage(photo),
+        onBackgroundImageError: (_, __) {},
+      );
+    }
+
     return Container(
       width: 40,
       height: 40,

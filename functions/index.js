@@ -108,6 +108,7 @@ async function notify(userId, title, message, data, pushTitle, pushBody) {
     deepLink: data?.deepLink || '',
     actorId: data?.actorId || '',
     entityId: data?.entityId || '',
+    imageUrl: data?.imageUrl || '',
   });
   if (pushTitle && pushBody) {
     await sendPushToUser(userId, pushTitle, pushBody, data);
@@ -178,11 +179,12 @@ exports.approveTask = onCall(async (request) => {
   // Notify doer: their task was approved.
   const approverSnap = await approverRef.get();
   const approverName = approverSnap.data()?.name || 'Someone';
+  const approverPhoto = approverSnap.data()?.photoUrl || '';
   await notify(
     doerId,
     'Chore approved! 🎉',
     `'${taskTitle}' was checked off — you earned ${points}⭐`,
-    { type: 'taskApproved', deepLink: 'choresapp://profile', actorId: uid, entityId: taskId },
+    { type: 'taskApproved', deepLink: 'choresapp://profile', actorId: uid, entityId: taskId, imageUrl: approverPhoto },
     'Chore approved! 🎉',
     `'${taskTitle}' was checked off — you earned ${points}⭐`
   );
@@ -240,12 +242,14 @@ exports.claimReward = onCall(async (request) => {
   });
 
   // Notify family: someone claimed a treat.
+  const claimerSnap = await claimerRef.get();
+  const claimerPhoto = claimerSnap.data()?.photoUrl || '';
   await notifyFamily(
     familyId,
     uid,
     `${claimerName} claimed a treat! 🎁`,
     `${claimerName} wants '${rewardTitle}' (${cost}⭐)`,
-    { type: 'rewardClaimed', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionRef.id },
+    { type: 'rewardClaimed', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionRef.id, imageUrl: claimerPhoto },
     `${claimerName} claimed a treat! 🎁`,
     `${claimerName} wants '${rewardTitle}' (${cost}⭐)`
   );
@@ -294,11 +298,13 @@ exports.settleRedemption = onCall(async (request) => {
   });
 
   // Notify claimant: their treat was settled.
+  const settlerSnap = await db.doc(`users/${uid}`).get();
+  const settlerPhoto = settlerSnap.data()?.photoUrl || '';
   await notify(
     uid,
     `Treat ${settledStatus} ${happened ? '✅' : '💫'}`,
     `'${rewardTitle}' was ${settledStatus}`,
-    { type: 'rewardSettled', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionId },
+    { type: 'rewardSettled', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionId, imageUrl: settlerPhoto },
     `Treat ${settledStatus}`,
     `'${rewardTitle}' was ${settledStatus}`
   );
@@ -317,6 +323,7 @@ exports.onTaskCreated = onDocumentCreated('families/{familyId}/tasks/{taskId}', 
 
   const creatorSnap = await db.doc(`users/${task.createdById}`).get();
   const creatorName = creatorSnap.data()?.name || 'Someone';
+  const creatorPhoto = creatorSnap.data()?.photoUrl || '';
   const title = task.title || 'a new chore';
   const points = Number(task.points) || 0;
 
@@ -325,7 +332,7 @@ exports.onTaskCreated = onDocumentCreated('families/{familyId}/tasks/{taskId}', 
     task.createdById,
     `New chore: ${title}`,
     `${creatorName} added a new chore worth ${points}⭐`,
-    { type: 'taskCreated', deepLink: 'choresapp://tasks', actorId: task.createdById, entityId: taskId },
+    { type: 'taskCreated', deepLink: 'choresapp://tasks', actorId: task.createdById, entityId: taskId, imageUrl: creatorPhoto },
     `New chore! 📋`,
     `${creatorName} added "${title}" (${points}⭐)`
   );
@@ -345,6 +352,7 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
   const doerId = after.assignedToId;
   const actorSnap = await db.doc(`users/${after.updatedById || doerId}`).get();
   const actorName = actorSnap.data()?.name || 'Someone';
+  const actorPhoto = actorSnap.data()?.photoUrl || '';
 
   // Claimed (available → assigned)
   if (oldStatus === 'available' && newStatus === 'assigned' && doerId) {
@@ -353,7 +361,7 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
       doerId,
       `${actorName} is on it!`,
       `${actorName} claimed '${title}'`,
-      { type: 'taskClaimed', deepLink: 'choresapp://tasks', actorId: doerId, entityId: taskId }
+      { type: 'taskClaimed', deepLink: 'choresapp://tasks', actorId: doerId, entityId: taskId, imageUrl: actorPhoto }
     );
     return;
   }
@@ -365,7 +373,7 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
       doerId,
       'Done and sent for check ✅',
       `${actorName} finished '${title}'`,
-      { type: 'taskCompleted', deepLink: 'choresapp://tasks', actorId: doerId, entityId: taskId },
+      { type: 'taskCompleted', deepLink: 'choresapp://tasks', actorId: doerId, entityId: taskId, imageUrl: actorPhoto },
       'Done and sent for check ✅',
       `${actorName} finished '${title}'`
     );
@@ -374,11 +382,13 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
 
   // Sent back (pendingApproval → needsRevision)
   if (oldStatus === 'pendingApproval' && newStatus === 'needsRevision' && doerId) {
+    const approverSnap = await db.doc(`users/${after.updatedById}`).get();
+    const approverPhoto = approverSnap.data()?.photoUrl || '';
     await notify(
       doerId,
       'Have another go 🔄',
       `'${title}' was sent back`,
-      { type: 'taskSentBack', deepLink: 'choresapp://tasks', actorId: after.updatedById || '', entityId: taskId },
+      { type: 'taskSentBack', deepLink: 'choresapp://tasks', actorId: after.updatedById || '', entityId: taskId, imageUrl: approverPhoto },
       'Have another go 🔄',
       `'${title}' was sent back`
     );
