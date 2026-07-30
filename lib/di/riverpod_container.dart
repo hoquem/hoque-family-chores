@@ -7,6 +7,7 @@ import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/family_repository.dart';
 import '../domain/repositories/task_repository.dart';
 import '../domain/repositories/notification_repository.dart';
+import '../domain/repositories/push_notification_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/task_completion_repository.dart';
 import '../domain/repositories/reward_repository.dart';
@@ -69,6 +70,13 @@ NotificationRepository notificationRepository(Ref ref) {
   final factory = ref.watch(repositoryFactoryProvider);
   final repositories = factory.createRepositories();
   return repositories[NotificationRepository] as NotificationRepository;
+}
+
+@riverpod
+PushNotificationRepository pushNotificationRepository(Ref ref) {
+  final factory = ref.watch(repositoryFactoryProvider);
+  final repositories = factory.createRepositories();
+  return repositories[PushNotificationRepository] as PushNotificationRepository;
 }
 
 @riverpod

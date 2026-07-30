@@ -15,6 +15,7 @@ import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import '../../di/riverpod_container.dart';
 
 class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
@@ -34,9 +35,18 @@ class MainScreen extends ConsumerWidget {
 
     final badgeCounts = _computeBadgeCounts(ref, user);
 
+    // Total actionable items across all tabs.
+    final totalBadge = badgeCounts.values.fold(0, (sum, c) => sum + c);
+
     return Scaffold(
-      body: CelebrationListener(
-        child: IndexedStack(index: currentIndex, children: _screens),
+      body: Stack(
+        children: [
+          CelebrationListener(
+            child: IndexedStack(index: currentIndex, children: _screens),
+          ),
+          // Invisible widget that syncs the platform app-icon badge count.
+          _BadgeUpdater(count: totalBadge),
+        ],
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: currentIndex,
@@ -98,4 +108,42 @@ class MainScreen extends ConsumerWidget {
 
     return counts;
   }
+}
+
+/// Invisible widget that updates the platform app-icon badge count whenever
+/// the computed total changes. Placed in the widget tree so it runs inside
+/// the app lifecycle.
+class _BadgeUpdater extends StatefulWidget {
+  final int count;
+  const _BadgeUpdater({required this.count});
+
+  @override
+  State<_BadgeUpdater> createState() => _BadgeUpdaterState();
+}
+
+class _BadgeUpdaterState extends State<_BadgeUpdater> {
+  int? _lastCount;
+
+  @override
+  void didUpdateWidget(covariant _BadgeUpdater oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.count != oldWidget.count) {
+      _update();
+    }
+  }
+
+  void _update() {
+    // Debounce: only update when the count actually changes.
+    if (_lastCount == widget.count) return;
+    _lastCount = widget.count;
+    // Best-effort: never block the UI for a badge update.
+    try {
+      final container = ProviderScope.containerOf(context);
+      final repo = container.read(pushNotificationRepositoryProvider);
+      repo.updateBadgeCount(widget.count);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

@@ -178,6 +178,10 @@ class FirebaseNotificationRepository implements NotificationRepository {
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.tryParse(data['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      actorId: data['actorId'] as String?,
+      deepLink: data['deepLink'] as String?,
+      type: data['type'] as String?,
+      entityId: data['entityId'] as String?,
     );
   }
 
@@ -190,6 +194,10 @@ class FirebaseNotificationRepository implements NotificationRepository {
       'imageUrl': notification.imageUrl,
       'isRead': notification.isRead,
       'createdAt': notification.createdAt,
+      if (notification.actorId != null) 'actorId': notification.actorId,
+      if (notification.deepLink != null) 'deepLink': notification.deepLink,
+      if (notification.type != null) 'type': notification.type,
+      if (notification.entityId != null) 'entityId': notification.entityId,
     };
   }
 } 

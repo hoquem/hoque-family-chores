@@ -184,7 +184,10 @@ class _NotificationTile extends ConsumerWidget {
           .read(deleteNotificationUseCaseProvider)
           .call(notificationId: notification.id),
       child: ListTile(
-        leading: _NotificationIcon(isRead: notification.isRead),
+        leading: _NotificationIcon(
+          isRead: notification.isRead,
+          type: notification.type,
+        ),
         title: Text(
           notification.title,
           style: TextStyle(
@@ -215,7 +218,40 @@ class _NotificationTile extends ConsumerWidget {
 
 class _NotificationIcon extends StatelessWidget {
   final bool isRead;
-  const _NotificationIcon({required this.isRead});
+  final String? type;
+
+  const _NotificationIcon({required this.isRead, this.type});
+
+  IconData _icon() => switch (type) {
+        'taskCreated' => Icons.add_task_outlined,
+        'taskClaimed' => Icons.person_outline,
+        'taskCompleted' => Icons.check_circle_outline,
+        'taskApproved' => Icons.star_outline,
+        'taskSentBack' => Icons.refresh,
+        'rewardClaimed' => Icons.card_giftcard,
+        'rewardSettled' => Icons.done_all,
+        _ => isRead ? Icons.notifications_none : Icons.notifications_active,
+      };
+
+  Color _bgColor(BuildContext context) {
+    return switch (type) {
+      'taskApproved' => context.tokens.starGold.withValues(alpha: 0.12),
+      'rewardClaimed' || 'rewardSettled' => context.tokens.sprout.withValues(alpha: 0.12),
+      'taskSentBack' => context.tokens.brick.withValues(alpha: 0.12),
+      _ => isRead
+          ? context.tokens.inkMuted.withValues(alpha: 0.12)
+          : context.tokens.amberWarn.withValues(alpha: 0.12),
+    };
+  }
+
+  Color _fgColor(BuildContext context) {
+    return switch (type) {
+      'taskApproved' => context.tokens.starGold,
+      'rewardClaimed' || 'rewardSettled' => context.tokens.sproutDeep,
+      'taskSentBack' => context.tokens.brickDeep,
+      _ => isRead ? context.tokens.inkMuted : context.tokens.amberWarnDeep,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -223,15 +259,13 @@ class _NotificationIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: isRead
-            ? context.tokens.inkMuted.withValues(alpha: 0.12)
-            : context.tokens.amberWarn.withValues(alpha: 0.12),
+        color: _bgColor(context),
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isRead ? Icons.notifications_none : Icons.notifications_active,
+        _icon(),
         size: 20,
-        color: isRead ? context.tokens.inkMuted : context.tokens.amberWarnDeep,
+        color: _fgColor(context),
       ),
     );
   }

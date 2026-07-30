@@ -93,7 +93,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
-      requestBadgePermission: false,
+      requestBadgePermission: true,
       requestSoundPermission: false,
     );
 
@@ -352,6 +352,38 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
     } catch (e, stackTrace) {
       _logger.e(
         '[FCM] Failed to handle notification tap',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  /// Updates the platform app-icon badge count.
+  ///
+  /// iOS: shows a silent notification with the badge number, then cancels it
+  /// so the badge updates without disturbing the user.
+  /// Android: launcher badges are tied to active notifications in the shade;
+  /// updating the badge without a visible notification requires a platform
+  /// channel or a dedicated badge plugin. TODO: add Android support.
+  Future<void> updateBadgeCount(int count) async {
+    try {
+      // iOS only for now — DarwinNotificationDetails supports badgeNumber.
+      const id = 0xBAD6E;
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: true,
+        presentSound: false,
+        badgeNumber: count,
+      );
+      final details = NotificationDetails(iOS: iosDetails);
+      await _localNotifications.show(id, '', '', details);
+      // Cancel immediately so nothing appears in the shade.
+      await _localNotifications.cancel(id);
+      _logger.i('[FCM] Badge count updated to $count');
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[FCM] Failed to update badge count',
         error: e,
         stackTrace: stackTrace,
       );

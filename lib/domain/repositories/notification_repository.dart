@@ -10,6 +10,10 @@ class Notification {
   final String? imageUrl;
   final bool isRead;
   final DateTime createdAt;
+  final String? actorId;
+  final String? deepLink;
+  final String? type;
+  final String? entityId;
 
   const Notification({
     required this.id,
@@ -19,6 +23,10 @@ class Notification {
     this.imageUrl,
     required this.isRead,
     required this.createdAt,
+    this.actorId,
+    this.deepLink,
+    this.type,
+    this.entityId,
   });
 
   /// Creates a copy of this notification with updated fields
@@ -30,6 +38,10 @@ class Notification {
     String? imageUrl,
     bool? isRead,
     DateTime? createdAt,
+    String? actorId,
+    String? deepLink,
+    String? type,
+    String? entityId,
   }) {
     return Notification(
       id: id ?? this.id,
@@ -39,6 +51,10 @@ class Notification {
       imageUrl: imageUrl ?? this.imageUrl,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
+      actorId: actorId ?? this.actorId,
+      deepLink: deepLink ?? this.deepLink,
+      type: type ?? this.type,
+      entityId: entityId ?? this.entityId,
     );
   }
 
