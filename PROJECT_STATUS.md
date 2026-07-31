@@ -1,7 +1,7 @@
 # Project Status
 
 **Last updated:** 30 July 2026
-**Version:** 1.0.0+49 (`pubspec.yaml`)
+**Version:** 1.0.0+50 (`pubspec.yaml`)
 **Health:** `flutter analyze` clean · 416/416 tests green on `main`
 
 ---
@@ -17,7 +17,7 @@ next feature wave.
 | --- | --- |
 | **Apple App Store** | Version **1.0 / build 46** — `REJECTED` 30 Jul 2026 under **Guideline 2.1.0 (App Completeness)**. The reviewer saw the generic OAuth profile-creation failure screen. Fix implemented: real error surfacing + a "Complete your profile" retry screen that keeps the Firebase session alive. Resubmission is the next step. |
 | **TestFlight (external)** | **Approved and public.** Anyone can join: <https://testflight.apple.com/join/YKd8aNZz> |
-| **TestFlight (internal)** | Build **49**, "Family" group auto-distributes. |
+| **TestFlight (internal)** | Build **50**, "Family" group auto-distributes. |
 | **Google Play** | Build **49** on the **internal** track. Production is **gated** — see below. |
 
 ### Google Play production is blocked (not a bug)
