@@ -71,6 +71,37 @@ void main() {
     expect(await users.getUserProfile(UserId(_googleUid)), isNull);
   });
 
+  test('profile creation failure surfaces real error and keeps session alive',
+      () async {
+    final users = MockUserRepository();
+    final auth = MockAuthRepository();
+    final container = _makeContainer(auth: auth, users: users);
+
+    // Make the first attempt fail as if Firestore rejected the write.
+    users.failNextCreate('Firestore permission denied');
+
+    await container.read(authNotifierProvider.notifier).signInWithGoogle();
+
+    final state = container.read(authNotifierProvider);
+    expect(state.status, AuthStatus.needsProfileCompletion);
+    expect(state.errorMessage, contains('Firestore permission denied'));
+    expect(auth.currentUser, isNotNull,
+        reason: 'the Firebase session must stay alive for retry');
+
+    // Retry with the completeProfile path should succeed now that the mock
+    // failure is consumed.
+    await container
+        .read(authNotifierProvider.notifier)
+        .completeProfile(name: 'OAuth User', email: 'oauth@example.com');
+
+    final retryState = container.read(authNotifierProvider);
+    expect(retryState.status, AuthStatus.authenticated);
+    expect(retryState.errorMessage, isNull);
+    final profile = await users.getUserProfile(UserId(_googleUid));
+    expect(profile, isNotNull);
+    expect(profile!.role, UserRole.parent);
+  });
+
   test('an existing profile keeps its role and is not recreated', () async {
     final users = MockUserRepository();
     await users.createUserProfile(

@@ -17,9 +17,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
+import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/main.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/complete_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 class _FixedAuthNotifier extends AuthNotifier {
@@ -74,6 +76,22 @@ void main() {
     );
 
     expect(find.text('Set up your family'), findsOneWidget);
+    expect(find.text('Connecting...'), findsNothing);
+  });
+
+  testWidgets('needs profile completion → complete profile screen',
+      (tester) async {
+    await _pump(
+      tester,
+      const AuthState(
+        status: AuthStatus.needsProfileCompletion,
+        user: null,
+        errorMessage: 'Something went wrong',
+      ),
+    );
+
+    expect(find.byType(CompleteProfileScreen), findsOneWidget);
+    expect(find.text('Almost there'), findsOneWidget);
     expect(find.text('Connecting...'), findsNothing);
   });
 }

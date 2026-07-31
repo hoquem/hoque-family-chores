@@ -11,6 +11,7 @@ import 'package:hoque_family_chores/core/error/exceptions.dart';
 class MockUserRepository implements UserRepository {
   final List<User> _users = [];
   final StreamController<User?> _userStreamController = StreamController<User?>.broadcast();
+  String? _nextCreateFailure;
 
   MockUserRepository() {
     _initializeMockData();
@@ -80,13 +81,19 @@ class MockUserRepository implements UserRepository {
   Future<void> createUserProfile(User user) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
-      
+
+      final failure = _nextCreateFailure;
+      _nextCreateFailure = null;
+      if (failure != null) {
+        throw ServerException(failure, code: 'USER_CREATE_ERROR');
+      }
+
       // Check if user already exists
       final existingUser = _users.where((u) => u.id == user.id).firstOrNull;
       if (existingUser != null) {
         throw ValidationException('User already exists', code: 'USER_ALREADY_EXISTS');
       }
-      
+
       _users.add(user);
       _userStreamController.add(user);
     } catch (e) {
@@ -94,6 +101,10 @@ class MockUserRepository implements UserRepository {
       throw ServerException('Failed to create user profile: $e', code: 'USER_CREATE_ERROR');
     }
   }
+
+  /// Causes the next [createUserProfile] call to throw a [ServerException]
+  /// with [message]. Used to test retry paths.
+  void failNextCreate(String message) => _nextCreateFailure = message;
 
   @override
   Future<void> updateUserProfile(User user) async {

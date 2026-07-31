@@ -2,7 +2,7 @@
 
 **Last updated:** 30 July 2026
 **Version:** 1.0.0+49 (`pubspec.yaml`)
-**Health:** `flutter analyze` clean · 414/414 tests green on `main`
+**Health:** `flutter analyze` clean · 416/416 tests green on `main`
 
 ---
 
@@ -15,7 +15,7 @@ next feature wave.
 
 | Channel | State |
 | --- | --- |
-| **Apple App Store** | Version **1.0 / build 46** submitted 21 Jul 2026 — still `WAITING_FOR_REVIEW`. Release type is **AFTER_APPROVAL**: 1.0 goes live automatically the moment Apple approves. |
+| **Apple App Store** | Version **1.0 / build 46** — `REJECTED` 30 Jul 2026 under **Guideline 2.1.0 (App Completeness)**. The reviewer saw the generic OAuth profile-creation failure screen. Fix implemented: real error surfacing + a "Complete your profile" retry screen that keeps the Firebase session alive. Resubmission is the next step. |
 | **TestFlight (external)** | **Approved and public.** Anyone can join: <https://testflight.apple.com/join/YKd8aNZz> |
 | **TestFlight (internal)** | Build **49**, "Family" group auto-distributes. |
 | **Google Play** | Build **49** on the **internal** track. Production is **gated** — see below. |
@@ -153,6 +153,10 @@ slow loop, reserve it for release candidates. (iOS 26 debug builds still crash a
   `familyJoined` are emitted when a child joins via invite code.
 - **Checked-by line (#156)** — completed chores show `Checked by: <name>` on
   the task tile.
+- **OAuth profile-creation resilience (App Store 2.1.0 rejection fix)** —
+  `AuthStatus.needsProfileCompletion` + `CompleteProfileScreen`: real Firestore
+  errors are surfaced and the user can retry without losing their Apple/Google
+  session. Deployed Firestore rules verified against the repo (identical).
 
 ## 🔄 In flight
 
@@ -179,7 +183,9 @@ Nothing currently in flight on `main`.
 
 ## ▶️ Next
 
-1. Wait on Apple — 1.0 auto-releases on approval, nothing to do.
+1. **Resubmit to Apple.** Build a new release (build 50+) with the profile-completion
+   fallback, update the App Store version 1.0 build, and reply in the Resolution
+   Center explaining the fix.
 2. Once iOS is live, resume the Play closed test to unlock production.
 3. From the backlog: invite-code hardening, TASK-468 (self-maintaining app), or
    TASK-469 (Family & Group personas).

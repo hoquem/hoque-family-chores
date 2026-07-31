@@ -255,13 +255,14 @@ class AuthNotifier extends _$AuthNotifier {
     if (lookupFailure != null && lookupFailure is! NotFoundFailure) {
       _logger.e('AuthNotifier: Could not read profile after OAuth',
           error: lookupFailure.message);
-      // Signed in but the profile couldn't be read — roll back rather than
-      // strand them on the splash.
-      await _signOutQuietly();
+      // Signed in but the profile couldn't be read. Keep the session so the
+      // user can retry from the complete-profile screen instead of losing any
+      // Apple name/email data by signing out.
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Could not load your account. Please try again.',
-        status: AuthStatus.unauthenticated,
+        errorMessage:
+            'Could not load your account: ${lookupFailure.message}. Please try again.',
+        status: AuthStatus.needsProfileCompletion,
       );
       return;
     }
@@ -280,32 +281,14 @@ class AuthNotifier extends _$AuthNotifier {
       }
 
       final displayName = firebaseUser.displayName as String?;
-      final initResult = await ref.read(initializeUserDataUseCaseProvider).call(
-            userId: userId,
-            name: displayName?.trim().isNotEmpty == true
-                ? displayName!.trim()
-                : email.split('@').first,
-            email: email.trim().toLowerCase(),
-            role: UserRole.parent,
-          );
-
-      final initFailure = initResult.fold((failure) => failure, (_) => null);
-      if (initFailure != null) {
-        _logger.e('AuthNotifier: Failed to create OAuth user profile',
-            error: initFailure.message);
-        // Never leave a signed-in user with no profile — that strands them on
-        // the splash forever (FamilyGate keys on a null user). Roll the session
-        // back so they land on Login and can retry.
-        await _signOutQuietly();
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage:
-              'Could not finish setting up your account. Please try again.',
-          status: AuthStatus.unauthenticated,
-        );
-        return;
-      }
-      _logger.d('AuthNotifier: Created parent profile for user $userId');
+      final success = await _initializeUserProfile(
+        userId: userId,
+        name: displayName?.trim().isNotEmpty == true
+            ? displayName!.trim()
+            : email.split('@').first,
+        email: email.trim().toLowerCase(),
+      );
+      if (!success) return;
     }
 
     ref.read(analyticsProvider).log(
@@ -313,6 +296,87 @@ class AuthNotifier extends _$AuthNotifier {
           userId: userId.value,
           params: const {'method': 'oauth'},
         );
+    _startUserProfileStream(userId);
+    state = state.copyWith(
+      isLoading: false,
+      status: AuthStatus.authenticated,
+    );
+  }
+
+  /// Creates or recreates the user's Firestore profile and starts streaming it.
+  ///
+  /// Returns `true` on success. On failure, sets
+  /// [AuthStatus.needsProfileCompletion] with the real error message and keeps
+  /// the Firebase session alive so the caller can retry.
+  Future<bool> _initializeUserProfile({
+    required UserId userId,
+    required String name,
+    required String email,
+  }) async {
+    final initResult = await ref.read(initializeUserDataUseCaseProvider).call(
+          userId: userId,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          role: UserRole.parent,
+        );
+
+    final initFailure = initResult.fold((failure) => failure, (_) => null);
+    if (initFailure != null) {
+      _logger.e('AuthNotifier: Failed to create OAuth user profile',
+          error: initFailure.message);
+      // Keep the Firebase session alive so the user can retry on a dedicated
+      // "complete profile" screen rather than being kicked back to Login with a
+      // swallowed error. Apple Sign-In only returns name/email once; signing out
+      // and starting over can lose that data permanently.
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            'Could not finish setting up your account: ${initFailure.message}',
+        status: AuthStatus.needsProfileCompletion,
+      );
+      return false;
+    }
+    _logger.d('AuthNotifier: Created parent profile for user $userId');
+    return true;
+  }
+
+  /// Completes an OAuth profile by creating the Firestore document with the
+  /// name and email the user supplies (or confirms) after an initial failure.
+  ///
+  /// On success the profile stream starts and the user is authenticated.
+  /// On failure the session stays alive and [AuthStatus.needsProfileCompletion]
+  /// remains set with the real error message.
+  Future<void> completeProfile({
+    required String name,
+    required String email,
+  }) async {
+    _logger.d('AuthNotifier: Completing profile for ${state.user?.id ?? "current user"}');
+
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.needsProfileCompletion,
+    );
+
+    final firebaseUser = ref.read(authRepositoryProvider).currentUser;
+    if (firebaseUser == null) {
+      _logger.w('AuthNotifier: completeProfile called with no Firebase user');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'You are no longer signed in. Please sign in again.',
+        status: AuthStatus.unauthenticated,
+      );
+      return;
+    }
+
+    final userId = UserId(firebaseUser.uid as String);
+    final success = await _initializeUserProfile(
+      userId: userId,
+      name: name,
+      email: email,
+    );
+    if (!success) return;
+
     _startUserProfileStream(userId);
     state = state.copyWith(
       isLoading: false,
@@ -400,16 +464,6 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
-  /// Rolls back a signed-in Firebase session (best-effort) without touching the
-  /// app state — used when OAuth succeeded but the profile couldn't be set up,
-  /// to avoid stranding the user on the splash with no way out.
-  Future<void> _signOutQuietly() async {
-    try {
-      await ref.read(authRepositoryProvider).signOut();
-    } catch (e) {
-      _logger.w('AuthNotifier: sign-out during OAuth rollback failed: $e');
-    }
-  }
 
   /// Signs out the current user.
   Future<void> signOut() async {

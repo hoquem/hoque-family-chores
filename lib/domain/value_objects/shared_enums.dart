@@ -8,6 +8,7 @@ enum AuthStatus {
   unknown,
   authenticating,
   error,
+  needsProfileCompletion,
 }
 
 /// UI/Provider state enums used across multiple providers

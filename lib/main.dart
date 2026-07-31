@@ -8,7 +8,9 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // UI
+import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/complete_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
@@ -230,7 +232,16 @@ class FamilyGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authNotifierProvider).user;
+    final authState = ref.watch(authNotifierProvider);
+
+    // OAuth succeeded but the Firestore profile could not be created or read.
+    // Keep the Firebase session alive and let the user retry/complete the
+    // profile instead of looping back to login.
+    if (authState.status == AuthStatus.needsProfileCompletion) {
+      return const CompleteProfileScreen();
+    }
+
+    final user = authState.user;
     if (user == null) return const _SplashScreen();
     if (user.familyId.value.isEmpty) {
       return FamilyOnboardingScreen(currentUser: user);
