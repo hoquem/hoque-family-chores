@@ -44,9 +44,8 @@ actions, and the final submit). Everything automatable is already done — see
    - **Target audience and content** — ⚠️ the important one. Choose the age
      groups you intend. Including under-13 opts you into the **Families policy**
      (extra requirements). Decide deliberately.
-   - **App access** — reviewers need to sign in: either add Sign-in-with-Google
-     test instructions, or note the hidden email/password login (long-press the
-     "Login" title).
+   - **App access** — reviewers need to sign in: note the visible email/password
+     section on the Login screen and provide the demo account.
 4. **Release to Production** — Production → Create new release → add the
    **build 44** App Store bundle (already uploaded to Internal; move/add it to
    Production) → review → roll out.
