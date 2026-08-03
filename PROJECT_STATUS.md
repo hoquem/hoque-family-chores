@@ -1,8 +1,8 @@
 # Project Status
 
-**Last updated:** 30 July 2026
-**Version:** 1.0.0+50 (`pubspec.yaml`)
-**Health:** `flutter analyze` clean · 416/416 tests green on `main`
+**Last updated:** 3 August 2026
+**Version:** 1.0.0+51 (`pubspec.yaml`)
+**Health:** `flutter analyze` clean · 430/430 tests green on `main`
 
 ---
 
@@ -15,9 +15,9 @@ next feature wave.
 
 | Channel | State |
 | --- | --- |
-| **Apple App Store** | Version **1.0 / build 46** — `REJECTED` 30 Jul 2026 under **Guideline 2.1.0 (App Completeness)**. The reviewer saw the generic OAuth profile-creation failure screen. Fix implemented: real error surfacing + a "Complete your profile" retry screen that keeps the Firebase session alive. Resubmission is the next step. |
+| **Apple App Store** | Version **1.0 / build 50** — **`READY_FOR_SALE` / `READY_FOR_DISTRIBUTION`** (re-approved). The 30 Jul 2026 Guideline 2.1.0 rejection has been resolved. The hidden email/password demo-account path is documented in the review notes (long-press the "Login" title). The version is approved and will release automatically; no further submission is needed. |
 | **TestFlight (external)** | **Approved and public.** Anyone can join: <https://testflight.apple.com/join/YKd8aNZz> |
-| **TestFlight (internal)** | Build **50**, "Family" group auto-distributes. |
+| **TestFlight (internal)** | Build **51** on TestFlight; build **50** is the approved App Store binary. "Family" group auto-distributes. |
 | **Google Play** | Build **49** on the **internal** track. Production is **gated** — see below. |
 
 ### Google Play production is blocked (not a bug)
@@ -157,6 +157,10 @@ slow loop, reserve it for release candidates. (iOS 26 debug builds still crash a
   `AuthStatus.needsProfileCompletion` + `CompleteProfileScreen`: real Firestore
   errors are surfaced and the user can retry without losing their Apple/Google
   session. Deployed Firestore rules verified against the repo (identical).
+- **App Store approval** — version 1.0 with build 50 is now
+  `READY_FOR_SALE` / `READY_FOR_DISTRIBUTION`. The 30 Jul 2026 rejection under
+  Guideline 2.1.0 has been resolved; the hidden email/password demo-account
+  path is documented for reviewers.
 
 ## 🔄 In flight
 
@@ -183,10 +187,11 @@ Nothing currently in flight on `main`.
 
 ## ▶️ Next
 
-1. **Resubmit to Apple.** Build a new release (build 50+) with the profile-completion
-   fallback, update the App Store version 1.0 build, and reply in the Resolution
-   Center explaining the fix.
-2. Once iOS is live, resume the Play closed test to unlock production.
+1. **Monitor the App Store release.** Version 1.0 / build 50 is approved and
+   set to release automatically. Verify it appears on the App Store within the
+   next few hours; if it does not, check App Store Connect for a manual release
+   prompt.
+2. **Once iOS is live, resume the Play closed test** to unlock production.
 3. From the backlog: invite-code hardening, TASK-468 (self-maintaining app), or
    TASK-469 (Family & Group personas).
 
