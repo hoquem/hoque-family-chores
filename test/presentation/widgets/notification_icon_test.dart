@@ -40,7 +40,7 @@ void main() {
       );
 
       final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-      expect(avatar.backgroundImage, isA<NetworkImage>());
+      expect(avatar.backgroundImage, isA<CachedNetworkImageProvider>());
     });
   });
 }
