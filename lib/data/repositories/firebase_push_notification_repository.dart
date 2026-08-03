@@ -13,6 +13,11 @@ import '../services/notification_preferences_service.dart';
 import '../../presentation/utils/navigator_key.dart';
 import '../../presentation/providers/riverpod/bottom_nav_notifier.dart';
 
+/// Android notification accent colour. Matches the app's marigold brand token
+/// (`kLightTokens.marigold`) so local notifications do not render in the
+/// Material 3 default purple.
+const Color _kNotificationAccent = Color(0xFFE08A1E);
+
 /// Firebase implementation of push notification repository
 class FirebasePushNotificationRepository implements PushNotificationRepository {
   final FirebaseMessaging _firebaseMessaging;
@@ -275,7 +280,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
         importance: Importance.values[payload.priority.toAndroidImportance()],
         priority: Priority.values[payload.priority.toAndroidPriority() + 2],
         icon: payload.icon ?? '@mipmap/ic_launcher',
-        color: const Color(0xFF6750A4),
+        color: _kNotificationAccent,
         groupKey: payload.getGroupKey(),
       );
 
@@ -466,7 +471,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       importance: Importance.values[payload.priority.toAndroidImportance()],
       priority: Priority.values[payload.priority.toAndroidPriority() + 2],
       icon: payload.icon ?? '@mipmap/ic_launcher',
-      color: const Color(0xFF6750A4),
+      color: _kNotificationAccent,
       groupKey: payload.getGroupKey(),
     );
 
