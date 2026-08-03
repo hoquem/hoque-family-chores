@@ -7,6 +7,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifie
 import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/motion/entrance_stagger.dart';
+import 'package:hoque_family_chores/presentation/widgets/notification_icon.dart';
 
 /// The user's notification inbox: newest first, grouped by day,
 /// tap to mark read, swipe to delete, "Mark all as read" action.
@@ -184,7 +185,7 @@ class _NotificationTile extends ConsumerWidget {
           .read(deleteNotificationUseCaseProvider)
           .call(notificationId: notification.id),
       child: ListTile(
-        leading: _NotificationIcon(
+        leading: NotificationIcon(
           isRead: notification.isRead,
           type: notification.type,
           imageUrl: notification.imageUrl,
@@ -217,71 +218,3 @@ class _NotificationTile extends ConsumerWidget {
   }
 }
 
-class _NotificationIcon extends StatelessWidget {
-  final bool isRead;
-  final String? type;
-  final String? imageUrl;
-
-  const _NotificationIcon({
-    required this.isRead,
-    this.type,
-    this.imageUrl,
-  });
-
-  IconData _icon() => switch (type) {
-        'taskCreated' => Icons.add_task_outlined,
-        'taskClaimed' => Icons.person_outline,
-        'taskCompleted' => Icons.check_circle_outline,
-        'taskApproved' => Icons.star_outline,
-        'taskSentBack' => Icons.refresh,
-        'rewardClaimed' => Icons.card_giftcard,
-        'rewardSettled' => Icons.done_all,
-        _ => isRead ? Icons.notifications_none : Icons.notifications_active,
-      };
-
-  Color _bgColor(BuildContext context) {
-    return switch (type) {
-      'taskApproved' => context.tokens.starGold.withValues(alpha: 0.12),
-      'rewardClaimed' || 'rewardSettled' => context.tokens.sprout.withValues(alpha: 0.12),
-      'taskSentBack' => context.tokens.brick.withValues(alpha: 0.12),
-      _ => isRead
-          ? context.tokens.inkMuted.withValues(alpha: 0.12)
-          : context.tokens.amberWarn.withValues(alpha: 0.12),
-    };
-  }
-
-  Color _fgColor(BuildContext context) {
-    return switch (type) {
-      'taskApproved' => context.tokens.starGold,
-      'rewardClaimed' || 'rewardSettled' => context.tokens.sproutDeep,
-      'taskSentBack' => context.tokens.brickDeep,
-      _ => isRead ? context.tokens.inkMuted : context.tokens.amberWarnDeep,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final photo = imageUrl;
-    if (photo != null && photo.isNotEmpty) {
-      return CircleAvatar(
-        radius: 20,
-        backgroundImage: NetworkImage(photo),
-        onBackgroundImageError: (_, __) {},
-      );
-    }
-
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: _bgColor(context),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        _icon(),
-        size: 20,
-        color: _fgColor(context),
-      ),
-    );
-  }
-}
