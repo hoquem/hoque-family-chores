@@ -92,15 +92,15 @@ sed -i '' "s/^version: .*/version: ${version_name}+${next}/" "$REPO_ROOT/pubspec
 # Keep the iOS widget extension's marketing version in sync with the main app so
 # ASC export doesn't reject the bundle for a mismatched or missing version.
 if command -v ruby >/dev/null 2>&1 && ruby -rxcodeproj -e 'exit 0' >/dev/null 2>&1; then
-  ruby -rxcodeproj -e "
-    project = Xcodeproj::Project.open('$REPO_ROOT/ios/Runner.xcodeproj')
-    ext = project.targets.find { |t| t.name == 'ChoresStarWidgetExtension' }
+  ruby -rxcodeproj -e '
+    project = Xcodeproj::Project.open("'"$REPO_ROOT"'/ios/Runner.xcodeproj")
+    ext = project.targets.find { |t| t.name == "ChoresStarWidgetExtension" }
     ext.build_configurations.each do |cfg|
-      cfg.build_settings['MARKETING_VERSION'] = '$version_name'
-      cfg.build_settings['CURRENT_PROJECT_VERSION'] = '$(FLUTTER_BUILD_NUMBER)'
+      cfg.build_settings["MARKETING_VERSION"] = "'"$version_name"'"
+      cfg.build_settings["CURRENT_PROJECT_VERSION"] = "$(FLUTTER_BUILD_NUMBER)"
     end
     project.save
-  "
+  '
 fi
 
 cd "$REPO_ROOT"
