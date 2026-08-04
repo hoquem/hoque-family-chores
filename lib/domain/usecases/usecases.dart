@@ -44,6 +44,9 @@ export 'user/delete_user_usecase.dart';
 export 'user/stream_user_profile_usecase.dart';
 export 'user/initialize_user_data_usecase.dart';
 
+// Home Use Cases
+export 'home/build_home_widget_data_usecase.dart';
+
 // Notification Use Cases
 export 'notification/get_notifications_usecase.dart';
 export 'notification/create_notification_usecase.dart';

@@ -842,6 +842,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  home_widget:
+    dependency: "direct main"
+    description:
+      name: home_widget
+      sha256: bd6889c9e91475c8f5e957e8a2dd7d5458937e8b9f2e68004935636aca537ff4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.9.2+1"
   hooks_riverpod:
     dependency: "direct main"
     description:
