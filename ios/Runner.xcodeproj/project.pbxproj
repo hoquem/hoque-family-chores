@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		01BB7936BDA75C273448CAFC /* ChoresStarWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 68F56B01AEA827928BB75BA1 /* ChoresStarWidget.appex */; };
 		0E73FAB687E6575A805D9D96 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F0D9125A930613174E418340 /* WidgetKit.framework */; };
 		11A221F7591C4F7A6D2053C7 /* ChoresStarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E5729B3BEAEB5CA8F646B9 /* ChoresStarWidget.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -284,7 +283,7 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				F7A0ECA2050E9DD2082C4D4A /* [CP] Embed Pods Frameworks */,
 				2C20BD53392E9C275D318F09 /* [CP] Copy Pods Resources */,
-				FDB2E723E4F3856ED2F070FA /* Embed Foundation Extensions */,
+				7B64C49F8D3FB3266862CD1C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -400,6 +399,27 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
+		7B64C49F8D3FB3266862CD1C /* Embed Foundation Extensions */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex",
+			);
+			name = "Embed Foundation Extensions";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/ChoresStarWidget.appex",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nSRC=\"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex\"\nDST=\"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns\"\nmkdir -p \"${DST}\"\n# Resolve symlinks so the embedded .appex is a real bundle, not a link.\nrm -rf \"${DST}/ChoresStarWidget.appex\"\ncp -R -L \"${SRC}\" \"${DST}/\"\n";
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -453,27 +473,6 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
-		};
-		FDB2E723E4F3856ED2F070FA /* Embed Foundation Extensions */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex",
-			);
-			name = "Embed Foundation Extensions";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/ChoresStarWidget.appex",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\nSRC=\"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex\"\nDST=\"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns\"\nmkdir -p \"${DST}\"\ncp -R \"${SRC}\" \"${DST}/\"\n";
 		};
 		FFB6CB0CFA5D1E8901808E61 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -707,7 +706,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
@@ -731,7 +730,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
@@ -925,7 +924,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
