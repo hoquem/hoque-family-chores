@@ -7,16 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01BB7936BDA75C273448CAFC /* ChoresStarWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 68F56B01AEA827928BB75BA1 /* ChoresStarWidget.appex */; };
+		0E73FAB687E6575A805D9D96 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F0D9125A930613174E418340 /* WidgetKit.framework */; };
+		11A221F7591C4F7A6D2053C7 /* ChoresStarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E5729B3BEAEB5CA8F646B9 /* ChoresStarWidget.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		3732475B8155185A8074E4F1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C476D3BDA76CED09FD4DAAD9 /* Foundation.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		5B994FC99DC4AC656240E871 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6C951F6C234EB14AF4F7497A /* Pods_Runner.framework */; };
 		71152DD9B990232724F6F735 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 30253CE5CF6D527C9D1792CF /* Pods_RunnerTests.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		875ADB5B1B85B8CC4E39EE56 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7C7DE7F717CFC387B1D4B1B7 /* SwiftUI.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		C0DF0AD52DD55C8C00486DC4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C0DF0AD42DD55C8C00486DC4 /* GoogleService-Info.plist */; };
+		F3D909B25169E84323979D8B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B886224ED96B29BFE04D29 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +32,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		DFF9E7E6DF29E9F85377A594 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 72C04040C51B5C9BBF8FBC8F;
+			remoteInfo = ChoresStarWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -44,18 +57,23 @@
 
 /* Begin PBXFileReference section */
 		01445ADB56227BCCAE12885F /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		03E5729B3BEAEB5CA8F646B9 /* ChoresStarWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ChoresStarWidget.swift; path = ChoresStarWidget.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		30253CE5CF6D527C9D1792CF /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		4820B5D9F76D5383A393EDC2 /* ChoresStarWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; name = ChoresStarWidget.entitlements; path = ChoresStarWidget.entitlements; sourceTree = "<group>"; };
+		4C0948ED78966899AF75E85B /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
 		61302D8D0E243DF26E8C89DA /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		68F56B01AEA827928BB75BA1 /* ChoresStarWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChoresStarWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C951F6C234EB14AF4F7497A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7555CA3D3F34C202BA9E0F49 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		7C7DE7F717CFC387B1D4B1B7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = SwiftUI.framework; sourceTree = SDKROOT; };
 		7EA58AADA0B9A94DA0FD31E1 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -65,11 +83,24 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A03B68800E94D2ADEE455698 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		B1904F3BB37203C6626FAE3C /* Contents.json */ = {isa = PBXFileReference; includeInIndex = 1; name = Contents.json; path = Assets.xcassets/Contents.json; sourceTree = "<group>"; };
 		C0DF0AD42DD55C8C00486DC4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		C476D3BDA76CED09FD4DAAD9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		DE8F7AF2108DC759FCE92039 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		F0D9125A930613174E418340 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = WidgetKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4D580C033B3D057E0D7FF972 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3732475B8155185A8074E4F1 /* Foundation.framework in Frameworks */,
+				875ADB5B1B85B8CC4E39EE56 /* SwiftUI.framework in Frameworks */,
+				0E73FAB687E6575A805D9D96 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		62A7AFCC070ECD9B7E1405E0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -94,6 +125,9 @@
 			children = (
 				6C951F6C234EB14AF4F7497A /* Pods_Runner.framework */,
 				30253CE5CF6D527C9D1792CF /* Pods_RunnerTests.framework */,
+				6B66EE922DB27DF884B3EB48 /* iOS */,
+				7C7DE7F717CFC387B1D4B1B7 /* SwiftUI.framework */,
+				F0D9125A930613174E418340 /* WidgetKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -104,6 +138,14 @@
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		6B66EE922DB27DF884B3EB48 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				C476D3BDA76CED09FD4DAAD9 /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -127,6 +169,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				F6A12E4C8C27CC4F8213D188 /* Pods */,
 				2DFB9E5F3469ED137FE76427 /* Frameworks */,
+				B187ECCD149E94763FB88CF3 /* ChoresStarWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -135,6 +178,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				68F56B01AEA827928BB75BA1 /* ChoresStarWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -152,6 +196,27 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		A1B886224ED96B29BFE04D29 /* Assets.xcassets */ = {
+			isa = PBXGroup;
+			children = (
+				B1904F3BB37203C6626FAE3C /* Contents.json */,
+			);
+			name = Assets.xcassets;
+			path = Assets.xcassets;
+			sourceTree = "<group>";
+		};
+		B187ECCD149E94763FB88CF3 /* ChoresStarWidget */ = {
+			isa = PBXGroup;
+			children = (
+				03E5729B3BEAEB5CA8F646B9 /* ChoresStarWidget.swift */,
+				4C0948ED78966899AF75E85B /* Info.plist */,
+				4820B5D9F76D5383A393EDC2 /* ChoresStarWidget.entitlements */,
+				A1B886224ED96B29BFE04D29 /* Assets.xcassets */,
+			);
+			name = ChoresStarWidget;
+			path = ChoresStarWidget;
 			sourceTree = "<group>";
 		};
 		F6A12E4C8C27CC4F8213D188 /* Pods */ = {
@@ -189,6 +254,23 @@
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		72C04040C51B5C9BBF8FBC8F /* ChoresStarWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FC5A786F261E19BB96DEEEDF /* Build configuration list for PBXNativeTarget "ChoresStarWidgetExtension" */;
+			buildPhases = (
+				36A30EBABED666539080971F /* Sources */,
+				4D580C033B3D057E0D7FF972 /* Frameworks */,
+				6F3CD3923A3FFA6F8E346CDC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ChoresStarWidgetExtension;
+			productName = ChoresStarWidgetExtension;
+			productReference = 68F56B01AEA827928BB75BA1 /* ChoresStarWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
@@ -202,10 +284,12 @@
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				F7A0ECA2050E9DD2082C4D4A /* [CP] Embed Pods Frameworks */,
 				2C20BD53392E9C275D318F09 /* [CP] Copy Pods Resources */,
+				FDB2E723E4F3856ED2F070FA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				6FB0123D3F35D9F60B249C97 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -247,6 +331,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				72C04040C51B5C9BBF8FBC8F /* ChoresStarWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -256,6 +341,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6F3CD3923A3FFA6F8E346CDC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3D909B25169E84323979D8B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -361,6 +454,27 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		FDB2E723E4F3856ED2F070FA /* Embed Foundation Extensions */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex",
+			);
+			name = "Embed Foundation Extensions";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns/ChoresStarWidget.appex",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nSRC=\"${BUILT_PRODUCTS_DIR}/ChoresStarWidget.appex\"\nDST=\"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.app/PlugIns\"\nmkdir -p \"${DST}\"\ncp -R \"${SRC}\" \"${DST}/\"\n";
+		};
 		FFB6CB0CFA5D1E8901808E61 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -394,6 +508,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		36A30EBABED666539080971F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				11A221F7591C4F7A6D2053C7 /* ChoresStarWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -410,6 +532,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		6FB0123D3F35D9F60B249C97 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ChoresStarWidgetExtension;
+			target = 72C04040C51B5C9BBF8FBC8F /* ChoresStarWidgetExtension */;
+			targetProxy = DFF9E7E6DF29E9F85377A594 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -482,7 +610,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
@@ -496,6 +624,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FUSE_BUILD_PHASES = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Family Chores";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -563,6 +692,54 @@
 			};
 			name = Profile;
 		};
+		5F90B62D15B09EA3FCF6EA48 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = C67LAFG9Q4;
+				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
+				PRODUCT_NAME = ChoresStarWidget;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Debug;
+		};
+		809A86FA612618F53BF1D9FD /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = C67LAFG9Q4;
+				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
+				PRODUCT_NAME = ChoresStarWidget;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Profile;
+		};
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -618,7 +795,7 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -673,7 +850,7 @@
 				SUPPORTED_PLATFORMS = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -687,6 +864,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FUSE_BUILD_PHASES = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Family Chores";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -714,6 +892,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				ENABLE_BITCODE = NO;
+				FUSE_BUILD_PHASES = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Family Chores";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -728,6 +907,30 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		E40678975091FD5F305BE83E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = C67LAFG9Q4;
+				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
+				PRODUCT_NAME = ChoresStarWidget;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
 			};
 			name = Release;
 		};
@@ -760,6 +963,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FC5A786F261E19BB96DEEEDF /* Build configuration list for PBXNativeTarget "ChoresStarWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E40678975091FD5F305BE83E /* Release */,
+				5F90B62D15B09EA3FCF6EA48 /* Debug */,
+				809A86FA612618F53BF1D9FD /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
