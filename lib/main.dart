@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hoque_family_chores/core/fresh_install_guard.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
+import 'package:hoque_family_chores/utils/home_widget_bridge.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'firebase_options.dart';
 // Push notifications background handler
@@ -96,6 +97,16 @@ void main() async {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       runApp(ErrorApp(error: e));
       return;
+    }
+
+    try {
+      logger.i("[Startup] Initializing home widget bridge...");
+      await HomeWidgetBridgeImpl().initialize();
+      logger.i("[Startup] Home widget bridge initialized.");
+    } catch (e, s) {
+      // The widget is a convenience, not a hard dependency: a setup failure
+      // must not crash the app on startup. Log it and continue.
+      logger.e("[Startup] Home widget bridge initialization failed.", error: e, stackTrace: s);
     }
 
     try {

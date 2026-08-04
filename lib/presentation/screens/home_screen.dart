@@ -13,6 +13,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_n
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/motion/streak_milestone_watcher.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/home_widget_provider.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
@@ -179,6 +180,13 @@ class HomeScreen extends ConsumerWidget {
     final missions = todayMissions(tasks, currentUser.id, now);
     final streak = streakDays(tasks, currentUser.id, now);
     ref.read(streakMilestoneWatcherProvider.notifier).report(streak);
+
+    // Keep the home-screen widget in sync with the home hub. The listener
+    // recomputes widget data whenever the task stream or auth state changes.
+    ref.listen(
+      homeWidgetDataProvider(currentUser.familyId, currentUser.id),
+      (_, data) => ref.read(homeWidgetBridgeProvider).update(data),
+    );
 
     return RefreshIndicator(
       onRefresh: () async {
