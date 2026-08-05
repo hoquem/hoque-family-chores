@@ -36,8 +36,11 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
         data: (tasks) {
           final memberTasks = tasks.where((t) {
             final assignedToId = t.assignedToId;
-            return assignedToId != null &&
-                assignedToId.value == widget.member.id.value;
+            final createdById = t.createdById;
+            return (assignedToId != null &&
+                    assignedToId.value == widget.member.id.value) ||
+                (createdById != null &&
+                    createdById.value == widget.member.id.value);
           });
 
           final currentTasks = memberTasks
