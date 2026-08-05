@@ -18,6 +18,8 @@
 	<dict>
 		<key>com.hoque.hoqueFamilyChores</key>
 		<string>automatic</string>
+		<key>com.hoque.hoqueFamilyChores.ChoresStarWidget</key>
+		<string>automatic</string>
 	</dict>
 </dict>
 </plist>

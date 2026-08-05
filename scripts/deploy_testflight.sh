@@ -72,8 +72,14 @@ build_state() { # $1 = build number; prints processingState or "ABSENT"
 [ -f "$KEY_PATH" ] || { echo "ERROR: ASC key not found at $KEY_PATH" >&2; exit 1; }
 
 highest=$(highest_build_number)
-next=$((highest + 1))
 version_name=$(sed -n 's/^version: \([0-9.]*\)+.*/\1/p' "$REPO_ROOT/pubspec.yaml")
+current_code=$(sed -n 's/^version: [0-9.]*+\([0-9]*\).*/\1/p' "$REPO_ROOT/pubspec.yaml")
+next=$((highest + 1))
+# Respect an already-bumped pubspec.yaml so a manual build-number bump (e.g. to
+# skip a stuck upload) is not silently reverted to highest+1.
+if [ "$current_code" -gt "$next" ]; then
+  next="$current_code"
+fi
 echo "Highest build on ASC: $highest  →  deploying ${version_name}+${next}"
 
 if [ "${1:-}" = "--dry-run" ]; then
@@ -82,6 +88,20 @@ if [ "${1:-}" = "--dry-run" ]; then
 fi
 
 sed -i '' "s/^version: .*/version: ${version_name}+${next}/" "$REPO_ROOT/pubspec.yaml"
+
+# Keep the iOS widget extension's marketing version in sync with the main app so
+# ASC export doesn't reject the bundle for a mismatched or missing version.
+if command -v ruby >/dev/null 2>&1 && ruby -rxcodeproj -e 'exit 0' >/dev/null 2>&1; then
+  ruby -rxcodeproj -e '
+    project = Xcodeproj::Project.open("'"$REPO_ROOT"'/ios/Runner.xcodeproj")
+    ext = project.targets.find { |t| t.name == "ChoresStarWidgetExtension" }
+    ext.build_configurations.each do |cfg|
+      cfg.build_settings["MARKETING_VERSION"] = "'"$version_name"'"
+      cfg.build_settings["CURRENT_PROJECT_VERSION"] = "'"$next"'"
+    end
+    project.save
+  '
+fi
 
 cd "$REPO_ROOT"
 KEY_FLAGS=(-allowProvisioningUpdates
