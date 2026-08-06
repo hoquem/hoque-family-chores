@@ -21,8 +21,12 @@ void main() {
       expect(taskStatusLabel(TaskStatus.inProgress), 'On it');
     });
 
-    test('a chore waiting for a sign-off is pending approval', () {
-      expect(taskStatusLabel(TaskStatus.pendingApproval), 'Pending Approval');
+    // DESIGN.md:204,261,442 specify "Waiting", and :302 names "Awaiting
+    // Approval" as a prohibited phrasing. The code said "Pending Approval" in
+    // three places until they were unified above; this pins the spec.
+    test('a chore waiting for a sign-off says Waiting, not Pending Approval',
+        () {
+      expect(taskStatusLabel(TaskStatus.pendingApproval), 'Waiting');
     });
 
     test('a sent-back chore says have another go', () {

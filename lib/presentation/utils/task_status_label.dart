@@ -13,7 +13,7 @@ String taskStatusLabel(TaskStatus status) => switch (status) {
       TaskStatus.available => 'Up for grabs',
       TaskStatus.assigned => 'Assigned',
       TaskStatus.inProgress => 'On it',
-      TaskStatus.pendingApproval => 'Pending Approval',
+      TaskStatus.pendingApproval => 'Waiting',
       TaskStatus.needsRevision => 'Have another go',
       TaskStatus.completed => 'Done',
     };

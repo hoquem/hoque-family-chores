@@ -566,7 +566,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            // Wrap, not Row: a long status ("Pending Approval") plus a long
+            // Wrap, not Row: a long status ("Have another go") plus a long
             // difficulty ("Challenging") overflow the width on a phone, so let
             // the difficulty pill drop to the next line instead of clipping.
             Wrap(

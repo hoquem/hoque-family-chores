@@ -580,7 +580,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           );
         }
         // The doer has no action here (they can't approve their own work), and
-        // the meta row already shows the "Pending Approval" status pill — so a
+        // the meta row already shows the "Waiting" status pill — so a
         // second "Waiting" pill in the action slot was just a duplicate.
         return null;
 

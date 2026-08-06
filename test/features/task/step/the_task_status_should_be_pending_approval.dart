@@ -9,7 +9,7 @@ Future<void> theTaskStatusShouldBePendingApproval(WidgetTester tester) async {
     matching: find.byType(Card),
   );
   expect(
-    find.descendant(of: card, matching: find.text('Pending Approval')),
+    find.descendant(of: card, matching: find.text('Waiting')),
     findsOneWidget,
   );
 }
