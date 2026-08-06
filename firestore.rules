@@ -118,7 +118,8 @@ service cloud.firestore {
       // expressible at this layer: "you may only settle your own claim" and
       // "a settled claim cannot be settled twice" both depend on comparing a
       // write against existing state and on who claimed it. Those live in
-      // SettleRedemptionUseCase, with tests.
+      // SettleRedemptionUseCase, pinned by
+      // test/domain/usecases/reward/settle_redemption_usecase_test.dart.
       //
       // What this layer must do is keep one family's promises out of another
       // family's hands, and it does. Within a family, the stars are the real
