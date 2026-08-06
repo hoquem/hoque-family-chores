@@ -873,7 +873,8 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
           ),
         TaskAction.handBack => OutlinedButton.icon(
             onPressed: _handleUnclaimTask,
-            icon: const Icon(Icons.undo),
+            // See task_list_tile.dart — undo belongs to the status pill.
+            icon: const Icon(Icons.assignment_return),
             label: const Text('Give it back'),
           ),
         TaskAction.approve => FilledButton.icon(

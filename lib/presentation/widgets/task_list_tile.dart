@@ -517,7 +517,11 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       case TaskAction.handBack:
         return IconButton(
           onPressed: _handleCantDoIt,
-          icon: const Icon(Icons.undo, size: 20),
+          // Not Icons.undo: DESIGN.md:205 gives undo to the needsRevision
+          // status pill, and both appear on the same tile once a chore is sent
+          // back. Two undos meaning different things is worse than a less
+          // obvious glyph.
+          icon: const Icon(Icons.assignment_return, size: 20),
           tooltip: "Can't do it — return to available",
           color: t.amberWarn,
         );

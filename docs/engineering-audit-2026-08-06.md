@@ -314,10 +314,12 @@ deleted lines rather than adding tested code. §7 and §4 are otherwise untouche
 migration was verified by test and the detail-screen migration only by
 rule-by-rule reading.
 
-**Cosmetic issue introduced, not fixed:** `StatusPill` uses `Icons.undo` as the
-`needsRevision` status glyph (`status_pill.dart:58`), and hand-back now also
-uses `Icons.undo` on the same tile. Two undo icons, different meanings. Worth a
-different glyph for one of them.
+**Glyph collision, found and fixed.** Adding hand-back to `needsRevision` put
+two `Icons.undo` on one tile: `StatusPill` uses it as the `needsRevision` status
+glyph, which `DESIGN.md:205` specifies. The pill kept it and the hand-back
+action moved to `Icons.assignment_return` in both screens. Eight test assertions
+that used `byIcon(undo)` to mean "the hand-back action" moved with it — the one
+in the `needsRevision` state now matches by tooltip, which cannot collide.
 
 ## Not audited
 
