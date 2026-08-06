@@ -15,6 +15,7 @@ import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart'
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
+import '../utils/task_status_label.dart';
 
 class TaskDetailsScreen extends ConsumerStatefulWidget {
   final Task task;
@@ -30,23 +31,6 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   bool _isLoading = false;
 
   Task get task => widget.task;
-
-  String _statusLabel(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.available:
-        return 'Up for grabs';
-      case TaskStatus.assigned:
-        return 'Assigned';
-      case TaskStatus.inProgress:
-        return 'On it';
-      case TaskStatus.pendingApproval:
-        return 'Pending Approval';
-      case TaskStatus.needsRevision:
-        return 'Have another go';
-      case TaskStatus.completed:
-        return 'Done';
-    }
-  }
 
   IconData _difficultyIcon(TaskDifficulty difficulty) {
     switch (difficulty) {
@@ -591,7 +575,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               children: [
                 StatusPill(
                   status: task.status,
-                  label: _statusLabel(task.status),
+                  label: taskStatusLabel(task.status),
                 ),
                 Container(
                   padding:

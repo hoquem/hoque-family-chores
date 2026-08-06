@@ -17,6 +17,7 @@ import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/theme/motion.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
+import '../utils/task_status_label.dart';
 
 class TaskListTile extends ConsumerStatefulWidget {
   final Task task;
@@ -607,23 +608,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     }
   }
 
-  String _getStatusText() {
-    switch (widget.task.status) {
-      case TaskStatus.available:
-        return 'Up for grabs';
-      case TaskStatus.assigned:
-        return 'Assigned';
-      case TaskStatus.inProgress:
-        return 'On it';
-      case TaskStatus.pendingApproval:
-        return 'Pending Approval';
-      case TaskStatus.completed:
-        return 'Done';
-      case TaskStatus.needsRevision:
-        return 'Have another go';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool isCompleted = widget.task.status == TaskStatus.completed;
@@ -638,7 +622,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         // the pile of text is also a button.
         child: Semantics(
           button: true,
-          label: 'Open task ${widget.task.title}, ${_getStatusText()}',
+          label: 'Open task ${widget.task.title}, ${taskStatusLabel(widget.task.status)}',
           child: InkWell(
           borderRadius: BorderRadius.circular(12.0),
           onTap: () {
@@ -685,7 +669,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                           Flexible(
                             child: StatusPill(
                               status: widget.task.status,
-                              label: _getStatusText(),
+                              label: taskStatusLabel(widget.task.status),
                             ),
                           ),
                           const SizedBox(width: 8.0),

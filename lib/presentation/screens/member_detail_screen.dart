@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
+import '../utils/task_status_label.dart';
 
 /// Detail screen for a family member: shows their task activity, current
 /// assignments, and completed chore history.
@@ -321,15 +322,6 @@ class _TaskTile extends StatelessWidget {
     required this.member,
   });
 
-  String _statusLabel() => switch (task.status) {
-        TaskStatus.available => 'Up for grabs',
-        TaskStatus.assigned => 'Assigned',
-        TaskStatus.inProgress => 'On it',
-        TaskStatus.pendingApproval => 'Pending Approval',
-        TaskStatus.completed => 'Done',
-        TaskStatus.needsRevision => 'Have another go',
-      };
-
   @override
   Widget build(BuildContext context) {
     final date = task.approvedAt ?? task.createdAt;
@@ -352,7 +344,7 @@ class _TaskTile extends StatelessWidget {
             if (!isCompleted)
               StatusPill(
                 status: task.status,
-                label: _statusLabel(),
+                label: taskStatusLabel(task.status),
               )
             else
               Row(
