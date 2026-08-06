@@ -33,6 +33,7 @@ introducing a new concept without adding it here first is a framework violation.
 | Child | A non-admin role that joins with anonymous auth and a first name only | A user with an email/password |
 | Stars | Points earned from approved chores and spendable on treats | Generic "points" or a leaderboard-only metric |
 | Treat | User-facing name for a reward (real family activity) | A digital badge or in-app item |
+| Mission | A Chore that needs you *today*: assigned to you and due today or earlier, plus unclaimed chores due today anyone could take. The Home screen and both home-screen widgets speak in Missions | A third name for Chore — it is a narrower set, scoped to one person and one day |
 | Approval | A family member (other than the doer) signs off a completed chore | Self-confirmation |
 | Claim | A member says "I'll do it" for an unassigned chore | Assignment by a parent |
 | Settle | The claimant marks their own treat redemption as done | An admin cancelling the treat |

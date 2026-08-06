@@ -43,6 +43,12 @@ DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
 /// A mission is a task assigned to [userId] due today or earlier. Completed
 /// tasks only count when they were completed today, so old tasks don't
 /// linger on the home screen.
+///
+/// **Mission is a glossary term, not a stray synonym for Chore** — see
+/// ENGINEERING.md. It is the narrower set: one person, one day. The Home
+/// screen and both home-screen widgets speak in Missions for that reason,
+/// while the Chores tab shows the whole family's work. Pinned by
+/// `test/domain/services/home_stats_test.dart`.
 TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
   final endOfToday = _dayOf(now).add(const Duration(days: 1));
   final today = _dayOf(now);
