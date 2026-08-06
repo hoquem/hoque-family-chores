@@ -1,5 +1,6 @@
 import '../../domain/entities/task.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/services/task_actions.dart';
 
 /// The little red numbers on the tab bar.
 class TabBadgeCounts {
@@ -34,8 +35,14 @@ TabBadgeCounts tabBadgeCounts({
       viewer.role == UserRole.parent || viewer.role == UserRole.guardian;
 
   final chores = isParent
-      // A parent's job is signing off finished work.
-      ? tasks.where((t) => t.status == TaskStatus.pendingApproval).length
+      // A parent's job is signing off finished work — but not their own. Asking
+      // taskActionsFor rather than re-deriving the rule is what keeps the badge
+      // and the buttons from disagreeing: a number here with nothing to tap
+      // behind it is worse than no number at all.
+      ? tasks
+          .where((t) => taskActionsFor(task: t, viewerId: viewer.id)
+              .contains(TaskAction.approve))
+          .length
       // Everyone else: chores free to take, plus their own live work. Submitted
       // work is deliberately absent — it needs nothing further from the doer.
       : tasks.where((t) {

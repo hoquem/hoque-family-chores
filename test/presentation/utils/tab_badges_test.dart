@@ -112,15 +112,29 @@ void main() {
       expect(counts.chores, 1);
     });
 
-    // BUG, pinned as-is. A parent who submits their own chore is badged to
-    // approve it — but no-self-approval means they cannot, and the buttons are
-    // correctly hidden. The badge nags for work the app forbids. Fixed in the
-    // commit after this one; this test changes with it.
-    test('BUG: also counts their own submission, which they cannot approve',
+    // The bug this file was written to fix. A parent who submits their own
+    // chore was badged to approve it — but no-self-approval forbids that, and
+    // taskActionsFor correctly hides the buttons. The badge was nagging for
+    // work the app refuses to let them do.
+    test('ignores their own submission — they cannot sign off their own work',
         () {
       final counts = tabBadgeCounts(
         viewer: _viewer(UserRole.parent),
         tasks: [_task(TaskStatus.pendingApproval, assignedTo: _me)],
+        unreadNotifications: 0,
+      );
+      expect(counts.chores, 0,
+          reason: 'the badge must agree with the buttons: taskActionsFor '
+              'offers this viewer nothing on their own submission');
+    });
+
+    test('counts only the ones they can actually sign off', () {
+      final counts = tabBadgeCounts(
+        viewer: _viewer(UserRole.parent),
+        tasks: [
+          _task(TaskStatus.pendingApproval, assignedTo: _sibling),
+          _task(TaskStatus.pendingApproval, assignedTo: _me),
+        ],
         unreadNotifications: 0,
       );
       expect(counts.chores, 1);
