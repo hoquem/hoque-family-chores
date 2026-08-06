@@ -25,7 +25,8 @@ introducing a new concept without adding it here first is a framework violation.
 
 | Term | Means | Is NOT |
 |------|-------|--------|
-| Chore / Task | A unit of work a family member can claim and complete | A calendar event or notification |
+| Chore | A unit of work a family member can claim and complete. The user-facing name: every string a family reads says "chore" | A calendar event or notification |
+| Task | The code identifier for a Chore (`Task`, `TaskStatus`, `TaskRepository`, the `tasks` collection, `taskId` payload keys). Never user-facing | A second concept — same thing, different layer |
 | Family | A private space bound by a 6-character invite code | A public group or contact list |
 | Member | A user belonging to one family | A global friend/contact |
 | Parent / Guardian | An admin-capable role (`isAdmin`) | The Firebase `admin` claim |

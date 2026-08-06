@@ -193,20 +193,20 @@ functional status set that is *always* reinforced by icon + label.
 ### Functional Status (always icon + label, never color alone)
 
 Status color conveys *aliveness*, not identity — the icon and the word carry
-identity. An unclaimed task is **neutral** (it hasn't started); the moment it
+identity. An unclaimed chore is **neutral** (it hasn't started); the moment it
 is assigned it becomes **warm**. This is the Status-Never-Alone Rule made
 concrete, and it closes the 5-state mapping the current code fudges.
 
-| Task state | Color | Icon | Label |
+| Chore state | Color | Icon | Label |
 |---|---|---|---|
 | Available (ready to claim) | Ink-Soft neutral — *no saturated hue* | ○ `circle_outlined` | "Available" |
 | Assigned / in-progress | Carrot (#FB8C00) | ▶ `play_circle` | "In progress" |
 | Pending approval | Amber Warn (#F59E0B) | ⏳ `hourglass_top` | "Waiting" |
 | Needs revision | Brick (#C6412A) | ↩ `undo` | "Try again" |
 | Completed | Sprout (#4CAF50) | ✓ `check_circle` | "Done" |
-| Overdue (state of any active task) | Brick (#C6412A) | ⚠ `warning` | "Overdue" |
+| Overdue (state of any active chore) | Brick (#C6412A) | ⚠ `warning` | "Overdue" |
 
-- **Available is neutral on purpose.** An unclaimed task hasn't earned a
+- **Available is neutral on purpose.** An unclaimed chore hasn't earned a
   saturated color yet; an open circle + "Available" reads correctly and keeps
   the warm hues for *live* work. This replaces the current `Colors.blue`.
 - **Brick** (#C6412A) replaces the current `Colors.red` / `#F44336` —
@@ -289,7 +289,7 @@ The warmth comes from size and weight, not from a novelty face.
   Stars"), section headers.
 - **Body** (400, 16px, 1.45): the default. Larger than a typical app's 14px
   on purpose — young-reader legibility. Max line length 65–75ch for prose;
-  task rows can run denser.
+  chore rows can run denser.
 - **Body Small** (400, 14px, 1.4): secondary info, timestamps, metadata.
   Never below 14px — 11px and 12px statuses in the current code are
   prohibited.
@@ -299,7 +299,7 @@ The warmth comes from size and weight, not from a novelty face.
 ### Named Rules
 
 **The 14px Floor Rule.** No text below 14px anywhere. The current 11px
-"Awaiting Approval" and 12px task descriptions are violations; promote them
+"Awaiting Approval" and 12px chore descriptions are violations; promote them
 to 14px minimum.
 
 **The Bold-Label Rule.** Button and status labels are 600 weight, never 400.
@@ -316,7 +316,7 @@ by heavy shadows. This keeps the fridge-door feel (paper, not glass).
 - **Ambient** (`0 1px 3px rgba(36,29,20,0.08)`): the only default shadow, on
   cards and inputs at rest. Barely there.
 - **Lifted** (`0 4px 12px rgba(36,29,20,0.12)`): reserved for state — the FAB,
-  a pressed/active action button, a dragged task tile. Never decorative.
+  a pressed/active action button, a dragged chore tile. Never decorative.
 
 ### Named Rules
 
@@ -333,7 +333,7 @@ is opaque warm surfaces, never frosted blur.
 
 **State the colours in the theme.** Left to `ColorScheme.fromSeed`, M3 derives
 a light container with primary-coloured text from the light marigold seed —
-2.43:1 on the live "Create Task" button. Tokens being sound does not make
+2.43:1 on the live "Create Chore" button. Tokens being sound does not make
 buttons sound; `appLightTheme` now pins background and foreground on every
 button theme, and `token_contrast_test.dart` resolves the real `ButtonStyle`
 rather than raw token pairs.
@@ -390,7 +390,7 @@ three call sites each rolled their own and all three drifted.
 - **Why the icon is the -deep variant.** As a meaningful graphic it owes 3:1
   (WCAG 1.4.11); the base tones give 1.84–2.33:1 on their own tint. The deep
   siblings clear it at 4.3–5.7:1.
-- **State:** per task status (Sprout/Amber/Carrot/Brick); each pill ships
+- **State:** per chore status (Sprout/Amber/Carrot/Brick); each pill ships
   with its icon + label by default.
 - ``test/presentation/theme/token_contrast_test.dart`` asserts all of the
   above against the real token values, including that the base tones still
@@ -402,7 +402,7 @@ three call sites each rolled their own and all three drifted.
 - **Background:** Surface (#FCF9F4), warm hairline (Line) optional.
 - **Shadow:** Ambient at rest, none needed for most. Never nested.
 - **Internal padding:** 16px (lg).
-- **Anti-pattern:** the current Task Details screen stacks a Card per
+- **Anti-pattern:** the current Chore Details screen stacks a Card per
   section — that is prohibited here. One card groups related content;
   sections inside use dividers, not more cards.
 
@@ -417,7 +417,7 @@ three call sites each rolled their own and all three drifted.
 
 ### Navigation
 
-- **Bottom nav,** 4 items (Home, Tasks, Family, Profile). Fixed type.
+- **Bottom nav,** 4 items (Home, Chores, Family, Profile). Fixed type.
 - **Active:** Marigold-deep icon + label, bold.
 - **Inactive:** Ink-muted. Min 48px tap target per item (the current default
   is acceptable; keep it).
@@ -502,7 +502,7 @@ theme itself undercuts is not a floor.
   infantile.
 - **Don't** build a corporate SaaS dashboard: no dense data tables, no
   navy/grey, no hero-metric cards (big number over tiny label). The current
-  Task Details "Points" card is exactly this template and must be demoted.
+  Chore Details "Points" card is exactly this template and must be demoted.
 - **Don't** clutter with gamification: no stacked confetti, no competing
   animations, no perpetual pulse. One moment at a time.
 - **Don't** use gradient text (`background-clip: text`), glassmorphism
@@ -516,7 +516,7 @@ theme itself undercuts is not a floor.
   reduced-motion gated, and defined only inside `lib/presentation/motion/`
   (enforced by `motion_carveout_test.dart`). "One celebration moment per
   screen" still applies — celebrations queue, never stack.
-- **Don't** stack a Card per section (the current Task Details pattern). One
+- **Don't** stack a Card per section (the current Chore Details pattern). One
   card groups; dividers separate.
 - **Don't** convey status, urgency, or meaning by color alone — always icon +
   label. A kid who can't decode hue must still read state.

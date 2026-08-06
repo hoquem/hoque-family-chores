@@ -313,7 +313,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task approved! Stars awarded.'),
+            content: Text('Chore approved! Stars awarded.'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -560,7 +560,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
         // the pile of text is also a button.
         child: Semantics(
           button: true,
-          label: 'Open task ${widget.task.title}, ${taskStatusLabel(widget.task.status)}',
+          label: 'Open chore ${widget.task.title}, ${taskStatusLabel(widget.task.status)}',
           child: InkWell(
           borderRadius: BorderRadius.circular(12.0),
           onTap: () {

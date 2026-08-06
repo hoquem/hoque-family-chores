@@ -25,7 +25,7 @@ class ApprovalQueueCard extends StatelessWidget {
         subtitle: Text(
           count == 0
               ? 'Nothing waiting right now 🎉'
-              : '$count task${count == 1 ? '' : 's'} waiting',
+              : '$count chore${count == 1 ? '' : 's'} waiting',
         ),
         trailing: const Icon(Icons.chevron_right),
       ),

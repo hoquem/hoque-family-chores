@@ -38,7 +38,7 @@ class _BeforeAfterViewState extends State<BeforeAfterView> {
 
     return Semantics(
       button: true,
-      label: 'Task photo, $_label',
+      label: 'Chore photo, $_label',
       hint: 'Tap to see the $_otherLabel photo',
       excludeSemantics: true,
       child: GestureDetector(

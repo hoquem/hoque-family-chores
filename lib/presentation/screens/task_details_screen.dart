@@ -82,7 +82,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to claim task: $e'),
+            content: Text('Failed to claim chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -112,7 +112,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to return task: $e'),
+            content: Text('Failed to return chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -192,7 +192,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete task?'),
+        title: const Text('Delete chore?'),
         content: Text(
           '"${task.title}" will be removed for everyone. This cannot be undone.',
         ),
@@ -220,7 +220,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Task deleted'),
+            content: const Text('Chore deleted'),
             backgroundColor: context.tokens.inkSoft,
           ),
         );
@@ -232,7 +232,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete task: $e'),
+            content: Text('Failed to delete chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -359,7 +359,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Task approved!'),
+            content: Text('✅ Chore approved!'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -370,7 +370,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to approve task: $e'),
+            content: Text('Failed to approve chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -430,7 +430,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to reject task: $e'),
+            content: Text('Failed to reject chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -446,7 +446,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     final currentUser = authState.user;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Details'),
+        title: const Text('Chore Details'),
         actions: [
           if (currentUser?.role == UserRole.parent)
             PopupMenuButton<String>(

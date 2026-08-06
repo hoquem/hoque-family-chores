@@ -152,7 +152,7 @@ class HomeScreen extends ConsumerWidget {
                 Icon(Icons.error_outline, size: 48, color: context.tokens.brick),
                 const SizedBox(height: 8),
                 const Text(
-                  'Could not load tasks',
+                  'Could not load chores',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),

@@ -42,8 +42,8 @@ class BottomNavBar extends StatelessWidget {
       unselectedItemColor: context.tokens.inkMuted,
       items: [
         BottomNavigationBarItem(icon: iconWithBadge(Icons.home, 0), label: 'Home'),
-        BottomNavigationBarItem(icon: iconWithBadge(Icons.task, 1), label: 'Tasks'),
-        // Beside Tasks on purpose: you earn on the left, you spend on the
+        BottomNavigationBarItem(icon: iconWithBadge(Icons.task, 1), label: 'Chores'),
+        // Beside Chores on purpose: you earn on the left, you spend on the
         // right. Stars bought nothing at all before this tab existed.
         BottomNavigationBarItem(
             icon: iconWithBadge(Icons.card_giftcard, 2), label: 'Treats'),

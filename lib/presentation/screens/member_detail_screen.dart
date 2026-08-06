@@ -122,7 +122,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Could not load tasks: $error'),
+            child: Text('Could not load chores: $error'),
           ),
         ),
       ),

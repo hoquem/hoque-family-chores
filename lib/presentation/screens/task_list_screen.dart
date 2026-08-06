@@ -118,11 +118,11 @@ class TaskListScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('No tasks found for you in this family!'),
+                const Text('No chores found for you in this family!'),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => _refreshData(ref, familyId),
-                  child: const Text('Retry Loading Tasks'),
+                  child: const Text('Retry Loading Chores'),
                 ),
               ],
             ),
@@ -132,7 +132,7 @@ class TaskListScreen extends ConsumerWidget {
         final tasks =
             tasksForDisplay(_applyFilter(allTasks, filter, currentUser.id));
         if (tasks.isEmpty) {
-          return const Center(child: Text('No tasks match this filter.'));
+          return const Center(child: Text('No chores match this filter.'));
         }
 
         return RefreshIndicator(
@@ -173,7 +173,7 @@ class TaskListScreen extends ConsumerWidget {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text('Loading tasks...'),
+            Text('Loading chores...'),
           ],
         ),
       ),
@@ -216,14 +216,14 @@ class TaskListScreen extends ConsumerWidget {
     if (currentUser == null || familyId == null) {
       return const Scaffold(
         body: Center(
-          child: Text('Please log in and join a family to view tasks.'),
+          child: Text('Please log in and join a family to view chores.'),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tasks'),
+        title: const Text('Chores'),
         actions: [
           const HelpButton(content: kTasksHelp),
           PopupMenuButton<TaskFilterType>(
@@ -233,7 +233,7 @@ class TaskListScreen extends ConsumerWidget {
             itemBuilder: (BuildContext context) => [
               const PopupMenuItem(
                 value: TaskFilterType.all,
-                child: Text('All Tasks'),
+                child: Text('All Chores'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.available,
@@ -241,7 +241,7 @@ class TaskListScreen extends ConsumerWidget {
               ),
               const PopupMenuItem(
                 value: TaskFilterType.myTasks,
-                child: Text('My Tasks'),
+                child: Text('My Chores'),
               ),
               const PopupMenuItem(
                 value: TaskFilterType.pendingApproval,
@@ -267,7 +267,7 @@ class TaskListScreen extends ConsumerWidget {
         onPressed: () => _navigateToAddTask(context),
         backgroundColor: context.tokens.starGold,
         foregroundColor: context.tokens.ink,
-        tooltip: 'Add Task',
+        tooltip: 'Add Chore',
         child: const Icon(Icons.add),
       ),
     );

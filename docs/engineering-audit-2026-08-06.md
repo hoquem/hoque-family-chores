@@ -301,6 +301,15 @@ on Top-3 #2 and the §6 finding:
 - `taskActionsFor` (`domain/services/task_actions.dart`) — the workflow rules
   that were written twice. 15 tests, no framework imports, mutation-checked.
 - Both screens migrated to it; −144/+81 and −82 lines respectively.
+- **§1's root cause fixed.** The glossary entry read `| Chore / Task |` —
+  one concept with two blessed names, which is what made the drift legal
+  rather than a mistake. Split to mirror the existing Treat/Reward entry:
+  **Chore** is the user-facing name, **Task** is the code identifier and is
+  never user-facing. All user-facing copy renamed to match (52 strings in
+  `lib/`, 19 test assertions, `DESIGN.md`), including the nav tab, which now
+  reads **Chores** — the tab beside it had already made this move from
+  Rewards to Treats. Code identifiers untouched: mass-renaming `Task*` across
+  a tested codebase churns the most valuable asset for zero behaviour change.
 
 **The extraction found a live inconsistency.** The two copies had drifted: the
 detail screen offered "Give it back" on a `needsRevision` chore and the tile did
