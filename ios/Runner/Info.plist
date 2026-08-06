@@ -32,6 +32,16 @@
 				<string>com.googleusercontent.apps.232697993893-eter7e4uhi9e9htqp63dd2sth63ve26h</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.hoque.hoqueFamilyChores.widget</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>hoquefamilychores</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
@@ -39,6 +49,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take before and after photos of your chores so a grown-up can see your work.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -58,7 +70,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>Take before and after photos of your chores so a grown-up can see your work.</string>
 </dict>
 </plist>
