@@ -18,6 +18,7 @@ import 'package:hoque_family_chores/presentation/theme/motion.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import '../utils/task_status_label.dart';
+import '../../domain/services/task_actions.dart';
 
 class TaskListTile extends ConsumerStatefulWidget {
   final Task task;
@@ -51,11 +52,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   /// peers, not a hierarchy, and a sibling checking a sibling's work is the
   /// point. This used to be parents-and-guardians only. The domain enforces
   /// the same rule in ApproveTaskUseCase; this only hides a button.
-  bool get _canJudge => widget.task.assignedToId != widget.user.id;
-
-  bool get _isAssignedToMe =>
-      widget.task.assignedToId == widget.user.id;
-
   Future<void> _handleTakeOwnership() async {
     _logger.d('TaskListTile: Taking ownership of task ${widget.task.id}');
 
@@ -437,6 +433,10 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   }
 
   /// The actions for this task, or null when this status/role has none.
+  ///
+  /// What appears is `taskActionsFor`'s decision; this only dresses it. The
+  /// icons for needsRevision and completed are status indicators, not actions —
+  /// they show precisely when there is nothing to do.
   Widget? _buildActionButtons() {
     if (_isProcessing || widget.isUpdating) {
       return const SizedBox(
@@ -446,165 +446,99 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
       );
     }
 
-    switch (widget.task.status) {
-      case TaskStatus.available:
-        // You can't claim a chore you created yourself; a parent assigns it.
-        if (widget.task.createdById == widget.user.id) return null;
+    final actions =
+        taskActionsFor(task: widget.task, viewerId: widget.user.id);
+
+    if (actions.isEmpty) {
+      return switch (widget.task.status) {
+        TaskStatus.needsRevision => Icon(Icons.warning,
+            color: context.tokens.amberWarnDeep, size: 24),
+        TaskStatus.completed => Icon(Icons.check_circle,
+            color: context.tokens.sproutDeep, size: 24),
+        _ => null,
+      };
+    }
+
+    final widgets = [for (final a in actions) _actionWidget(a)];
+    if (widgets.length == 1) return widgets.single;
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: widgets,
+    );
+  }
+
+  /// How one action looks in a list tile: compact, and secondary actions
+  /// reduced to an icon so a row of chores stays scannable.
+  Widget _actionWidget(TaskAction action) {
+    final t = context.tokens;
+    // Cream, not Ink, on every *Deep fill: a Deep is dark, so Ink is under
+    // 4.5:1 on it.
+    ButtonStyle filled(Color background) => ElevatedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: t.cream,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        );
+
+    switch (action) {
+      case TaskAction.claim:
         return ElevatedButton.icon(
           onPressed: _handleTakeOwnership,
           icon: const Icon(Icons.person_add, size: 16),
           label: const Text("I'll do it!"),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: context.tokens.ink,
+            foregroundColor: t.ink,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
         );
-
-      case TaskStatus.assigned:
-        if (_isAssignedToMe) {
-          // A photo-proof task is STARTED, not completed, from here. Start
-          // replaces Done rather than joining it: leaving Done in place would
-          // let a child finish without ever taking the before photo, which is
-          // the entire point of the feature. The domain guard in
-          // CompleteTaskUseCase enforces the same rule, because the UI is not
-          // a security boundary.
-          final primary = widget.task.requiresPhotoProof
-              ? ElevatedButton.icon(
-                  onPressed: _handleStart,
-                  icon: const Icon(Icons.play_circle, size: 16),
-                  label: const Text('Start'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.tokens.carrotDeep,
-                    foregroundColor: context.tokens.cream,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                  ),
-                )
-              : ElevatedButton.icon(
-                  onPressed: _handleMarkComplete,
-                  icon: const Icon(Icons.check, size: 16),
-                  label: const Text("I've done it!"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.tokens.sproutDeep,
-                    // Cream, not Ink: a *Deep fill is dark, so Ink on it is
-                    // under 4.5:1.
-                    foregroundColor: context.tokens.cream,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                  ),
-                );
-
-          return Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              primary,
-              IconButton(
-                onPressed: _handleCantDoIt,
-                icon: const Icon(Icons.undo, size: 20),
-                tooltip: "Can't do it — return to available",
-                color: context.tokens.amberWarn,
-              ),
-            ],
-          );
-        }
-        return null;
-
-      case TaskStatus.inProgress:
-        // The before photo is already taken, so this is where a photo-proof
-        // task is finished or handed back. Both are required: an arm with only
-        // Done would trap a child who cannot do the chore after all, and an
-        // empty arm would trap them entirely — the dead end Start exists to
-        // prevent.
-        if (_isAssignedToMe) {
-          return Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _handleMarkComplete,
-                icon: const Icon(Icons.check, size: 16),
-                label: const Text("I've done it!"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.tokens.sproutDeep,
-                  foregroundColor: context.tokens.cream,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                ),
-              ),
-              IconButton(
-                onPressed: _handleCantDoIt,
-                icon: const Icon(Icons.undo, size: 20),
-                tooltip: "Can't do it — return to available",
-                color: context.tokens.amberWarn,
-              ),
-            ],
-          );
-        }
-        return null;
-
-      case TaskStatus.pendingApproval:
-        if (_canJudge) {
-          return Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _handleApprove,
-                icon: const Icon(Icons.thumb_up, size: 16),
-                label: const Text('Give stars ⭐'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.tokens.sproutDeep,
-                  // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
-                  foregroundColor: context.tokens.cream,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _handleReject,
-                icon: const Icon(Icons.thumb_down, size: 16),
-                label: const Text('Send back'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.tokens.brick,
-                  side: BorderSide(color: context.tokens.brick),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                ),
-              ),
-            ],
-          );
-        }
-        // The doer has no action here (they can't approve their own work), and
-        // the meta row already shows the "Waiting" status pill — so a
-        // second "Waiting" pill in the action slot was just a duplicate.
-        return null;
-
-      case TaskStatus.needsRevision:
-        if (_isAssignedToMe) {
-          return ElevatedButton.icon(
-            onPressed: _handleMarkComplete,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Send again'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.tokens.carrotDeep,
-              // Cream, not Ink: a *Deep fill is dark, so Ink on it is under 4.5:1.
-              foregroundColor: context.tokens.cream,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-          );
-        }
-        return Icon(Icons.warning,
-            color: context.tokens.amberWarnDeep, size: 24);
-
-      case TaskStatus.completed:
-        return Icon(Icons.check_circle,
-            color: context.tokens.sproutDeep, size: 24);
+      case TaskAction.start:
+        return ElevatedButton.icon(
+          onPressed: _handleStart,
+          icon: const Icon(Icons.play_circle, size: 16),
+          label: const Text('Start'),
+          style: filled(t.carrotDeep),
+        );
+      case TaskAction.complete:
+        return ElevatedButton.icon(
+          onPressed: _handleMarkComplete,
+          icon: const Icon(Icons.check, size: 16),
+          label: const Text("I've done it!"),
+          style: filled(t.sproutDeep),
+        );
+      case TaskAction.resubmit:
+        return ElevatedButton.icon(
+          onPressed: _handleMarkComplete,
+          icon: const Icon(Icons.refresh, size: 16),
+          label: const Text('Send again'),
+          style: filled(t.carrotDeep),
+        );
+      case TaskAction.handBack:
+        return IconButton(
+          onPressed: _handleCantDoIt,
+          icon: const Icon(Icons.undo, size: 20),
+          tooltip: "Can't do it — return to available",
+          color: t.amberWarn,
+        );
+      case TaskAction.approve:
+        return ElevatedButton.icon(
+          onPressed: _handleApprove,
+          icon: const Icon(Icons.thumb_up, size: 16),
+          label: const Text('Give stars ⭐'),
+          style: filled(t.sproutDeep),
+        );
+      case TaskAction.sendBack:
+        return OutlinedButton.icon(
+          onPressed: _handleReject,
+          icon: const Icon(Icons.thumb_down, size: 16),
+          label: const Text('Send back'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: t.brick,
+            side: BorderSide(color: t.brick),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          ),
+        );
     }
   }
 

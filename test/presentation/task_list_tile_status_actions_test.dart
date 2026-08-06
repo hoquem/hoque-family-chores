@@ -186,6 +186,22 @@ void main() {
       expect(find.text("I've done it!"), findsNothing);
     });
 
+    // Behaviour change, 2026-08-06. The tile used to offer only Send again
+    // here, while the task-details screen offered a way out as well. The
+    // tile's own reasoning for inProgress — an arm with no escape "would trap
+    // a child who cannot do the chore after all" — applies identically to a
+    // chore that was sent back, so the tile gained the escape rather than the
+    // detail screen losing it. Rule now lives in taskActionsFor.
+    // Matched by tooltip, not icon: StatusPill already uses Icons.undo as the
+    // needsRevision status glyph (status_pill.dart:58), so byIcon(undo) finds
+    // two here and says nothing about the action.
+    testWidgets('assigned to me can also hand it back', (tester) async {
+      await _pumpTile(tester,
+          status: TaskStatus.needsRevision, assignedToId: _me);
+      expect(
+          find.byTooltip("Can't do it — return to available"), findsOneWidget);
+    });
+
     testWidgets('assigned to someone else shows warning icon only',
         (tester) async {
       await _pumpTile(tester,
