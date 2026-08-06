@@ -9,6 +9,8 @@ import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/motion/entrance_stagger.dart';
 import 'package:hoque_family_chores/presentation/widgets/notification_icon.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:dartz/dartz.dart' hide Task, State;
+import 'package:hoque_family_chores/core/error/failures.dart';
 
 /// The user's notification inbox: newest first, grouped by day,
 /// tap to mark read, swipe to delete, "Mark all as read" action.
@@ -26,19 +28,34 @@ class NotificationsScreen extends ConsumerWidget {
           if (user != null)
             TextButton(
               onPressed: () async {
-                final notifications =
-                    await ref.read(getNotificationsUseCaseProvider).call(userId: user.id);
-                notifications.fold(
-                  (_) {},
+                final messenger = ScaffoldMessenger.of(context);
+                final tokens = context.tokens;
+                final notifications = await ref
+                    .read(getNotificationsUseCaseProvider)
+                    .call(userId: user.id);
+                // One message for the batch: a per-notification snackbar storm
+                // is worse than silence.
+                final failures = <String>[];
+                await notifications.fold(
+                  (failure) async => failures.add(failure.message),
                   (list) async {
                     for (final n in list.where((n) => !n.isRead)) {
-                      await ref.read(markNotificationAsReadUseCaseProvider).call(
-                            userId: user.id,
-                            notificationId: n.id,
-                          );
+                      final r = await ref
+                          .read(markNotificationAsReadUseCaseProvider)
+                          .call(userId: user.id, notificationId: n.id);
+                      r.fold((f) => failures.add(f.message), (_) {});
                     }
                   },
                 );
+                if (failures.isNotEmpty) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          "Couldn't mark them all read (${failures.first})"),
+                      backgroundColor: tokens.brickDeep,
+                    ),
+                  );
+                }
               },
               child: Text(
                 'Mark all read',
@@ -98,6 +115,32 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Runs a notification write and tells the user if it fails.
+///
+/// Every call site here used to discard the returned Either. When Firestore
+/// refused the write, nothing surfaced: the unread dot stayed put and the only
+/// evidence was a line in the device log. A write the user can see the result
+/// of must report when it does not happen.
+Future<void> _runAndReport(
+  BuildContext context,
+  Future<Either<Failure, Unit>> action,
+  String whatFailed,
+) async {
+  // Captured before the await: this widget may be gone by the time it returns.
+  final messenger = ScaffoldMessenger.of(context);
+  final tokens = context.tokens;
+  final result = await action;
+  result.fold(
+    (failure) => messenger.showSnackBar(
+      SnackBar(
+        content: Text('$whatFailed (${failure.message})'),
+        backgroundColor: tokens.brickDeep,
+      ),
+    ),
+    (_) {},
+  );
 }
 
 class _NotificationList extends StatelessWidget {
@@ -192,9 +235,12 @@ class _NotificationTile extends ConsumerWidget {
         padding: const EdgeInsets.only(right: 16),
         child: Icon(Icons.delete, color: context.tokens.cream),
       ),
-      onDismissed: (_) => ref
-          .read(deleteNotificationUseCaseProvider)
-          .call(userId: UserId(userId), notificationId: notification.id),
+      onDismissed: (_) => _runAndReport(
+        context,
+        ref.read(deleteNotificationUseCaseProvider).call(
+            userId: UserId(userId), notificationId: notification.id),
+        "Couldn't delete that notification",
+      ),
       child: ListTile(
         leading: NotificationIcon(
           isRead: notification.isRead,
@@ -221,9 +267,13 @@ class _NotificationTile extends ConsumerWidget {
               ),
         onTap: notification.isRead
             ? null
-            : () => ref
-                .read(markNotificationAsReadUseCaseProvider)
-                .call(userId: UserId(userId), notificationId: notification.id),
+            : () => _runAndReport(
+                  context,
+                  ref.read(markNotificationAsReadUseCaseProvider).call(
+                      userId: UserId(userId),
+                      notificationId: notification.id),
+                  "Couldn't mark that as read",
+                ),
       ),
     );
   }
