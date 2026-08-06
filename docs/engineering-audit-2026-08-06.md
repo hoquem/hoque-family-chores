@@ -289,8 +289,9 @@ on Top-3 #2 and the §6 finding:
 |---|---|---|
 | `domain/services` | 193 lines, 2 files | **281 lines, 3 files, 98.8% covered** |
 | `task_list_tile.dart` | 848 lines | **766** |
-| `task_details_screen.dart` | 976 lines | **897** |
-| Tests | 438 | **460** |
+| `task_details_screen.dart` | 976 lines, **0/412 covered** | **897 lines, 152/412 (36.9%)** |
+| `lib/` coverage | 46.8% | **49.0%** |
+| Tests | 438 | **469** |
 
 - `taskStatusLabel` (`presentation/utils`) — the three-way duplicated status
   wording, now one pinned function. Deliberately *not* in `domain/`: it is copy,
@@ -308,11 +309,16 @@ Tasks list. Resolved in the tile's favour losing nothing — it gained the actio
 That divergence had been invisible precisely because the rule lived in two
 places; it surfaced the moment there was one.
 
-`lib/` coverage is unchanged at 46.8% — the extraction moved covered logic and
-deleted lines rather than adding tested code. §7 and §4 are otherwise untouched:
-`task_details_screen.dart` is still at 0 covered lines, which is why the tile
-migration was verified by test and the detail-screen migration only by
-rule-by-rule reading.
+**Top-3 #1 partly closed as a side effect.** The detail-screen migration was
+initially verified only by reading, because the screen had no tests — so nine
+characterization tests were added for its action section, taking it from 0 to
+152 covered lines and `lib/` from 46.8% to 49.0%. They pin button *order*
+explicitly, which was the one thing the extraction could have silently reversed.
+
+Those tests immediately earned their keep twice: they exposed a 27px header
+overflow that turned out to be flutter_test's fixed-width fallback font rather
+than a real defect (verified before touching production code), and they cover
+the states a rule-by-rule reading is weakest on.
 
 **Glyph collision, found and fixed.** Adding hand-back to `needsRevision` put
 two `Icons.undo` on one tile: `StatusPill` uses it as the `needsRevision` status
