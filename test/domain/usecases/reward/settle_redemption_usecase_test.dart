@@ -16,7 +16,6 @@
 // guard; these checks are the friendly early exit in front of it. That makes
 // them a UX contract rather than a security boundary — but the rules file
 // claimed them, so they are now enforced somewhere.
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/core/error/failures.dart';
@@ -128,6 +127,16 @@ void main() {
       when(() => rewards.settleRedemption(any(), any(),
               happened: any(named: 'happened')))
           .thenThrow(const ServerException('offline', code: 'NETWORK'));
+
+      final result = await settle(
+          redemption: _claim(), actor: _me, happened: true);
+
+      expect(result.fold((f) => f, (_) => null), isA<ServerFailure>());
+    });
+
+    test('an unexpected error is still a failure, never a crash', () async {
+      when(() => rewards.settleRedemption(any(), any(),
+          happened: any(named: 'happened'))).thenThrow(StateError('boom'));
 
       final result = await settle(
           redemption: _claim(), actor: _me, happened: true);
