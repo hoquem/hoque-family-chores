@@ -86,23 +86,23 @@ Future<void> _settle(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('creation screen speaks the same language as the Tasks tab',
+  testWidgets('creation screen speaks the same language as the Chores tab',
       (tester) async {
     await _pumpAddTaskScreen(tester);
     await _settle(tester);
 
-    expect(find.text('Add New Task'), findsOneWidget);
-    expect(find.text('Task Title'), findsOneWidget);
-    expect(find.text('Create Task'), findsOneWidget);
+    expect(find.text('Add New Chore'), findsOneWidget);
+    expect(find.text('Chore Title'), findsOneWidget);
+    expect(find.text('Create Chore'), findsOneWidget);
     expect(find.textContaining('Quest'), findsNothing,
-        reason: 'the rest of the app calls them tasks');
+        reason: 'the rest of the app calls them chores');
     expect(find.textContaining('quest'), findsNothing,
-        reason: 'the rest of the app calls them tasks');
+        reason: 'the rest of the app calls them chores');
 
     // The empty-title validation message matches the field label.
-    await tester.tap(find.text('Create Task'));
+    await tester.tap(find.text('Create Chore'));
     await tester.pump();
-    expect(find.text('Please enter a task title'), findsOneWidget);
+    expect(find.text('Please enter a chore title'), findsOneWidget);
   });
 
   testWidgets('due date field reads as a deadline, not a duration',

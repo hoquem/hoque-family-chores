@@ -105,12 +105,14 @@ class MockNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<void> deleteNotification(String notificationId) async {
+  Future<void> deleteNotification(UserId userId, String notificationId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
       final initialLength = _notifications.length;
-      _notifications.removeWhere((notification) => notification.id == notificationId);
+      _notifications.removeWhere((notification) =>
+          notification.id == notificationId &&
+          notification.userId == userId.value);
       
       if (_notifications.length == initialLength) {
         throw NotFoundException('Notification not found', code: 'NOTIFICATION_NOT_FOUND');
@@ -124,11 +126,12 @@ class MockNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<void> markNotificationAsRead(String notificationId) async {
+  Future<void> markNotificationAsRead(UserId userId, String notificationId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
+      final index = _notifications.indexWhere(
+          (n) => n.id == notificationId && n.userId == userId.value);
       if (index != -1) {
         _notifications[index] = _notifications[index].markAsRead();
         _notificationsStreamController.add(List.from(_notifications));
@@ -142,11 +145,12 @@ class MockNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<void> markNotificationAsUnread(String notificationId) async {
+  Future<void> markNotificationAsUnread(UserId userId, String notificationId) async {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
+      final index = _notifications.indexWhere(
+          (n) => n.id == notificationId && n.userId == userId.value);
       if (index != -1) {
         _notifications[index] = _notifications[index].markAsUnread();
         _notificationsStreamController.add(List.from(_notifications));

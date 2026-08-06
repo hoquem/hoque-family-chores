@@ -64,7 +64,7 @@ void main() {
     expect(_appBarTitle('Home'), findsOneWidget,
         reason: 'the Home tab needs an AppBar so its title clears the notch');
 
-    for (final tab in ['Tasks', 'Family', 'Profile']) {
+    for (final tab in ['Chores', 'Family', 'Profile']) {
       await tester.tap(find.text(tab).last);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));

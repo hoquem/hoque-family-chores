@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/value_objects/user_id.dart';
-import '../../core/error/exceptions.dart';
+// Hides the project's own FirebaseException: this file catches Firestore's,
+// to tell a missing document apart from a permission or network failure.
+import '../../core/error/exceptions.dart' hide FirebaseException;
 
 /// Firebase implementation of NotificationRepository
 class FirebaseNotificationRepository implements NotificationRepository {
@@ -70,99 +72,53 @@ class FirebaseNotificationRepository implements NotificationRepository {
     }
   }
 
+  /// The document for one notification. Notifications are per-user, so the
+  /// owner is part of the address — there is no way to reach one without it,
+  /// and no reason to look for it anywhere else.
+  DocumentReference<Map<String, dynamic>> _doc(
+          UserId userId, String notificationId) =>
+      _firestore
+          .collection('users')
+          .doc(userId.value)
+          .collection('notifications')
+          .doc(notificationId);
+
   @override
-  Future<void> deleteNotification(String notificationId) async {
+  Future<void> deleteNotification(UserId userId, String notificationId) async {
     try {
-      // Find the notification first to get its user ID
-      final usersSnapshot = await _firestore.collection('users').get();
-
-      for (final userDoc in usersSnapshot.docs) {
-        final userId = userDoc.id;
-        final notificationDoc = await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('notifications')
-            .doc(notificationId)
-            .get();
-
-        if (notificationDoc.exists) {
-          await _firestore
-              .collection('users')
-              .doc(userId)
-              .collection('notifications')
-              .doc(notificationId)
-              .delete();
-          return;
-        }
-      }
-      throw NotFoundException('Notification not found', code: 'NOTIFICATION_NOT_FOUND');
+      await _doc(userId, notificationId).delete();
     } catch (e) {
       if (e is DataException) rethrow;
-      throw ServerException('Failed to delete notification: $e', code: 'NOTIFICATION_DELETE_ERROR');
+      throw ServerException('Failed to delete notification: $e',
+          code: 'NOTIFICATION_DELETE_ERROR');
     }
   }
 
   @override
-  Future<void> markNotificationAsRead(String notificationId) async {
-    try {
-      // Find the notification first to get its user ID
-      final usersSnapshot = await _firestore.collection('users').get();
-
-      for (final userDoc in usersSnapshot.docs) {
-        final userId = userDoc.id;
-        final notificationDoc = await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('notifications')
-            .doc(notificationId)
-            .get();
-
-        if (notificationDoc.exists) {
-          await _firestore
-              .collection('users')
-              .doc(userId)
-              .collection('notifications')
-              .doc(notificationId)
-              .update({'isRead': true});
-          return;
-        }
-      }
-      throw NotFoundException('Notification not found', code: 'NOTIFICATION_NOT_FOUND');
-    } catch (e) {
-      if (e is DataException) rethrow;
-      throw ServerException('Failed to mark notification as read: $e', code: 'NOTIFICATION_MARK_READ_ERROR');
-    }
-  }
+  Future<void> markNotificationAsRead(
+          UserId userId, String notificationId) async =>
+      _setRead(userId, notificationId, true);
 
   @override
-  Future<void> markNotificationAsUnread(String notificationId) async {
+  Future<void> markNotificationAsUnread(
+          UserId userId, String notificationId) async =>
+      _setRead(userId, notificationId, false);
+
+  Future<void> _setRead(
+      UserId userId, String notificationId, bool isRead) async {
     try {
-      // Find the notification first to get its user ID
-      final usersSnapshot = await _firestore.collection('users').get();
-
-      for (final userDoc in usersSnapshot.docs) {
-        final userId = userDoc.id;
-        final notificationDoc = await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('notifications')
-            .doc(notificationId)
-            .get();
-
-        if (notificationDoc.exists) {
-          await _firestore
-              .collection('users')
-              .doc(userId)
-              .collection('notifications')
-              .doc(notificationId)
-              .update({'isRead': false});
-          return;
-        }
+      await _doc(userId, notificationId).update({'isRead': isRead});
+    } on FirebaseException catch (e) {
+      if (e.code == 'not-found') {
+        throw NotFoundException('Notification not found',
+            code: 'NOTIFICATION_NOT_FOUND');
       }
-      throw NotFoundException('Notification not found', code: 'NOTIFICATION_NOT_FOUND');
+      throw ServerException('Failed to mark notification as read: $e',
+          code: 'NOTIFICATION_MARK_READ_ERROR');
     } catch (e) {
       if (e is DataException) rethrow;
-      throw ServerException('Failed to mark notification as unread: $e', code: 'NOTIFICATION_MARK_UNREAD_ERROR');
+      throw ServerException('Failed to mark notification as read: $e',
+          code: 'NOTIFICATION_MARK_READ_ERROR');
     }
   }
 

@@ -109,25 +109,25 @@ void main() {
   });
 
   group('assigned task', () {
-    testWidgets('assigned to me without photo proof offers Done and undo',
+    testWidgets('assigned to me without photo proof offers Done and hand-back',
         (tester) async {
       await _pumpTile(tester,
           status: TaskStatus.assigned,
           assignedToId: _me,
           requiresPhotoProof: false);
       expect(find.text("I've done it!"), findsOneWidget);
-      expect(find.byIcon(Icons.undo), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_return), findsOneWidget);
       expect(find.text('Start'), findsNothing);
     });
 
-    testWidgets('assigned to me with photo proof offers Start and undo',
+    testWidgets('assigned to me with photo proof offers Start and hand-back',
         (tester) async {
       await _pumpTile(tester,
           status: TaskStatus.assigned,
           assignedToId: _me,
           requiresPhotoProof: true);
       expect(find.text('Start'), findsOneWidget);
-      expect(find.byIcon(Icons.undo), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_return), findsOneWidget);
       expect(find.text("I've done it!"), findsNothing,
           reason: 'Done in the assigned arm would let a child finish without '
               'ever taking the before photo');
@@ -138,25 +138,25 @@ void main() {
           status: TaskStatus.assigned, assignedToId: _sibling);
       expect(find.text("I've done it!"), findsNothing);
       expect(find.text('Start'), findsNothing);
-      expect(find.byIcon(Icons.undo), findsNothing);
+      expect(find.byIcon(Icons.assignment_return), findsNothing);
     });
   });
 
   group('in progress task', () {
-    testWidgets('assigned to me offers Done and undo', (tester) async {
+    testWidgets('assigned to me offers Done and hand-back', (tester) async {
       await _pumpTile(tester,
           status: TaskStatus.inProgress,
           assignedToId: _me,
           requiresPhotoProof: true);
       expect(find.text("I've done it!"), findsOneWidget);
-      expect(find.byIcon(Icons.undo), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_return), findsOneWidget);
     });
 
     testWidgets('assigned to someone else has no action', (tester) async {
       await _pumpTile(tester,
           status: TaskStatus.inProgress, assignedToId: _sibling);
       expect(find.text("I've done it!"), findsNothing);
-      expect(find.byIcon(Icons.undo), findsNothing);
+      expect(find.byIcon(Icons.assignment_return), findsNothing);
     });
   });
 
@@ -184,6 +184,23 @@ void main() {
           status: TaskStatus.needsRevision, assignedToId: _me);
       expect(find.text('Send again'), findsOneWidget);
       expect(find.text("I've done it!"), findsNothing);
+    });
+
+    // Behaviour change, 2026-08-06. The tile used to offer only Send again
+    // here, while the task-details screen offered a way out as well. The
+    // tile's own reasoning for inProgress — an arm with no escape "would trap
+    // a child who cannot do the chore after all" — applies identically to a
+    // chore that was sent back, so the tile gained the escape rather than the
+    // detail screen losing it. Rule now lives in taskActionsFor.
+    // Matched by tooltip rather than icon. This is the state where the glyphs
+    // nearly collided: StatusPill uses Icons.undo for needsRevision
+    // (status_pill.dart:58, per DESIGN.md:205), which is why hand-back moved to
+    // Icons.assignment_return. The tooltip names the action and cannot collide.
+    testWidgets('assigned to me can also hand it back', (tester) async {
+      await _pumpTile(tester,
+          status: TaskStatus.needsRevision, assignedToId: _me);
+      expect(
+          find.byTooltip("Can't do it — return to available"), findsOneWidget);
     });
 
     testWidgets('assigned to someone else shows warning icon only',

@@ -86,7 +86,7 @@ void main() {
 
     testWidgets('can be handed back', (tester) async {
       await _pumpTile(tester);
-      expect(find.byIcon(Icons.undo), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_return), findsOneWidget);
     });
 
     testWidgets('shows it is in progress', (tester) async {
@@ -100,7 +100,7 @@ void main() {
     testWidgets('offers me nothing', (tester) async {
       await _pumpTile(tester, assignedTo: _someoneElse);
       expect(find.text("I've done it!"), findsNothing);
-      expect(find.byIcon(Icons.undo), findsNothing);
+      expect(find.byIcon(Icons.assignment_return), findsNothing);
     });
   });
 }

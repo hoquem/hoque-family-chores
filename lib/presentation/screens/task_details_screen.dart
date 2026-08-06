@@ -15,6 +15,8 @@ import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart'
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
+import '../utils/task_status_label.dart';
+import '../../domain/services/task_actions.dart';
 
 class TaskDetailsScreen extends ConsumerStatefulWidget {
   final Task task;
@@ -30,23 +32,6 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   bool _isLoading = false;
 
   Task get task => widget.task;
-
-  String _statusLabel(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.available:
-        return 'Up for grabs';
-      case TaskStatus.assigned:
-        return 'Assigned';
-      case TaskStatus.inProgress:
-        return 'On it';
-      case TaskStatus.pendingApproval:
-        return 'Pending Approval';
-      case TaskStatus.needsRevision:
-        return 'Have another go';
-      case TaskStatus.completed:
-        return 'Done';
-    }
-  }
 
   IconData _difficultyIcon(TaskDifficulty difficulty) {
     switch (difficulty) {
@@ -97,7 +82,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to claim task: $e'),
+            content: Text('Failed to claim chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -127,7 +112,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to return task: $e'),
+            content: Text('Failed to return chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -207,7 +192,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete task?'),
+        title: const Text('Delete chore?'),
         content: Text(
           '"${task.title}" will be removed for everyone. This cannot be undone.',
         ),
@@ -235,7 +220,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Task deleted'),
+            content: const Text('Chore deleted'),
             backgroundColor: context.tokens.inkSoft,
           ),
         );
@@ -247,7 +232,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete task: $e'),
+            content: Text('Failed to delete chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -374,7 +359,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Task approved!'),
+            content: Text('✅ Chore approved!'),
             backgroundColor: context.tokens.sproutDeep,
           ),
         );
@@ -385,7 +370,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to approve task: $e'),
+            content: Text('Failed to approve chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -445,7 +430,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to reject task: $e'),
+            content: Text('Failed to reject chore: $e'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -459,18 +444,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
-    final isAssignedToMe =
-        currentUser != null && task.assignedToId == currentUser.id;
-    // Anyone in the family may sign off a chore — except the person who did it.
-    // This is the same rule ApproveTaskUseCase enforces and the Tasks list tile
-    // shows (_canJudge). The detail screen used to gate on role.isAdmin, so a
-    // sibling saw a working Approve button in the list, tapped through to here,
-    // and it was gone. Match the tile; the domain layer is the real boundary.
-    final canJudge = currentUser != null && !isAssignedToMe;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Details'),
+        title: const Text('Chore Details'),
         actions: [
           if (currentUser?.role == UserRole.parent)
             PopupMenuButton<String>(
@@ -545,11 +521,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   const SizedBox(height: 16),
                   _buildTimelineSection(),
                   const SizedBox(height: 32),
-                  _buildActionButtons(
-                    currentUser: currentUser,
-                    canJudge: canJudge,
-                    isAssignedToMe: isAssignedToMe,
-                  ),
+                  _buildActionButtons(currentUser: currentUser),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -582,7 +554,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            // Wrap, not Row: a long status ("Pending Approval") plus a long
+            // Wrap, not Row: a long status ("Have another go") plus a long
             // difficulty ("Challenging") overflow the width on a phone, so let
             // the difficulty pill drop to the next line instead of clipping.
             Wrap(
@@ -591,7 +563,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               children: [
                 StatusPill(
                   status: task.status,
-                  label: _statusLabel(task.status),
+                  label: taskStatusLabel(task.status),
                 ),
                 Container(
                   padding:
@@ -798,143 +770,39 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     );
   }
 
-  Widget _buildActionButtons({
-    required User? currentUser,
-    required bool canJudge,
-    required bool isAssignedToMe,
-  }) {
+  Widget _buildActionButtons({required User? currentUser}) {
     if (currentUser == null) return const SizedBox.shrink();
 
+    final actions = taskActionsFor(task: task, viewerId: currentUser.id);
     final buttons = <Widget>[];
 
-    // Available task — anyone can claim EXCEPT the person who created it.
-    if (task.status == TaskStatus.available &&
-        task.createdById != currentUser.id) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleClaimTask(currentUser),
-            icon: const Icon(Icons.add_task),
-            label: const Text("I'll do it!"),
-          ),
-        ),
-      );
-    }
+    // Approve and Send back sit side by side — they are a single either/or
+    // decision, and stacking them full-width reads as two separate steps.
+    // Every other action is its own full-width row.
+    final pairJudgeButtons = actions.contains(TaskAction.approve) &&
+        actions.contains(TaskAction.sendBack);
 
-    // Assigned to me. A photo-proof task is STARTED here (before-photo); a plain
-    // task is marked done directly. This matches the task-list tile.
-    if (task.status == TaskStatus.assigned && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: task.requiresPhotoProof
-              ? FilledButton.icon(
-                  onPressed: () => _handleStartTask(currentUser),
-                  icon: const Icon(Icons.play_circle),
-                  label: const Text('Start (take before photo)'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.tokens.carrotDeep,
-                  ),
-                )
-              : FilledButton.icon(
-                  onPressed: () => _handleCompleteTask(currentUser),
-                  icon: const Icon(Icons.check),
-                  label: const Text("I've done it!"),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.tokens.sproutDeep,
-                  ),
-                ),
-        ),
-      );
-    }
-
-    // In progress (a photo-proof task already started) and mine — finish it by
-    // taking the after photo.
-    if (task.status == TaskStatus.inProgress && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleCompleteTask(currentUser),
-            icon: const Icon(Icons.check),
-            label: const Text("I've done it! (take after photo)"),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.tokens.sproutDeep,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Needs revision & assigned to me — resubmit
-    if (task.status == TaskStatus.needsRevision && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleCompleteTask(currentUser),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Send again'),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.tokens.carrotDeep,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Mine and not yet approved — I can give it back to the pool so someone
-    // else can claim it.
-    if ((task.status == TaskStatus.assigned ||
-            task.status == TaskStatus.inProgress ||
-            task.status == TaskStatus.needsRevision) &&
-        isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _handleUnclaimTask,
-            icon: const Icon(Icons.undo),
-            label: const Text('Give it back'),
-          ),
-        ),
-      );
-    }
-
-    // Pending approval, and I'm not the one who did it — approve/reject
-    if (task.status == TaskStatus.pendingApproval && canJudge) {
-      buttons.add(
-        Row(
+    for (final action in actions) {
+      if (pairJudgeButtons && action == TaskAction.sendBack) {
+        continue; // already drawn beside Approve
+      }
+      if (pairJudgeButtons && action == TaskAction.approve) {
+        buttons.add(Row(
           children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => _handleApproveTask(currentUser),
-                icon: const Icon(Icons.thumb_up),
-                label: const Text('Give the stars ⭐'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.tokens.sproutDeep,
-                ),
-              ),
-            ),
+            Expanded(child: _actionButton(TaskAction.approve, currentUser)),
             const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _handleRejectTask,
-                icon: Icon(Icons.thumb_down, color: context.tokens.brick),
-                label: Text('Send back',
-                    style: TextStyle(color: context.tokens.brick)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: context.tokens.brick),
-                ),
-              ),
-            ),
+            Expanded(child: _actionButton(TaskAction.sendBack, currentUser)),
           ],
-        ),
-      );
+        ));
+        continue;
+      }
+      buttons.add(SizedBox(
+        width: double.infinity,
+        child: _actionButton(action, currentUser),
+      ));
     }
 
-    // Completed task — show completion message
+    // Not an action — nobody has anything left to do on an approved chore.
     if (task.status == TaskStatus.completed) {
       buttons.add(
         Container(
@@ -973,4 +841,63 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ..removeLast(),
     );
   }
+
+  /// How one action looks on this screen. The decision of *whether* it appears
+  /// belongs to `taskActionsFor`; this is only its face.
+  Widget _actionButton(TaskAction action, User currentUser) => switch (action) {
+        TaskAction.claim => FilledButton.icon(
+            onPressed: () => _handleClaimTask(currentUser),
+            icon: const Icon(Icons.add_task),
+            label: const Text("I'll do it!"),
+          ),
+        TaskAction.start => FilledButton.icon(
+            onPressed: () => _handleStartTask(currentUser),
+            icon: const Icon(Icons.play_circle),
+            label: const Text('Start (take before photo)'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.carrotDeep,
+            ),
+          ),
+        TaskAction.complete => FilledButton.icon(
+            onPressed: () => _handleCompleteTask(currentUser),
+            icon: const Icon(Icons.check),
+            label: Text(task.status == TaskStatus.inProgress
+                ? "I've done it! (take after photo)"
+                : "I've done it!"),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.sproutDeep,
+            ),
+          ),
+        TaskAction.resubmit => FilledButton.icon(
+            onPressed: () => _handleCompleteTask(currentUser),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Send again'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.carrotDeep,
+            ),
+          ),
+        TaskAction.handBack => OutlinedButton.icon(
+            onPressed: _handleUnclaimTask,
+            // See task_list_tile.dart — undo belongs to the status pill.
+            icon: const Icon(Icons.assignment_return),
+            label: const Text('Give it back'),
+          ),
+        TaskAction.approve => FilledButton.icon(
+            onPressed: () => _handleApproveTask(currentUser),
+            icon: const Icon(Icons.thumb_up),
+            label: const Text('Give the stars ⭐'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.sproutDeep,
+            ),
+          ),
+        TaskAction.sendBack => OutlinedButton.icon(
+            onPressed: _handleRejectTask,
+            icon: Icon(Icons.thumb_down, color: context.tokens.brick),
+            label: Text('Send back',
+                style: TextStyle(color: context.tokens.brick)),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: context.tokens.brick),
+            ),
+          ),
+      };
 }

@@ -93,7 +93,7 @@ void main() {
 
     testWidgets('can still be handed back', (tester) async {
       await _pumpTile(tester, proof: true);
-      expect(find.byIcon(Icons.undo), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_return), findsOneWidget);
     });
   });
 

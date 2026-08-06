@@ -77,21 +77,21 @@ Future<void> _pumpMainScreenSignedIn(
 }
 
 void main() {
-  testWidgets('the Tasks tab offers adding and managing tasks',
+  testWidgets('the Chores tab offers adding and managing chores',
       (tester) async {
     await _pumpMainScreenSignedIn(tester);
 
-    await tester.tap(find.text('Tasks'));
+    await tester.tap(find.text('Chores'));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
     // Managing: the filter menu for all task views must be available.
     expect(find.byType(PopupMenuButton<TaskFilterType>), findsOneWidget,
-        reason: 'the Tasks tab must expose the task filters');
+        reason: 'the Chores tab must expose the chore filters');
 
     // Adding: the add-task button must always be reachable.
     expect(find.byType(FloatingActionButton), findsOneWidget,
-        reason: 'the Tasks tab must let the user create a task');
+        reason: 'the Chores tab must let the user create a chore');
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pump(const Duration(milliseconds: 300));
@@ -99,9 +99,9 @@ void main() {
     expect(find.byType(AddTaskScreen), findsOneWidget);
   });
 
-  testWidgets('claiming a chore from the Tasks tab takes it, no false failure',
+  testWidgets('claiming a chore from the Chores tab takes it, no false failure',
       (tester) async {
-    // Regression: tapping "I'll do it!" on the Tasks tab used to route through
+    // Regression: tapping "I'll do it!" on the Chores tab used to route through
     // the available-tasks notifier, which isn't loaded on this screen and
     // null-checked its own absent state — so the claim landed server-side but
     // the tile showed "Couldn't take this one". The claim now goes through the

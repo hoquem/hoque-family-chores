@@ -7,5 +7,5 @@ Future<void> aNotificationShouldBeSentToParents(WidgetTester tester) async {
   // (Firebase Cloud Functions) or would be a separate use case. For this
   // BDD test we verify the UI shows the pending-approval state which is the
   // trigger for the notification flow.
-  expect(find.text('Pending Approval'), findsWidgets);
+  expect(find.text('Waiting'), findsWidgets);
 }

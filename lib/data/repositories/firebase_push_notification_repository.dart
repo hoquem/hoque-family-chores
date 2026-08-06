@@ -139,8 +139,8 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
     await androidPlugin.createNotificationChannel(
       const AndroidNotificationChannel(
         'medium_priority',
-        'Task Notifications',
-        description: 'Task assignments and reminders',
+        'Chore Notifications',
+        description: 'Chore assignments and reminders',
         importance: Importance.defaultImportance,
         enableVibration: true,
         playSound: true,
@@ -597,7 +597,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       case 'high_priority':
         return 'Important Updates';
       case 'medium_priority':
-        return 'Task Notifications';
+        return 'Chore Notifications';
       case 'low_priority':
         return 'Achievements & Updates';
       default:
@@ -611,7 +611,7 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
       case 'high_priority':
         return 'Approvals and time-sensitive notifications';
       case 'medium_priority':
-        return 'Task assignments and reminders';
+        return 'Chore assignments and reminders';
       case 'low_priority':
         return 'Levels, streaks, and family activity';
       default:

@@ -264,7 +264,7 @@ void main() {
 
   testWidgets(
       'a parent sees the approval queue instead of the leaderboard and '
-      'taps through to the filtered Tasks tab', (tester) async {
+      'taps through to the filtered Chores tab', (tester) async {
     final container = await _pumpHome(
       tester,
       role: UserRole.parent,
@@ -280,7 +280,7 @@ void main() {
     );
 
     expect(find.text('Needs your approval'), findsOneWidget);
-    expect(find.text('1 task waiting'), findsOneWidget);
+    expect(find.text('1 chore waiting'), findsOneWidget);
     expect(find.text("This Week's Stars"), findsNothing);
 
     await tester.tap(find.text('Needs your approval'));
@@ -289,7 +289,7 @@ void main() {
 
     // Lands on the Tasks tab with the Needs Approval filter active.
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Tasks')),
+      find.descendant(of: find.byType(AppBar), matching: find.text('Chores')),
       findsOneWidget,
     );
     expect(container.read(taskFilterNotifierProvider),
@@ -302,12 +302,12 @@ void main() {
     expect(find.text('Take out trash'), findsNothing);
   });
 
-  testWidgets('failed task load shows an error with a working Retry',
+  testWidgets('failed chore load shows an error with a working Retry',
       (tester) async {
     final taskRepo = _FailingTaskRepository();
     await _pumpHome(tester, role: UserRole.child, taskRepository: taskRepo);
 
-    expect(find.textContaining('Could not load tasks'), findsOneWidget,
+    expect(find.textContaining('Could not load chores'), findsOneWidget,
         reason: 'a failed load must not look like a free day');
     expect(find.text('Retry'), findsOneWidget);
 
@@ -316,7 +316,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.textContaining('Could not load tasks'), findsNothing);
+    expect(find.textContaining('Could not load chores'), findsNothing);
     expect(find.text('No missions today 🎈'), findsOneWidget);
   });
 }

@@ -4,7 +4,6 @@ import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/pending_approvals_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/home_screen.dart';
@@ -17,6 +16,8 @@ import 'package:hoque_family_chores/presentation/widgets/bottom_nav_bar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import '../../di/riverpod_container.dart';
 import '../../data/repositories/firebase_push_notification_repository.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/presentation/utils/tab_badges.dart';
 
 class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
@@ -105,43 +106,25 @@ class MainScreen extends ConsumerWidget {
     );
   }
 
-  Map<int, int> _computeBadgeCounts(WidgetRef ref, dynamic user) {
+  /// Watches what the badges need and hands it to [tabBadgeCounts], which owns
+  /// the rules. This method only gathers; it decides nothing.
+  Map<int, int> _computeBadgeCounts(WidgetRef ref, User? user) {
     if (user == null) return const {};
 
-    final counts = <int, int>{};
-    final isParent = user.role.displayName.toLowerCase().contains('parent') ||
-        user.role.displayName.toLowerCase().contains('guardian');
+    final unread = ref.watch(notificationsProvider(user.id)).maybeWhen(
+          data: (list) => list.where((n) => !n.isRead).length,
+          orElse: () => 0,
+        );
+    final tasks = ref.watch(taskListStreamProvider(user.familyId)).maybeWhen(
+          data: (list) => list,
+          orElse: () => const <Task>[],
+        );
 
-    // Unread notifications → Profile tab (index 4)
-    final notifications = ref.watch(notificationsProvider(user.id));
-    notifications.whenData((list) {
-      final unread = list.where((n) => !n.isRead).length;
-      if (unread > 0) counts[4] = unread;
-    });
-
-    // Tasks tab (index 1)
-    final tasks = ref.watch(taskListStreamProvider(user.familyId));
-    tasks.whenData((taskList) {
-      if (isParent) {
-        // Pending approvals
-        final pending = ref.watch(pendingApprovalsNotifierProvider(user.familyId));
-        pending.whenData((p) {
-          if (p.isNotEmpty) counts[1] = p.length;
-        });
-      } else {
-        // Available + assigned + needsRevision
-        final actionable = taskList.where((t) {
-          final isMine = t.assignedToId == user.id;
-          return t.status == TaskStatus.available ||
-              (isMine && (t.status == TaskStatus.assigned ||
-                  t.status == TaskStatus.inProgress ||
-                  t.status == TaskStatus.needsRevision));
-        }).length;
-        if (actionable > 0) counts[1] = actionable;
-      }
-    });
-
-    return counts;
+    return tabBadgeCounts(
+      viewer: user,
+      tasks: tasks,
+      unreadNotifications: unread,
+    ).byTabIndex;
   }
 }
 

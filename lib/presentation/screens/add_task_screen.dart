@@ -139,7 +139,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating task: ${e.toString()}'),
+            content: Text('Error creating chore: ${e.toString()}'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -172,7 +172,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
       case TaskEditOutcome.deleted:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('This task was removed by someone else.'),
+            content: const Text('This chore was removed by someone else.'),
             backgroundColor: context.tokens.brickDeep,
           ),
         );
@@ -193,9 +193,9 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     final reload = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Task changed'),
+        title: const Text('Chore changed'),
         content: const Text(
-          'Someone else changed this task while you were editing it. Reload the '
+          'Someone else changed this chore while you were editing it. Reload the '
           'latest version? Your unsaved changes here will be lost.',
         ),
         actions: [
@@ -375,7 +375,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Task' : 'Add New Task')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Chore' : 'Add New Chore')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -385,12 +385,12 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               key: const Key('task_title_field'),
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Task Title',
+                labelText: 'Chore Title',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a task title';
+                  return 'Please enter a chore title';
                 }
                 return null;
               },
@@ -524,7 +524,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 decoration: InputDecoration(
                   labelText: 'Due Date',
                   border: const OutlineInputBorder(),
-                  helperText: 'When should this task be completed by?',
+                  helperText: 'When should this chore be completed by?',
                   suffixIcon: _dueDate == null
                       ? null
                       : IconButton(
@@ -553,7 +553,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       width: 24,
                       child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
-                  : Text(_isEditing ? 'Save Changes' : 'Create Task'),
+                  : Text(_isEditing ? 'Save Changes' : 'Create Chore'),
             ),
             // A parent editing a task can send it back to the pool. Shown only
             // while it is actively assigned (not once completed/approved).
@@ -660,10 +660,10 @@ class _EffortSizeField extends StatelessWidget {
       };
 
   static String description(TaskDifficulty d) => switch (d) {
-        TaskDifficulty.easy => 'Small — quick tasks, 5-15 minutes',
-        TaskDifficulty.medium => 'Medium — moderate tasks, 15-30 minutes',
-        TaskDifficulty.hard => 'Large — complex tasks, 30-60 minutes',
-        TaskDifficulty.challenging => 'Extra large — major tasks, 60+ minutes',
+        TaskDifficulty.easy => 'Small — quick chores, 5-15 minutes',
+        TaskDifficulty.medium => 'Medium — moderate chores, 15-30 minutes',
+        TaskDifficulty.hard => 'Large — complex chores, 30-60 minutes',
+        TaskDifficulty.challenging => 'Extra large — major chores, 60+ minutes',
       };
 
   @override

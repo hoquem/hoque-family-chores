@@ -84,11 +84,11 @@ abstract class NotificationRepository {
   Future<void> updateNotification(UserId userId, Notification notification);
 
   /// Delete a notification
-  Future<void> deleteNotification(String notificationId);
+  Future<void> deleteNotification(UserId userId, String notificationId);
 
   /// Mark notification as read
-  Future<void> markNotificationAsRead(String notificationId);
+  Future<void> markNotificationAsRead(UserId userId, String notificationId);
 
   /// Mark notification as unread
-  Future<void> markNotificationAsUnread(String notificationId);
+  Future<void> markNotificationAsUnread(UserId userId, String notificationId);
 } 
