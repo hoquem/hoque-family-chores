@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../repositories/notification_repository.dart';
+import '../../value_objects/user_id.dart';
 
 /// Use case for marking notifications as read
 class MarkNotificationAsReadUseCase {
@@ -15,6 +16,7 @@ class MarkNotificationAsReadUseCase {
   /// 
   /// Returns [Unit] on success or [Failure] on error
   Future<Either<Failure, Unit>> call({
+    required UserId userId,
     required String notificationId,
   }) async {
     try {
@@ -24,7 +26,7 @@ class MarkNotificationAsReadUseCase {
       }
 
       // Mark the notification as read
-      await _notificationRepository.markNotificationAsRead(notificationId);
+      await _notificationRepository.markNotificationAsRead(userId, notificationId);
       return const Right(unit);
     } on DataException catch (e) {
       return Left(ServerFailure(e.message, code: e.code));

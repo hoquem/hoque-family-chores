@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/notification
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/motion/entrance_stagger.dart';
 import 'package:hoque_family_chores/presentation/widgets/notification_icon.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 
 /// The user's notification inbox: newest first, grouped by day,
 /// tap to mark read, swipe to delete, "Mark all as read" action.
@@ -32,6 +33,7 @@ class NotificationsScreen extends ConsumerWidget {
                   (list) async {
                     for (final n in list.where((n) => !n.isRead)) {
                       await ref.read(markNotificationAsReadUseCaseProvider).call(
+                            userId: user.id,
                             notificationId: n.id,
                           );
                     }
@@ -156,6 +158,7 @@ class _NotificationList extends StatelessWidget {
               ...items.asMap().entries.map((entry) => _NotificationTile(
                 key: ValueKey(entry.value.id),
                 notification: entry.value,
+                userId: userId,
               )),
             ],
           ),
@@ -168,7 +171,15 @@ class _NotificationList extends StatelessWidget {
 class _NotificationTile extends ConsumerWidget {
   final domain.Notification notification;
 
-  const _NotificationTile({super.key, required this.notification});
+  /// The signed-in user, and so the owner of every notification in this list.
+  /// Reads and writes both address `users/{userId}/notifications/{id}`.
+  final String userId;
+
+  const _NotificationTile({
+    super.key,
+    required this.notification,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -183,7 +194,7 @@ class _NotificationTile extends ConsumerWidget {
       ),
       onDismissed: (_) => ref
           .read(deleteNotificationUseCaseProvider)
-          .call(notificationId: notification.id),
+          .call(userId: UserId(userId), notificationId: notification.id),
       child: ListTile(
         leading: NotificationIcon(
           isRead: notification.isRead,
@@ -212,7 +223,7 @@ class _NotificationTile extends ConsumerWidget {
             ? null
             : () => ref
                 .read(markNotificationAsReadUseCaseProvider)
-                .call(notificationId: notification.id),
+                .call(userId: UserId(userId), notificationId: notification.id),
       ),
     );
   }

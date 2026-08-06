@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../repositories/notification_repository.dart';
+import '../../value_objects/user_id.dart';
 
 /// Use case for deleting notifications
 class DeleteNotificationUseCase {
@@ -15,6 +16,7 @@ class DeleteNotificationUseCase {
   /// 
   /// Returns [Unit] on success or [Failure] on error
   Future<Either<Failure, Unit>> call({
+    required UserId userId,
     required String notificationId,
   }) async {
     try {
@@ -24,7 +26,7 @@ class DeleteNotificationUseCase {
       }
 
       // Delete the notification
-      await _notificationRepository.deleteNotification(notificationId);
+      await _notificationRepository.deleteNotification(userId, notificationId);
       return const Right(unit);
     } on DataException catch (e) {
       return Left(ServerFailure(e.message, code: e.code));
