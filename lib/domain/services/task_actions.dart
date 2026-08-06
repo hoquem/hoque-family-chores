@@ -41,8 +41,14 @@ enum TaskAction {
 /// the rules can be read and tested without building a widget.
 ///
 /// Role is deliberately absent from the signature. Approval is open to any
-/// family member except the doer — a family is peers, not a hierarchy — so the
-/// only thing that matters is whether the viewer did the work.
+/// family member except the doer — a family is peers, not a hierarchy, and a
+/// sibling checking a sibling's work is the point — so the only thing that
+/// matters is whether the viewer did the work.
+///
+/// It was parents-and-guardians only once, and the two screens disagreed about
+/// it: the list tile checked "not the doer" while the detail screen checked
+/// `role.isAdmin`. A sibling saw a working Approve button in the list, tapped
+/// through, and found it gone. That is the class of bug one function prevents.
 ///
 /// Pinned by `test/domain/services/task_actions_test.dart`.
 List<TaskAction> taskActionsFor({

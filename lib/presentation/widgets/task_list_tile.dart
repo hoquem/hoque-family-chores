@@ -46,12 +46,6 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
   String? _errorMessage;
   final _logger = AppLogger();
 
-  /// Whether this user may sign off this task.
-  ///
-  /// Anyone in the family can, except the person who did it — a family is
-  /// peers, not a hierarchy, and a sibling checking a sibling's work is the
-  /// point. This used to be parents-and-guardians only. The domain enforces
-  /// the same rule in ApproveTaskUseCase; this only hides a button.
   Future<void> _handleTakeOwnership() async {
     _logger.d('TaskListTile: Taking ownership of task ${widget.task.id}');
 

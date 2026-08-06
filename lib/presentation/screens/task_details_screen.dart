@@ -779,22 +779,27 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     // Approve and Send back sit side by side — they are a single either/or
     // decision, and stacking them full-width reads as two separate steps.
     // Every other action is its own full-width row.
-    if (actions.contains(TaskAction.approve) &&
-        actions.contains(TaskAction.sendBack)) {
-      buttons.add(Row(
-        children: [
-          Expanded(child: _actionButton(TaskAction.approve, currentUser)),
-          const SizedBox(width: 12),
-          Expanded(child: _actionButton(TaskAction.sendBack, currentUser)),
-        ],
-      ));
-    } else {
-      for (final action in actions) {
-        buttons.add(SizedBox(
-          width: double.infinity,
-          child: _actionButton(action, currentUser),
-        ));
+    final pairJudgeButtons = actions.contains(TaskAction.approve) &&
+        actions.contains(TaskAction.sendBack);
+
+    for (final action in actions) {
+      if (pairJudgeButtons && action == TaskAction.sendBack) {
+        continue; // already drawn beside Approve
       }
+      if (pairJudgeButtons && action == TaskAction.approve) {
+        buttons.add(Row(
+          children: [
+            Expanded(child: _actionButton(TaskAction.approve, currentUser)),
+            const SizedBox(width: 12),
+            Expanded(child: _actionButton(TaskAction.sendBack, currentUser)),
+          ],
+        ));
+        continue;
+      }
+      buttons.add(SizedBox(
+        width: double.infinity,
+        child: _actionButton(action, currentUser),
+      ));
     }
 
     // Not an action — nobody has anything left to do on an approved chore.
