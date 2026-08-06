@@ -16,6 +16,7 @@ import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import '../utils/task_status_label.dart';
+import '../../domain/services/task_actions.dart';
 
 class TaskDetailsScreen extends ConsumerStatefulWidget {
   final Task task;
@@ -443,15 +444,6 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = authState.user;
-    final isAssignedToMe =
-        currentUser != null && task.assignedToId == currentUser.id;
-    // Anyone in the family may sign off a chore — except the person who did it.
-    // This is the same rule ApproveTaskUseCase enforces and the Tasks list tile
-    // shows (_canJudge). The detail screen used to gate on role.isAdmin, so a
-    // sibling saw a working Approve button in the list, tapped through to here,
-    // and it was gone. Match the tile; the domain layer is the real boundary.
-    final canJudge = currentUser != null && !isAssignedToMe;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Details'),
@@ -529,11 +521,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   const SizedBox(height: 16),
                   _buildTimelineSection(),
                   const SizedBox(height: 32),
-                  _buildActionButtons(
-                    currentUser: currentUser,
-                    canJudge: canJudge,
-                    isAssignedToMe: isAssignedToMe,
-                  ),
+                  _buildActionButtons(currentUser: currentUser),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -782,143 +770,34 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     );
   }
 
-  Widget _buildActionButtons({
-    required User? currentUser,
-    required bool canJudge,
-    required bool isAssignedToMe,
-  }) {
+  Widget _buildActionButtons({required User? currentUser}) {
     if (currentUser == null) return const SizedBox.shrink();
 
+    final actions = taskActionsFor(task: task, viewerId: currentUser.id);
     final buttons = <Widget>[];
 
-    // Available task — anyone can claim EXCEPT the person who created it.
-    if (task.status == TaskStatus.available &&
-        task.createdById != currentUser.id) {
-      buttons.add(
-        SizedBox(
+    // Approve and Send back sit side by side — they are a single either/or
+    // decision, and stacking them full-width reads as two separate steps.
+    // Every other action is its own full-width row.
+    if (actions.contains(TaskAction.approve) &&
+        actions.contains(TaskAction.sendBack)) {
+      buttons.add(Row(
+        children: [
+          Expanded(child: _actionButton(TaskAction.approve, currentUser)),
+          const SizedBox(width: 12),
+          Expanded(child: _actionButton(TaskAction.sendBack, currentUser)),
+        ],
+      ));
+    } else {
+      for (final action in actions) {
+        buttons.add(SizedBox(
           width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleClaimTask(currentUser),
-            icon: const Icon(Icons.add_task),
-            label: const Text("I'll do it!"),
-          ),
-        ),
-      );
+          child: _actionButton(action, currentUser),
+        ));
+      }
     }
 
-    // Assigned to me. A photo-proof task is STARTED here (before-photo); a plain
-    // task is marked done directly. This matches the task-list tile.
-    if (task.status == TaskStatus.assigned && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: task.requiresPhotoProof
-              ? FilledButton.icon(
-                  onPressed: () => _handleStartTask(currentUser),
-                  icon: const Icon(Icons.play_circle),
-                  label: const Text('Start (take before photo)'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.tokens.carrotDeep,
-                  ),
-                )
-              : FilledButton.icon(
-                  onPressed: () => _handleCompleteTask(currentUser),
-                  icon: const Icon(Icons.check),
-                  label: const Text("I've done it!"),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.tokens.sproutDeep,
-                  ),
-                ),
-        ),
-      );
-    }
-
-    // In progress (a photo-proof task already started) and mine — finish it by
-    // taking the after photo.
-    if (task.status == TaskStatus.inProgress && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleCompleteTask(currentUser),
-            icon: const Icon(Icons.check),
-            label: const Text("I've done it! (take after photo)"),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.tokens.sproutDeep,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Needs revision & assigned to me — resubmit
-    if (task.status == TaskStatus.needsRevision && isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => _handleCompleteTask(currentUser),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Send again'),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.tokens.carrotDeep,
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Mine and not yet approved — I can give it back to the pool so someone
-    // else can claim it.
-    if ((task.status == TaskStatus.assigned ||
-            task.status == TaskStatus.inProgress ||
-            task.status == TaskStatus.needsRevision) &&
-        isAssignedToMe) {
-      buttons.add(
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _handleUnclaimTask,
-            icon: const Icon(Icons.undo),
-            label: const Text('Give it back'),
-          ),
-        ),
-      );
-    }
-
-    // Pending approval, and I'm not the one who did it — approve/reject
-    if (task.status == TaskStatus.pendingApproval && canJudge) {
-      buttons.add(
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => _handleApproveTask(currentUser),
-                icon: const Icon(Icons.thumb_up),
-                label: const Text('Give the stars ⭐'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.tokens.sproutDeep,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _handleRejectTask,
-                icon: Icon(Icons.thumb_down, color: context.tokens.brick),
-                label: Text('Send back',
-                    style: TextStyle(color: context.tokens.brick)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: context.tokens.brick),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Completed task — show completion message
+    // Not an action — nobody has anything left to do on an approved chore.
     if (task.status == TaskStatus.completed) {
       buttons.add(
         Container(
@@ -957,4 +836,62 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         ..removeLast(),
     );
   }
+
+  /// How one action looks on this screen. The decision of *whether* it appears
+  /// belongs to `taskActionsFor`; this is only its face.
+  Widget _actionButton(TaskAction action, User currentUser) => switch (action) {
+        TaskAction.claim => FilledButton.icon(
+            onPressed: () => _handleClaimTask(currentUser),
+            icon: const Icon(Icons.add_task),
+            label: const Text("I'll do it!"),
+          ),
+        TaskAction.start => FilledButton.icon(
+            onPressed: () => _handleStartTask(currentUser),
+            icon: const Icon(Icons.play_circle),
+            label: const Text('Start (take before photo)'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.carrotDeep,
+            ),
+          ),
+        TaskAction.complete => FilledButton.icon(
+            onPressed: () => _handleCompleteTask(currentUser),
+            icon: const Icon(Icons.check),
+            label: Text(task.status == TaskStatus.inProgress
+                ? "I've done it! (take after photo)"
+                : "I've done it!"),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.sproutDeep,
+            ),
+          ),
+        TaskAction.resubmit => FilledButton.icon(
+            onPressed: () => _handleCompleteTask(currentUser),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Send again'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.carrotDeep,
+            ),
+          ),
+        TaskAction.handBack => OutlinedButton.icon(
+            onPressed: _handleUnclaimTask,
+            icon: const Icon(Icons.undo),
+            label: const Text('Give it back'),
+          ),
+        TaskAction.approve => FilledButton.icon(
+            onPressed: () => _handleApproveTask(currentUser),
+            icon: const Icon(Icons.thumb_up),
+            label: const Text('Give the stars ⭐'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.sproutDeep,
+            ),
+          ),
+        TaskAction.sendBack => OutlinedButton.icon(
+            onPressed: _handleRejectTask,
+            icon: Icon(Icons.thumb_down, color: context.tokens.brick),
+            label: Text('Send back',
+                style: TextStyle(color: context.tokens.brick)),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: context.tokens.brick),
+            ),
+          ),
+      };
 }
