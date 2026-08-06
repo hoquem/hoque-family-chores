@@ -417,7 +417,7 @@ three call sites each rolled their own and all three drifted.
 
 ### Navigation
 
-- **Bottom nav,** 4 items (Home, Chores, Family, Profile). Fixed type.
+- **Bottom nav,** 5 items (Home, Chores, Treats, Family, Profile). Fixed type.
 - **Active:** Marigold-deep icon + label, bold.
 - **Inactive:** Ink-muted. Min 48px tap target per item (the current default
   is acceptable; keep it).
