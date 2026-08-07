@@ -33,6 +33,10 @@ class ChoresStarWidgetProvider : HomeWidgetProvider() {
             ?.filter { it.isNotBlank() }
             ?: emptyList()
         val pendingApprovalCount = widgetData.getInt("pendingApprovalCount", 0)
+        // Chosen by BuildHomeWidgetDataUseCase, not here — "nothing to do" and
+        // "nothing was ever asked of you" are different days and only Dart
+        // knows which this is.
+        val emptyMessage = widgetData.getString("emptyMessage", null) ?: "No missions today"
 
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.chores_star_widget).apply {
@@ -50,7 +54,7 @@ class ChoresStarWidgetProvider : HomeWidgetProvider() {
                 }
 
                 if (missionTitles.isEmpty()) {
-                    setTextViewText(R.id.widget_missions, "No missions today 🎉")
+                    setTextViewText(R.id.widget_missions, emptyMessage)
                 } else {
                     val text = missionTitles.take(MAX_MISSIONS).joinToString("\n") { "• $it" }
                     setTextViewText(R.id.widget_missions, text)

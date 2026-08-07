@@ -58,6 +58,8 @@ HomeWidgetData homeWidgetData(Ref ref, FamilyId familyId, UserId userId) {
     todayTasks: todayTasks,
     streakDays: streak,
     pendingApprovals: pendingApprovals,
+    missionsWaiting: missions.waiting.length,
+    missionsDone: missions.done.length,
   );
 }
 

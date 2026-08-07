@@ -89,4 +89,65 @@ void main() {
     expect(data.greeting, isNotEmpty);
     expect(data.greeting, contains('Aisha'));
   });
+
+  // An empty mission list means two very different things, and the widget used
+  // to render "No missions today 🎉" for both — telling a child who had just
+  // finished their chores that they never had any. The message is decided here
+  // so the two native widgets stay dumb renderers and cannot drift apart.
+  group('empty-state message', () {
+    test('nothing was scheduled — says so, without celebrating', () {
+      final data = useCase(
+        user: _testUser(name: 'Aisha'),
+        todayTasks: const [],
+        streakDays: 0,
+        pendingApprovals: 0,
+        missionsWaiting: 0,
+        missionsDone: 0,
+      );
+
+      expect(data.emptyMessage, 'No missions today');
+    });
+
+    test('everything is handed in — celebrates, in the app\'s words', () {
+      final data = useCase(
+        user: _testUser(name: 'Aisha'),
+        todayTasks: const [],
+        streakDays: 0,
+        pendingApprovals: 0,
+        missionsWaiting: 1,
+        missionsDone: 0,
+      );
+
+      expect(data.emptyMessage, 'All done for today! 🎉',
+          reason: 'matches CelebrationCard so the widget and the home hub say '
+              'the same thing about the same day');
+    });
+
+    test('everything is approved — celebrates too', () {
+      final data = useCase(
+        user: _testUser(name: 'Aisha'),
+        todayTasks: const [],
+        streakDays: 0,
+        pendingApprovals: 0,
+        missionsWaiting: 0,
+        missionsDone: 2,
+      );
+
+      expect(data.emptyMessage, 'All done for today! 🎉');
+    });
+
+    test('work still to do — the message is not used, but stays coherent', () {
+      final data = useCase(
+        user: _testUser(name: 'Aisha'),
+        todayTasks: [_task('Feed cat')],
+        streakDays: 0,
+        pendingApprovals: 0,
+        missionsWaiting: 1,
+        missionsDone: 0,
+      );
+
+      expect(data.missionTitles, ['Feed cat']);
+      expect(data.emptyMessage, isNotEmpty);
+    });
+  });
 }

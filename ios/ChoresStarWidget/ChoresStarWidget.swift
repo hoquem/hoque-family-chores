@@ -19,12 +19,18 @@ struct WidgetData {
   let missionTitles: [String]
   let pendingApprovalCount: Int
 
+  /// Shown in place of the mission list when there is nothing to list. Chosen
+  /// by BuildHomeWidgetDataUseCase, not here — "nothing to do" and "nothing was
+  /// ever asked of you" are different days and only Dart knows which this is.
+  let emptyMessage: String
+
   init(from defaults: UserDefaults?) {
     greeting = defaults?.string(forKey: "greeting") ?? "Hi there!"
     streakDays = defaults?.integer(forKey: "currentStreakDays") ?? 0
     let titles = defaults?.string(forKey: "missionTitles") ?? ""
     missionTitles = Array(titles.split(separator: "\n").map(String.init).prefix(maxMissions))
     pendingApprovalCount = defaults?.integer(forKey: "pendingApprovalCount") ?? 0
+    emptyMessage = defaults?.string(forKey: "emptyMessage") ?? "No missions today"
   }
 }
 
@@ -35,7 +41,8 @@ struct Provider: TimelineProvider {
       greeting: "Hi there!",
       streakDays: 0,
       missionTitles: ["Make bed", "Tidy room"],
-      pendingApprovalCount: 0
+      pendingApprovalCount: 0,
+      emptyMessage: "No missions today"
     )
   }
 
@@ -47,7 +54,8 @@ struct Provider: TimelineProvider {
       greeting: data.greeting,
       streakDays: data.streakDays,
       missionTitles: Array(data.missionTitles),
-      pendingApprovalCount: data.pendingApprovalCount
+      pendingApprovalCount: data.pendingApprovalCount,
+      emptyMessage: data.emptyMessage
     )
     completion(entry)
   }
@@ -66,6 +74,7 @@ struct SimpleEntry: TimelineEntry {
   let streakDays: Int
   let missionTitles: [String]
   let pendingApprovalCount: Int
+  let emptyMessage: String
 }
 
 struct ChoresStarWidgetEntryView: View {
@@ -91,7 +100,7 @@ struct ChoresStarWidgetEntryView: View {
       }
 
       if entry.missionTitles.isEmpty {
-        Text("No missions today 🎉")
+        Text(entry.emptyMessage)
           .font(.system(size: 12))
           .foregroundColor(.secondary)
           .padding(.top, 2)
@@ -145,7 +154,8 @@ struct ChoresStarWidget_Previews: PreviewProvider {
         greeting: "Hi Maya! 🔥 5-day streak",
         streakDays: 5,
         missionTitles: ["Make bed", "Tidy room", "Feed fish"],
-        pendingApprovalCount: 1
+        pendingApprovalCount: 1,
+        emptyMessage: "No missions today"
       )
     )
     .previewContext(WidgetPreviewContext(family: .systemSmall))

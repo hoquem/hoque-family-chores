@@ -57,6 +57,7 @@ class HomeWidgetBridgeImpl implements HomeWidgetBridge {
       'pendingApprovalCount',
       data.pendingApprovalCount,
     );
+    await HomeWidget.saveWidgetData<String>('emptyMessage', data.emptyMessage);
 
     await HomeWidget.updateWidget(
       androidName: _kAndroidProviderName,
