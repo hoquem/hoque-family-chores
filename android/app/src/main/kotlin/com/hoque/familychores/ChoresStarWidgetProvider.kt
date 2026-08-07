@@ -24,8 +24,19 @@ class ChoresStarWidgetProvider : HomeWidgetProvider() {
     ) {
         val greeting = widgetData.getString("greeting", null) ?: "Hi there!"
         val streakDays = widgetData.getInt("currentStreakDays", 0)
-        val missionTitles = widgetData.getString("missionTitles", "")?.split("\n") ?: emptyList()
+        // "".split("\n") is [""] in Kotlin, not [] — without dropping blanks the
+        // no-missions case rendered a bare "• " instead of the empty-state copy.
+        // Swift's split(separator:) omits empty subsequences, so iOS never had
+        // this and the two widgets disagreed on the same payload.
+        val missionTitles = widgetData.getString("missionTitles", "")
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
         val pendingApprovalCount = widgetData.getInt("pendingApprovalCount", 0)
+        // Chosen by BuildHomeWidgetDataUseCase, not here — "nothing to do" and
+        // "nothing was ever asked of you" are different days and only Dart
+        // knows which this is.
+        val emptyMessage = widgetData.getString("emptyMessage", null) ?: "No missions today"
 
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.chores_star_widget).apply {
@@ -43,7 +54,7 @@ class ChoresStarWidgetProvider : HomeWidgetProvider() {
                 }
 
                 if (missionTitles.isEmpty()) {
-                    setTextViewText(R.id.widget_missions, "No missions today 🎉")
+                    setTextViewText(R.id.widget_missions, emptyMessage)
                 } else {
                     val text = missionTitles.take(MAX_MISSIONS).joinToString("\n") { "• $it" }
                     setTextViewText(R.id.widget_missions, text)
