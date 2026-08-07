@@ -298,11 +298,37 @@ cancelled on dispose; it is a cancellable `Timer` now.
 - A cold launch *through* the URL could not be reproduced locally: the simulator
   prompts "Open in Chores Star?" and there is no GUI window session available to
   dismiss it, so the mechanism above is established from source, not from a
-  local repro. **Confirming the fix needs a device**: force-quit, tap the
-  widget, expect Home.
+  local repro.
+
+  **Two checks remain, both needing an iOS device:**
+
+  1. Force-quit, tap the widget → expect Home.
+  2. Sign out, sign in with Google → expect it to work. The new
+     `application(_:open:options:)` override sits on the launch path for every
+     URL the app opens. The reverse-client-id scheme falls through to `super`
+     by construction, but OAuth breaking would be a worse bug than the one
+     being fixed, so it must be exercised rather than reasoned about.
 - After the fix, a cold launch on the simulator reaches Home and the shared
   container holds a real payload with nothing having changed after load —
   `greeting => "Hi Abboo!"` — which is finding 1 verified end to end.
+- Android, on an API 36 emulator with a live session — the A/B that pins
+  finding 7. With the shipped name, logcat on every launch:
+
+  ```
+  ⛔ [HomeWidget] Failed to push data to the home-screen widget
+     PlatformException(-3, No Widget found with Name ChoresStarWidget…,
+     java.lang.ClassNotFoundException: com.hoque.familychores.ChoresStarWidget)
+     at es.antonborri.home_widget.HomeWidgetPlugin.onMethodCall(HomeWidgetPlugin.kt:108)
+  ```
+
+  With the fix, no such line — and `shared_prefs/HomeWidgetPreferences.xml`
+  holds a real payload (`greeting = "Hi Abboo!"`) written on load with nothing
+  having changed after. The APK's dex confirms why: it contains
+  `Lcom/hoque/familychores/ChoresStarWidgetProvider;` and no
+  `…/ChoresStarWidget;` at all, so the old name could only ever throw.
+  That log line is also finding 7's second half fixed: the failure is logged
+  now instead of escaping to `PlatformDispatcher.onError` as a fatal
+  Crashlytics report.
 - 532 tests pass; `flutter analyze` is clean. New coverage:
   `test/utils/home_widget_names_consistency_test.dart` (platform names and the
   URL scheme pinned across Dart, Swift, Info.plist, AppDelegate and the Android
