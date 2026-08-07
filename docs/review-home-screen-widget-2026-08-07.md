@@ -181,7 +181,7 @@ that does not exist.
 Fix: `ref.invalidate(authNotifierProvider)` (which re-runs `build()` and
 restarts the profile stream) before re-arming.
 
-### 6. `AuthNotifier` never listens to auth state — PLAUSIBLE, not proven
+### 6. `AuthNotifier` never listens to auth state — FIXED
 
 `AuthNotifier.build()` (`auth_notifier.dart:53`) reads
 `authRepository.currentUser` **once** and never subscribes to
@@ -195,8 +195,34 @@ Retry does not rebuild it, and only signing out escapes. That is precisely the
 
 Not the cause of the reported bug — instrumentation on the simulator showed
 `currentUser` already non-null at the first `StreamBuilder` build, so the window
-did not open there. Recorded as a recovery-design defect worth closing:
-subscribe to `authStateChanges` in `build()` instead of snapshotting.
+did not open there.
+
+`build()` now subscribes to `authStateChanges` for the notifier's lifetime,
+keeping the synchronous `currentUser` read so an already-restored session does
+not render a signed-out frame first. The listener reconciles two transitions the
+notifier previously ignored: a session arriving after build (populate), and a
+session dropped from elsewhere — revoked token, sign-out on another surface —
+which used to leave a signed-out user looking signed in.
+
+Three things guard it, because this is the sign-in path for every user:
+
+- `_streamedUserId` tracks which profile the stream is following, so Firebase
+  re-emitting the same user on token refresh is a no-op rather than a
+  teardown-and-resubscribe. Confirmed against the real SDK: a cold start logs
+  no "Session appeared" line.
+- The listener stands down while `status` is `authenticating` or
+  `needsProfileCompletion`. Those flows decide for themselves whether a profile
+  exists; stepping in would replace `needsProfileCompletion` with
+  "authenticated, no profile" — the same dead end in a new place.
+- A null emission is ignored when already signed out, so sign-out does not
+  double-write state.
+
+Still open, and adjacent: when the profile stream emits null for a signed-in
+user (the document does not exist), `_startUserProfileStream` sets
+`status: authenticated` with `user: null`, which lands on the splash again.
+`CompleteProfileScreen` is the right destination, but changing it touches
+`deleteAccount` and `leaveFamily`, so it was left alone rather than smuggled in
+here.
 
 ### 7. Android: every widget refresh threw — CONFIRMED
 
@@ -280,7 +306,7 @@ Remaining Android polish, not fixed here:
 | 3. Deep link registered but inert | **Not fixed** — the URL is now safely ignored rather than routed |
 | 4. `FamilyGate` swallows `AuthStatus.error` | Fixed |
 | 5. Retry retries nothing | Fixed |
-| 6. `AuthNotifier` never listens to auth state | **Not fixed** — latent recovery defect |
+| 6. `AuthNotifier` never listens to auth state | Fixed, subscribes in `build()` |
 | 7. Android: every widget refresh threw | Fixed, `home_widget_bridge.dart` |
 
 Also fixed in passing: `_SplashScreen` armed a `Future.delayed` that was never

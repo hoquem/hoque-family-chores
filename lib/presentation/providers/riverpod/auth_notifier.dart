@@ -41,16 +41,35 @@ abstract class AuthState with _$AuthState {
 class AuthNotifier extends _$AuthNotifier {
   final _logger = AppLogger();
   StreamSubscription<dynamic>? _profileSubscription;
+  StreamSubscription<dynamic>? _authSubscription;
+
+  /// The user whose profile [_profileSubscription] is currently following.
+  /// Lets the auth listener tell a genuinely new session apart from Firebase
+  /// re-emitting the one already being streamed (it does that on token
+  /// refresh).
+  UserId? _streamedUserId;
 
   @override
   AuthState build() {
     _logger.d('AuthNotifier: Building initial state');
     ref.onDispose(_stopUserProfileStream);
+    ref.onDispose(_stopAuthStateStream);
 
-    // Restore a persisted Firebase session: without this, every cold start
-    // routes to MainScreen (authStateChanges has a user) while state.user
-    // stays null and the UI spins forever.
-    final firebaseUser = ref.read(authRepositoryProvider).currentUser;
+    final authRepository = ref.read(authRepositoryProvider);
+
+    // Follow the session for as long as this notifier lives. Reading
+    // currentUser once was not enough: Firebase restores a persisted session
+    // asynchronously, so a notifier built during that window (LoginScreen
+    // watches it) kept state.user null for good — FamilyGate then held the
+    // splash open with no way out but signing out. It also missed sessions
+    // dropped from elsewhere, leaving a signed-out user looking signed in.
+    _stopAuthStateStream();
+    _authSubscription =
+        authRepository.authStateChanges.listen(_onAuthStateChanged);
+
+    // Still read synchronously as well: when the session is already restored
+    // there is no reason to render a signed-out frame first.
+    final firebaseUser = authRepository.currentUser;
     if (firebaseUser != null) {
       final userId = UserId(firebaseUser.uid as String);
       _logger.d('AuthNotifier: Restoring session for user $userId');
@@ -58,6 +77,42 @@ class AuthNotifier extends _$AuthNotifier {
       return const AuthState(status: AuthStatus.authenticated);
     }
     return const AuthState();
+  }
+
+  /// Reconciles state with a session change that did not come from one of this
+  /// notifier's own sign-in methods.
+  void _onAuthStateChanged(dynamic firebaseUser) {
+    if (firebaseUser == null) {
+      if (_streamedUserId == null && state.user == null) return;
+      _logger.d('AuthNotifier: Session ended outside the notifier');
+      _stopUserProfileStream();
+      state = const AuthState(status: AuthStatus.unauthenticated);
+      return;
+    }
+
+    final userId = UserId(firebaseUser.uid as String);
+    if (userId == _streamedUserId) return;
+
+    // A sign-in flow in progress owns this transition — it decides whether the
+    // profile exists and starts the stream itself. Stepping in here would
+    // overwrite `needsProfileCompletion` with a bare "authenticated, no
+    // profile", which is the dead end this whole change exists to remove.
+    if (state.status == AuthStatus.authenticating ||
+        state.status == AuthStatus.needsProfileCompletion) {
+      return;
+    }
+
+    _logger.d('AuthNotifier: Session appeared for user $userId');
+    _startUserProfileStream(userId);
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      errorMessage: null,
+    );
+  }
+
+  void _stopAuthStateStream() {
+    _authSubscription?.cancel();
+    _authSubscription = null;
   }
 
   /// Signs in a user with email and password.
@@ -587,6 +642,7 @@ class AuthNotifier extends _$AuthNotifier {
     try {
       final streamUseCase = ref.read(streamUserProfileUseCaseProvider);
       _profileSubscription?.cancel();
+      _streamedUserId = userId;
       _profileSubscription = streamUseCase.call(userId: userId).listen(
         (result) {
           result.fold(
@@ -625,6 +681,7 @@ class AuthNotifier extends _$AuthNotifier {
     _logger.d('AuthNotifier: Stopping user profile stream');
     _profileSubscription?.cancel();
     _profileSubscription = null;
+    _streamedUserId = null;
   }
 
   /// Clears any error messages.

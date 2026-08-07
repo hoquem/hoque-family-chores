@@ -62,6 +62,14 @@ class MockAuthRepository implements AuthRepository {
   @override
   Stream<dynamic> get authStateChanges => _authStateController.stream;
 
+  /// Simulates Firebase delivering a session that was not yet available when
+  /// the listener attached — the restore window on a cold start, or a sign-in
+  /// that happened outside this notifier.
+  void emitSession(FakeFirebaseUser? user) {
+    _currentUser = user;
+    _authStateController.add(user);
+  }
+
   @override
   List<String> get currentProviderIds =>
       _currentUser == null ? const [] : providerIds;
