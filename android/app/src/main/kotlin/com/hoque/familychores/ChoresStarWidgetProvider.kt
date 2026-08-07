@@ -24,7 +24,14 @@ class ChoresStarWidgetProvider : HomeWidgetProvider() {
     ) {
         val greeting = widgetData.getString("greeting", null) ?: "Hi there!"
         val streakDays = widgetData.getInt("currentStreakDays", 0)
-        val missionTitles = widgetData.getString("missionTitles", "")?.split("\n") ?: emptyList()
+        // "".split("\n") is [""] in Kotlin, not [] — without dropping blanks the
+        // no-missions case rendered a bare "• " instead of the empty-state copy.
+        // Swift's split(separator:) omits empty subsequences, so iOS never had
+        // this and the two widgets disagreed on the same payload.
+        val missionTitles = widgetData.getString("missionTitles", "")
+            ?.split("\n")
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
         val pendingApprovalCount = widgetData.getInt("pendingApprovalCount", 0)
 
         appWidgetIds.forEach { widgetId ->
