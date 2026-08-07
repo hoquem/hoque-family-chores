@@ -49,6 +49,14 @@ class SignInUseCase {
     if (email.trim().isEmpty) {
       return Left(ValidationFailure('Email cannot be empty'));
     }
+    // Format too, not just emptiness: `Email` throws on a malformed address
+    // and the catch in `call` would put that ArgumentError in front of the
+    // user as "Invalid argument(s): Invalid email format: …".
+    if (Email.tryCreate(email.trim().toLowerCase()) == null) {
+      return Left(ValidationFailure(
+        'That email address does not look right — check it and try again.',
+      ));
+    }
 
     // Validate password
     if (password.isEmpty) {

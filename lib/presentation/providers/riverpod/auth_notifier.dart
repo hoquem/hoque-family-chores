@@ -722,14 +722,28 @@ class AuthNotifier extends _$AuthNotifier {
   /// Resets password for the given email.
   Future<void> resetPassword(String emailStr) async {
     _logger.d('AuthNotifier: Resetting password for $emailStr');
-    
+
+    // Checked before anything else: `Email` throws on a bad address, and the
+    // catch below would stringify that ArgumentError onto the login screen —
+    // "Invalid argument(s): Invalid email format:" is not a sentence anyone
+    // should be shown, least of all someone who just tapped a button with an
+    // empty field.
+    final email = Email.tryCreate(emailStr.trim());
+    if (email == null) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Enter the email address you signed up with, then tap '
+            'Forgot Password.',
+      );
+      return;
+    }
+
     state = state.copyWith(
       isLoading: true,
       errorMessage: null,
     );
 
     try {
-      final email = Email(emailStr);
       final resetPasswordUseCase = ref.read(resetPasswordUseCaseProvider);
       final result = await resetPasswordUseCase.call(email);
 
