@@ -181,12 +181,9 @@ class HomeScreen extends ConsumerWidget {
     final streak = streakDays(tasks, currentUser.id, now);
     ref.read(streakMilestoneWatcherProvider.notifier).report(streak);
 
-    // Keep the home-screen widget in sync with the home hub. The listener
-    // recomputes widget data whenever the task stream or auth state changes.
-    ref.listen(
-      homeWidgetDataProvider(currentUser.familyId, currentUser.id),
-      (_, data) => ref.read(homeWidgetBridgeProvider).update(data),
-    );
+    // Keep the home-screen widget in sync with the home hub: the payload as it
+    // stands now, and every change to the task stream or auth state after.
+    syncHomeWidget(ref, currentUser.familyId, currentUser.id);
 
     return RefreshIndicator(
       onRefresh: () async {

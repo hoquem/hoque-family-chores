@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -253,6 +254,13 @@ class FamilyGate extends ConsumerWidget {
     }
 
     final user = authState.user;
+    // A profile stream that failed is not "still loading". Show what actually
+    // went wrong instead of a connection guess. Gated on user == null so a
+    // transient stream error after the profile arrived never evicts a working
+    // session from the app.
+    if (user == null && authState.status == AuthStatus.error) {
+      return _SplashScreen(errorMessage: authState.errorMessage);
+    }
     if (user == null) return const _SplashScreen();
     if (user.familyId.value.isEmpty) {
       return FamilyOnboardingScreen(currentUser: user);
@@ -262,7 +270,11 @@ class FamilyGate extends ConsumerWidget {
 }
 
 class _SplashScreen extends ConsumerStatefulWidget {
-  const _SplashScreen();
+  const _SplashScreen({this.errorMessage});
+
+  /// A failure the auth layer already reported. When set, the screen skips the
+  /// wait and shows this instead of the "still connecting" guess.
+  final String? errorMessage;
 
   @override
   ConsumerState<_SplashScreen> createState() => _SplashScreenState();
@@ -270,6 +282,7 @@ class _SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<_SplashScreen> {
   bool _timedOut = false;
+  Timer? _timeout;
 
   @override
   void initState() {
@@ -277,14 +290,24 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
     _armTimeout();
   }
 
+  @override
+  void dispose() {
+    _timeout?.cancel();
+    super.dispose();
+  }
+
   void _armTimeout() {
-    Future.delayed(const Duration(seconds: 10), () {
+    _timeout?.cancel();
+    _timeout = Timer(const Duration(seconds: 10), () {
       if (mounted) setState(() => _timedOut = true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final error = widget.errorMessage;
+    final stuck = _timedOut || error != null;
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -299,21 +322,26 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
-              if (!_timedOut) ...[
+              if (!stuck) ...[
                 const CircularProgressIndicator(),
                 const SizedBox(height: 16),
                 const Text('Connecting...', style: TextStyle(color: Color(0xFF8A8067))),
               ] else ...[
                 const Icon(Icons.cloud_off, size: 48, color: Color(0xFFF59E0B)),
                 const SizedBox(height: 16),
-                const Text(
-                  "Still setting things up.\n\nCheck your connection and retry — or sign out and back in.",
+                Text(
+                  error ??
+                      "Still setting things up.\n\nCheck your connection and retry — or sign out and back in.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
+                  // Rebuilding the notifier is the retry: build() re-reads the
+                  // session and re-subscribes the profile stream. Re-arming the
+                  // timer alone would retry nothing.
                   onPressed: () {
+                    ref.invalidate(authNotifierProvider);
                     setState(() => _timedOut = false);
                     _armTimeout();
                   },

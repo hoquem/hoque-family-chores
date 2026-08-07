@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/utils/home_widget_bridge.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import 'auth_notifier.dart';
 import 'task_list_notifier.dart';
 
@@ -64,3 +65,37 @@ HomeWidgetData homeWidgetData(Ref ref, FamilyId familyId, UserId userId) {
 /// Provider for the platform bridge that pushes widget data to native.
 /// Overridable in tests.
 final homeWidgetBridgeProvider = Provider<HomeWidgetBridge>((_) => HomeWidgetBridgeImpl());
+
+/// Pushes [homeWidgetData] to the native widget whenever it changes — and,
+/// crucially, once when it is first read.
+///
+/// The side effect lives in a provider rather than a ``ref.listen`` at the call
+/// site because ``WidgetRef.listen`` fires only on *change*: the payload that
+/// already existed when the listener registered was never sent, so the widget
+/// sat on its placeholder until something happened to move it. A provider body
+/// runs on first read and on every dependency change, and — unlike watching
+/// from ``build`` — not on a bare widget rebuild.
+final _homeWidgetSyncProvider =
+    Provider.autoDispose.family<void, (FamilyId, UserId)>((ref, key) {
+  _pushToNative(ref, ref.watch(homeWidgetDataProvider(key.$1, key.$2)));
+});
+
+/// Keeps the native home-screen widget in step with the home hub.
+/// Call from a widget's ``build``.
+void syncHomeWidget(WidgetRef ref, FamilyId familyId, UserId userId) {
+  ref.watch(_homeWidgetSyncProvider((familyId, userId)));
+}
+
+/// The home-screen widget is a convenience, not a hard dependency (see
+/// ``main()``): a native failure is logged, never surfaced as a crash.
+void _pushToNative(Ref ref, HomeWidgetData data) {
+  ref.read(homeWidgetBridgeProvider).update(data).catchError(
+    (Object error, StackTrace stackTrace) {
+      AppLogger().e(
+        '[HomeWidget] Failed to push data to the home-screen widget',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    },
+  );
+}

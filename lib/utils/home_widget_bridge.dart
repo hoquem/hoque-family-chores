@@ -6,8 +6,15 @@ import 'package:hoque_family_chores/domain/usecases/home/build_home_widget_data_
 /// Xcode.
 const String _kAppGroupId = 'group.com.hoque.hoqueFamilyChores';
 
-/// Names used to identify this widget on iOS and Android.
-const String _kWidgetName = 'ChoresStarWidget';
+/// iOS identifies the widget by its WidgetKit ``kind`` string.
+const String _kIOSWidgetKind = 'ChoresStarWidget';
+
+/// Android identifies the widget by its AppWidgetProvider class, which
+/// home_widget resolves as ``Class.forName("$packageName.$androidName")``.
+/// It is NOT the same string as the iOS kind — passing the kind here throws
+/// ClassNotFoundException and the widget stops refreshing until its 24h
+/// updatePeriodMillis elapses. Pinned by home_widget_names_consistency_test.
+const String _kAndroidProviderName = 'ChoresStarWidgetProvider';
 
 /// Bridge between Flutter domain state and the native home-screen widget.
 ///
@@ -24,6 +31,12 @@ abstract class HomeWidgetBridge {
 
 /// Production implementation backed by the `home_widget` package.
 class HomeWidgetBridgeImpl implements HomeWidgetBridge {
+  /// The WidgetKit kind declared in ``ChoresStarWidget.swift``.
+  static const String iOSWidgetKind = _kIOSWidgetKind;
+
+  /// The AppWidgetProvider class declared in ``AndroidManifest.xml``.
+  static const String androidProviderName = _kAndroidProviderName;
+
   @override
   Future<void> initialize() async {
     await HomeWidget.setAppGroupId(_kAppGroupId);
@@ -46,9 +59,8 @@ class HomeWidgetBridgeImpl implements HomeWidgetBridge {
     );
 
     await HomeWidget.updateWidget(
-      name: _kWidgetName,
-      androidName: _kWidgetName,
-      iOSName: _kWidgetName,
+      androidName: _kAndroidProviderName,
+      iOSName: _kIOSWidgetKind,
     );
   }
 }
