@@ -13,6 +13,8 @@ into the ``.aab`` at build time.
 Usage (normally via deploy_playstore.sh, not directly):
     play_upload.py next-version-code   # print highest+1, nothing else
     play_upload.py upload <aab_path>   # upload the built bundle + roll out
+    play_upload.py assign <code>       # put an ALREADY uploaded build on
+                                       # $PLAY_TRACK, without re-uploading
 """
 import sys
 import time
@@ -97,9 +99,54 @@ def upload(aab_path: str) -> int:
     return version_code
 
 
+def assign(version_code: int) -> None:
+    """Put an already-uploaded build on ``$PLAY_TRACK``.
+
+    A bundle is uploaded once and can then serve any number of tracks. Google
+    Play rejects a second upload of the same version code, so shipping one
+    build to both closed testing and internal is a track assignment, never a
+    rebuild — rebuilding would also mean a different artifact behind the same
+    version number.
+
+    :param version_code: A version code Play has already accepted.
+    :raises SystemExit: If Play has never seen ``version_code``.
+    """
+    service = _service()
+    edit = service.edits().insert(packageName=PACKAGE_NAME, body={}).execute()
+    edit_id = edit["id"]
+
+    resp = (
+        service.edits()
+        .bundles()
+        .list(packageName=PACKAGE_NAME, editId=edit_id)
+        .execute()
+    )
+    known = {int(b["versionCode"]) for b in resp.get("bundles", [])}
+    if version_code not in known:
+        service.edits().delete(packageName=PACKAGE_NAME, editId=edit_id).execute()
+        sys.exit(
+            f"version code {version_code} was never uploaded "
+            f"(Play knows: {sorted(known)})"
+        )
+
+    service.edits().tracks().update(
+        packageName=PACKAGE_NAME,
+        editId=edit_id,
+        track=TRACK,
+        body={
+            "releases": [
+                {"versionCodes": [str(version_code)], "status": "completed"}
+            ]
+        },
+    ).execute()
+    service.edits().commit(packageName=PACKAGE_NAME, editId=edit_id).execute()
+
+
 def main():
     if len(sys.argv) < 2:
-        sys.exit("usage: play_upload.py next-version-code | upload <aab>")
+        sys.exit(
+            "usage: play_upload.py next-version-code | upload <aab> | assign <code>"
+        )
 
     if sys.argv[1] == "next-version-code":
         print(next_version_code())
@@ -111,6 +158,12 @@ def main():
         # few seconds to reflect. Report the code the caller must beat next time.
         time.sleep(2)
         print(f"OK versionCode={code}")
+    elif sys.argv[1] == "assign":
+        if len(sys.argv) != 3:
+            sys.exit("usage: play_upload.py assign <version_code>")
+        assign(int(sys.argv[2]))
+        time.sleep(2)
+        print(f"OK versionCode={sys.argv[2]} assigned to {TRACK}")
     else:
         sys.exit(f"unknown command: {sys.argv[1]}")
 

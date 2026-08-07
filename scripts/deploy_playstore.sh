@@ -27,7 +27,13 @@
 set -euo pipefail
 
 export PLAY_PACKAGE_NAME="com.hoque.familychores"
-export PLAY_TRACK="internal"
+# Which Play track to release to. Overridable so the same script serves both
+# rings: `internal` for a quick self-check, `alpha` for closed testing with
+# real testers. Google Play's names for these are fixed — internal, alpha
+# (closed), beta (open), production — regardless of what the Console labels
+# them. Defaults to internal so an unqualified run stays the safest one.
+#   PLAY_TRACK=alpha scripts/deploy_playstore.sh
+export PLAY_TRACK="${PLAY_TRACK:-internal}"
 export PLAY_SERVICE_ACCOUNT_JSON="${PLAY_SERVICE_ACCOUNT_JSON:-$HOME/.playstore/service-account.json}"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
