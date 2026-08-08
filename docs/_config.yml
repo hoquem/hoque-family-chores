@@ -1,0 +1,36 @@
+# GitHub Pages serves this directory (main:/docs) at
+# https://hoquem.github.io/hoque-family-chores/ — so ANYTHING left in here is
+# published to the open internet, whether or not it is linked from anywhere.
+#
+# It had been, unnoticed: the engineering audits, KNOWN_LIMITATIONS, the family
+# test plan naming real children, and DEPLOYMENT_CHECKLIST carrying the App
+# Store Connect key and issuer IDs were all readable by anyone who guessed the
+# filename.
+#
+# Only three pages are meant to be public — the support page Apple requires,
+# and the two policies the store listing links to. Everything else is listed
+# below.
+#
+# ADDING A DOC? It is public by default. Add its filename to `exclude` unless
+# you intend the world to read it. `bundle exec jekyll build` is not needed to
+# check: after Pages rebuilds, the file must return 404 at
+# https://hoquem.github.io/hoque-family-chores/<name>.html
+
+title: Chores Star
+description: Support and policies for the Chores Star family chore app.
+
+exclude:
+  - ARCHITECTURE.md
+  - BRANCH_MANAGEMENT.md
+  - CLEAN_ARCHITECTURE_MIGRATION_PROGRESS.md
+  - DEPLOYMENT_CHECKLIST.md
+  - DI_FRAMEWORK_MIGRATION_GUIDE.md
+  - engineering-audit-2026-08-01.md
+  - engineering-audit-2026-08-06.md
+  - FAMILY_TEST_PLAN.md
+  - KNOWN_LIMITATIONS.md
+  - REFACTORING_CHECKLIST.md
+  - review-home-screen-widget-2026-08-07.md
+  - SERVICE_MIGRATION_PROGRESS.md
+  - STORE_LAUNCH_CHECKLIST.md
+  - superpowers
