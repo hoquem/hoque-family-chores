@@ -248,12 +248,17 @@ class TaskListNotifier extends _$TaskListNotifier {
       
       result.fold(
         (failure) => throw Exception(failure.message),
-        (_) {
+        (approved) {
           _logger.d('TaskListNotifier: Task approved successfully');
+          // Signing off your own chore is allowed for parents, so this is a
+          // fact to count rather than an error to prevent. A bool, not a name:
+          // analyticsEvents stays pseudonymous.
+          final doerId = approved.submittedBy ?? approved.assignedToId;
           ref.read(analyticsProvider).log(
                 AnalyticsEventName.taskApproved,
                 userId: approverId.value,
                 familyId: familyId.value,
+                params: {'selfApproved': doerId == approverId},
               );
           ref.invalidateSelf();
         },

@@ -7,14 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
-import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
-import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
-import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/motion/snappy_press.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/theme/motion.dart';
+import 'package:hoque_family_chores/presentation/widgets/member_display_name.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import '../utils/task_status_label.dart';
@@ -701,7 +699,7 @@ class _AssigneeLabel extends ConsumerWidget {
     final assigneeId = task.assignedToId;
     if (assigneeId == null) return const SizedBox.shrink();
 
-    final name = _memberDisplayName(ref, task.familyId, assigneeId, currentUser);
+    final name = memberDisplayName(ref, task.familyId, assigneeId, currentUser);
 
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
@@ -711,27 +709,6 @@ class _AssigneeLabel extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Resolves a family member's display name for a tile label: 'you' for the
-/// viewer, the member's name once the roster has loaded, '…' while it loads.
-String _memberDisplayName(
-  WidgetRef ref,
-  FamilyId familyId,
-  UserId memberId,
-  User currentUser,
-) {
-  if (memberId == currentUser.id) return 'you';
-  final membersAsync = ref.watch(familyMembersNotifierProvider(familyId));
-  return membersAsync.maybeWhen(
-    data: (members) {
-      for (final m in members) {
-        if (m.id == memberId) return m.name;
-      }
-      return 'someone in the family';
-    },
-    orElse: () => '…',
-  );
 }
 
 /// The "Checked by: …" line on a completed chore — the transparency half of
@@ -751,7 +728,7 @@ class _CheckedByLabel extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final name = _memberDisplayName(ref, task.familyId, approverId, currentUser);
+    final name = memberDisplayName(ref, task.familyId, approverId, currentUser);
 
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
