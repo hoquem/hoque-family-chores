@@ -93,10 +93,14 @@ it can sign it off (children included).
 > is not forgotten, but the reproduction details and fix plans live on the
 > private Mission Control board — do not paste them back into this file.
 
-**TASK-494 — privilege escalation via the member `role` field (high).** The
-`/users` update rule does not treat `role` as privileged on a self-update, and
-`approveTask` grants parents an exemption that assumes it is. Live in a shipped
-build. Fix is a rules change plus emulator coverage; details in TASK-494.
+**TASK-494 — privilege escalation via the member `role` field (high). Fixed in
+the repo, NOT yet deployed.** The `/users` update rule did not treat `role` as
+privileged on a self-update, while `approveTask` grants parents an exemption
+that assumes it is. `firestore.rules` now pins `role` for anyone already in a
+family, covered by `test/rules/role_lock.test.mjs`. **Still live for every user
+until the rules ship with the next client build** — see the deploy-order warning
+above. Residual, and a product decision rather than a bug: leaving a family and
+re-joining with the invite code still lets you pick `parent` at the door.
 
 **TASK-495 — invite-code hardening (medium).** Invite codes are the single
 secret protecting a family's data and are short enough to enumerate, with no
