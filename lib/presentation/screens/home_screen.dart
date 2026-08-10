@@ -14,6 +14,8 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/family_notif
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/motion/streak_milestone_watcher.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/home_widget_provider.dart';
+import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
@@ -196,7 +198,14 @@ class HomeScreen extends ConsumerWidget {
         children: [
           GreetingHeader(user: currentUser),
           const SizedBox(height: 16),
-          ProgressCard(points: currentUser.points.value, streak: streak),
+          ProgressCard(
+            points: currentUser.points.value,
+            streak: streak,
+            // Treats is index 2 in MainScreen. A star balance with nothing to
+            // spend it on is a scoreboard; this makes it currency.
+            onTap: () =>
+                ref.read(bottomNavIndexNotifierProvider.notifier).setIndex(2),
+          ),
           const SizedBox(height: 8),
           if (missions.allDone) ...[
             const CelebrationCard(),
@@ -213,6 +222,9 @@ class HomeScreen extends ConsumerWidget {
             onClaim: (task) => ref
                 .read(taskListNotifierProvider(currentUser.familyId).notifier)
                 .claimTask(task.id.value, currentUser.id, currentUser.familyId),
+            onOpen: (task) => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => TaskDetailsScreen(task: task)),
+            ),
           ),
           const SizedBox(height: 8),
           // Anyone can sign off a task now, so anyone sees the queue — but only
@@ -231,7 +243,7 @@ class HomeScreen extends ConsumerWidget {
               },
             )
           else
-            _buildLeaderboard(ref, currentUser, tasks, now),
+            _buildLeaderboard(context, ref, currentUser, tasks, now),
           const SizedBox(height: 32),
         ],
       ),
@@ -239,6 +251,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildLeaderboard(
+    BuildContext context,
     WidgetRef ref,
     User currentUser,
     List<Task> tasks,
@@ -262,8 +275,12 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      data: (members) =>
-          LeaderboardCard(ranking: weeklyStars(tasks, members, now)),
+      data: (members) => LeaderboardCard(
+        ranking: weeklyStars(tasks, members, now),
+        onOpenMember: (member) => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
+        ),
+      ),
     );
   }
 }
