@@ -7,11 +7,13 @@ import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart';
+import 'package:hoque_family_chores/presentation/widgets/member_display_name.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
@@ -519,7 +521,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   const SizedBox(height: 20),
                   const Divider(),
                   const SizedBox(height: 16),
-                  _buildTimelineSection(),
+                  _buildTimelineSection(currentUser: currentUser),
                   const SizedBox(height: 32),
                   _buildActionButtons(currentUser: currentUser),
                   const SizedBox(height: 24),
@@ -708,9 +710,32 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     );
   }
 
-  Widget _buildTimelineSection() {
+  /// The chore's story, with people in it — who added it, who did it, who
+  /// signed it off. Names matter more than timestamps here: a parent may
+  /// approve their own chore, so the family sees that rather than infers it.
+  ///
+  /// Every row is built from fields already on the task. A row whose person or
+  /// time is missing is left out rather than filled with a guess: chores from
+  /// before these fields existed simply tell a shorter story.
+  Widget _buildTimelineSection({required User? currentUser}) {
     final dateTimeFormat = DateFormat('MMM d, yyyy • h:mm a');
     final t = context.tokens;
+
+    // Who actually pressed "I've done it" — a chore can be claimed by one
+    // person and submitted by another after a re-claim.
+    final doerId = task.submittedBy ?? task.assignedToId;
+    final doneAt = task.submittedAt ?? task.completedAt;
+
+    String? nameOf(UserId? id) => (id == null || currentUser == null)
+        ? null
+        : memberDisplayName(ref, task.familyId, id, currentUser);
+
+    final creator = nameOf(task.createdById);
+    final doer = nameOf(doerId);
+    final approver = nameOf(task.approvedBy);
+    final rejecter = nameOf(task.rejectedBy);
+    final selfApproved = task.approvedBy != null && task.approvedBy == doerId;
+
     return _buildSection(
       icon: Icons.timeline,
       title: 'Timeline',
@@ -719,25 +744,49 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         children: [
           _timelineRow(
             icon: Icons.add_circle_outline,
-            label: 'Created',
-            date: dateTimeFormat.format(task.createdAt),
+            label: creator == null ? 'Created' : 'Added by $creator',
+            detail: dateTimeFormat.format(task.createdAt),
             color: t.inkSoft,
           ),
-          if (task.completedAt != null) ...[
+          if (doneAt != null) ...[
             const SizedBox(height: 8),
             _timelineRow(
               icon: Icons.check_circle_outline,
-              label: 'Done',
-              date: dateTimeFormat.format(task.completedAt!),
+              label: doer == null ? 'Done' : 'Done by $doer',
+              detail: dateTimeFormat.format(doneAt),
               color: t.sprout,
             ),
+          ],
+          if (task.rejectedAt != null) ...[
+            const SizedBox(height: 8),
+            _timelineRow(
+              icon: Icons.undo,
+              label: rejecter == null ? 'Sent back' : 'Sent back by $rejecter',
+              detail: dateTimeFormat.format(task.rejectedAt!),
+              color: t.carrot,
+            ),
+            if (task.rejectionReason != null &&
+                task.rejectionReason!.isNotEmpty)
+              _timelineNote('“${task.rejectionReason!}”'),
+          ],
+          if (task.approvedAt != null) ...[
+            const SizedBox(height: 8),
+            _timelineRow(
+              icon: Icons.verified_outlined,
+              label: approver == null ? 'Checked' : 'Checked by $approver',
+              detail: dateTimeFormat.format(task.approvedAt!),
+              color: t.starGold,
+            ),
+            // Allowed, and said out loud. Neutral wording and no warning
+            // colour: this is transparency, not an accusation.
+            if (selfApproved) _timelineNote('their own chore'),
           ],
           if (task.recurringPattern != null) ...[
             const SizedBox(height: 8),
             _timelineRow(
               icon: Icons.repeat,
               label: 'Recurring',
-              date: task.recurringPattern!,
+              detail: task.recurringPattern!,
               color: t.marigold,
             ),
           ],
@@ -749,24 +798,44 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget _timelineRow({
     required IconData icon,
     required String label,
-    required String date,
+    required String detail,
     required Color color,
   }) {
+    // Both halves are flexible: a long name ("someone in the family") and a
+    // long timestamp can otherwise add up to more than a narrow phone has.
+    // Whichever runs out of room ellipsizes rather than overflowing.
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        Expanded(
+        Flexible(
           child: Text(
-            date,
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            detail,
             style: TextStyle(color: context.tokens.inkMuted),
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
+    );
+  }
+
+  /// A quiet second line under a timeline row, aligned past its icon.
+  Widget _timelineNote(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 26, top: 2),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, color: context.tokens.inkMuted),
+      ),
     );
   }
 
