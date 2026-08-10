@@ -697,7 +697,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = C67LAFG9Q4;
 				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -706,7 +706,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
@@ -721,7 +721,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = C67LAFG9Q4;
 				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -730,7 +730,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
@@ -915,7 +915,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ChoresStarWidget/ChoresStarWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 61;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = C67LAFG9Q4;
 				INFOPLIST_FILE = ChoresStarWidget/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -924,7 +924,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoque.hoqueFamilyChores.ChoresStarWidget;
 				PRODUCT_NAME = ChoresStarWidget;
 				SWIFT_VERSION = 5.0;
