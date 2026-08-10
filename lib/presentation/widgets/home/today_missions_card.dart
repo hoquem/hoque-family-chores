@@ -11,6 +11,7 @@ class TodayMissionsCard extends StatelessWidget {
     required this.missions,
     required this.onComplete,
     required this.onClaim,
+    required this.onOpen,
   });
 
   /// How many spare tasks to offer at once. The home screen is a glance; the
@@ -22,6 +23,10 @@ class TodayMissionsCard extends StatelessWidget {
 
   /// Called when the child picks up an unclaimed task.
   final void Function(Task task) onClaim;
+
+  /// Called when a row body is tapped — the chore itself, not one of its
+  /// buttons. Home is a glance; this is the way through to the whole story.
+  final void Function(Task task) onOpen;
 
   bool get _isEmpty =>
       missions.toDo.isEmpty &&
@@ -63,6 +68,7 @@ class TodayMissionsCard extends StatelessWidget {
             // Tasks tab.
             ...missions.claimable.take(_claimableShown).map(
                   (task) => ListTile(
+                    onTap: () => onOpen(task),
                     leading: IconButton(
                       tooltip: 'I\'ll do it',
                       icon: Icon(Icons.add_circle_outline,
@@ -82,6 +88,7 @@ class TodayMissionsCard extends StatelessWidget {
             const ListTile(title: Text('No missions today 🎈')),
           ...missions.toDo.map(
             (task) => ListTile(
+              onTap: () => onOpen(task),
               leading: IconButton(
                 tooltip: "I've done it!",
                 icon: const Icon(Icons.circle_outlined),
@@ -96,6 +103,7 @@ class TodayMissionsCard extends StatelessWidget {
           ),
           ...missions.waiting.map(
             (task) => ListTile(
+              onTap: () => onOpen(task),
               // Deep tone, not the base: amberWarn on cream is 2.01:1, under
               // the 3:1 WCAG floor for a meaningful icon.
               leading:
@@ -106,6 +114,7 @@ class TodayMissionsCard extends StatelessWidget {
           ),
           ...missions.done.map(
             (task) => ListTile(
+              onTap: () => onOpen(task),
               // sprout on cream is 2.60:1; sproutDeep clears the 3:1 floor.
               leading: Icon(Icons.check_circle, color: context.tokens.sproutDeep),
               title: Text(

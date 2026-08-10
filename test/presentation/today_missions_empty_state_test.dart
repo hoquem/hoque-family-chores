@@ -48,6 +48,7 @@ Future<List<Task>> _pump(WidgetTester tester, TodayMissions missions) async {
           missions: missions,
           onComplete: (_) {},
           onClaim: claimed.add,
+          onOpen: (_) {},
         ),
       ),
     ),

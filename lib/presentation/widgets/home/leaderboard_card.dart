@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/home_stats.dart';
 
 /// Top three family members by stars earned this week.
 class LeaderboardCard extends StatelessWidget {
-  const LeaderboardCard({super.key, required this.ranking});
+  const LeaderboardCard({
+    super.key,
+    required this.ranking,
+    required this.onOpenMember,
+  });
 
   /// Pre-sorted, best first (see [weeklyStars]).
   final List<MemberStars> ranking;
+
+  /// Called when a member's row is tapped. A name and a star count invites
+  /// "how did they get those?" — this is the way to the answer.
+  final void Function(User member) onOpenMember;
 
   static const _medals = ['🥇', '🥈', '🥉'];
 
@@ -30,6 +39,7 @@ class LeaderboardCard extends StatelessWidget {
           ),
           for (var i = 0; i < top.length; i++)
             ListTile(
+              onTap: () => onOpenMember(top[i].member),
               leading: Text(
                 _medals[i],
                 style: const TextStyle(fontSize: 24),
