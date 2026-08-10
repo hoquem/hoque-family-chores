@@ -38,9 +38,16 @@ service cloud.firestore {
       //    member of (or clear it) — otherwise anyone could point their profile
       //    at a victim family and read its members' PII via the read rule above,
       //    which keys off me().familyId.
+      //  - `role` is PINNED once you are in a family. Picking parent or child is
+      //    yours to do at the door, but not afterwards: `approveTask` lets a
+      //    parent sign off their own chore, so a member who could re-grade
+      //    themselves could mint stars. Only a parent may change a member's role
+      //    from then on, via the branch below.
       allow update: if isSignedIn()
         && request.resource.data.points == resource.data.points
         && ((request.auth.uid == userId
+              && (request.resource.data.get('role', '') == resource.data.get('role', '')
+                  || resource.data.get('familyId', '') == '')
               && (request.resource.data.familyId == resource.data.familyId
                   || request.resource.data.familyId == ''
                   || isFamilyMember(request.resource.data.familyId)))
