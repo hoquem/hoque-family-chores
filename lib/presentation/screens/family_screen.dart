@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
@@ -171,10 +172,16 @@ class _FamilyDetailsView extends ConsumerWidget {
           children: [
             const Text('Share this code so they can join your family:'),
             const SizedBox(height: 16),
+            // Grouped for reading aloud, and wrapped rather than clipped: a
+            // twelve-character code at headline size does not fit one line on
+            // a small phone, and a code you can only see two thirds of is no
+            // code at all. Whatever the reader does with the spaces, the join
+            // screen normalises them away.
             SelectableText(
-              inviteCode,
+              formatInviteCode(inviteCode),
+              textAlign: TextAlign.center,
               style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
-                    letterSpacing: 3,
+                    letterSpacing: 2,
                     fontWeight: FontWeight.bold,
                   ),
             ),

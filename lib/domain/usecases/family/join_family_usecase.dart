@@ -7,6 +7,31 @@ import '../../repositories/family_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../value_objects/user_id.dart';
 
+/// Strips the separators people add to a long code and upper-cases the rest.
+///
+/// Twelve characters is long enough that it gets written down and read back in
+/// groups — "ABCD EFGH JKMN", or with dashes, or split across a line. Those are
+/// how a human breaks up a long string, not a different code, so refusing them
+/// would be the app being pedantic at the one moment a new member is trying to
+/// get in. Anything outside the code alphabet goes; what is left is compared.
+String normaliseInviteCode(String raw) =>
+    raw.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+
+/// Breaks a code into groups of four for display: ``ABCD EFGH JKMN``.
+///
+/// Twelve unbroken characters is a lot to read down a phone line to a child.
+/// Grouped, it is three short things to say. [normaliseInviteCode] is the
+/// inverse — whatever the reader does with those spaces, the code still
+/// resolves — so the two must always be changed together.
+String formatInviteCode(String code) {
+  final buffer = StringBuffer();
+  for (var i = 0; i < code.length; i += 4) {
+    if (i > 0) buffer.write(' ');
+    buffer.write(code.substring(i, i + 4 > code.length ? code.length : i + 4));
+  }
+  return buffer.toString();
+}
+
 /// Use case for joining an existing family with an invite code
 class JoinFamilyUseCase {
   final FamilyRepository _familyRepository;
@@ -26,7 +51,7 @@ class JoinFamilyUseCase {
     required UserRole role,
   }) async {
     try {
-      final code = inviteCode.trim().toUpperCase();
+      final code = normaliseInviteCode(inviteCode);
       if (code.isEmpty) {
         return Left(ValidationFailure('Invite code cannot be empty'));
       }

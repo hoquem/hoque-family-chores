@@ -92,18 +92,34 @@ void main() {
       expect(saved.familyId, family.id);
     });
 
-    test('mints a six-character invite code', () async {
+    // Twelve, not six. The code is the only secret protecting a family's data
+    // and `familyInvites` answers an unthrottled get, so the defence is the
+    // size of the space: 31^6 is 8.9e8 and a guess lands once families number
+    // in the millions, while 31^12 is 7.9e17 and never does. TASK-495.
+    test('mints a twelve-character invite code', () async {
       final result = await create(name: 'The Hoques', creatorId: _creator);
       final family = result.fold((_) => null, (f) => f)!;
 
-      expect(family.inviteCode.length, 6);
+      expect(family.inviteCode.length, 12);
       // Ambiguous glyphs are excluded on purpose: these codes get read aloud
       // and typed by children.
-      expect(family.inviteCode, matches(RegExp(r'^[A-HJ-NP-Z2-9]{6}$')));
+      expect(family.inviteCode, matches(RegExp(r'^[A-HJ-NP-Z2-9]{12}$')));
       expect(family.inviteCode, isNot(contains('O')));
       expect(family.inviteCode, isNot(contains('I')));
       expect(family.inviteCode, isNot(contains('0')));
       expect(family.inviteCode, isNot(contains('1')));
+    });
+
+    // Two codes in a row must not collide; a fixed seed or a reused Random
+    // would be invisible in the length check above.
+    test('mints a different code each time', () async {
+      final first = await create(name: 'One', creatorId: _creator);
+      when(() => users.getUserProfile(_creator))
+          .thenAnswer((_) async => _user());
+      final second = await create(name: 'Two', creatorId: _creator);
+
+      expect(first.fold((_) => null, (f) => f)!.inviteCode,
+          isNot(second.fold((_) => null, (f) => f)!.inviteCode));
     });
 
     test('trims the name', () async {

@@ -20,6 +20,18 @@ class CreateFamilyUseCase {
   /// Characters used for invite codes; ambiguous glyphs (0/O, 1/I/L) excluded.
   static const _codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
+  /// How long an invite code is.
+  ///
+  /// The code is the only secret protecting a family's data, and
+  /// ``familyInvites/{code}`` answers an unthrottled ``get`` — so nothing stops
+  /// an attacker trying codes one at a time, and the only real defence is the
+  /// size of the space. At six characters that space is 31^6 = 8.9e8: safe
+  /// while families number in the tens, and not safe at all once they number in
+  /// the millions, when roughly one guess in 900 would land on a real family.
+  /// Twelve makes it 31^12 = 7.9e17, which no growth in the family count
+  /// catches up with. TASK-495.
+  static const _codeLength = 12;
+
   /// Creates a new family with the creator as the first member.
   ///
   /// The creator's user profile is updated to reference the new family and
@@ -93,7 +105,7 @@ class CreateFamilyUseCase {
   String _generateInviteCode() {
     final random = Random.secure();
     return List.generate(
-      6,
+      _codeLength,
       (_) => _codeAlphabet[random.nextInt(_codeAlphabet.length)],
     ).join();
   }
