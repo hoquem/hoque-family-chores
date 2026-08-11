@@ -94,6 +94,21 @@ class FirebaseFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<void> withdrawJoinRequest(FamilyId familyId, UserId userId) async {
+    try {
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('joinRequests')
+          .doc(userId.value)
+          .delete();
+    } catch (e) {
+      throw ServerException('Failed to withdraw the join request: $e',
+          code: 'FAMILY_JOIN_REQUEST_WITHDRAW_ERROR');
+    }
+  }
+
+  @override
   Future<void> createFamily(FamilyEntity family) async {
     try {
       await _firestore

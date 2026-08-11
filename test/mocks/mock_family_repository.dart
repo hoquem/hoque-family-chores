@@ -52,6 +52,11 @@ class MockFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<void> withdrawJoinRequest(FamilyId familyId, UserId userId) async {
+    joinRequests.remove('${familyId.value}/${userId.value}');
+  }
+
+  @override
   Future<void> createFamily(FamilyEntity family) async {
     await Future.delayed(const Duration(milliseconds: 100));
     _families[family.id.value] = family;

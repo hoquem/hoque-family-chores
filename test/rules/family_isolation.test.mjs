@@ -15,7 +15,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const RULES = fileURLToPath(new URL('../../firestore.rules', import.meta.url));
 
@@ -43,6 +43,10 @@ await testEnv.withSecurityRulesDisabled(async (ctx) => {
 
 const alice = testEnv.authenticatedContext('alice').firestore();
 const bob = testEnv.authenticatedContext('bob').firestore(); // a member of family B
+// Nobody: no profile, no family. Used to show that a join request is what
+// grants a stranger read access to a family, and that giving it up takes that
+// access away again.
+const carol = testEnv.authenticatedContext('carol').firestore();
 
 let pass = 0, fail = 0;
 async function check(name, promise, shouldSucceed) {
@@ -85,6 +89,40 @@ await check('after the join request, alice CAN read the family B doc', getDoc(do
 await check('after the join request, alice CAN add herself as a member', updateDoc(doc(alice, 'families/famB'), { memberIds: ['bob', 'alice'], updatedAt: new Date() }), true);
 await check('now a member, alice CAN read family B tasks', getDoc(doc(alice, 'families/famB/tasks/t1')), true);
 await check('now a member, alice CAN set her familyId to B (completing the join)', updateDoc(doc(alice, 'users/alice'), { familyId: 'famB' }), true);
+
+// TASK-499. A join request used to be create-only, so the document the first
+// join left behind could never be cleared or rewritten — and `set()` on an
+// existing doc is an update. Leaving a family and coming back was therefore a
+// permanent lockout, and leaving never gave up the read access the request
+// granted. Both are fixed here, and the invite-code proof still has to hold.
+console.log('\n-- Leaving a family, and coming back --');
+// Written first because it is the check a sloppy fix fails: relaxing this to
+// "the owner may write their own request" would let anyone who once joined ANY
+// family rewrite the doc to point at a family they have no code for.
+await check('alice CANNOT overwrite her own join request with a code for another family',
+  setDoc(doc(alice, 'families/famB/joinRequests/alice'), { code: 'CODEA' }), false);
+await check('alice CANNOT overwrite her own join request with a code that does not exist',
+  setDoc(doc(alice, 'families/famB/joinRequests/alice'), { code: 'NOPE99' }), false);
+// The self-heal path: this is what lets someone already locked out get back in
+// without an app update, since their stale doc predates the fix.
+await check('alice CAN overwrite her own join request with the correct code',
+  setDoc(doc(alice, 'families/famB/joinRequests/alice'), { code: 'CODEB' }), true);
+await check('bob CANNOT delete alice\'s join request',
+  deleteDoc(doc(bob, 'families/famB/joinRequests/alice')), false);
+await check('alice CAN delete her own join request (this is what leaving does)',
+  deleteDoc(doc(alice, 'families/famB/joinRequests/alice')), true);
+
+console.log('\n-- Giving up the join request gives up the access it bought --');
+await check('carol (no family, no request) CANNOT read family B',
+  getDoc(doc(carol, 'families/famB')), false);
+await check('carol CAN create a join request with the correct code',
+  setDoc(doc(carol, 'families/famB/joinRequests/carol'), { code: 'CODEB' }), true);
+await check('with the request, carol CAN read family B',
+  getDoc(doc(carol, 'families/famB')), true);
+await check('carol CAN delete her own request',
+  deleteDoc(doc(carol, 'families/famB/joinRequests/carol')), true);
+await check('having given it up, carol CANNOT read family B again',
+  getDoc(doc(carol, 'families/famB')), false);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await testEnv.cleanup();

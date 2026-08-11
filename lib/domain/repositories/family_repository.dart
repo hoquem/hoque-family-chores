@@ -29,6 +29,15 @@ abstract class FamilyRepository {
     String inviteCode,
   );
 
+  /// Withdraws [userId]'s join request for [familyId].
+  ///
+  /// The counterpart to [requestToJoinFamily], called when leaving. The request
+  /// is the proof that bought read access to the family, so keeping it after
+  /// leaving would leave that access in place — and because the request is
+  /// written with `set()`, a stale one also makes rejoining impossible.
+  /// TASK-499.
+  Future<void> withdrawJoinRequest(FamilyId familyId, UserId userId);
+
   /// Create a new family
   Future<void> createFamily(FamilyEntity family);
 

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/join_failure_message.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
@@ -84,8 +85,10 @@ class FamilyOnboardingNotifier extends _$FamilyOnboardingNotifier {
 
     return result.fold(
       (failure) {
+        // Log the technical text, show the human one.
         _logger.e('FamilyOnboarding: join failed', error: failure.message);
-        state = state.copyWith(isLoading: false, error: failure.message);
+        state =
+            state.copyWith(isLoading: false, error: joinFailureMessage(failure));
         return false;
       },
       (family) {
