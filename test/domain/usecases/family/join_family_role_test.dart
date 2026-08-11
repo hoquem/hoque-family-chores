@@ -37,6 +37,29 @@ User _adult(UserId id) => User(
     );
 
 void main() {
+  // A twelve-character code is long enough that people break it up when they
+  // write it down or paste it. Spaces and dashes are how a human separates a
+  // long string, not a different code — refusing them would be the app being
+  // pedantic at the one moment a new member is trying to get in. TASK-495.
+  for (final typed in ['ABC 234', 'ABC-234', ' abc234 ', 'a b c 2 3 4']) {
+    test('a code typed as "$typed" still joins', () async {
+      final users = MockUserRepository();
+      final families = MockFamilyRepository();
+      await families.createFamily(_family());
+      final me = UserId('adult_uid');
+      await users.createUserProfile(_adult(me));
+
+      final result = await JoinFamilyUseCase(families, users)(
+        inviteCode: typed,
+        userId: me,
+        role: UserRole.parent,
+      );
+
+      expect(result.isRight(), isTrue, reason: 'separators are not part of it');
+      expect((await users.getUserProfile(me))!.familyId.value, 'fam_1');
+    });
+  }
+
   // The onboarding picker produces parent (the "parent or guardian" choice) and
   // child; guardian stays a valid backend role, so all three are covered.
   for (final role in [UserRole.parent, UserRole.guardian, UserRole.child]) {
