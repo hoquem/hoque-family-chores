@@ -1,20 +1,15 @@
 import 'package:flutter/foundation.dart';
 
 /// Service that provides environment-specific configuration
+///
+/// There is deliberately no mock-data switch here. `useMockData`,
+/// `isTestEnvironment` and `shouldConnectToFirebase` used to live in this class
+/// and nothing ever read them: `RepositoryFactory` builds the Firebase
+/// repositories unconditionally. `useMockData` did not even consult the
+/// `USE_MOCK_DATA` define four different docs told you to pass — it returned
+/// true for every debug build and was ignored anyway. Removed under TASK-496.
+/// Running against fakes would be a real feature; it was never this one.
 class EnvironmentService {
-  /// Whether to use mock data instead of Firebase
-  bool get useMockData {
-    // In debug mode, default to mock data for faster development
-    if (kDebugMode) {
-      return true;
-    }
-    // In release mode, always use Firebase
-    return false;
-  }
-
-  /// Whether we're in a test environment
-  bool get isTestEnvironment => kDebugMode && useMockData;
-
   /// Whether we're in debug mode
   bool get isDebugMode => kDebugMode;
 
@@ -23,9 +18,6 @@ class EnvironmentService {
 
   /// Whether we're in profile mode
   bool get isProfileMode => kProfileMode;
-
-  /// Whether we should connect to Firebase
-  bool get shouldConnectToFirebase => !useMockData;
 
   /// Gemini API key from environment
   /// Must be set via --dart-define=GEMINI_API_KEY=your_key or environment variable

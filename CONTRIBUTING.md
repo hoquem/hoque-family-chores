@@ -57,10 +57,8 @@ This project follows a simple code of conduct:
 
 5. **Run the app**
    ```bash
-   # With mock data (recommended for development)
-   flutter run --dart-define=USE_MOCK_DATA=true
-   
-   # With real Firebase
+   # Against the configured Firebase project — the only mode there is.
+   # There is no mock-data switch; see TASK-496.
    flutter run
    ```
 

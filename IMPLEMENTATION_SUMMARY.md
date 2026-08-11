@@ -109,11 +109,11 @@ flutter pub get
 # run with real Firebase
 flutter run
 
-# run in-memory tests
+# run the tests (they use the fakes in test/mocks/)
 flutter test
 
-# force mock mode in debug
-flutter run --dart-define=USE_MOCK_DATA=true
+# run the app — against the configured Firebase project, the only mode there is
+flutter run
 ```
 
 Happy coding! 🎉

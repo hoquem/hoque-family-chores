@@ -77,51 +77,32 @@ An app for managing family chores, making it fun and easy to keep track of respo
 
 ## 🛠️ Development Guide
 
-### 🔧 **CRITICAL: Mock Implementation Requirement**
+### 🔧 Adding a repository
 
-**⚠️ MANDATORY FOR ALL NEW FEATURES**
+Every data dependency goes behind an interface in the domain layer, with a
+Firebase implementation in the data layer and a fake for the tests:
 
-When implementing any new feature, you **MUST** complete both implementations:
+- **Interface** — `lib/domain/repositories/<thing>_repository.dart`
+- **Firebase implementation** — `lib/data/repositories/firebase_<thing>_repository.dart`
+- **Wiring** — add it to `RepositoryFactory.createRepositories()` and expose a
+  provider in `lib/di/riverpod_container.dart`
+- **Fake** — `test/mocks/mock_<thing>_repository.dart`, and override the
+  provider with it in widget tests
 
-1. **Firebase Implementation** - The production-ready service using Firebase
-2. **Mock Implementation** - A complete mock service for development/testing
+#### The app always talks to Firebase
 
-#### Why This Matters
-- **Development Speed**: Mock data allows rapid development without Firebase setup
-- **Testing**: Ensures features work in isolation without network dependencies
-- **CI/CD**: All tests run with mock data (`USE_MOCK_DATA=true`)
-- **Offline Development**: Developers can work without Firebase credentials
+There is no mock-data mode. `RepositoryFactory` builds the Firebase
+repositories unconditionally, so running the app needs a real Firebase project
+and a signed-in account. The fakes live in `test/mocks/` and are reachable only
+from tests, by overriding the repository providers in a `ProviderScope`.
 
-#### Implementation Checklist
-For every new feature, ensure you have:
+This README used to document `flutter run --dart-define=USE_MOCK_DATA=true`.
+That flag never did anything — see TASK-496.
 
-- ✅ **Service Interface** - Define the contract in `lib/services/interfaces/`
-- ✅ **Firebase Service** - Implement in `lib/services/implementations/firebase/`
-- ✅ **Mock Service** - Implement in `lib/services/implementations/mock/`
-- ✅ **Service Factory** - Add to `ServiceFactory` in `main.dart`
-- ✅ **Provider Registration** - Add to provider tree in `main.dart`
-- ✅ **Mock Data** - Add realistic test data to `lib/test_data/mock_data.dart`
-- ✅ **Service Provider** - Ensure service is provided in main.dart if needed by screens
-
-#### Example Structure
-```
-lib/services/
-├── interfaces/
-│   └── new_feature_service_interface.dart
-├── implementations/
-│   ├── firebase/
-│   │   └── firebase_new_feature_service.dart
-│   └── mock/
-│       └── mock_new_feature_service.dart
-```
-
-#### Testing Your Implementation
+#### Running it
 ```bash
-# Test with mock data
-flutter run --dart-define=USE_MOCK_DATA=true
-
-# Test with Firebase (requires setup)
-flutter run
+flutter run          # against the configured Firebase project
+flutter test         # the suite, against the fakes in test/mocks/
 ```
 
 **🚨 Failure to implement both versions will result in:**
@@ -158,7 +139,7 @@ Run them **sequentially** (Play then TestFlight), never chained iOS-first.
 | Symptom | Suggested Fix |
 |---------|---------------|
 | **Flutter package version mismatch** | Delete local `.dart_tool/` and `pubspec.lock`, run `flutter pub get`, and ensure you committed the updated `pubspec.lock`. |
-| **Unit tests using real Firebase** | All tests run with `USE_MOCK_DATA=true`. For local runs, export that env variable or connect to your dev Firebase project. |
+| **Unit tests using real Firebase** | They shouldn't be. Tests reach Firebase only when a test forgets to override the repository providers — override them with the fakes in `test/mocks/`, as the existing widget tests do. |
 | **New developer setup** | 1. Install Flutter (matching `pubspec.yaml`'s Dart constraint).<br>2. Clone repo & run `flutter pub get`.<br>3. Copy `.env.example` to `.env` and fill secrets (ask a team lead).<br>4. For iOS: `cd ios && pod install`.<br>5. Run `flutter run` on target device. |
 
 Happy coding! 🧹✨
