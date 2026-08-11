@@ -10,6 +10,7 @@
 // agree with them or a child sees a button that fails when tapped.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/task_actions.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
@@ -45,21 +46,21 @@ void main() {
   group('an unclaimed chore', () {
     test('is up for grabs by anyone who did not create it', () {
       final task = _task(status: TaskStatus.available, createdBy: _sibling);
-      expect(taskActionsFor(task: task, viewerId: _me), [TaskAction.claim]);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), [TaskAction.claim]);
     });
 
     // You cannot claim your own chore; a parent assigns it. Without this a
     // child could create, claim, do and bank a chore with no one else involved.
     test('offers nothing to the person who created it', () {
       final task = _task(status: TaskStatus.available, createdBy: _me);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
     });
   });
 
   group('a chore assigned to me', () {
     test('is done directly when it needs no photo proof', () {
       final task = _task(status: TaskStatus.assigned, assignedTo: _me);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.complete, TaskAction.handBack]);
     });
 
@@ -72,13 +73,13 @@ void main() {
           status: TaskStatus.assigned,
           assignedTo: _me,
           requiresPhotoProof: true);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.start, TaskAction.handBack]);
     });
 
     test('can be finished or handed back once started', () {
       final task = _task(status: TaskStatus.inProgress, assignedTo: _me);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.complete, TaskAction.handBack]);
     });
   });
@@ -86,12 +87,12 @@ void main() {
   group("someone else's chore", () {
     test('offers me nothing while they are doing it', () {
       final task = _task(status: TaskStatus.assigned, assignedTo: _sibling);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
     });
 
     test('offers me nothing while it is in progress', () {
       final task = _task(status: TaskStatus.inProgress, assignedTo: _sibling);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
     });
   });
 
@@ -102,13 +103,51 @@ void main() {
     test('can be judged by anyone who did not do it', () {
       final task =
           _task(status: TaskStatus.pendingApproval, assignedTo: _sibling);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.approve, TaskAction.sendBack]);
     });
 
-    test('offers nothing to the person who did it', () {
+    test('offers a child nothing on the chore they did themselves', () {
       final task = _task(status: TaskStatus.pendingApproval, assignedTo: _me);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
+    });
+
+    // TASK-500. The Cloud Function has always let a parent sign off their own
+    // chore (functions/index.js: the no-self-approval throw binds non-parents),
+    // and that is the deliberate product decision — the app is trust-based, so
+    // this is a fact to show rather than an act to forbid. The client alone
+    // said no, which meant a lone parent could never bank their own work and
+    // the "their own chore" note on the timeline could never appear.
+    for (final role in [UserRole.parent, UserRole.guardian]) {
+      test('lets a ${role.name} sign off the chore they did themselves', () {
+        final task = _task(status: TaskStatus.pendingApproval, assignedTo: _me);
+        expect(taskActionsFor(task: task, viewerId: _me, viewerRole: role),
+            [TaskAction.approve]);
+      });
+    }
+
+    // Approve, but not Send back. Returning your own work to yourself for
+    // another go is a thing you can simply do; a button for it is noise.
+    test('does not offer a parent Send back on their own chore', () {
+      final task = _task(status: TaskStatus.pendingApproval, assignedTo: _me);
+      expect(
+          taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.parent),
+          isNot(contains(TaskAction.sendBack)));
+    });
+
+    test('still offers a parent both on someone else\'s chore', () {
+      final task =
+          _task(status: TaskStatus.pendingApproval, assignedTo: _sibling);
+      expect(
+          taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.parent),
+          [TaskAction.approve, TaskAction.sendBack]);
+    });
+
+    test('a role of other is not an admin and gets nothing on its own chore',
+        () {
+      final task = _task(status: TaskStatus.pendingApproval, assignedTo: _me);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.other),
+          isEmpty);
     });
 
     // Bad data: nothing should reach pendingApproval without a doer. Judgeable
@@ -116,7 +155,7 @@ void main() {
     // the worst case is a button that fails, not a star minted from nothing.
     test('with no doer at all is still judgeable, not stuck', () {
       final task = _task(status: TaskStatus.pendingApproval);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.approve, TaskAction.sendBack]);
     });
   });
@@ -130,22 +169,22 @@ void main() {
     // back a chore they cannot redo must have a way out.
     test('can be resubmitted or handed back', () {
       final task = _task(status: TaskStatus.needsRevision, assignedTo: _me);
-      expect(taskActionsFor(task: task, viewerId: _me),
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child),
           [TaskAction.resubmit, TaskAction.handBack]);
     });
 
     test('offers nothing to anyone else', () {
       final task =
           _task(status: TaskStatus.needsRevision, assignedTo: _sibling);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
     });
   });
 
   group('an approved chore', () {
     test('is finished — nobody has anything left to do', () {
       final task = _task(status: TaskStatus.completed, assignedTo: _me);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
-      expect(taskActionsFor(task: task, viewerId: _sibling), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _sibling, viewerRole: UserRole.child), isEmpty);
     });
   });
 
@@ -154,7 +193,7 @@ void main() {
     // data must not hand a stranger the doer's buttons.
     test('offers nothing to anyone', () {
       final task = _task(status: TaskStatus.assigned);
-      expect(taskActionsFor(task: task, viewerId: _me), isEmpty);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
     });
   });
 }

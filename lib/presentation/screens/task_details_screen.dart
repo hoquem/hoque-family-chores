@@ -842,7 +842,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget _buildActionButtons({required User? currentUser}) {
     if (currentUser == null) return const SizedBox.shrink();
 
-    final actions = taskActionsFor(task: task, viewerId: currentUser.id);
+    final actions = taskActionsFor(task: task, viewerId: currentUser.id, viewerRole: currentUser.role);
     final buttons = <Widget>[];
 
     // Approve and Send back sit side by side — they are a single either/or
