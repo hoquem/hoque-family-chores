@@ -34,7 +34,16 @@ class LeaveFamilyUseCase {
 
       final familyId = user.familyId;
 
-      // Profile first, then roster. The family update is gated on the *family
+      // Withdraw the join request first. It is the proof that bought read
+      // access to the family, and because it is written with `set()`, a stale
+      // one makes rejoining impossible — the two halves of TASK-499. First,
+      // not last: if a later step fails the user is still a member and still
+      // reaches the family through memberIds, so they are merely short of a
+      // proof they do not need. Withdrawing last would leave the read access in
+      // place with nothing to say so.
+      await _familyRepository.withdrawJoinRequest(familyId, userId);
+
+      // Profile next, then roster. The family update is gated on the *family
       // doc's* memberIds (not the caller's profile), so clearing the profile
       // first doesn't block the roster removal. This ordering makes a partial
       // failure benign: if the roster write fails, the profile is already

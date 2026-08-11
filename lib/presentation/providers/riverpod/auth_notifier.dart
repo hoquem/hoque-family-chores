@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/core/error/failures.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/join_failure_message.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/email.dart';
@@ -460,10 +461,12 @@ class AuthNotifier extends _$AuthNotifier {
 
     result.fold(
       (failure) {
+        // Log the technical text, show the human one — this screen is the one
+        // a child uses, and it used to print raw Firestore errors at them.
         _logger.e('AuthNotifier: Child join failed: ${failure.message}');
         state = state.copyWith(
           isLoading: false,
-          errorMessage: failure.message,
+          errorMessage: joinFailureMessage(failure),
           status: AuthStatus.unauthenticated,
         );
       },

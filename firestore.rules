@@ -98,13 +98,38 @@ service cloud.firestore {
                 && hasJoinRequest(familyId)));
       allow delete: if isSignedIn() && resource.data.creatorId == request.auth.uid;
 
+      // Proof that the writer holds a code that really belongs to this family.
+      // Every write here carries it, so a request can never be pointed at a
+      // family whose code you do not have.
+      function holdsInviteFor(familyId) {
+        return exists(/databases/$(database)/documents/familyInvites/$(request.resource.data.code))
+          && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.code)).data.familyId == familyId;
+      }
+
+      // A request proves you hold the invite code; the family `get` and the
+      // memberIds self-add above both key off it.
+      //
+      // It used to be create-only (`allow update, delete: if false`), which made
+      // leaving a family a one-way door: `requestToJoinFamily` writes with
+      // `set()`, Firestore counts that as an update on an existing document, and
+      // nothing — not the member, not a parent — could clear the one the first
+      // join left behind. Rejoining was denied forever, and leaving never gave
+      // up the read access the request had bought. Hence update and delete,
+      // both scoped to the owner, update still carrying the code proof.
+      // TASK-499.
       match /joinRequests/{uid} {
         allow read: if isSignedIn() && request.auth.uid == uid;
         allow create: if isSignedIn()
           && request.auth.uid == uid
-          && exists(/databases/$(database)/documents/familyInvites/$(request.resource.data.code))
-          && get(/databases/$(database)/documents/familyInvites/$(request.resource.data.code)).data.familyId == familyId;
-        allow update, delete: if false;
+          && holdsInviteFor(familyId);
+        // Overwriting is how someone already locked out gets back in: their
+        // stale document predates this fix and there is nothing to delete it.
+        allow update: if isSignedIn()
+          && request.auth.uid == uid
+          && holdsInviteFor(familyId);
+        // Giving up your own proof. No code needed — you are only ever taking
+        // access away from yourself.
+        allow delete: if isSignedIn() && request.auth.uid == uid;
       }
 
       match /tasks/{taskId} {
