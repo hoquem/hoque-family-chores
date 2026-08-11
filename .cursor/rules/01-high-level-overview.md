@@ -112,7 +112,9 @@ For every new feature:
 2. Clone repository and run `flutter pub get`
 3. Copy `.env.example` to `.env` and configure secrets
 4. For iOS: `cd ios && bundle install && bundle exec pod install`
-5. Run with mock data: `flutter run --dart-define=USE_MOCK_DATA=true`
+5. Run it: `flutter run`. There is no mock-data mode — the app always talks to
+   the configured Firebase project, and the fakes in `test/mocks/` are reachable
+   only from tests.
 
 ### Testing Strategy
 - **Unit Tests**: Test use cases and business logic

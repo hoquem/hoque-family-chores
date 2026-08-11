@@ -32,8 +32,7 @@ EnvironmentService environmentService(Ref ref) {
 /// Repository Factory Provider
 @riverpod
 RepositoryFactory repositoryFactory(Ref ref) {
-  final environmentService = ref.watch(environmentServiceProvider);
-  return RepositoryFactory(environmentService);
+  return RepositoryFactory();
 }
 
 /// Repository Providers (Clean Architecture)

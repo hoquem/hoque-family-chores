@@ -18,13 +18,16 @@ import 'firebase_push_notification_repository.dart';
 import 'firebase_task_completion_repository.dart';
 import 'firebase_reward_repository.dart';
 
-/// Factory for creating repository implementations based on environment
+/// Factory for creating the app's repository implementations.
+///
+/// It used to take an [EnvironmentService] and was described as choosing
+/// implementations "based on environment". It never did — every repository
+/// below is a Firebase one, on every build. The parameter is gone rather than
+/// left in place suggesting a choice that does not exist (TASK-496).
 class RepositoryFactory {
-  final EnvironmentService environment;
+  RepositoryFactory();
 
-  RepositoryFactory(this.environment);
-
-  /// Creates all repositories based on the environment
+  /// Creates all repositories.
   Map<Type, dynamic> createRepositories() {
     final repositories = <Type, dynamic>{};
 
