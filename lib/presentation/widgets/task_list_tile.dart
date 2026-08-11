@@ -439,7 +439,11 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
     }
 
     final actions =
-        taskActionsFor(task: widget.task, viewerId: widget.user.id);
+        taskActionsFor(
+          task: widget.task,
+          viewerId: widget.user.id,
+          viewerRole: widget.user.role,
+        );
 
     if (actions.isEmpty) {
       return switch (widget.task.status) {

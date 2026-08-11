@@ -112,23 +112,34 @@ void main() {
       expect(counts.chores, 1);
     });
 
-    // The bug this file was written to fix. A parent who submits their own
-    // chore was badged to approve it — but no-self-approval forbids that, and
-    // taskActionsFor correctly hides the buttons. The badge was nagging for
-    // work the app refuses to let them do.
-    test('ignores their own submission — they cannot sign off their own work',
-        () {
+    // The invariant this file exists for: the badge counts exactly what the
+    // buttons offer. It was written when a parent's own submission was badged
+    // but unapprovable — the badge nagging for work the app refused to allow.
+    // TASK-500 moved the line rather than the invariant: a parent may now sign
+    // off their own chore, so it is real work and it counts.
+    test('counts their own submission — a parent may sign that off', () {
       final counts = tabBadgeCounts(
         viewer: _viewer(UserRole.parent),
         tasks: [_task(TaskStatus.pendingApproval, assignedTo: _me)],
         unreadNotifications: 0,
       );
-      expect(counts.chores, 0,
-          reason: 'the badge must agree with the buttons: taskActionsFor '
-              'offers this viewer nothing on their own submission');
+      expect(counts.chores, 1,
+          reason: 'the badge must agree with the buttons: taskActionsFor now '
+              'offers a parent Approve on their own submission');
     });
 
-    test('counts only the ones they can actually sign off', () {
+    // The same invariant from the other side: a child's own submission is
+    // still not theirs to sign off, so it must not be badged at them.
+    test("a child's own submission is still not badged at them", () {
+      final counts = tabBadgeCounts(
+        viewer: _viewer(UserRole.child),
+        tasks: [_task(TaskStatus.pendingApproval, assignedTo: _me)],
+        unreadNotifications: 0,
+      );
+      expect(counts.chores, 0);
+    });
+
+    test('counts both its own and someone else\'s for a parent', () {
       final counts = tabBadgeCounts(
         viewer: _viewer(UserRole.parent),
         tasks: [
@@ -137,7 +148,7 @@ void main() {
         ],
         unreadNotifications: 0,
       );
-      expect(counts.chores, 1);
+      expect(counts.chores, 2);
     });
   });
 }

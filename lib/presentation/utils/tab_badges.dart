@@ -40,7 +40,7 @@ TabBadgeCounts tabBadgeCounts({
       // and the buttons from disagreeing: a number here with nothing to tap
       // behind it is worse than no number at all.
       ? tasks
-          .where((t) => taskActionsFor(task: t, viewerId: viewer.id)
+          .where((t) => taskActionsFor(task: t, viewerId: viewer.id, viewerRole: viewer.role)
               .contains(TaskAction.approve))
           .length
       // Everyone else: chores free to take, plus their own live work. Submitted

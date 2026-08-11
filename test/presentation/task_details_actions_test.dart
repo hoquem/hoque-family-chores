@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
@@ -58,6 +59,7 @@ Future<void> _pump(
   UserId? assignedToId,
   UserId? createdById,
   bool requiresPhotoProof = false,
+  UserRole role = UserRole.child,
 }) async {
   // 430x932 (iPhone 16 Pro Max), not the 390x844 the other screen tests use.
   // At 390 the header's stars/due-date Row overflows by 27px — but only in
@@ -107,7 +109,8 @@ Future<void> _pump(
   await tester.runAsync(() async {
     await container.read(authNotifierProvider.notifier).signInWithGoogle();
     final profile = await users.getUserProfile(_me);
-    await users.updateUserProfile(profile!.copyWith(familyId: _familyId));
+    await users
+        .updateUserProfile(profile!.copyWith(familyId: _familyId, role: role));
   });
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
@@ -182,10 +185,25 @@ void main() {
       expect(find.text('Send back'), findsOneWidget);
     });
 
-    testWidgets('I did offers me nothing — no self-approval', (tester) async {
+    testWidgets('I did offers a child nothing — someone else must check it',
+        (tester) async {
       await _pump(tester,
           status: TaskStatus.pendingApproval, assignedToId: _me);
       expect(find.text('Give the stars ⭐'), findsNothing);
+      expect(find.text('Send back'), findsNothing);
+    });
+
+    // TASK-500. A parent may sign off their own work — the Cloud Function has
+    // always allowed it and the timeline says plainly that they did. Approve
+    // only: sending your own chore back to yourself is not a thing to need a
+    // button for.
+    testWidgets('I did offers a parent the stars, and only the stars',
+        (tester) async {
+      await _pump(tester,
+          status: TaskStatus.pendingApproval,
+          assignedToId: _me,
+          role: UserRole.parent);
+      expect(find.text('Give the stars ⭐'), findsOneWidget);
       expect(find.text('Send back'), findsNothing);
     });
   });
