@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../entities/recurring_rule.dart';
 import '../entities/task.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/user_id.dart';
@@ -15,6 +16,19 @@ abstract class TaskRepository {
 
   /// Create a new task
   Future<Task> createTask(Task task);
+
+  /// Creates the first occurrence of a recurring chore and its rule in one
+  /// atomic commit. The rule's [RecurringRule.nextDueAt] is the first task's
+  /// due date and its [RecurringRule.lastTaskId] the new task — the engine
+  /// advances both from there.
+  Future<Task> createRecurringChore({
+    required Task firstTask,
+    required RecurringRule rule,
+  });
+
+  /// Deletes a recurring rule, stopping the series. Existing occurrences stay
+  /// (they are ordinary tasks). Deleting a missing rule is a no-op.
+  Future<void> deleteRecurringRule(FamilyId familyId, String ruleId);
 
   /// Edit a task's user-editable detail fields with optimistic concurrency.
   ///

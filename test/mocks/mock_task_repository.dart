@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
+import 'package:hoque_family_chores/domain/entities/recurring_rule.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
@@ -10,6 +11,7 @@ import 'package:hoque_family_chores/core/error/exceptions.dart';
 /// Mock implementation of TaskRepository for testing
 class MockTaskRepository implements TaskRepository {
   final List<Task> _tasks = [];
+  final List<RecurringRule> _rules = [];
   final StreamController<List<Task>> _taskStreamController = StreamController<List<Task>>.broadcast();
 
   MockTaskRepository() {
@@ -112,6 +114,48 @@ class MockTaskRepository implements TaskRepository {
       return newTask;
     } catch (e) {
       throw ServerException('Failed to create task: $e', code: 'TASK_CREATE_ERROR');
+    }
+  }
+
+  @override
+  Future<Task> createRecurringChore({
+    required Task firstTask,
+    required RecurringRule rule,
+  }) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final newTask = firstTask.copyWith(
+        id: TaskId('task_${_tasks.length + 1}'),
+        ruleId: 'rule_${_rules.length + 1}',
+        // A rule with a fixed child spawns its first occurrence already
+        // assigned to that child, not up for grabs.
+        status: firstTask.assignedToId != null
+            ? TaskStatus.assigned
+            : firstTask.status,
+      );
+      _rules.add(rule.copyWith(
+        id: newTask.ruleId,
+        lastTaskId: newTask.id.value,
+      ));
+      _tasks.add(newTask);
+      _taskStreamController.add(List.from(_tasks));
+
+      return newTask;
+    } catch (e) {
+      throw ServerException('Failed to create recurring chore: $e',
+          code: 'RECURRING_CREATE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> deleteRecurringRule(FamilyId familyId, String ruleId) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+      _rules.removeWhere((rule) => rule.id == ruleId);
+    } catch (e) {
+      throw ServerException('Failed to stop repeating: $e',
+          code: 'RECURRING_DELETE_ERROR');
     }
   }
 
@@ -475,6 +519,9 @@ class MockTaskRepository implements TaskRepository {
 
   /// Expose the internal task list for test inspection.
   List<Task> get tasks => List.unmodifiable(_tasks);
+
+  /// Expose the internal recurring-rule list for test inspection.
+  List<RecurringRule> get rules => List.unmodifiable(_rules);
 
   /// Deletes a task synchronously without delay. For test setup only.
   void deleteTaskSync(TaskId taskId) {

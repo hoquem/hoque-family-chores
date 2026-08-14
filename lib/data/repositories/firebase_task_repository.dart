@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/repositories/task_repository.dart';
+import '../../domain/entities/recurring_rule.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/value_objects/task_id.dart';
 import '../../domain/value_objects/family_id.dart';
@@ -73,6 +74,84 @@ class FirebaseTaskRepository implements TaskRepository {
       throw ServerException('Failed to create task: $e', code: 'TASK_CREATE_ERROR');
     }
   }
+
+  @override
+  Future<Task> createRecurringChore({
+    required Task firstTask,
+    required RecurringRule rule,
+  }) async {
+    try {
+      final taskRef = _firestore
+          .collection('families')
+          .doc(firstTask.familyId.value)
+          .collection('tasks')
+          .doc();
+      // Real rule id comes from Firestore; the use case's placeholder is
+      // discarded here. The task's ruleId must point at the same doc.
+      final ruleRef = _firestore
+          .collection('families')
+          .doc(rule.familyId.value)
+          .collection('taskRules')
+          .doc();
+      final taskWithId = firstTask.copyWith(
+        id: TaskId(taskRef.id),
+        ruleId: ruleRef.id,
+        // A rule with a fixed child spawns its first occurrence already
+        // assigned to that child, not up for grabs.
+        status: firstTask.assignedToId != null
+            ? TaskStatus.assigned
+            : firstTask.status,
+      );
+
+      final batch = _firestore.batch();
+      batch.set(taskRef, _mapTaskToFirestore(taskWithId));
+      batch.set(ruleRef, _mapRuleToFirestore(rule.copyWith(
+        id: ruleRef.id,
+        lastTaskId: taskRef.id,
+      )));
+      await batch.commit();
+      return taskWithId;
+    } catch (e) {
+      throw ServerException('Failed to create recurring chore: $e',
+          code: 'RECURRING_CREATE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> deleteRecurringRule(FamilyId familyId, String ruleId) async {
+    try {
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('taskRules')
+          .doc(ruleId)
+          .delete();
+    } catch (e) {
+      throw ServerException('Failed to stop repeating: $e',
+          code: 'RECURRING_DELETE_ERROR');
+    }
+  }
+
+  /// Maps a [RecurringRule] to its Firestore document. `assignment` is
+  /// omitted entirely when unassigned (Firestore has no null values).
+  Map<String, dynamic> _mapRuleToFirestore(RecurringRule rule) => {
+        'trigger': {'type': 'schedule', 'rrule': rule.rrule},
+        'template': {
+          'title': rule.title,
+          'description': rule.description,
+          'difficulty': rule.difficulty.name,
+          'points': rule.points.toInt(),
+          'tags': rule.tags,
+          'requiresPhotoProof': rule.requiresPhotoProof,
+        },
+        if (rule.assignedToId != null)
+          'assignment': {'userId': rule.assignedToId!.value},
+        'enabled': true,
+        'nextDueAt': rule.nextDueAt,
+        'lastTaskId': rule.lastTaskId,
+        'createdBy': rule.createdBy.value,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
 
   @override
   Future<void> editTaskDetails({
