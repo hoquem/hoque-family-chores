@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/services/recurrence.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -38,6 +39,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
     User? assignedTo,
     DateTime? dueDate,
     bool requiresPhotoProof = false,
+    RepeatPreset repeat = RepeatPreset.never,
   }) async {
     state = state.copyWith(isLoading: true, error: null, isSuccess: false);
 
@@ -53,6 +55,48 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
       };
 
       _logger.d('Creating task with points: $points');
+
+      if (repeat != RepeatPreset.never) {
+        final rrule = rruleForRepeat(
+          repeat,
+          dueDate ?? DateTime.now().add(const Duration(days: 1)),
+        );
+        if (rrule == null) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Unknown repeat pattern',
+          );
+          return;
+        }
+        _logger.i('Creating recurring task for family ${familyId.value} '
+            'with rrule $rrule');
+        final createRecurringChoreUseCase =
+            ref.read(createRecurringChoreUseCaseProvider);
+        final result = await createRecurringChoreUseCase.call(
+          title: title,
+          description: description,
+          points: points,
+          difficulty: difficulty,
+          dueDate: dueDate ?? DateTime.now().add(const Duration(days: 1)),
+          familyId: familyId,
+          createdById: creatorId,
+          assignedToId: assignedTo?.id,
+          tags: const [],
+          requiresPhotoProof: requiresPhotoProof,
+          rrule: rrule,
+        );
+        result.fold(
+          (failure) {
+            _logger.e('Recurring task creation failed: ${failure.message}');
+            state = state.copyWith(isLoading: false, error: failure.message);
+          },
+          (task) {
+            _logger.i('Recurring task created: ${task.id.value}');
+            state = state.copyWith(isLoading: false, isSuccess: true);
+          },
+        );
+        return;
+      }
 
       final createTaskUseCase = ref.read(createTaskUseCaseProvider);
       final result = await createTaskUseCase.call(

@@ -114,6 +114,12 @@ CreateTaskUseCase createTaskUseCase(Ref ref) {
 }
 
 @riverpod
+CreateRecurringChoreUseCase createRecurringChoreUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return CreateRecurringChoreUseCase(taskRepository);
+}
+
+@riverpod
 ClaimTaskUseCase claimTaskUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ClaimTaskUseCase(taskRepository);

@@ -28,7 +28,7 @@ final environmentServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef EnvironmentServiceRef = AutoDisposeProviderRef<EnvironmentService>;
-String _$repositoryFactoryHash() => r'499840c9b61bd317366fe65b12a35afad8f58200';
+String _$repositoryFactoryHash() => r'ddeeaa30bc4da4d0559bd32475d320f8c218171f';
 
 /// Repository Factory Provider
 ///
@@ -266,6 +266,27 @@ final createTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CreateTaskUseCaseRef = AutoDisposeProviderRef<CreateTaskUseCase>;
+String _$createRecurringChoreUseCaseHash() =>
+    r'e63a7acca758519696ec0c50cc1ccff488b52090';
+
+/// See also [createRecurringChoreUseCase].
+@ProviderFor(createRecurringChoreUseCase)
+final createRecurringChoreUseCaseProvider =
+    AutoDisposeProvider<CreateRecurringChoreUseCase>.internal(
+      createRecurringChoreUseCase,
+      name: r'createRecurringChoreUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$createRecurringChoreUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef CreateRecurringChoreUseCaseRef =
+    AutoDisposeProviderRef<CreateRecurringChoreUseCase>;
 String _$claimTaskUseCaseHash() => r'5a8231c9cdc5ae8eccc4589dd2d82544fab6c990';
 
 /// See also [claimTaskUseCase].

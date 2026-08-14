@@ -1,4 +1,5 @@
 // Task Use Cases
+export 'task/create_recurring_chore_usecase.dart';
 export 'task/create_task_usecase.dart';
 export 'task/claim_task_usecase.dart';
 export 'task/start_task_usecase.dart';
