@@ -136,6 +136,23 @@ service cloud.firestore {
         allow read, write: if isFamilyMember(familyId);
       }
 
+      // Recurring-chore rules: parents/guardians may create and delete, any
+      // family member may read, NOBODY may update. The engine flips `enabled`,
+      // `nextDueAt`, and `lastTaskId` via the admin SDK, which bypasses rules
+      // entirely, so a client has no legitimate update to make. create requires
+      // createdBy == the writer's own uid so a rule cannot be forged onto
+      // someone else's name. Widening change (new collection) — ships ahead of
+      // the client build per the standing deploy-ordering rule.
+      match /taskRules/{ruleId} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isFamilyMember(familyId)
+          && me().role in ['parent', 'guardian']
+          && request.resource.data.createdBy == request.auth.uid;
+        allow delete: if isFamilyMember(familyId)
+          && me().role in ['parent', 'guardian'];
+        allow update: if false;
+      }
+
       // Rewards a family offers. Anyone in the family may add or remove one —
       // a family is peers, not a hierarchy, and a child proposing "bike ride
       // with Dad" is the feature working.
