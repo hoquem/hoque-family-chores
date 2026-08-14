@@ -3,6 +3,7 @@ import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
 import '../../entities/task.dart';
 import '../../repositories/task_repository.dart';
+import '../../services/task_validation.dart';
 import '../../value_objects/family_id.dart';
 import '../../value_objects/user_id.dart';
 import '../../value_objects/task_id.dart';
@@ -43,16 +44,15 @@ class CreateTaskUseCase {
   }) async {
     try {
       // Validate input parameters
-      final validationResult = _validateTaskInput(
+      final validationFailure = validateTaskInput(
         title: title,
         description: description,
         points: points,
         dueDate: dueDate,
         tags: tags,
       );
-
-      if (validationResult.isLeft()) {
-        return Left(validationResult.fold((failure) => failure, (_) => throw Exception('Unexpected')));
+      if (validationFailure != null) {
+        return Left(validationFailure);
       }
 
       // Create task entity
@@ -83,59 +83,5 @@ class CreateTaskUseCase {
     } catch (e) {
       return Left(ServerFailure('Failed to create task: $e'));
     }
-  }
-
-  /// Validates task input parameters
-  Either<Failure, void> _validateTaskInput({
-    required String title,
-    String? description,
-    required int points,
-    required DateTime dueDate,
-    required List<String> tags,
-  }) {
-    // Validate title
-    if (title.trim().isEmpty) {
-      return Left(ValidationFailure('Task title cannot be empty'));
-    }
-    if (title.trim().length > 100) {
-      return Left(ValidationFailure('Task title cannot exceed 100 characters'));
-    }
-
-    // Validate description
-    if (description != null && description.trim().length > 500) {
-      return Left(ValidationFailure('Task description cannot exceed 500 characters'));
-    }
-
-    // Validate points
-    if (points < 1 || points > 1000) {
-      return Left(ValidationFailure('Task points must be between 1 and 1000'));
-    }
-
-    // Validate due date by DAY, not by moment. The date picker returns midnight
-    // of the chosen day, so a task due *today* is 00:00 — which is always before
-    // `now`. Comparing the full timestamps therefore rejects every same-day
-    // task. Compare calendar days so "today" is allowed and only genuinely past
-    // days are refused.
-    final now = DateTime.now();
-    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
-    final today = DateTime(now.year, now.month, now.day);
-    if (dueDay.isBefore(today)) {
-      return Left(ValidationFailure('Due date cannot be in the past'));
-    }
-
-    // Validate tags
-    if (tags.length > 10) {
-      return Left(ValidationFailure('Cannot have more than 10 tags'));
-    }
-    for (final tag in tags) {
-      if (tag.trim().isEmpty) {
-        return Left(ValidationFailure('Tag cannot be empty'));
-      }
-      if (tag.trim().length > 20) {
-        return Left(ValidationFailure('Tag cannot exceed 20 characters'));
-      }
-    }
-
-    return const Right(null);
   }
 } 
