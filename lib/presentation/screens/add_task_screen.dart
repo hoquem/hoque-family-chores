@@ -8,6 +8,8 @@ import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/services/recurrence.dart';
+import 'package:hoque_family_chores/presentation/widgets/repeat_selector.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'dart:async'; // Add this import for TimeoutException
@@ -30,6 +32,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   final _descriptionController = TextEditingController();
   DateTime? _dueDate;
   User? _selectedAssignee;
+  RepeatPreset _repeat = RepeatPreset.never;
   TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
   bool _requiresPhotoProof = false;
   final _logger = AppLogger();
@@ -118,6 +121,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
         assignedTo: _selectedAssignee,
         dueDate: _dueDate,
         requiresPhotoProof: _requiresPhotoProof,
+        repeat: _isEditing ? RepeatPreset.never : _repeat,
       );
 
       final creationState = ref.read(taskCreationNotifierProvider);
@@ -541,6 +545,18 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
               ),
               ),
             ),
+            // A recurring rule is never edited and children never see the
+            // selector — parents get it on the create path only.
+            if (!_isEditing &&
+                (currentUser?.role == UserRole.parent ||
+                    currentUser?.role == UserRole.guardian)) ...[
+              const SizedBox(height: 16),
+              RepeatSelector(
+                visible: true,
+                value: _repeat,
+                onChanged: (p) => setState(() => _repeat = p),
+              ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: taskCreationState.isLoading ? null : _submitTask,
