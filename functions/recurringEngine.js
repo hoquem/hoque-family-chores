@@ -156,11 +156,13 @@ function dueOnOrAfter(nextDueAt, now) {
 /// Scan all enabled rules and spawn every due occurrence.
 /// Returns { processed, spawned, skipped } for observability.
 ///
-/// This collection-group query needs a MANUAL single-field index on
-/// taskRules.enabled with COLLECTION_GROUP scope, declared in
-/// firestore.indexes.json. Firestore only auto-creates collection-scope
-/// indexes, and the emulator serves every query shape, so a missing index
-/// surfaces only in production.
+/// This collection-group query needs a single-field index on taskRules.enabled
+/// with COLLECTION_GROUP scope. It is declared in firestore.indexes.json under
+/// `fieldOverrides` (the single-field index controls API — declaring it in the
+/// `indexes` array is rejected with 400). `firebase deploy --only
+/// firestore:indexes` creates it; until it is READY the query fails with
+/// "requires an index", and the emulator serves every query shape, so a missing
+/// index surfaces only in production.
 async function spawnDueOccurrences(db, { now = new Date(), Timestamp: TimestampCtor } = {}) {
   const rulesSnap = await db
     .collectionGroup('taskRules')
