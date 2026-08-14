@@ -149,12 +149,15 @@ a spawn, and no rules change is needed on `families/{familyId}/tasks`.
 
 - **Per-rule try/catch in the engine:** one malformed or unreadable rule logs
   and is skipped; the tick continues for the rest (fail loudly per rule,
-  resilient as a batch). Firestore's transaction retry handles concurrent
+  resilient as a batch). A structurally-broken rule (unparseable RRULE,
+  missing template) is **disabled** and logged once instead — a
+  skipped-but-enabled rule would re-error every 15-minute tick forever.
+  (User ruling 2026-08-14.) Firestore's transaction retry handles concurrent
   ticks.
 - **Client-side validation** at rule creation reuses `CreateTaskUseCase` rules
   (title length, points 1–1000, due date not past), so the engine never sees a
   garbage template. The engine still guards defensively: a rule missing
-  `template.title` or `template.points` is skipped and logged.
+  `template.title` or `template.points` is disabled and logged.
 
 ## Deployment ordering
 
