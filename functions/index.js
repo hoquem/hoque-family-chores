@@ -10,9 +10,11 @@
 // notifications and FCM push messages so the family stays in sync.
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
+const { spawnDueOccurrences } = require('./recurringEngine');
 
 initializeApp();
 const db = getFirestore();
@@ -394,4 +396,13 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
     );
     return;
   }
+});
+
+// First scheduled function. Every 15 min at :07/:22/:37/:52 — off the
+// :00/:15 crowd so the tick never lands on the same instant as other jobs.
+exports.spawnRecurringTasks = onSchedule('7,22,37,52 * * * *', async (event) => {
+  const result = await spawnDueOccurrences(db, { now: new Date() });
+  console.log(
+    `[recurring] tick: ${result.spawned} spawned, ${result.processed} processed, ${result.skipped} skipped`,
+  );
 });

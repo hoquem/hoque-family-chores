@@ -6,8 +6,12 @@
     "node": "22"
   },
   "main": "index.js",
+  "scripts": {
+    "test:recurring": "firebase emulators:exec --only firestore --project demo-hoque \"node ../test/rules/recurring_engine.test.mjs\""
+  },
   "dependencies": {
     "firebase-admin": "^12.7.0",
-    "firebase-functions": "^6.1.1"
+    "firebase-functions": "^6.1.1",
+    "rrule": "^2.8.1"
   }
 }
