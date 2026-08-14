@@ -5,13 +5,14 @@
   "type": "module",
   "description": "Emulator-based security-rules tests for firestore.rules (cross-family isolation).",
   "scripts": {
-    "test": "npm run test:isolation && npm run test:create && npm run test:points && npm run test:roles && npm run test:notifications && npm run test:taskRules",
+    "test": "npm run test:isolation && npm run test:create && npm run test:points && npm run test:roles && npm run test:notifications && npm run test:taskRules && npm run test:recurring",
     "test:isolation": "firebase emulators:exec --only firestore --project demo-hoque \"node family_isolation.test.mjs\"",
     "test:create": "firebase emulators:exec --only firestore --project demo-hoque \"node family_create.test.mjs\"",
     "test:points": "firebase emulators:exec --only firestore --project demo-hoque \"node points_lock.test.mjs\"",
     "test:roles": "firebase emulators:exec --only firestore --project demo-hoque \"node role_lock.test.mjs\"",
     "test:notifications": "firebase emulators:exec --only firestore --project demo-hoque \"node notification_read.test.mjs\"",
     "test:taskRules": "firebase emulators:exec --only firestore --project demo-hoque \"node task_rules.test.mjs\"",
+    "test:recurring": "firebase emulators:exec --only firestore --project demo-hoque \"node recurring_engine.test.mjs\"",
     "test:functions": "firebase emulators:exec --only functions,firestore,auth --project demo-hoque \"node functions_economy.test.mjs\""
   },
   "dependencies": {

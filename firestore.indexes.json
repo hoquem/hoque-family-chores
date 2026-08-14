@@ -1,4 +1,12 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "taskRules",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "enabled", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
-} 
+}

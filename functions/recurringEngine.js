@@ -69,10 +69,17 @@ async function processRule(db, ruleRef, now, TimestampCtor) {
     // Parse the RRULE BEFORE creating anything: a structurally-broken rule
     // must not spawn (every tick would otherwise duplicate it). Disable it
     // and log once so the series stops erroring forever.
+    const rruleString = rule.trigger && rule.trigger.rrule;
+    if (!rruleString || !rruleString.trim()) {
+      // An empty string would otherwise parse as a silent annual recurrence —
+      // disable rather than spawn once a year by accident.
+      console.error(`[recurring] Bad RRULE on ${ruleRef.id}:`, rruleString);
+      await tx.update(ruleRef, { enabled: false, lastFiredAt: nowTs });
+      return { spawned: false, reason: 'disabled-bad-rrule' };
+    }
     let rrule;
     let next;
     try {
-      const rruleString = rule.trigger && rule.trigger.rrule;
       const dtstart = asUTCWallClock(nextDueAt);
       rrule = new RRule({ ...RRule.parseString(rruleString), dtstart });
       next = rrule.after(dtstart);
@@ -87,6 +94,16 @@ async function processRule(db, ruleRef, now, TimestampCtor) {
     }
 
     const template = rule.template || {};
+    if (!template.title || !Number(template.points)) {
+      // tx.set() rejects undefined values (firebase-admin's serializer), so a
+      // missing title or points would abort the transaction and leave the rule
+      // enabled to error every tick. Disable it instead.
+      console.error(
+        `[recurring] Bad template on ${ruleRef.id}: missing title or points`,
+      );
+      await tx.update(ruleRef, { enabled: false, lastFiredAt: nowTs });
+      return { spawned: false, reason: 'disabled-bad-template' };
+    }
     const assigned = rule.assignment && rule.assignment.userId
       ? rule.assignment.userId
       : null;
@@ -138,6 +155,12 @@ function dueOnOrAfter(nextDueAt, now) {
 
 /// Scan all enabled rules and spawn every due occurrence.
 /// Returns { processed, spawned, skipped } for observability.
+///
+/// This collection-group query needs a MANUAL single-field index on
+/// taskRules.enabled with COLLECTION_GROUP scope, declared in
+/// firestore.indexes.json. Firestore only auto-creates collection-scope
+/// indexes, and the emulator serves every query shape, so a missing index
+/// surfaces only in production.
 async function spawnDueOccurrences(db, { now = new Date(), Timestamp: TimestampCtor } = {}) {
   const rulesSnap = await db
     .collectionGroup('taskRules')
