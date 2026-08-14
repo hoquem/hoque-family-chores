@@ -7,6 +7,7 @@ import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
+import 'package:hoque_family_chores/domain/services/recurrence.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
@@ -15,6 +16,7 @@ import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart';
 import 'package:hoque_family_chores/presentation/widgets/member_display_name.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
+import 'package:hoque_family_chores/presentation/widgets/stop_repeating_button.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
 import '../utils/task_status_label.dart';
@@ -32,6 +34,9 @@ class TaskDetailsScreen extends ConsumerStatefulWidget {
 class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   final _logger = AppLogger();
   bool _isLoading = false;
+  // True once this screen has stopped the recurring series, so the badge and
+  // the Stop repeating button leave the screen instead of dangling.
+  bool _seriesStopped = false;
 
   Task get task => widget.task;
 
@@ -524,6 +529,32 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   _buildTimelineSection(currentUser: currentUser),
                   const SizedBox(height: 32),
                   _buildActionButtons(currentUser: currentUser),
+                  if (currentUser != null &&
+                      !_seriesStopped &&
+                      canStopRepeating(currentUser.role, task.ruleId)) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.repeat, size: 16),
+                          SizedBox(width: 4),
+                          Text('Recurring'),
+                        ],
+                      ),
+                    ),
+                    StopRepeatingButton(
+                      onStop: () async {
+                        await ref
+                            .read(taskRepositoryProvider)
+                            .deleteRecurringRule(
+                              task.familyId,
+                              task.ruleId!,
+                            );
+                        if (mounted) setState(() => _seriesStopped = true);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 24),
                 ],
               ),
