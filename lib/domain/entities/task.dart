@@ -36,6 +36,11 @@ class Task extends Equatable {
   final List<String> tags;
   final String? recurringPattern;
   final DateTime? lastCompletedAt;
+
+  /// Id of the taskRules doc this task was spawned from, when it is a
+  /// recurring occurrence. Null for ordinary one-off tasks.
+  final String? ruleId;
+
   final FamilyId familyId;
   
   // Photo proof and approval fields (Issue #109, #110)
@@ -71,6 +76,7 @@ class Task extends Equatable {
     required this.tags,
     this.recurringPattern,
     this.lastCompletedAt,
+    this.ruleId,
     required this.familyId,
     this.requiresPhotoProof = false,
     this.photoUrl,
@@ -102,6 +108,7 @@ class Task extends Equatable {
     List<String>? tags,
     String? recurringPattern,
     DateTime? lastCompletedAt,
+    String? ruleId,
     FamilyId? familyId,
     bool? requiresPhotoProof,
     String? photoUrl,
@@ -131,6 +138,7 @@ class Task extends Equatable {
       tags: tags ?? this.tags,
       recurringPattern: recurringPattern ?? this.recurringPattern,
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
+      ruleId: ruleId ?? this.ruleId,
       familyId: familyId ?? this.familyId,
       requiresPhotoProof: requiresPhotoProof ?? this.requiresPhotoProof,
       photoUrl: photoUrl ?? this.photoUrl,
@@ -217,6 +225,7 @@ class Task extends Equatable {
         tags,
         recurringPattern,
         lastCompletedAt,
+        ruleId,
         familyId,
         requiresPhotoProof,
         photoUrl,

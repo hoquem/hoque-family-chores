@@ -579,6 +579,7 @@ class FirebaseTaskRepository implements TaskRepository {
           : data['lastCompletedAt'] != null
               ? DateTime.tryParse(data['lastCompletedAt'].toString())
               : null,
+      ruleId: data['ruleId'] as String?,
       familyId: familyId,
       // Photo proof and approval fields
       requiresPhotoProof: data['requiresPhotoProof'] as bool? ?? false,
@@ -624,6 +625,7 @@ class FirebaseTaskRepository implements TaskRepository {
       'tags': task.tags,
       'recurringPattern': task.recurringPattern,
       'lastCompletedAt': task.lastCompletedAt,
+      'ruleId': task.ruleId,
       // Photo proof and approval fields
       'requiresPhotoProof': task.requiresPhotoProof,
       'photoUrl': task.photoUrl,
