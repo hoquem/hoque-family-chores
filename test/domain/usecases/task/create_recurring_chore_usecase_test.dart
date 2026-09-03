@@ -52,16 +52,17 @@ void main() {
   });
 
   test('creates the recurring chore with a valid template', () async {
+    final futureDate = DateTime.now().add(const Duration(days: 7));
     final created = Task(
       id: TaskId('task-1'),
       title: 'Clean the bathroom',
       description: '',
       status: TaskStatus.available,
       difficulty: TaskDifficulty.medium,
-      dueDate: DateTime(2026, 8, 15),
+      dueDate: futureDate,
       assignedToId: null,
       createdById: UserId('parent-1'),
-      createdAt: DateTime(2026, 8, 14),
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
       completedAt: null,
       points: Points(25),
       tags: const [],
@@ -79,7 +80,7 @@ void main() {
       title: 'Clean the bathroom',
       points: 25,
       difficulty: TaskDifficulty.medium,
-      dueDate: DateTime(2026, 8, 15),
+      dueDate: futureDate,
       familyId: FamilyId('fam-1'),
       createdById: UserId('parent-1'),
       rrule: 'FREQ=WEEKLY;BYDAY=SA',
@@ -93,7 +94,7 @@ void main() {
         .captured;
     final rule = captured[1] as RecurringRule;
     expect(rule.rrule, 'FREQ=WEEKLY;BYDAY=SA');
-    expect(rule.nextDueAt, DateTime(2026, 8, 15));
+    expect(rule.nextDueAt, futureDate);
     expect(rule.lastTaskId, isNull); // repository assigns the real id
     final firstTask = captured[0] as Task;
     expect(firstTask.status, TaskStatus.available);
@@ -101,11 +102,12 @@ void main() {
   });
 
   test('passes through an invalid title as a ValidationFailure', () async {
+    final futureDate = DateTime.now().add(const Duration(days: 7));
     final result = await useCase.call(
       title: '   ',
       points: 25,
       difficulty: TaskDifficulty.medium,
-      dueDate: DateTime(2026, 8, 15),
+      dueDate: futureDate,
       familyId: FamilyId('fam-1'),
       createdById: UserId('parent-1'),
       rrule: 'FREQ=DAILY',

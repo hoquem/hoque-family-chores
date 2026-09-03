@@ -65,6 +65,14 @@ void main() {
       expect(r, lessThan(4.5),
           reason: 'if inkMuted ever clears 4.5:1, DESIGN.md should promote it');
     });
+
+    test('marigoldDeep on cream clears 3:1 for active navigation items', () {
+      final r = contrast(t.marigoldDeep, t.cream);
+      expect(r, greaterThanOrEqualTo(3.0),
+          reason: 'marigoldDeep on cream is ${r.toStringAsFixed(2)}:1, needs 3:1');
+      expect(contrast(t.marigold, t.cream), lessThan(3.0),
+          reason: 'base marigold fails 3:1 on cream (only 2.51:1)');
+    });
   });
 
   group('status pills: ink label on a 12% tint, icon in the deep tone', () {

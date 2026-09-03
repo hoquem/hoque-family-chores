@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/theme/motion.dart';
 
 /// Shown when every mission of the day is finished.
@@ -12,7 +13,7 @@ class CelebrationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final t = context.tokens;
     // The big emoji is decoration: the heading below already says "All done for
     // today!", so announcing it again as "party popper" adds a contentless stop
     // for a screen-reader user.
@@ -21,7 +22,7 @@ class CelebrationCard extends StatelessWidget {
     );
 
     return Card(
-      color: colors.primaryContainer,
+      color: t.coral.withValues(alpha: 0.16),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -45,11 +46,15 @@ class CelebrationCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+                  ?.copyWith(fontWeight: FontWeight.bold, color: t.ink),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
-            const Text('Amazing work!', textAlign: TextAlign.center),
+            Text(
+              'Amazing work!',
+              style: TextStyle(color: t.inkSoft),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

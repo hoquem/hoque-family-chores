@@ -207,6 +207,68 @@ class TaskListScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildFilterChips(BuildContext context, WidgetRef ref) {
+    final activeFilter = ref.watch(taskFilterNotifierProvider);
+    final t = context.tokens;
+
+    const filters = [
+      (TaskFilterType.all, 'All'),
+      (TaskFilterType.available, 'Up for grabs'),
+      (TaskFilterType.myTasks, 'My Chores'),
+      (TaskFilterType.pendingApproval, 'To approve'),
+      (TaskFilterType.completed, 'Done'),
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          for (final (type, label) in filters) ...[
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Semantics(
+                button: true,
+                selected: activeFilter == type,
+                label: '$label filter',
+                child: InkWell(
+                  key: ValueKey('filter_chip_${type.name}'),
+                  onTap: () {
+                    ref.read(taskFilterNotifierProvider.notifier).setFilter(type);
+                  },
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: activeFilter == type ? t.marigold : t.surface,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: activeFilter == type ? t.marigold : t.line,
+                        width: activeFilter == type ? 2 : 1,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: activeFilter == type
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        color: activeFilter == type ? t.ink : t.inkSoft,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
@@ -258,7 +320,12 @@ class TaskListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: _buildTaskList(context, ref, familyId),
+      body: Column(
+        children: [
+          _buildFilterChips(context, ref),
+          Expanded(child: _buildTaskList(context, ref, familyId)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         // Distinct from the Rewards tab's FAB: both live in MainScreen's
         // IndexedStack at once and would otherwise share Flutter's default

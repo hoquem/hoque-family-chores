@@ -138,4 +138,21 @@ void main() {
         findsOneWidget,
         reason: 'the claimed chore now shows as assigned to the claimer');
   });
+
+  testWidgets('horizontal filter chips allow filtering chores directly',
+      (tester) async {
+    await _pumpMainScreenSignedIn(tester, home: const TaskListScreen());
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('filter_chip_all')), findsOneWidget);
+    expect(find.byKey(const ValueKey('filter_chip_available')), findsOneWidget);
+    expect(find.byKey(const ValueKey('filter_chip_myTasks')), findsOneWidget);
+    expect(find.byKey(const ValueKey('filter_chip_pendingApproval')), findsOneWidget);
+    expect(find.byKey(const ValueKey('filter_chip_completed')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('filter_chip_available')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+  });
 }

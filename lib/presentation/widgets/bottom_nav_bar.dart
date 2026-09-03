@@ -38,8 +38,16 @@ class BottomNavBar extends StatelessWidget {
         onTap(index);
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Theme.of(context).primaryColor,
+      selectedItemColor: context.tokens.marigoldDeep,
       unselectedItemColor: context.tokens.inkMuted,
+      selectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 14,
+      ),
+      unselectedLabelStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
+      ),
       items: [
         BottomNavigationBarItem(icon: iconWithBadge(Icons.home, 0), label: 'Home'),
         BottomNavigationBarItem(icon: iconWithBadge(Icons.task, 1), label: 'Chores'),

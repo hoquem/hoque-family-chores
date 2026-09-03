@@ -69,6 +69,20 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     }
   }
 
+  Color _difficultyIconColor(TaskDifficulty difficulty) {
+    final t = context.tokens;
+    switch (difficulty) {
+      case TaskDifficulty.easy:
+        return t.sproutDeep;
+      case TaskDifficulty.medium:
+        return t.amberWarnDeep;
+      case TaskDifficulty.hard:
+        return t.carrotDeep;
+      case TaskDifficulty.challenging:
+        return t.brickDeep;
+    }
+  }
+
   Future<void> _handleClaimTask(User currentUser) async {
     setState(() => _isLoading = true);
     try {
@@ -600,10 +614,10 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 ),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: difficultyColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
+                    color: difficultyColor.withValues(alpha: kStatusPillTint),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -611,13 +625,14 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                       Icon(
                         _difficultyIcon(task.difficulty),
                         size: 16,
-                        color: difficultyColor,
+                        color: _difficultyIconColor(task.difficulty),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         task.difficulty.displayName,
                         style: TextStyle(
-                          color: difficultyColor,
+                          fontSize: 14,
+                          color: t.ink,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -641,36 +656,48 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
               ),
             ],
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Icon(Icons.star, color: t.starGold, size: 18),
-                const SizedBox(width: 4),
-                Text('${task.points.value} stars', style: metaStyle),
-                const SizedBox(width: 16),
-                Icon(
-                  Icons.calendar_today,
-                  color: isOverdue ? t.brick : t.inkSoft,
-                  size: 18,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star, color: t.starGold, size: 18),
+                    const SizedBox(width: 4),
+                    Text('${task.points.value} stars', style: metaStyle),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  dateFormat.format(task.dueDate),
-                  style: isOverdue
-                      ? metaStyle.copyWith(
-                          color: t.brick, fontWeight: FontWeight.bold)
-                      : metaStyle,
-                ),
-                if (isOverdue) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    '· OVERDUE',
-                    style: TextStyle(
-                      color: t.brick,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: isOverdue ? t.brick : t.inkSoft,
+                      size: 18,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Text(
+                      dateFormat.format(task.dueDate),
+                      style: isOverdue
+                          ? metaStyle.copyWith(
+                              color: t.brick, fontWeight: FontWeight.bold)
+                          : metaStyle,
+                    ),
+                    if (isOverdue) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '· OVERDUE',
+                        style: TextStyle(
+                          color: t.brick,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ],

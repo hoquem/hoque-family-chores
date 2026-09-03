@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/family_notif
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
@@ -113,27 +114,34 @@ class _FamilyDetailsView extends ConsumerWidget {
                     ),
                   ],
                 ),
-                data: (members) => Column(
-                  children: members
-                      .map(
-                        (member) => Card(
-                          child: ListTile(
-                            leading: UserAvatar(user: member),
-                            title: Text(member.name),
-                            subtitle: Text(member.role.displayName),
-                            trailing: DefaultTextStyle(
-                              style: Theme.of(context).textTheme.titleMedium!,
-                              child: AnimatedStarCount(member.points.toInt()),
-                            ),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => MemberDetailScreen(member: member),
-                              ),
+                data: (members) => Card(
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < members.length; i++) ...[
+                        ListTile(
+                          leading: UserAvatar(user: members[i]),
+                          title: Text(members[i].name),
+                          subtitle: Text(members[i].role.displayName),
+                          trailing: DefaultTextStyle(
+                            style: Theme.of(context).textTheme.titleMedium!,
+                            child: AnimatedStarCount(members[i].points.toInt()),
+                          ),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => MemberDetailScreen(member: members[i]),
                             ),
                           ),
                         ),
-                      )
-                      .toList(),
+                        if (i < members.length - 1)
+                          Divider(
+                            height: 1,
+                            indent: 16,
+                            endIndent: 16,
+                            color: context.tokens.line,
+                          ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ],

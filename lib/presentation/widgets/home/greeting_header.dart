@@ -26,7 +26,7 @@ class GreetingHeader extends StatelessWidget {
                 'Hi $firstName! 👋',
                 style: Theme.of(context)
                     .textTheme
-                    .headlineSmall
+                    .displaySmall
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),

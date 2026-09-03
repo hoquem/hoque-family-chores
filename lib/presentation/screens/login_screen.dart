@@ -17,6 +17,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _showEmailAuth = false;
 
   @override
   void dispose() {
@@ -31,7 +32,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        // Email sign-in can be toggled via long-press on the title (documented
+        // in App Store review notes) or via the text button below.
+        title: Semantics(
+          label: 'Login',
+          hint: _showEmailAuth
+              ? 'Long press to hide email sign in'
+              : 'Long press to show email sign in',
+          onLongPress: () => setState(() => _showEmailAuth = !_showEmailAuth),
+          excludeSemantics: true,
+          child: GestureDetector(
+            onLongPress: () => setState(() => _showEmailAuth = !_showEmailAuth),
+            child: const Text('Login'),
+          ),
+        ),
       ),
       // Scrollable: with the email section revealed (and the keyboard up on
       // small phones) the content is taller than the screen.
@@ -66,78 +80,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   minimumSize: const Size.fromHeight(48),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: Row(
-                  children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Text('or use email'),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-              ),
-              // App Review path: visible email/password. Families normally
-              // sign in with Apple/Google; this path exists so reviewers can
-              // log in reliably without relying on a hidden gesture.
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  hintText: 'reviewer@example.com',
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  hintText: 'Demo account password',
+              TextButton(
+                onPressed: () =>
+                    setState(() => _showEmailAuth = !_showEmailAuth),
+                child: Text(
+                  _showEmailAuth
+                      ? 'Hide email sign in'
+                      : 'Use email sign in',
+                  style: TextStyle(color: context.tokens.inkSoft),
                 ),
-                obscureText: true,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'For App Review: use the demo account from the App Review Information section.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.tokens.inkSoft,
+              if (_showEmailAuth) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text('or use email'),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              if (!authState.isLoading)
-                ElevatedButton(
-                  onPressed: () async {
-                    await ref.read(authNotifierProvider.notifier).signIn(
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                        );
+                // App Review / password account path
+                TextField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    hintText: 'reviewer@example.com',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    hintText: 'Demo account password',
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'For App Review: use the demo account from the App Review Information section.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.tokens.inkSoft,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                if (!authState.isLoading)
+                  ElevatedButton(
+                    onPressed: () async {
+                      await ref.read(authNotifierProvider.notifier).signIn(
+                            email: _emailController.text,
+                            password: _passwordController.text,
+                          );
+                    },
+                    child: const Text('Sign In'),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    ref
+                        .read(authNotifierProvider.notifier)
+                        .resetPassword(_emailController.text);
                   },
-                  child: const Text('Sign In'),
+                  child: const Text('Forgot Password?'),
                 ),
-              TextButton(
-                onPressed: () {
-                  ref
-                      .read(authNotifierProvider.notifier)
-                      .resetPassword(_emailController.text);
-                },
-                child: const Text('Forgot Password?'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RegistrationScreen(),
-                    ),
-                  );
-                },
-                child: const Text("Don't have an account? Sign Up"),
-              ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const RegistrationScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text("Don't have an account? Sign Up"),
+                ),
+              ],
               if (authState.isLoading)
                 const Padding(
                   padding: EdgeInsets.only(top: 24.0),

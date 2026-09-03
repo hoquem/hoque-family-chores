@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -294,8 +292,9 @@ int _awaitingMyJudgement(List<Task> tasks, UserId userId) => tasks
         t.status == TaskStatus.pendingApproval && t.assignedToId != userId)
     .length;
 
-/// The family's latest cleaned-room photo as a soft backdrop: blurred and
-/// tinted so foreground content keeps its contrast. Fails invisibly.
+/// The family's latest cleaned-room photo as a soft backdrop: softly
+/// tinted so foreground content keeps its contrast without frosted blur
+/// (the No-Glass Rule). Fails invisibly.
 class _FamilyBackground extends StatelessWidget {
   const _FamilyBackground({required this.url});
 
@@ -312,11 +311,8 @@ class _FamilyBackground extends StatelessWidget {
           placeholder: (_, __) => const SizedBox.shrink(),
           errorWidget: (_, __, ___) => const SizedBox.shrink(),
         ),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            color: context.tokens.surface.withValues(alpha: 0.78),
-          ),
+        ColoredBox(
+          color: context.tokens.cream.withValues(alpha: 0.88),
         ),
       ],
     );

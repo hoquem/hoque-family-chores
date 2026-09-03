@@ -133,11 +133,13 @@ class UserProfileScreen extends ConsumerWidget {
                   displayName,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  email,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    email,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 DefaultTextStyle(
                   style: Theme.of(context).textTheme.titleMedium!,

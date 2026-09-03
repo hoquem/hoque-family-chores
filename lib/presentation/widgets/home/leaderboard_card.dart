@@ -40,14 +40,25 @@ class LeaderboardCard extends StatelessWidget {
           for (var i = 0; i < top.length; i++)
             ListTile(
               onTap: () => onOpenMember(top[i].member),
-              leading: Text(
-                _medals[i],
-                style: const TextStyle(fontSize: 24),
+              leading: Semantics(
+                label: switch (i) {
+                  0 => '1st place',
+                  1 => '2nd place',
+                  2 => '3rd place',
+                  _ => '${i + 1}th place',
+                },
+                child: Text(
+                  _medals[i],
+                  style: const TextStyle(fontSize: 24),
+                ),
               ),
               title: Text(top[i].member.name),
-              trailing: Text(
-                '${top[i].stars} ⭐',
-                style: const TextStyle(fontSize: 16),
+              trailing: Semantics(
+                label: '${top[i].stars} stars',
+                child: Text(
+                  '${top[i].stars} ⭐',
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           const SizedBox(height: 8),
