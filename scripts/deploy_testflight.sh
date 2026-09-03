@@ -145,8 +145,13 @@ if [ "$built" != "$next" ]; then
 fi
 echo "Uploading $(basename "$IPA_PATH") (build $built)"
 
-xcrun altool --upload-app -f "$IPA_PATH" -t ios \
-  --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID"
+altool_out=$(xcrun altool --upload-app -f "$IPA_PATH" -t ios \
+  --apiKey "$KEY_ID" --apiIssuer "$ISSUER_ID" 2>&1)
+echo "$altool_out"
+if echo "$altool_out" | grep -q "UPLOAD FAILED"; then
+  echo "ERROR: altool upload failed" >&2
+  exit 1
+fi
 
 echo "Upload accepted; waiting for processing (VALID) — up to 30 min..."
 for _ in $(seq 1 60); do
