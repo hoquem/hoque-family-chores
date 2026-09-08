@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/recurrence.dart';
@@ -14,6 +15,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/screens/add_task_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/before_after_view.dart';
+import 'package:hoque_family_chores/presentation/widgets/chore_guide_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/member_display_name.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/presentation/widgets/stop_repeating_button.dart';
@@ -34,11 +36,127 @@ class TaskDetailsScreen extends ConsumerStatefulWidget {
 class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   final _logger = AppLogger();
   bool _isLoading = false;
+  bool _isLoadingGuide = false;
+  ChoreGuide? _dynamicGuide;
   // True once this screen has stopped the recurring series, so the badge and
   // the Stop repeating button leave the screen instead of dangling.
   bool _seriesStopped = false;
 
   Task get task => widget.task;
+
+  Future<void> _fetchGuideOnDemand() async {
+    setState(() => _isLoadingGuide = true);
+    try {
+      final guide = await ref.read(choreTipsServiceProvider).generateChoreGuide(
+            title: task.title,
+            description: task.description,
+            difficulty: task.difficulty,
+          );
+      if (mounted) {
+        setState(() => _dynamicGuide = guide);
+      }
+    } catch (e) {
+      _logger.e('Error loading guide: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingGuide = false);
+      }
+    }
+  }
+
+  Future<void> _handleEditHomeTip(ChoreGuide currentGuide) async {
+    final t = context.tokens;
+    final controller = TextEditingController(text: currentGuide.parentTip ?? '');
+    final newTip = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        backgroundColor: t.surface,
+        title: Text(
+          'House Note & Tips',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: t.ink,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'House info & tips',
+            hintText: 'e.g. Blue bin outside, supplies under sink',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          maxLines: 3,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: t.inkSoft,
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: t.marigold,
+              foregroundColor: t.ink,
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (newTip != null) {
+      final updatedGuide = currentGuide.copyWith(parentTip: newTip);
+      setState(() => _dynamicGuide = updatedGuide);
+      try {
+        await ref.read(taskRepositoryProvider).updateTaskGuide(
+              task.familyId,
+              task.id,
+              updatedGuide,
+            );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '🏡 House note saved!',
+                style: TextStyle(
+                  color: t.cream,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              backgroundColor: t.sproutDeep,
+            ),
+          );
+        }
+      } catch (e) {
+        _logger.e('Failed to save home note: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to save house note: $e',
+                style: TextStyle(
+                  color: t.cream,
+                  fontSize: 14,
+                ),
+              ),
+              backgroundColor: t.brickDeep,
+            ),
+          );
+        }
+      }
+    }
+  }
 
   IconData _difficultyIcon(TaskDifficulty difficulty) {
     switch (difficulty) {
@@ -522,9 +640,21 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 children: [
                   // One card carries the task identity: title, status +
                   // difficulty pills, and the points/due-date meta. No more
-                  // card-per-section (DESIGN.md: one card groups; dividers
-                  // separate).
                   _buildHeader(),
+                  if ((task.guide != null && task.guide!.isNotEmpty) ||
+                      (_dynamicGuide != null && _dynamicGuide!.isNotEmpty)) ...[
+                    const SizedBox(height: 16),
+                    ChoreGuideCard(
+                      guide: task.guide ?? _dynamicGuide!,
+                      onEditParentTip: (currentUser?.role == UserRole.parent ||
+                              currentUser?.role == UserRole.guardian)
+                          ? () => _handleEditHomeTip(task.guide ?? _dynamicGuide!)
+                          : null,
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    _buildOnDemandGuideButton(),
+                  ],
                   if (task.description.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     const Divider(),
@@ -734,6 +864,71 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
         const SizedBox(height: 12),
         child,
       ],
+    );
+  }
+
+  Widget _buildOnDemandGuideButton() {
+    final t = context.tokens;
+    return InkWell(
+      onTap: _isLoadingGuide ? null : _fetchGuideOnDemand,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: t.line, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: t.marigold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 20,
+                color: t.marigoldDeep,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Need tips for this chore?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: t.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tap to view step-by-step guidance & motivation',
+                    style: TextStyle(fontSize: 14, color: t.inkSoft),
+                  ),
+                ],
+              ),
+            ),
+            if (_isLoadingGuide)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: t.marigoldDeep,
+                ),
+              )
+            else
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: t.inkMuted),
+          ],
+        ),
+      ),
     );
   }
 

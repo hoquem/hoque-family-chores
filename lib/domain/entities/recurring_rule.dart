@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'chore_guide.dart';
 import '../entities/task.dart' show TaskDifficulty;
 import '../value_objects/family_id.dart';
 import '../value_objects/points.dart';
@@ -18,6 +19,7 @@ class RecurringRule extends Equatable {
   final Points points;
   final List<String> tags;
   final bool requiresPhotoProof;
+  final ChoreGuide? guide;
 
   /// Null = unassigned ("up for grabs"); otherwise the fixed child.
   final UserId? assignedToId;
@@ -46,6 +48,7 @@ class RecurringRule extends Equatable {
     required this.createdBy,
     required this.nextDueAt,
     this.lastTaskId,
+    this.guide,
   });
 
   RecurringRule copyWith({
@@ -62,6 +65,7 @@ class RecurringRule extends Equatable {
     UserId? createdBy,
     DateTime? nextDueAt,
     String? lastTaskId,
+    ChoreGuide? guide,
   }) {
     return RecurringRule(
       id: id ?? this.id,
@@ -77,6 +81,7 @@ class RecurringRule extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       nextDueAt: nextDueAt ?? this.nextDueAt,
       lastTaskId: lastTaskId ?? this.lastTaskId,
+      guide: guide ?? this.guide,
     );
   }
 
@@ -95,5 +100,6 @@ class RecurringRule extends Equatable {
         createdBy,
         nextDueAt,
         lastTaskId,
+        guide,
       ];
 }

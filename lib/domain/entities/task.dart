@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'chore_guide.dart';
 import '../value_objects/task_id.dart';
 import '../value_objects/family_id.dart';
 import '../value_objects/points.dart';
@@ -55,6 +56,7 @@ class Task extends Equatable {
   final UserId? rejectedBy;
   final DateTime? rejectedAt;
   final String? rejectionReason;
+  final ChoreGuide? guide;
 
   /// Optimistic-concurrency counter. Bumped only when a task's editable detail
   /// fields are edited, so a concurrent edit can be detected and refused.
@@ -89,6 +91,7 @@ class Task extends Equatable {
     this.rejectedBy,
     this.rejectedAt,
     this.rejectionReason,
+    this.guide,
     this.version = 0,
   });
 
@@ -121,6 +124,7 @@ class Task extends Equatable {
     UserId? rejectedBy,
     DateTime? rejectedAt,
     String? rejectionReason,
+    ChoreGuide? guide,
     int? version,
   }) {
     return Task(
@@ -151,6 +155,7 @@ class Task extends Equatable {
       rejectedBy: rejectedBy ?? this.rejectedBy,
       rejectedAt: rejectedAt ?? this.rejectedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      guide: guide ?? this.guide,
       version: version ?? this.version,
     );
   }
@@ -238,6 +243,7 @@ class Task extends Equatable {
         rejectedBy,
         rejectedAt,
         rejectionReason,
+        guide,
         version,
       ];
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../entities/chore_guide.dart';
 import '../entities/recurring_rule.dart';
 import '../entities/task.dart';
 import '../value_objects/family_id.dart';
@@ -49,6 +50,13 @@ abstract class TaskRepository {
 
   /// Delete a task
   Future<void> deleteTask(FamilyId familyId, TaskId taskId);
+
+  /// Update or augment the chore guide for a specific task.
+  Future<void> updateTaskGuide(
+    FamilyId familyId,
+    TaskId taskId,
+    ChoreGuide guide,
+  );
 
   /// Assign a task to a user
   Future<void> assignTask(FamilyId familyId, TaskId taskId, UserId userId);

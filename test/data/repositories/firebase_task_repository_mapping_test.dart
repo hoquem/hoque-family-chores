@@ -4,6 +4,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/data/repositories/firebase_task_repository.dart';
 import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
@@ -79,5 +80,41 @@ void main() {
     final read = await writeAndRead(repo, task);
 
     expect(read.ruleId, isNull);
+  });
+
+  test('task with guide round-trips correctly', () async {
+    final db = FakeFirebaseFirestore();
+    final repo =
+        FirebaseTaskRepository(firestore: db, photoStorage: _MockPhotoStorage());
+    const guide = ChoreGuide(
+      motivation: 'Put on a song and race the timer!',
+      steps: ['Step 1', 'Step 2'],
+      forYou: 'Calm space',
+      forFamily: 'Helps everyone',
+      forHome: 'Clean house',
+      takeaway: 'Habit building',
+    );
+    final task = Task(
+      id: TaskId('task-3'),
+      title: 'Make bed',
+      description: '',
+      status: TaskStatus.available,
+      difficulty: TaskDifficulty.easy,
+      dueDate: DateTime(2026, 8, 15),
+      assignedToId: null,
+      createdById: UserId('parent-1'),
+      createdAt: DateTime(2026, 8, 14),
+      completedAt: null,
+      points: Points(10),
+      tags: const [],
+      familyId: FamilyId('fam-1'),
+      guide: guide,
+    );
+
+    final read = await writeAndRead(repo, task);
+
+    expect(read.guide, equals(guide));
+    expect(read.guide?.motivation, 'Put on a song and race the timer!');
+    expect(read.guide?.steps, ['Step 1', 'Step 2']);
   });
 }

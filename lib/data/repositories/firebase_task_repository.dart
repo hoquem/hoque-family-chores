@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/repositories/task_repository.dart';
+import '../../domain/entities/chore_guide.dart';
 import '../../domain/entities/recurring_rule.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/value_objects/task_id.dart';
@@ -143,6 +144,7 @@ class FirebaseTaskRepository implements TaskRepository {
           'points': rule.points.toInt(),
           'tags': rule.tags,
           'requiresPhotoProof': rule.requiresPhotoProof,
+          if (rule.guide != null) 'guide': rule.guide!.toMap(),
         },
         if (rule.assignedToId != null)
           'assignment': {'userId': rule.assignedToId!.value},
@@ -228,6 +230,28 @@ class FirebaseTaskRepository implements TaskRepository {
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to delete task: $e', code: 'TASK_DELETE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> updateTaskGuide(
+    FamilyId familyId,
+    TaskId taskId,
+    ChoreGuide guide,
+  ) async {
+    try {
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+        'guide': guide.toMap(),
+      });
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to update chore tips: $e',
+          code: 'TASK_GUIDE_UPDATE_ERROR');
     }
   }
 
@@ -684,6 +708,11 @@ class FirebaseTaskRepository implements TaskRepository {
               ? DateTime.tryParse(data['rejectedAt'].toString())
               : null,
       rejectionReason: data['rejectionReason'] as String?,
+      guide: data['guide'] != null && data['guide'] is Map
+          ? ChoreGuide.fromMap(Map<String, dynamic>.from(data['guide'] as Map))
+          : data['tips'] != null && data['tips'] is Map
+              ? ChoreGuide.fromMap(Map<String, dynamic>.from(data['tips'] as Map))
+              : null,
       version: (data['version'] as num?)?.toInt() ?? 0,
     );
   }
@@ -723,6 +752,7 @@ class FirebaseTaskRepository implements TaskRepository {
       'rejectedBy': task.rejectedBy?.value,
       'rejectedAt': task.rejectedAt,
       'rejectionReason': task.rejectionReason,
+      'guide': task.guide?.toMap(),
       'version': task.version,
     };
   }

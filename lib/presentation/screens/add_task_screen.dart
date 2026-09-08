@@ -6,9 +6,11 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/recurrence.dart';
+import 'package:hoque_family_chores/presentation/widgets/chore_guide_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/repeat_selector.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:intl/intl.dart';
@@ -30,11 +32,15 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _homeTipsController = TextEditingController();
   DateTime? _dueDate;
   User? _selectedAssignee;
   RepeatPreset _repeat = RepeatPreset.never;
   TaskDifficulty _selectedDifficulty = TaskDifficulty.easy;
   bool _requiresPhotoProof = false;
+  ChoreGuide? _previewGuide;
+  bool _isLoadingPreview = false;
+  bool _showHomeTipsField = false;
   final _logger = AppLogger();
 
   bool get _isEditing => widget.existingTask != null;
@@ -43,6 +49,142 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   /// field) so a "reload after conflict" can advance it — otherwise every retry
   /// would re-submit the stale base and conflict forever.
   int _baseVersion = 0;
+
+  Future<void> _previewTips() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a chore title first')),
+      );
+      return;
+    }
+    setState(() => _isLoadingPreview = true);
+    try {
+      final guide = await ref.read(choreTipsServiceProvider).generateChoreGuide(
+            title: title,
+            description: _descriptionController.text.trim(),
+            difficulty: _selectedDifficulty,
+            parentTip: _homeTipsController.text.trim(),
+          );
+      if (mounted) {
+        setState(() => _previewGuide = guide);
+        _showGuideModal(guide);
+      }
+    } catch (e) {
+      _logger.e('Error previewing tips: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingPreview = false);
+      }
+    }
+  }
+
+  void _showGuideModal(ChoreGuide guide) {
+    final t = context.tokens;
+    var modalGuide = guide;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: t.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ChoreGuideCard(
+                    guide: modalGuide,
+                    onEditParentTip: () async {
+                      final controller = TextEditingController(
+                          text: modalGuide.parentTip ?? '');
+                      final result = await showDialog<String>(
+                        context: ctx,
+                        builder: (dCtx) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          backgroundColor: t.surface,
+                          title: Text(
+                            'House Note & Tips',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: t.ink,
+                            ),
+                          ),
+                          content: TextField(
+                            controller: controller,
+                            decoration: InputDecoration(
+                              labelText: 'House info & tips',
+                              hintText:
+                                  'e.g. Blue bin outside, supplies under sink',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            maxLines: 3,
+                          ),
+                          actions: [
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                foregroundColor: t.inkSoft,
+                              ),
+                              onPressed: () => Navigator.pop(dCtx),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: t.marigold,
+                                foregroundColor: t.ink,
+                              ),
+                              onPressed: () =>
+                                  Navigator.pop(dCtx, controller.text.trim()),
+                              child: const Text('Save'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (result != null) {
+                        setModalState(() {
+                          modalGuide = modalGuide.copyWith(parentTip: result);
+                        });
+                        setState(() {
+                          _homeTipsController.text = result;
+                          _previewGuide = modalGuide;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: t.marigold,
+                        foregroundColor: t.ink,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Got it!'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -55,6 +197,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
       _selectedDifficulty = existing.difficulty;
       _requiresPhotoProof = existing.requiresPhotoProof;
       _baseVersion = existing.version;
+      _homeTipsController.text = existing.guide?.parentTip ?? '';
     }
     _loadFamilyMembers();
   }
@@ -63,6 +206,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _homeTipsController.dispose();
     super.dispose();
   }
 
@@ -122,6 +266,8 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
         dueDate: _dueDate,
         requiresPhotoProof: _requiresPhotoProof,
         repeat: _isEditing ? RepeatPreset.never : _repeat,
+        guide: _previewGuide,
+        homeTips: _homeTipsController.text.trim(),
       );
 
       final creationState = ref.read(taskCreationNotifierProvider);
@@ -170,6 +316,27 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     if (!mounted) return;
     switch (outcome) {
       case TaskEditOutcome.success:
+        final newTip = _homeTipsController.text.trim();
+        final currentGuide = existing.guide ??
+            const ChoreGuide(
+              motivation: '',
+              steps: [],
+              forYou: '',
+              forFamily: '',
+              forHome: '',
+              takeaway: '',
+            );
+        if (existing.guide != null || newTip.isNotEmpty) {
+          try {
+            await ref.read(taskRepositoryProvider).updateTaskGuide(
+                  currentUser.familyId,
+                  existing.id,
+                  currentGuide.copyWith(parentTip: newTip),
+                );
+          } catch (e) {
+            _logger.w('Failed to update task guide during save edits: $e');
+          }
+        }
         Navigator.of(context).pop(true);
       case TaskEditOutcome.conflict:
         await _handleEditConflict(currentUser);
@@ -379,7 +546,25 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
     _logger.i("Navigating to Add New Task screen.");
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Chore' : 'Add New Chore')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Chore' : 'Add New Chore'),
+        actions: [
+          IconButton(
+            tooltip: 'Preview Tips',
+            icon: _isLoadingPreview
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: context.tokens.marigoldDeep,
+                    ),
+                  )
+                : const Icon(Icons.lightbulb_outline_rounded),
+            onPressed: _isLoadingPreview ? null : _previewTips,
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -407,8 +592,47 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 labelText: 'Description (Optional)',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 3,
+              maxLines: 2,
             ),
+            const SizedBox(height: 8),
+            if (_showHomeTipsField || _homeTipsController.text.isNotEmpty) ...[
+              TextFormField(
+                key: const Key('task_home_tips_field'),
+                controller: _homeTipsController,
+                decoration: InputDecoration(
+                  labelText: 'House Note & Tips (Optional)',
+                  hintText: 'e.g. Blue bin outside, supplies under sink',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  isDense: true,
+                ),
+                maxLines: 2,
+              ),
+            ] else ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('add_home_tips_button'),
+                  onPressed: () => setState(() => _showHomeTipsField = true),
+                  icon: Icon(Icons.add_home_outlined,
+                      size: 18, color: context.tokens.marigoldDeep),
+                  label: Text(
+                    'Add house info / parent tips',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: context.tokens.marigoldDeep,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             _EffortSizeField(
               key: const Key('task_difficulty_dropdown'),
@@ -557,7 +781,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                 onChanged: (p) => setState(() => _repeat = p),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: taskCreationState.isLoading ? null : _submitTask,
               style: ElevatedButton.styleFrom(

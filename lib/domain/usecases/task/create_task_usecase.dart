@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/failures.dart';
 import '../../../core/error/exceptions.dart';
+import '../../entities/chore_guide.dart';
 import '../../entities/task.dart';
 import '../../repositories/task_repository.dart';
 import '../../services/task_validation.dart';
@@ -28,6 +29,7 @@ class CreateTaskUseCase {
   /// [tags] - List of tags for categorization
   /// [requiresPhotoProof] - Whether the child must attach before/after photos
   ///   (defaults to false, so existing callers are unaffected)
+  /// [guide] - Optional chore guide with tips and learning takeaways
   ///
   /// Returns [Task] on success or [Failure] on error
   Future<Either<Failure, Task>> call({
@@ -41,6 +43,7 @@ class CreateTaskUseCase {
     UserId? assignedToId,
     List<String> tags = const [],
     bool requiresPhotoProof = false,
+    ChoreGuide? guide,
   }) async {
     try {
       // Validate input parameters
@@ -73,6 +76,7 @@ class CreateTaskUseCase {
         lastCompletedAt: null,
         familyId: familyId,
         requiresPhotoProof: requiresPhotoProof,
+        guide: guide,
       );
 
       // Save task to repository

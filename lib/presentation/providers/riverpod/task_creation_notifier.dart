@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/recurrence.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
@@ -40,6 +43,8 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
     DateTime? dueDate,
     bool requiresPhotoProof = false,
     RepeatPreset repeat = RepeatPreset.never,
+    ChoreGuide? guide,
+    String? homeTips,
   }) async {
     state = state.copyWith(isLoading: true, error: null, isSuccess: false);
 
@@ -55,6 +60,28 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
       };
 
       _logger.d('Creating task with points: $points');
+
+      final tipsService = ref.read(choreTipsServiceProvider);
+
+      // Cache-first, non-blocking guide resolution:
+      // If guide was previewed/passed, use it.
+      // Else check in-memory cache for instant hit (0ms).
+      // Else use instant context-aware heuristic fallback (0ms) so task creation
+      // is NEVER blocked waiting on Gemini network round-trips!
+      final cachedGuide = tipsService.getCachedGuide(
+        title: title,
+        difficulty: difficulty,
+        parentTip: homeTips,
+      );
+
+      final choreGuide = guide ??
+          cachedGuide ??
+          tipsService.getInstantFallbackGuide(
+            title: title,
+            description: description,
+            difficulty: difficulty,
+            parentTip: homeTips,
+          );
 
       if (repeat != RepeatPreset.never) {
         final rrule = rruleForRepeat(
@@ -84,6 +111,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
           tags: const [],
           requiresPhotoProof: requiresPhotoProof,
           rrule: rrule,
+          guide: choreGuide,
         );
         result.fold(
           (failure) {
@@ -93,6 +121,18 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
           (task) {
             _logger.i('Recurring task created: ${task.id.value}');
             state = state.copyWith(isLoading: false, isSuccess: true);
+
+            // Asynchronously enrich tips with Gemini in the background if not already cached
+            if (guide == null && cachedGuide == null) {
+              unawaited(_enrichTaskGuideInBackground(
+                familyId: familyId,
+                taskId: task.id,
+                title: title,
+                description: description,
+                difficulty: difficulty,
+                parentTip: homeTips,
+              ));
+            }
           },
         );
         return;
@@ -110,6 +150,7 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
         assignedToId: assignedTo?.id,
         tags: const [],
         requiresPhotoProof: requiresPhotoProof,
+        guide: choreGuide,
       );
 
       result.fold(
@@ -123,6 +164,18 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
         (task) {
           _logger.i('Task created successfully: ${task.id.value}');
           state = state.copyWith(isLoading: false, isSuccess: true);
+
+          // Asynchronously enrich tips with Gemini in the background if not already cached
+          if (guide == null && cachedGuide == null) {
+            unawaited(_enrichTaskGuideInBackground(
+              familyId: familyId,
+              taskId: task.id,
+              title: title,
+              description: description,
+              difficulty: difficulty,
+              parentTip: homeTips,
+            ));
+          }
         },
       );
     } catch (e, s) {
@@ -131,6 +184,35 @@ class TaskCreationNotifier extends _$TaskCreationNotifier {
         isLoading: false,
         error: e.toString(),
       );
+    }
+  }
+
+  /// Asynchronously generates a tailored AI guide using Gemini in the background
+  /// and updates the task document in Firestore without blocking the user.
+  Future<void> _enrichTaskGuideInBackground({
+    required FamilyId familyId,
+    required TaskId taskId,
+    required String title,
+    required String description,
+    required TaskDifficulty difficulty,
+    String? parentTip,
+  }) async {
+    try {
+      final tipsService = ref.read(choreTipsServiceProvider);
+      final enrichedGuide = await tipsService.generateChoreGuide(
+        title: title,
+        description: description,
+        difficulty: difficulty,
+        parentTip: parentTip,
+      );
+      await ref.read(taskRepositoryProvider).updateTaskGuide(
+            familyId,
+            taskId,
+            enrichedGuide,
+          );
+      _logger.i('Asynchronously enriched chore tips for task ${taskId.value}');
+    } catch (e) {
+      _logger.w('Background chore tips enrichment failed: $e');
     }
   }
 

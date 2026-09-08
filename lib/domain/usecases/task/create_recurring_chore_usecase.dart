@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart' hide Task;
 import '../../../core/error/exceptions.dart';
 import '../../../core/error/failures.dart';
+import '../../entities/chore_guide.dart';
 import '../../entities/recurring_rule.dart';
 import '../../entities/task.dart';
 import '../../repositories/task_repository.dart';
@@ -30,6 +31,7 @@ class CreateRecurringChoreUseCase {
     List<String> tags = const [],
     bool requiresPhotoProof = false,
     required String rrule,
+    ChoreGuide? guide,
   }) async {
     final validationFailure = validateTaskInput(
       title: title,
@@ -60,6 +62,7 @@ class CreateRecurringChoreUseCase {
       familyId: familyId,
       requiresPhotoProof: requiresPhotoProof,
       ruleId: null,
+      guide: guide,
     );
 
     final rule = RecurringRule(
@@ -76,6 +79,7 @@ class CreateRecurringChoreUseCase {
       createdBy: createdById,
       nextDueAt: dueDate,
       lastTaskId: null,
+      guide: guide,
     );
 
     try {

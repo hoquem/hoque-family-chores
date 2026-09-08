@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/repositories/task_repository.dart';
 import 'package:hoque_family_chores/domain/entities/recurring_rule.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
@@ -175,6 +176,21 @@ class MockTaskRepository implements TaskRepository {
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to delete task: $e', code: 'TASK_DELETE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> updateTaskGuide(
+    FamilyId familyId,
+    TaskId taskId,
+    ChoreGuide guide,
+  ) async {
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index != -1) {
+      _tasks[index] = _tasks[index].copyWith(guide: guide);
+      _taskStreamController.add(List.from(_tasks));
+    } else {
+      throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
     }
   }
 

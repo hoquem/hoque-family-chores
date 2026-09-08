@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/error/failures.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/entities/chore_guide.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/services/recurrence.dart';
 import 'package:hoque_family_chores/domain/usecases/task/create_recurring_chore_usecase.dart';
@@ -32,6 +33,7 @@ class _FakeCreateRecurringChoreUseCase extends Fake
     List<String> tags = const [],
     bool requiresPhotoProof = false,
     required String rrule,
+    ChoreGuide? guide,
   }) async {
     capturedRrule = rrule;
     return Right(Task(

@@ -17,6 +17,7 @@ import '../domain/usecases/reward/settle_redemption_usecase.dart';
 // Data repository implementations - used via RepositoryFactory
 import '../data/repositories/repository_factory.dart';
 import '../data/services/photo_storage_service.dart';
+import '../data/services/chore_tips_service.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
@@ -392,3 +393,9 @@ ResetPasswordUseCase resetPasswordUseCase(Ref ref) {
 PhotoStorageService photoStorageService(Ref ref) {
   return PhotoStorageService();
 }
+
+/// Provider for generating chore tips, motivation, and learning takeaways.
+final choreTipsServiceProvider = Provider<ChoreTipsService>((ref) {
+  final env = ref.watch(environmentServiceProvider);
+  return ChoreTipsService(environmentService: env);
+});
