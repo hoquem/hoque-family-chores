@@ -771,18 +771,29 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 ),
               ],
             ),
-            // The photos, when there are two to compare. This is the whole
-            // point of the feature: the parent decides here, so the evidence
-            // belongs on this screen rather than behind another tap.
-            //
-            // Both must be present. A before with no after is a task still in
-            // progress; an after with no before proves nothing, which is the
-            // argument the feature rests on.
+            // The photos, placed neatly in the task card:
+            // - When both before and after photos exist: interactive Before/After toggle
+            // - When only before photo exists (started chore): single Before photo card
+            // - When only after photo exists (completed chore): single Proof photo card
             if (task.beforePhotoUrl != null && task.photoUrl != null) ...[
               const SizedBox(height: 16),
               BeforeAfterView(
                 beforeUrl: task.beforePhotoUrl!,
                 afterUrl: task.photoUrl!,
+              ),
+            ] else if (task.beforePhotoUrl != null && task.beforePhotoUrl!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              SinglePhotoView(
+                url: task.beforePhotoUrl!,
+                label: 'Before',
+                caption: 'Chore started — before photo captured',
+              ),
+            ] else if (task.photoUrl != null && task.photoUrl!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              SinglePhotoView(
+                url: task.photoUrl!,
+                label: 'Proof',
+                caption: 'Completion photo submitted',
               ),
             ],
             const SizedBox(height: 12),

@@ -92,4 +92,35 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('SinglePhotoView', () {
+    testWidgets('renders single photo with label and caption at 320pt', (tester) async {
+      await mockNetworkImages(() async {
+        tester.view.physicalSize = _iphoneSe;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: appLightTheme,
+            home: const Scaffold(
+              body: SinglePhotoView(
+                url: 'https://example.com/before.jpg',
+                label: 'Before',
+                caption: 'Chore started — before photo captured',
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Before'), findsOneWidget);
+        expect(find.text('Chore started — before photo captured'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    });
+  });
 }

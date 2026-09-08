@@ -396,6 +396,5 @@ PhotoStorageService photoStorageService(Ref ref) {
 
 /// Provider for generating chore tips, motivation, and learning takeaways.
 final choreTipsServiceProvider = Provider<ChoreTipsService>((ref) {
-  final env = ref.watch(environmentServiceProvider);
-  return ChoreTipsService(environmentService: env);
+  return ChoreTipsService();
 });

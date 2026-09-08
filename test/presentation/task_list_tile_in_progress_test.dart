@@ -94,6 +94,107 @@ void main() {
       expect(find.text('On it'), findsOneWidget);
       expect(find.byIcon(Icons.play_circle), findsWidgets);
     });
+
+    testWidgets('shows before photo in the task card when chore is started', (tester) async {
+      await _pumpTile(tester);
+      expect(find.text('Before'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Before photo')), findsOneWidget);
+    });
+  });
+
+  group('photos in task card', () {
+    testWidgets('shows both before and after photos side by side when both exist', (tester) async {
+      final taskWithBoth = Task(
+        id: TaskId('task2'),
+        title: 'Tidy the bedroom',
+        description: '',
+        status: TaskStatus.pendingApproval,
+        difficulty: TaskDifficulty.easy,
+        dueDate: DateTime(2026, 7, 20),
+        assignedToId: _me,
+        createdAt: DateTime(2026, 7, 16),
+        points: Points(10),
+        tags: const [],
+        familyId: _familyId,
+        requiresPhotoProof: true,
+        beforePhotoUrl: 'https://example.com/before.jpg',
+        photoUrl: 'https://example.com/after.jpg',
+      );
+
+      tester.view.physicalSize = _iphoneSe;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: appLightTheme,
+            home: Scaffold(
+              body: TaskListTile(
+                task: taskWithBoth,
+                user: _kid(),
+                onToggleStatus: (_) {},
+                onReturnToAvailable: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Before'), findsOneWidget);
+      expect(find.text('After'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Before photo')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('After photo')), findsOneWidget);
+    });
+
+    testWidgets('shows after proof photo when only after photo exists', (tester) async {
+      final taskWithAfter = Task(
+        id: TaskId('task3'),
+        title: 'Clean kitchen counter',
+        description: '',
+        status: TaskStatus.completed,
+        difficulty: TaskDifficulty.easy,
+        dueDate: DateTime(2026, 7, 20),
+        assignedToId: _me,
+        createdAt: DateTime(2026, 7, 16),
+        points: Points(10),
+        tags: const [],
+        familyId: _familyId,
+        requiresPhotoProof: true,
+        photoUrl: 'https://example.com/after.jpg',
+      );
+
+      tester.view.physicalSize = _iphoneSe;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: appLightTheme,
+            home: Scaffold(
+              body: TaskListTile(
+                task: taskWithAfter,
+                user: _kid(),
+                onToggleStatus: (_) {},
+                onReturnToAvailable: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Proof'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Proof photo')), findsOneWidget);
+    });
   });
 
   group("someone else's started task", () {

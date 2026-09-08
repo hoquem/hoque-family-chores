@@ -1,5 +1,6 @@
 // lib/presentation/widgets/task_list_tile.dart
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hoque_family_chores/data/services/photo_storage_service.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
@@ -637,6 +638,7 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
                               .copyWith(color: context.tokens.inkSoft),
                         ),
                       ],
+                      _TaskCardPhotos(task: widget.task),
                     ],
                   ),
                 ),
@@ -743,3 +745,264 @@ class _CheckedByLabel extends ConsumerWidget {
     );
   }
 }
+
+/// Renders photo proof thumbnail(s) inside the task card.
+///
+/// If both before & after photos exist, renders them neatly side-by-side.
+/// If only before exists (chore in-progress) or only after exists (completed),
+/// renders the single photo cleanly framed with its respective status badge.
+/// Tapping a photo opens an enlarged preview dialog.
+class _TaskCardPhotos extends StatelessWidget {
+  const _TaskCardPhotos({required this.task});
+
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final beforeUrl = task.beforePhotoUrl?.trim();
+    final afterUrl = task.photoUrl?.trim();
+    final hasBefore = beforeUrl != null && beforeUrl.isNotEmpty;
+    final hasAfter = afterUrl != null && afterUrl.isNotEmpty;
+
+    if (!hasBefore && !hasAfter) {
+      return const SizedBox.shrink();
+    }
+
+    final t = context.tokens;
+
+    if (hasBefore && hasAfter) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: _TaskPhotoThumbnail(
+                url: beforeUrl,
+                label: 'Before',
+                badgeBg: t.carrotDeep,
+                badgeFg: t.cream,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _TaskPhotoThumbnail(
+                url: afterUrl,
+                label: 'After',
+                badgeBg: t.sproutDeep,
+                badgeFg: t.cream,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final singleUrl = hasBefore ? beforeUrl : afterUrl!;
+    final singleLabel = hasBefore ? 'Before' : 'Proof';
+    final badgeBg = hasBefore ? t.carrotDeep : t.sproutDeep;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10.0),
+      child: _TaskPhotoThumbnail(
+        url: singleUrl,
+        label: singleLabel,
+        badgeBg: badgeBg,
+        badgeFg: t.cream,
+        isFullWidth: true,
+      ),
+    );
+  }
+}
+
+class _TaskPhotoThumbnail extends StatelessWidget {
+  const _TaskPhotoThumbnail({
+    required this.url,
+    required this.label,
+    required this.badgeBg,
+    required this.badgeFg,
+    this.isFullWidth = false,
+  });
+
+  final String url;
+  final String label;
+  final Color badgeBg;
+  final Color badgeFg;
+  final bool isFullWidth;
+
+  void _showEnlargedPhoto(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+              Flexible(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    alignment: Alignment.topLeft,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: url,
+                        fit: BoxFit.contain,
+                        placeholder: (_, __) => const SizedBox(
+                          height: 200,
+                          child: Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          padding: const EdgeInsets.all(24),
+                          color: Colors.black54,
+                          child: const Text(
+                            "Couldn't load photo",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              color: badgeFg,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final double height = isFullWidth ? 130.0 : 100.0;
+
+    return Semantics(
+      button: true,
+      label: '$label photo for chore. Tap to enlarge.',
+      child: GestureDetector(
+        onTap: () => _showEnlargedPhoto(context),
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: t.line, width: 1),
+            color: t.line.withValues(alpha: 0.3),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => ColoredBox(
+                    color: t.line,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  errorWidget: (_, __, ___) => ColoredBox(
+                    color: t.line,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: t.inkSoft,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: badgeFg,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.fullscreen,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -11,10 +11,13 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const { spawnDueOccurrences } = require('./recurringEngine');
+
+const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
 initializeApp();
 const db = getFirestore();
@@ -315,10 +318,117 @@ exports.settleRedemption = onCall(async (request) => {
 });
 
 // ---------------------------------------------------------------------------
+// AI Mission Guide & Tips (Gemini 2.5 Flash)
+// ---------------------------------------------------------------------------
+
+async function callGeminiForGuide({ title, description, difficulty, parentTip, apiKey }) {
+  const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const promptText = `
+You are an encouraging family chore coach for kids aged 6 to 14.
+Create a helpful, inspiring Mission Guide for this household chore:
+- Title: "${title}"
+${description ? `- Details: "${description}"` : ''}
+- Effort Level: ${difficulty || 'Easy'}
+${parentTip ? `- Home Context & Instructions from Parent: "${parentTip}"\n  (IMPORTANT: Weave these home-specific details/locations/rules into the steps so they fit this exact home!)` : ''}
+
+Requirements:
+1. "motivation": A fun, high-energy pep talk or playful challenge (e.g. "Put on your favorite 3-minute hype song and race the beat!", "Channel your inner ninja").
+2. "steps": 3 or 4 clear, sequential, practical steps a child can follow to get the job done right.
+3. "forYou": 1-2 sentences on why completing this task is good for the child (independence, peace of mind, feeling proud in their space).
+4. "forFamily": 1-2 sentences on how this helps the whole family (teamwork, lifting the load, showing care).
+5. "forHome": 1-2 sentences on why this makes the home a better place (cozy, clean, welcoming environment).
+6. "takeaway": The real-life skill or superpower nurtured (e.g. "Organization & Focus: Big goals are won with small, steady habits").
+
+Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
+`;
+
+  const requestBody = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: promptText }],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: {
+        type: 'OBJECT',
+        properties: {
+          motivation: { type: 'STRING', description: 'Playful, high-energy pep talk or challenge' },
+          steps: { type: 'ARRAY', items: { type: 'STRING' }, description: '3 to 4 sequential actionable steps' },
+          forYou: { type: 'STRING', description: 'Why doing this is good for the child' },
+          forFamily: { type: 'STRING', description: 'How this helps the family' },
+          forHome: { type: 'STRING', description: 'How this benefits the home' },
+          takeaway: { type: 'STRING', description: 'Life skill or superpower takeaway' },
+        },
+        required: ['motivation', 'steps', 'forYou', 'forFamily', 'forHome', 'takeaway'],
+      },
+    },
+  };
+
+  const res = await fetch(uri, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`[Gemini] API error (${res.status}):`, errText);
+    throw new HttpsError('internal', `Gemini API error: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new HttpsError('internal', 'Empty response from Gemini');
+  }
+
+  const parsed = JSON.parse(text);
+  return {
+    motivation: parsed.motivation || '',
+    steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+    forYou: parsed.forYou || '',
+    forFamily: parsed.forFamily || '',
+    forHome: parsed.forHome || '',
+    takeaway: parsed.takeaway || '',
+    parentTip: parentTip || '',
+  };
+}
+
+exports.generateChoreGuide = onCall({ secrets: [geminiApiKey] }, async (request) => {
+  requireAuth(request);
+  const data = request.data || {};
+  const title = (data.title || '').trim();
+  const description = (data.description || '').trim();
+  const difficulty = (data.difficulty || 'easy').trim();
+  const parentTip = (data.parentTip || '').trim();
+
+  if (!title) {
+    throw new HttpsError('invalid-argument', 'Chore title is required.');
+  }
+
+  let apiKey;
+  try {
+    apiKey = geminiApiKey.value();
+  } catch (_) {
+    apiKey = process.env.GEMINI_API_KEY;
+  }
+
+  if (!apiKey) {
+    console.warn('[Gemini] GEMINI_API_KEY secret is not configured.');
+    throw new HttpsError('unavailable', 'AI service is temporarily unconfigured.');
+  }
+
+  return await callGeminiForGuide({ title, description, difficulty, parentTip, apiKey });
+});
+
+// ---------------------------------------------------------------------------
 // Firestore triggers — task lifecycle notifications
 // ---------------------------------------------------------------------------
 
-exports.onTaskCreated = onDocumentCreated('families/{familyId}/tasks/{taskId}', async (event) => {
+exports.onTaskCreated = onDocumentCreated({ document: 'families/{familyId}/tasks/{taskId}', secrets: [geminiApiKey] }, async (event) => {
   const { familyId, taskId } = event.params;
   const task = event.data.after.data();
   if (!task) return;
@@ -338,6 +448,34 @@ exports.onTaskCreated = onDocumentCreated('families/{familyId}/tasks/{taskId}', 
     `New chore! 📋`,
     `${creatorName} added "${title}" (${points}⭐)`
   );
+
+  // Background AI guide enrichment if task has no guide or empty guide
+  const hasValidGuide = task.guide && task.guide.motivation && Array.isArray(task.guide.steps) && task.guide.steps.length > 0;
+  if (!hasValidGuide) {
+    let apiKey;
+    try {
+      apiKey = geminiApiKey.value();
+    } catch (_) {
+      apiKey = process.env.GEMINI_API_KEY;
+    }
+    if (apiKey) {
+      callGeminiForGuide({
+        title,
+        description: task.description || '',
+        difficulty: task.difficulty || 'easy',
+        parentTip: task.guide?.parentTip || '',
+        apiKey,
+      })
+        .then(async (guide) => {
+          const taskRef = db.doc(`families/${familyId}/tasks/${taskId}`);
+          await taskRef.update({ guide });
+          console.log(`[Gemini] Enriched task ${taskId} with AI mission guide.`);
+        })
+        .catch((err) => {
+          console.warn(`[Gemini] Background task enrichment failed for ${taskId}:`, err.message);
+        });
+    }
+  }
 });
 
 exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', async (event) => {

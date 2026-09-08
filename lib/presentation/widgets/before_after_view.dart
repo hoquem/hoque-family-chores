@@ -144,3 +144,90 @@ class _Chip extends StatelessWidget {
     );
   }
 }
+
+/// Displays a single photo (e.g. before photo while in progress, or after proof photo).
+class SinglePhotoView extends StatelessWidget {
+  const SinglePhotoView({
+    super.key,
+    required this.url,
+    required this.label,
+    this.caption,
+  });
+
+  final String url;
+  final String label;
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+
+    return Semantics(
+      label: 'Chore photo, $label',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => ColoredBox(
+                      color: t.line,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => ColoredBox(
+                      color: t.line,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image_outlined,
+                              color: t.inkSoft, size: 32),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Couldn't load this photo",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: t.inkSoft),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: _Chip(label: label),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (caption != null && caption!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              caption!,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: t.inkSoft),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+

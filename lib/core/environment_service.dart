@@ -19,25 +19,6 @@ class EnvironmentService {
   /// Whether we're in profile mode
   bool get isProfileMode => kProfileMode;
 
-  /// Whether a valid Gemini API key is configured
-  bool get hasGeminiApiKey {
-    const apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
-    return apiKey.isNotEmpty && apiKey != 'YOUR_GEMINI_API_KEY_HERE';
-  }
-
-  /// Gemini API key from environment
-  /// Must be set via --dart-define=GEMINI_API_KEY=your_key or environment variable
-  String get geminiApiKey {
-    const apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
-    if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
-      throw StateError(
-        'GEMINI_API_KEY must be set via --dart-define or environment variable. '
-        'Example: flutter run --dart-define=GEMINI_API_KEY=your_key_here',
-      );
-    }
-    return apiKey;
-  }
-
   /// Whether AI rating feature is enabled
   /// Can be disabled via feature flag for gradual rollout
   bool get enablePhotoProofAi {

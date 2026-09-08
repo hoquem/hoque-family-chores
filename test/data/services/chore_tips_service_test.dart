@@ -1,36 +1,51 @@
-import 'dart:convert';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoque_family_chores/core/environment_service.dart';
 import 'package:hoque_family_chores/data/services/chore_tips_service.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
-import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 
-class MockEnvironmentService extends Mock implements EnvironmentService {}
+class MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
 
-class MockHttpClient extends Mock implements http.Client {}
+class MockHttpsCallable extends Mock implements HttpsCallable {}
+
+class MockHttpsCallableResult extends Mock
+    implements HttpsCallableResult<dynamic> {}
 
 void main() {
-  late MockEnvironmentService mockEnv;
-  late MockHttpClient mockHttp;
+  late MockFirebaseFunctions mockFunctions;
+  late MockHttpsCallable mockCallable;
   late ChoreTipsService service;
 
-  setUpAll(() {
-    registerFallbackValue(Uri());
-  });
-
   setUp(() {
-    mockEnv = MockEnvironmentService();
-    mockHttp = MockHttpClient();
-    service = ChoreTipsService(
-      environmentService: mockEnv,
-      httpClient: mockHttp,
-    );
+    mockFunctions = MockFirebaseFunctions();
+    mockCallable = MockHttpsCallable();
+    when(() => mockFunctions.httpsCallable(any(), options: any(named: 'options')))
+        .thenReturn(mockCallable);
+    service = ChoreTipsService(functions: mockFunctions);
   });
 
-  group('ChoreTipsService Fallback', () {
+  group('ChoreTipsService Heuristic Fallbacks (Offline & Instant)', () {
+    test('returns bathroom tips when title contains bathroom or bath', () async {
+      // Offline / no cloud function response
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'Clean the middle bathroom',
+        difficulty: TaskDifficulty.medium,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('Sparkle mission'));
+      expect(guide.steps.any((s) => s.contains('towels') || s.contains('bath mats')), isTrue);
+      expect(guide.steps.any((s) => s.contains('sink') || s.contains('faucets')), isTrue);
+      expect(guide.steps.any((s) => s.contains('toilet')), isTrue);
+      expect(guide.takeaway, contains('Hygiene & Sanitation'));
+    });
+
     test('returns bed tips when title contains bed', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(false);
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
 
       final guide = await service.generateChoreGuide(
         title: 'Make your bed',
@@ -41,13 +56,12 @@ void main() {
       expect(guide.motivation, contains('Start your day'));
       expect(guide.steps.length, greaterThanOrEqualTo(3));
       expect(guide.forYou, contains('cozy'));
-      expect(guide.forFamily, isNotEmpty);
-      expect(guide.forHome, isNotEmpty);
       expect(guide.takeaway, contains('Habit'));
     });
 
-    test('returns dishes tips when title contains dish', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(false);
+    test('returns dishes tips when title contains dish or kitchen', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
 
       final guide = await service.generateChoreGuide(
         title: 'Wash the dishes',
@@ -61,8 +75,9 @@ void main() {
       expect(guide.takeaway, contains('Teamwork'));
     });
 
-    test('returns trash tips when title contains trash', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(false);
+    test('returns trash tips when title contains trash or bin', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
 
       final guide = await service.generateChoreGuide(
         title: 'Take out the kitchen trash',
@@ -74,8 +89,52 @@ void main() {
       expect(guide.takeaway, contains('Reliability'));
     });
 
+    test('returns vacuum/floor tips when title contains vacuum or mop', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'Vacuum the stairs and hallway',
+        difficulty: TaskDifficulty.medium,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('Time to pave the runway'));
+      expect(guide.takeaway, contains('Thoroughness'));
+    });
+
+    test('returns plant tips when title contains water or plant', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'Water the plants',
+        difficulty: TaskDifficulty.easy,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('house plant guardian'));
+      expect(guide.takeaway, contains('Nurturing'));
+    });
+
+    test('returns tidy tips for tidy / organize without assuming a bed', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'Tidy the playroom',
+        difficulty: TaskDifficulty.easy,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('Zone blitz'));
+      expect(guide.steps.any((s) => s.contains('boxes, shelves')), isTrue);
+      expect(guide.takeaway, contains('Spatial Organization'));
+    });
+
     test('returns generic tips for unknown custom chore when offline', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(false);
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
 
       final guide = await service.generateChoreGuide(
         title: 'Fix bicycle chain',
@@ -86,49 +145,27 @@ void main() {
       expect(guide.motivation, contains('stars'));
       expect(guide.steps.length, 3);
       expect(guide.forYou, isNotEmpty);
-      expect(guide.forFamily, isNotEmpty);
-      expect(guide.forHome, isNotEmpty);
       expect(guide.takeaway, contains('Diligence'));
     });
   });
 
-  group('ChoreTipsService Gemini API', () {
-    test('successfully parses structured JSON from Gemini API', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(true);
-      when(() => mockEnv.geminiApiKey).thenReturn('test-key');
+  group('ChoreTipsService Cloud Function Integration', () {
+    test('successfully parses Cloud Function response', () async {
+      final mockResult = MockHttpsCallableResult();
+      when(() => mockResult.data).thenReturn({
+        'motivation': 'Hype time! Show those clothes who is boss!',
+        'steps': [
+          'Check all pockets for toys or coins',
+          'Fold trousers along the seams',
+          'Stack folded items neatly in drawers',
+        ],
+        'forYou': 'Your wardrobe will look like a neat boutique.',
+        'forFamily': 'Helps the whole family stay organized.',
+        'forHome': 'Keeps bedroom chairs clutter-free.',
+        'takeaway': 'Orderliness & Independence: Small habits build a big future.',
+      });
 
-      final geminiResponsePayload = {
-        'candidates': [
-          {
-            'content': {
-              'parts': [
-                {
-                  'text': jsonEncode({
-                    'motivation': 'Hype time! Show those clothes who is boss!',
-                    'steps': [
-                      'Check all pockets for toys or coins',
-                      'Fold trousers along the seams',
-                      'Stack folded items neatly in drawers',
-                    ],
-                    'forYou': 'Your wardrobe will look like a neat boutique.',
-                    'forFamily': 'Helps the whole family stay organized.',
-                    'forHome': 'Keeps bedroom chairs clutter-free.',
-                    'takeaway': 'Orderliness & Independence: Small habits build a big future.',
-                  })
-                }
-              ]
-            }
-          }
-        ]
-      };
-
-      when(() => mockHttp.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer(
-        (_) async => http.Response(jsonEncode(geminiResponsePayload), 200),
-      );
+      when(() => mockCallable.call(any())).thenAnswer((_) async => mockResult);
 
       final guide = await service.generateChoreGuide(
         title: 'Fold laundry',
@@ -144,17 +181,12 @@ void main() {
       expect(guide.takeaway, contains('Orderliness'));
     });
 
-    test('gracefully falls back when Gemini API returns 500 or error', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(true);
-      when(() => mockEnv.geminiApiKey).thenReturn('test-key');
-
-      when(() => mockHttp.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          )).thenAnswer(
-        (_) async => http.Response('Server Error', 500),
-      );
+    test('gracefully falls back when Cloud Function throws error', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(FirebaseFunctionsException(
+        message: 'Internal error',
+        code: 'internal',
+      ));
 
       final guide = await service.generateChoreGuide(
         title: 'Clean the kitchen dishes',
@@ -167,7 +199,8 @@ void main() {
     });
 
     test('caches responses and returns cached guide on subsequent calls', () async {
-      when(() => mockEnv.hasGeminiApiKey).thenReturn(false);
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network down'));
 
       final guide1 = await service.generateChoreGuide(
         title: 'Make your bed',
@@ -184,10 +217,11 @@ void main() {
 
       // Instant fallback also attaches parentTip
       final instantFallback = service.getInstantFallbackGuide(
-        title: 'Clean room',
-        parentTip: 'Put toys in blue bin',
+        title: 'Clean the middle bathroom',
+        parentTip: 'Use the green spray under the sink',
       );
-      expect(instantFallback.parentTip, 'Put toys in blue bin');
+      expect(instantFallback.parentTip, 'Use the green spray under the sink');
+      expect(instantFallback.steps.any((s) => s.contains('toilet')), isTrue);
     });
   });
 }

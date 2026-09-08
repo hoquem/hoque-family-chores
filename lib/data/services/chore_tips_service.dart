@@ -1,26 +1,33 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../../core/environment_service.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../domain/entities/chore_guide.dart';
 import '../../domain/entities/task.dart';
 import '../../utils/logger.dart';
 
-/// Service for generating tailored chore tips, motivation, and learning takeaways
-/// using the Gemini API, with a robust keyword-aware fallback when offline or without API key.
+/// Service for generating tailored chore tips, motivation, and learning takeaways.
+///
+/// Calls the secure server-side Cloud Function [generateChoreGuide] when online,
+/// and falls back instantly to rich keyword-aware local guides when offline or
+/// before network responses arrive.
 class ChoreTipsService {
-  final EnvironmentService _environmentService;
-  final http.Client _httpClient;
+  final FirebaseFunctions? _override;
   final _logger = AppLogger();
 
   /// In-memory cache keyed by normalized title + difficulty + parentTip
   final Map<String, ChoreGuide> _cache = {};
 
   ChoreTipsService({
-    EnvironmentService? environmentService,
-    http.Client? httpClient,
-  })  : _environmentService = environmentService ?? EnvironmentService(),
-        _httpClient = httpClient ?? http.Client();
+    FirebaseFunctions? functions,
+  }) : _override = functions;
+
+  FirebaseFunctions? get _functions {
+    if (_override != null) return _override;
+    try {
+      return FirebaseFunctions.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   String _cacheKey(String title, TaskDifficulty difficulty, String? parentTip) {
     final cleanTitle = title.trim().toLowerCase();
@@ -54,8 +61,8 @@ class ChoreTipsService {
 
   /// Generates a [ChoreGuide] tailored to the given chore title, description, and difficulty.
   ///
-  /// Checks cache first; uses Gemini API if available, or falls back gracefully to a curated
-  /// fallback guide so chore creation is never blocked or delayed.
+  /// Checks cache first; uses server-side Gemini Cloud Function if available, or falls back
+  /// gracefully to a curated local guide so chore creation is never blocked or delayed.
   Future<ChoreGuide> generateChoreGuide({
     required String title,
     String? description,
@@ -74,25 +81,21 @@ class ChoreTipsService {
       return _cache[key]!;
     }
 
-    if (_environmentService.hasGeminiApiKey) {
-      try {
-        final apiKey = _environmentService.geminiApiKey;
-        final guide = await _generateWithGemini(
-          title: cleanTitle,
-          description: description?.trim(),
-          difficulty: difficulty,
-          apiKey: apiKey,
-          parentTip: cleanParentTip,
-        );
-        if (guide != null && guide.isNotEmpty) {
-          final enriched = guide.copyWith(parentTip: cleanParentTip);
-          _cache[key] = enriched;
-          return enriched;
-        }
-      } catch (e, s) {
-        _logger.w('Gemini chore guide generation failed, using fallback: $e',
-            error: e, stackTrace: s);
+    try {
+      final guide = await _generateWithCloudFunction(
+        title: cleanTitle,
+        description: description?.trim(),
+        difficulty: difficulty,
+        parentTip: cleanParentTip,
+      );
+      if (guide != null && guide.isNotEmpty) {
+        final enriched = guide.copyWith(parentTip: cleanParentTip);
+        _cache[key] = enriched;
+        return enriched;
       }
+    } catch (e, s) {
+      _logger.w('Cloud Function guide generation threw error, using fallback: $e',
+          error: e, stackTrace: s);
     }
 
     final fallback = _buildFallbackGuide(cleanTitle, description, difficulty, parentTip: cleanParentTip);
@@ -100,120 +103,39 @@ class ChoreTipsService {
     return fallback;
   }
 
-  /// Calls Gemini REST API using structured JSON schema output
-  Future<ChoreGuide?> _generateWithGemini({
+  /// Calls the secure server-side Cloud Function [generateChoreGuide]
+  Future<ChoreGuide?> _generateWithCloudFunction({
     required String title,
     String? description,
     required TaskDifficulty difficulty,
-    required String apiKey,
     String? parentTip,
   }) async {
-    final uri = Uri.parse(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey',
-    );
+    final functions = _functions;
+    if (functions == null) return null;
 
-    final promptText = '''
-You are an encouraging family chore coach for kids aged 6 to 14.
-Create a helpful, inspiring Mission Guide for this household chore:
-- Title: "$title"
-${description != null && description.isNotEmpty ? '- Details: "$description"' : ''}
-- Effort Level: ${difficulty.displayName}
-${parentTip != null && parentTip.isNotEmpty ? '- Home Context & Instructions from Parent: "$parentTip"\n  (IMPORTANT: Weave these home-specific details/locations/rules into the steps so they fit this exact home!)' : ''}
+    try {
+      final callable = functions.httpsCallable(
+        'generateChoreGuide',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 8)),
+      );
+      final result = await callable.call<dynamic>({
+        'title': title,
+        'description': description ?? '',
+        'difficulty': difficulty.name,
+        'parentTip': parentTip ?? '',
+      });
 
-Requirements:
-1. "motivation": A fun, high-energy pep talk or playful challenge (e.g. "Put on your favorite 3-minute hype song and race the beat!", "Channel your inner ninja").
-2. "steps": 3 or 4 clear, sequential, practical steps a child can follow to get the job done right.
-3. "forYou": 1-2 sentences on why completing this task is good for the child (independence, peace of mind, feeling proud in their space).
-4. "forFamily": 1-2 sentences on how this helps the whole family (teamwork, lifting the load, showing care).
-5. "forHome": 1-2 sentences on why this makes the home a better place (cozy, clean, welcoming environment).
-6. "takeaway": The real-life skill or superpower nurtured (e.g. "Organization & Focus: Big goals are won with small, steady habits").
-
-Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
-''';
-
-    final requestBody = {
-      'contents': [
-        {
-          'role': 'user',
-          'parts': [
-            {'text': promptText}
-          ]
-        }
-      ],
-      'generationConfig': {
-        'responseMimeType': 'application/json',
-        'responseSchema': {
-          'type': 'OBJECT',
-          'properties': {
-            'motivation': {
-              'type': 'STRING',
-              'description': 'Playful, high-energy pep talk or challenge'
-            },
-            'steps': {
-              'type': 'ARRAY',
-              'items': {'type': 'STRING'},
-              'description': '3 to 4 sequential actionable steps'
-            },
-            'forYou': {
-              'type': 'STRING',
-              'description': 'Why doing this is good for the child'
-            },
-            'forFamily': {
-              'type': 'STRING',
-              'description': 'How this helps the family'
-            },
-            'forHome': {
-              'type': 'STRING',
-              'description': 'How this benefits the home'
-            },
-            'takeaway': {
-              'type': 'STRING',
-              'description': 'Life skill or superpower takeaway'
-            }
-          },
-          'required': [
-            'motivation',
-            'steps',
-            'forYou',
-            'forFamily',
-            'forHome',
-            'takeaway'
-          ]
-        }
-      }
-    };
-
-    final response = await _httpClient
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(requestBody),
-        )
-        .timeout(const Duration(seconds: 5));
-
-    if (response.statusCode == 200) {
-      final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-      final candidates = jsonResponse['candidates'] as List<dynamic>?;
-      if (candidates != null && candidates.isNotEmpty) {
-        final content = candidates.first['content'] as Map<String, dynamic>?;
-        final parts = content?['parts'] as List<dynamic>?;
-        if (parts != null && parts.isNotEmpty) {
-          final text = parts.first['text'] as String?;
-          if (text != null && text.isNotEmpty) {
-            final guideMap = jsonDecode(text) as Map<String, dynamic>;
-            return ChoreGuide.fromMap(guideMap);
-          }
-        }
-      }
-    } else {
-      _logger.w(
-          'Gemini API returned status ${response.statusCode}: ${response.body}');
+      final data = (result.data as Map?)?.cast<String, dynamic>() ??
+          Map<String, dynamic>.from(result.data as Map);
+      return ChoreGuide.fromMap(data);
+    } catch (e, s) {
+      _logger.w('Cloud Function chore guide generation failed, using fallback: $e',
+          error: e, stackTrace: s);
+      return null;
     }
-
-    return null;
   }
 
-  /// High-quality context-aware fallback when offline or Gemini API is not configured
+  /// High-quality context-aware fallback when offline or before server returns
   ChoreGuide _buildFallbackGuide(
     String title,
     String? description,
@@ -226,14 +148,153 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
         : raw;
   }
 
+  bool _containsAny(String text, List<String> keywords) {
+    for (final kw in keywords) {
+      if (text.contains(kw)) return true;
+    }
+    return false;
+  }
+
   ChoreGuide _buildRawFallbackGuide(
     String title,
     String? description,
     TaskDifficulty difficulty,
   ) {
-    final lower = title.toLowerCase();
+    final combined = '${title.toLowerCase()} ${description?.toLowerCase() ?? ''}';
 
-    if (lower.contains('bed')) {
+    // 1. Trash / Bins / Recycling (checked first so room trash like "kitchen trash" gets trash steps)
+    if (_containsAny(combined, [
+      'trash',
+      'bin',
+      'bins',
+      'rubbish',
+      'garbage',
+      'recycling',
+      'waste',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Fast mission mode! Quick footsteps, careful hands, and back inside in under 2 minutes.',
+        steps: [
+          'Tie up the bin bag securely so nothing spills out',
+          'Carry the bag carefully to the outside wheelie or collection bin',
+          'Fit a fresh bin liner snugly into the empty bin',
+        ],
+        forYou:
+            'A quick burst of movement gets you active, and the job is done in a flash.',
+        forFamily:
+            'Taking out the bins keeps everyone’s living space healthy and odor-free.',
+        forHome:
+            'Keeps the home hygienic, fresh-smelling, and clutter-free.',
+        takeaway:
+            'Reliability & Environmental Care: Taking responsibility for household waste protects our living space.',
+      );
+    }
+
+    // 2. Bathroom / Toilet / Washroom
+    if (_containsAny(combined, [
+      'bathroom',
+      'bath',
+      'toilet',
+      'shower',
+      'loo',
+      'sink',
+      'basin',
+      'restroom',
+      'washroom',
+      'wc',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Sparkle mission! Transform the bathroom into a fresh, gleaming five-star spa.',
+        steps: [
+          'Put dirty towels and bath mats into the laundry basket',
+          'Wipe down the sink and faucets with a damp cloth until shiny',
+          'Wipe the counter and toilet seat with bathroom wipes (wash hands after!)',
+          'Empty the small bathroom bin and check that toilet paper is stocked',
+        ],
+        forYou:
+            'Using a sparkling, clean bathroom makes you feel refreshed, healthy, and proud.',
+        forFamily:
+            'Shared bathrooms get busy; keeping yours clean is a big gift of care for everyone.',
+        forHome:
+            'Regular bathroom care prevents soap scum, mildew, and keeps hygiene top-notch.',
+        takeaway:
+            'Hygiene & Sanitation: Keeping personal care spaces clean protects everyone’s health.',
+      );
+    }
+
+    // 3. Kitchen / Dishes
+    if (_containsAny(combined, [
+      'dish',
+      'dishes',
+      'dishwasher',
+      'kitchen',
+      'plate',
+      'cutlery',
+      'pot',
+      'pan',
+      'cook',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Put on your favorite 3-minute song! Can you finish before the track ends?',
+        steps: [
+          'Scrape leftover food into the food bin',
+          'Rinse items and load plates and bowls into the dishwasher racks neatly',
+          'Wipe down the kitchen counters and sink area with a damp cloth',
+        ],
+        forYou:
+            'You learn kitchen independence and always have clean utensils ready when hungry.',
+        forFamily:
+            'After a meal, everyone is tired. Pitching in lifts a huge weight off the family.',
+        forHome:
+            'A clean sink and clear counters keep pests away and the kitchen smelling fresh.',
+        takeaway:
+            'Teamwork & Hygiene: Every household runs smoothly when everyone shares the table work.',
+      );
+    }
+
+    // 4. Floor / Vacuum / Mop / Sweep
+    if (_containsAny(combined, [
+      'vacuum',
+      'hoover',
+      'mop',
+      'sweep',
+      'sweeping',
+      'broom',
+      'carpet',
+      'rug',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Time to pave the runway! Smooth, straight lines leave satisfying tracks on the floor.',
+        steps: [
+          'Pick up any loose cables, shoes, or toys off the floor first',
+          'Start from the farthest corner and work backwards towards the door',
+          'Empty the vacuum dust container or rinse out the mop head when done',
+        ],
+        forYou:
+            'Walking barefoot on a clean, crumb-free floor feels amazing.',
+        forFamily:
+            'Clear floors keep walkways safe from tripping and keep dust away for everyone.',
+        forHome:
+            'Caring for carpets and hard floors extends their life and keeps the house looking pristine.',
+        takeaway:
+            'Thoroughness & Technique: Working in structured lines gets better results in half the time.',
+      );
+    }
+
+    // 5. Bedroom / Bed
+    if (_containsAny(combined, [
+      'bed',
+      'bedroom',
+      'pillow',
+      'sheets',
+      'duvet',
+      'blanket',
+      'mattress',
+    ])) {
       return const ChoreGuide(
         motivation:
             'Start your day with a guaranteed win! Making your bed sets the tone for a fantastic day.',
@@ -253,80 +314,23 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
       );
     }
 
-    if (lower.contains('trash') ||
-        lower.contains('bin') ||
-        lower.contains('garbage') ||
-        lower.contains('rubbish')) {
-      return const ChoreGuide(
-        motivation:
-            'Fast mission mode! Quick footsteps, careful hands, and back inside in under 2 minutes.',
-        steps: [
-          'Tie up the bin bag securely so nothing spills out',
-          'Carry the bag carefully to the outside wheelie bin',
-          'Fit a fresh bin liner snugly into the empty bin',
-        ],
-        forYou:
-            'A quick burst of movement gets you up and active, and the job is done in a flash.',
-        forFamily:
-            'Taking out the bins keeps everyone’s living space healthy and odor-free.',
-        forHome:
-            'Keeps the home hygienic, fresh-smelling, and clutter-free.',
-        takeaway:
-            'Reliability & Environmental Care: Taking responsibility for household waste protects our living space.',
-      );
-    }
-
-    if (lower.contains('dish') || lower.contains('kitchen')) {
-      return const ChoreGuide(
-        motivation:
-            'Put on your favorite 3-minute song! Can you finish before the track ends?',
-        steps: [
-          'Scrape leftover food into the food bin',
-          'Rinse items and load plates and bowls into the dishwasher racks neatly',
-          'Wipe down the sink area with a damp cloth when finished',
-        ],
-        forYou:
-            'You learn kitchen independence and always have clean utensils ready when hungry.',
-        forFamily:
-            'After a meal, everyone is tired. Pitching in lifts a huge weight off the family.',
-        forHome:
-            'A clean sink keeps pests away and keeps the kitchen smelling fresh and clean.',
-        takeaway:
-            'Teamwork & Hygiene: Every household runs smoothly when everyone shares the table work.',
-      );
-    }
-
-    if (lower.contains('room') ||
-        lower.contains('tidy') ||
-        lower.contains('clean') ||
-        lower.contains('organize')) {
-      return const ChoreGuide(
-        motivation:
-            'Tackle it in three quick zones: floor first, desk second, bed third. You got this!',
-        steps: [
-          'Pick up clothes and drop dirty ones in the laundry hamper',
-          'Put books, toys, and gadgets back into their bins or shelves',
-          'Clear any empty cups or rubbish and give surfaces a quick straighten',
-        ],
-        forYou:
-            'A clear room equals a clear mind. It is so much easier to focus, play, and relax in an organized space.',
-        forFamily:
-            'Shows respect for shared living and ensures everyone feels peaceful at home.',
-        forHome:
-            'Prevents clutter buildup and makes the house feel spacious and inviting.',
-        takeaway:
-            'Spatial Organization & Focus: Knowing where everything belongs saves time and reduces stress.',
-      );
-    }
-
-    if (lower.contains('laundry') ||
-        lower.contains('cloth') ||
-        lower.contains('fold')) {
+    // 6. Laundry / Clothes / Folding
+    if (_containsAny(combined, [
+      'laundry',
+      'cloth',
+      'clothes',
+      'fold',
+      'folding',
+      'iron',
+      'sock',
+      'socks',
+      'wardrobe',
+    ])) {
       return const ChoreGuide(
         motivation:
             'Channel your inner department store pro! Smooth folds and neat stacks are super satisfying.',
         steps: [
-          'Sort clothes by owner or type (shirts, trousers, socks)',
+          'Sort clothes by type (shirts, trousers, socks, underwear)',
           'Fold shirts and trousers smoothly along the seams',
           'Pair matching socks together and put items into their designated drawers',
         ],
@@ -341,10 +345,21 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
       );
     }
 
-    if (lower.contains('pet') ||
-        lower.contains('dog') ||
-        lower.contains('cat') ||
-        lower.contains('feed')) {
+    // 7. Pets / Animals
+    if (_containsAny(combined, [
+      'pet',
+      'pets',
+      'dog',
+      'cat',
+      'puppy',
+      'kitten',
+      'fish',
+      'hamster',
+      'bird',
+      'litter',
+      'leash',
+      'feed',
+    ])) {
       return const ChoreGuide(
         motivation:
             'Your furry friend depends on you! They appreciate your care more than words can say.',
@@ -364,7 +379,13 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
       );
     }
 
-    if (lower.contains('table') || lower.contains('set table')) {
+    // 8. Dining / Table
+    if (_containsAny(combined, [
+      'table',
+      'dining',
+      'placemat',
+      'napkin',
+    ])) {
       return const ChoreGuide(
         motivation:
             'You are the maitre d’ of family dinner! Set the scene for a wonderful meal together.',
@@ -384,19 +405,31 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
       );
     }
 
-    if (lower.contains('plant') || lower.contains('water')) {
+    // 9. Plants / Garden / Outdoor
+    if (_containsAny(combined, [
+      'plant',
+      'plants',
+      'garden',
+      'gardening',
+      'yard',
+      'lawn',
+      'weed',
+      'flower',
+      'flowers',
+      'water',
+    ])) {
       return const ChoreGuide(
         motivation:
             'You are the house plant guardian! Give those green leaves the refreshing drink they need.',
         steps: [
           'Fill your watering can with room-temperature water',
           'Gently pour water at the soil base until moist, without flooding the pot',
-          'Wipe away any water drips from the saucer or furniture',
+          'Wipe away any water drips from the saucer or surrounding floor',
         ],
         forYou:
             'Watching plants thrive and grow green leaves under your care is genuinely rewarding.',
         forFamily:
-            'Indoor plants clean the air we breathe and make the family home vibrant.',
+            'Indoor and garden plants freshen the air we breathe and make our home vibrant.',
         forHome:
             'Healthy plants bring life, color, and natural beauty to every room.',
         takeaway:
@@ -404,7 +437,66 @@ Tone: Warm, playful, empowering, never patronizing, and kid-appropriate.
       );
     }
 
-    // Universal default
+    // 10. Tidy / Organize / Declutter
+    if (_containsAny(combined, [
+      'tidy',
+      'organize',
+      'declutter',
+      'pack away',
+      'toy',
+      'toys',
+      'shelf',
+      'bookshelf',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Zone blitz! Divide the space into sections and tackle one spot at a time.',
+        steps: [
+          'Pick up loose items off the floor and sort them into piles',
+          'Put items back into their designated boxes, shelves, or drawers',
+          'Do a quick 30-second scan to ensure pathways are clear and surfaces look neat',
+        ],
+        forYou:
+            'An organized space clears your mind and makes it easy to find everything you need.',
+        forFamily:
+            'Keeps shared spaces calm and welcoming for everyone to enjoy.',
+        forHome:
+            'Prevents clutter buildup and makes the whole house feel open and calm.',
+        takeaway:
+            'Spatial Organization: Having a home for everything saves time and eliminates stress.',
+      );
+    }
+
+    // 11. General Clean / Wipe / Dust
+    if (_containsAny(combined, [
+      'clean',
+      'wipe',
+      'dust',
+      'wash',
+      'polish',
+      'sanitize',
+      'sponge',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Put on your cleaning detective hat! Hunt down dust and leave every surface gleaming.',
+        steps: [
+          'Gather your cloth or duster and any safe spray recommended by a parent',
+          'Wipe surfaces from top to bottom so dust falls downwards',
+          'Check corners, edges, and handles to ensure nothing was missed',
+        ],
+        forYou:
+            'Working in a clean, fresh space gives you energy and peace of mind.',
+        forFamily:
+            'Keeping surfaces clean and fresh helps protect the whole family’s health.',
+        forHome:
+            'Routine cleaning keeps furniture and surfaces looking like new for years to come.',
+        takeaway:
+            'Diligence & Care: Paying attention to small details makes a big difference in our environment.',
+      );
+    }
+
+    // 12. Universal default
     return ChoreGuide(
       motivation:
           'Every great hero takes pride in their space. Knock this mission out and claim your stars!',
