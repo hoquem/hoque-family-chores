@@ -186,4 +186,45 @@ void main() {
         tester.widget<Text>(find.text('SUPERPOWER TAKEAWAY'));
     expect(superpowerLabel.style?.color, equals(kLightTokens.ink));
   });
+
+  testWidgets('ChoreGuideCard does not overflow on 320pt narrow screen with Add house note button',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    const guide = ChoreGuide(
+      motivation: 'Get it done!',
+      steps: ['Step 1: Clean', 'Step 2: Dry'],
+      forYou: 'Gain focus.',
+      forFamily: 'Helps everyone.',
+      forHome: 'Clean space.',
+      takeaway: 'Discipline.',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: appLightTheme,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ChoreGuideCard(
+                guide: guide,
+                onEditParentTip: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Add house note (supplies, bin location, rules)'), findsOneWidget);
+    expect(tester.takeException(), isNull,
+        reason: 'Add house note button must wrap neatly without overflowing off screen edge');
+  });
 }

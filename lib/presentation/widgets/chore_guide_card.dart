@@ -159,8 +159,9 @@ class ChoreGuideCard extends StatelessWidget {
                 onTap: onEditParentTip,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
+                  width: double.infinity,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: t.marigold.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
@@ -169,19 +170,23 @@ class ChoreGuideCard extends StatelessWidget {
                     ),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.add_home_outlined,
-                          size: 18, color: t.marigoldDeep),
+                          size: 20, color: t.marigoldDeep),
                       const SizedBox(width: 8),
-                      Text(
-                        'Add house note (supplies, bin location, rules)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: t.marigoldDeep,
+                      Expanded(
+                        child: Text(
+                          'Add house note (supplies, bin location, rules)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: t.marigoldDeep,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right,
+                          size: 18, color: t.marigoldDeep),
                     ],
                   ),
                 ),
