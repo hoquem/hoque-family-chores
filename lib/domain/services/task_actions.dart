@@ -28,6 +28,9 @@ enum TaskAction {
 
   /// Send someone else's finished chore back for another go.
   sendBack,
+
+  /// Reset or duplicate a completed chore so it can be done again today.
+  resetForToday,
 }
 
 /// The actions [viewerId] may take on [task], in the order they should appear.
@@ -108,6 +111,7 @@ List<TaskAction> taskActionsFor({
       return isAdult ? const [TaskAction.approve] : const [];
 
     case TaskStatus.completed:
-      return const [];
+      // Parents can reset / do again a completed chore for today.
+      return isAdult ? const [TaskAction.resetForToday] : const [];
   }
 }

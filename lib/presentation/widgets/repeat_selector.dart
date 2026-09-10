@@ -28,9 +28,12 @@ class RepeatSelector extends StatelessWidget {
     // Match the field style of the date-picker row on this screen.
     return InputDecorator(
       isEmpty: false,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Repeat',
-        border: OutlineInputBorder(),
+        helperText: value != RepeatPreset.never
+            ? 'Repeats automatically and reappears when due'
+            : null,
+        border: const OutlineInputBorder(),
       ),
       child: DropdownButton<RepeatPreset>(
         value: value,

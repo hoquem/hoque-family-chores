@@ -53,8 +53,11 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
   final endOfToday = _dayOf(now).add(const Duration(days: 1));
   final today = _dayOf(now);
 
-  final mine = tasks.where(
-      (t) => t.assignedToId == userId && t.dueDate.isBefore(endOfToday));
+  final mine = tasks.where((t) =>
+      !t.isDeleted &&
+      !t.isArchived &&
+      t.assignedToId == userId &&
+      t.dueDate.isBefore(endOfToday));
 
   // Unclaimed work anyone could take. Drawn from every task rather than
   // `mine`, since an available task has no assignee and so never reaches the
@@ -62,6 +65,8 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
   // "Today's Missions" would be a small lie.
   final claimable = tasks
       .where((t) =>
+          !t.isDeleted &&
+          !t.isArchived &&
           t.status == TaskStatus.available &&
           t.assignedToId == null &&
           t.dueDate.isBefore(endOfToday))
@@ -101,10 +106,12 @@ TodayMissions todayMissions(List<Task> tasks, UserId userId, DateTime now) {
 /// Keyed off approval, not submission: a task counts the day a parent
 /// approved it (``approvedAt``), so a streak means "earned stars", matching
 /// the balance and the weekly leaderboard. Submitted-but-pending and rejected
-/// work do not count.
+/// work do not count. Soft-archived tasks are preserved here so streaks are
+/// never truncated by retention passes.
 int streakDays(List<Task> tasks, UserId userId, DateTime now) {
   final completionDays = tasks
       .where((t) =>
+          !t.isDeleted &&
           t.assignedToId == userId &&
           t.status == TaskStatus.completed &&
           t.approvedAt != null)
@@ -147,6 +154,7 @@ List<MemberStars> weeklyStars(
   final ranking = members.map((member) {
     final stars = tasks
         .where((t) =>
+            !t.isDeleted &&
             t.assignedToId == member.id &&
             t.status == TaskStatus.completed &&
             t.approvedAt != null &&

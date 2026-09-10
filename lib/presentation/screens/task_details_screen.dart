@@ -379,6 +379,63 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
     }
   }
 
+  Future<void> _handleResetForToday(User currentUser) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(taskListNotifierProvider(task.familyId).notifier)
+          .resetTaskForToday(task, currentUser.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chore reset for today! "${task.title}" is ready.'),
+            backgroundColor: context.tokens.sproutDeep,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error resetting task for today: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not reset chore: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleUncompleteTask() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(taskListNotifierProvider(task.familyId).notifier)
+          .uncompleteTask(task.id.value);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chore reopened')),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      _logger.e('Error reopening task: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not reopen chore: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
   /// Photo-proof tasks are STARTED here (before-photo), not completed. Mirrors
   /// the task-list tile: no photo, no start. On success we return to the list,
   /// where the task now shows in-progress and can be marked done.
@@ -593,6 +650,10 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 if (value == 'edit') _handleEditTask();
                 if (value == 'delete') _handleDeleteTask();
                 if (value == 'clearPhotos') _handleClearPhotos();
+                if (value == 'resetForToday' && currentUser != null) {
+                  _handleResetForToday(currentUser);
+                }
+                if (value == 'uncomplete') _handleUncompleteTask();
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -605,6 +666,28 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                     ],
                   ),
                 ),
+                if (task.status == TaskStatus.completed) ...[
+                  const PopupMenuItem(
+                    value: 'resetForToday',
+                    child: Row(
+                      children: [
+                        Icon(Icons.replay),
+                        SizedBox(width: 12),
+                        Text('Reset for today'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'uncomplete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.undo),
+                        SizedBox(width: 12),
+                        Text('Mark as not done (Reopen)'),
+                      ],
+                    ),
+                  ),
+                ],
                 if (task.beforePhotoUrl != null || task.photoUrl != null)
                   const PopupMenuItem(
                     value: 'clearPhotos',
@@ -1230,6 +1313,15 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                 style: TextStyle(color: context.tokens.brick)),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: context.tokens.brick),
+            ),
+          ),
+        TaskAction.resetForToday => FilledButton.icon(
+            onPressed: () => _handleResetForToday(currentUser),
+            icon: const Icon(Icons.replay),
+            label: const Text('Reset for today / Do again'),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.tokens.starGold,
+              foregroundColor: context.tokens.ink,
             ),
           ),
       };

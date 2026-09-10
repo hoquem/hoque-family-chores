@@ -48,8 +48,11 @@ abstract class TaskRepository {
     required bool requiresPhotoProof,
   });
 
-  /// Delete a task
+  /// Delete a task (soft-delete)
   Future<void> deleteTask(FamilyId familyId, TaskId taskId);
+
+  /// Restore a soft-deleted task
+  Future<void> restoreTask(FamilyId familyId, TaskId taskId);
 
   /// Update or augment the chore guide for a specific task.
   Future<void> updateTaskGuide(

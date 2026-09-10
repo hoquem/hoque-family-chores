@@ -46,13 +46,14 @@ class TaskListNotifier extends _$TaskListNotifier {
       final getTasksUseCase = ref.watch(getTasksUseCaseProvider);
       final result = await getTasksUseCase.call(familyId: familyId);
       
-      return result.fold(
+      final tasks = result.fold(
         (failure) => throw Exception(failure.message),
         (tasks) {
           _logger.d('TaskListNotifier: Loaded ${tasks.length} tasks');
           return tasks;
         },
       );
+      return tasks;
     } catch (e) {
       _logger.e('TaskListNotifier: Error loading tasks', error: e);
       throw Exception('Failed to load tasks: $e');
@@ -100,6 +101,14 @@ class TaskListNotifier extends _$TaskListNotifier {
   Future<void> deleteTask(String taskId) async {
     _logger.d('TaskListNotifier: Deleting task $taskId');
 
+    // Optimistically remove from state so Dismissible doesn't rebuild
+    // before the async deletion completes.
+    final previousState = state;
+    if (state is AsyncData<List<Task>>) {
+      final current = (state as AsyncData<List<Task>>).value;
+      state = AsyncData(current.where((t) => t.id.value != taskId).toList());
+    }
+
     try {
       final deleteTaskUseCase = ref.read(deleteTaskUseCaseProvider);
       final result = await deleteTaskUseCase.call(
@@ -108,15 +117,82 @@ class TaskListNotifier extends _$TaskListNotifier {
       );
 
       result.fold(
-        (failure) => throw Exception(failure.message),
+        (failure) {
+          state = previousState;
+          throw Exception(failure.message);
+        },
         (_) {
           _logger.d('TaskListNotifier: Task deleted successfully');
           ref.invalidateSelf();
         },
       );
     } catch (e) {
+      state = previousState;
       _logger.e('TaskListNotifier: Error deleting task', error: e);
       throw Exception('Failed to delete task: $e');
+    }
+  }
+
+  /// Restores a soft-deleted task.
+  Future<void> restoreTask(String taskId) async {
+    _logger.d('TaskListNotifier: Restoring task $taskId');
+
+    try {
+      final restoreTaskUseCase = ref.read(restoreTaskUseCaseProvider);
+      final result = await restoreTaskUseCase.call(
+        taskId: TaskId(taskId),
+        familyId: familyId,
+      );
+
+      result.fold(
+        (failure) => throw Exception(failure.message),
+        (_) {
+          _logger.d('TaskListNotifier: Task restored successfully');
+          ref.invalidateSelf();
+        },
+      );
+    } catch (e) {
+      _logger.e('TaskListNotifier: Error restoring task', error: e);
+      throw Exception('Failed to restore task: $e');
+    }
+  }
+
+  /// Resets a completed chore by creating a fresh occurrence for today.
+  Future<Task> resetTaskForToday(Task task, UserId creatorId) async {
+    _logger.d('TaskListNotifier: Resetting task ${task.id} for today');
+    try {
+      final createTaskUseCase = ref.read(createTaskUseCaseProvider);
+      final result = await createTaskUseCase.call(
+        title: task.title,
+        description: task.description,
+        difficulty: task.difficulty,
+        dueDate: DateTime.now(),
+        points: task.points.value,
+        tags: task.tags,
+        familyId: task.familyId,
+        createdById: creatorId,
+        assignedToId: task.assignedToId,
+        requiresPhotoProof: task.requiresPhotoProof,
+      );
+
+      final createdTask = result.fold(
+        (failure) => throw Exception(failure.message),
+        (created) {
+          _logger.d('TaskListNotifier: Task reset for today successfully: ${created.id}');
+          ref.read(analyticsProvider).log(
+                AnalyticsEventName.taskCreated,
+                userId: creatorId.value,
+                familyId: task.familyId.value,
+                params: {'points': task.points.value, 'resetForToday': true},
+              );
+          ref.invalidateSelf();
+          return created;
+        },
+      );
+      return createdTask;
+    } catch (e) {
+      _logger.e('TaskListNotifier: Error resetting task for today', error: e);
+      throw Exception('Failed to reset chore for today: $e');
     }
   }
 

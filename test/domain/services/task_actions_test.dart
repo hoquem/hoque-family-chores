@@ -181,10 +181,18 @@ void main() {
   });
 
   group('an approved chore', () {
-    test('is finished — nobody has anything left to do', () {
+    test('is finished — children have nothing left to do', () {
       final task = _task(status: TaskStatus.completed, assignedTo: _me);
       expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.child), isEmpty);
       expect(taskActionsFor(task: task, viewerId: _sibling, viewerRole: UserRole.child), isEmpty);
+    });
+
+    test('offers a parent or guardian the option to reset for today', () {
+      final task = _task(status: TaskStatus.completed, assignedTo: _me);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.parent),
+          [TaskAction.resetForToday]);
+      expect(taskActionsFor(task: task, viewerId: _me, viewerRole: UserRole.guardian),
+          [TaskAction.resetForToday]);
     });
   });
 

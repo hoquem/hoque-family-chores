@@ -218,6 +218,12 @@ DeleteTaskUseCase deleteTaskUseCase(Ref ref) {
 }
 
 @riverpod
+RestoreTaskUseCase restoreTaskUseCase(Ref ref) {
+  final taskRepository = ref.watch(taskRepositoryProvider);
+  return RestoreTaskUseCase(taskRepository);
+}
+
+@riverpod
 ClearTaskPhotosUseCase clearTaskPhotosUseCase(Ref ref) {
   final taskRepository = ref.watch(taskRepositoryProvider);
   return ClearTaskPhotosUseCase(taskRepository);

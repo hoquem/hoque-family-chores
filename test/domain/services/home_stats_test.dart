@@ -21,6 +21,8 @@ Task _task({
   DateTime? completedAt,
   DateTime? approvedAt,
   int points = 10,
+  bool isDeleted = false,
+  bool isArchived = false,
 }) {
   return Task(
     id: TaskId(id),
@@ -35,6 +37,8 @@ Task _task({
     approvedAt: approvedAt,
     points: Points(points),
     tags: const [],
+    isDeleted: isDeleted,
+    isArchived: isArchived,
     familyId: FamilyId('family_1'),
   );
 }
@@ -78,6 +82,19 @@ void main() {
       expect(missions.toDo.map((t) => t.id.value), ['today', 'overdue']);
       expect(missions.waiting, isEmpty);
       expect(missions.done, isEmpty);
+    });
+
+    test('excludes soft-deleted and archived tasks', () {
+      final missions = todayMissions(
+        [
+          _task(id: 'active', assignedTo: _me, due: _now),
+          _task(id: 'deleted', assignedTo: _me, due: _now, isDeleted: true),
+          _task(id: 'archived', assignedTo: _me, due: _now, isArchived: true),
+        ],
+        _me,
+        _now,
+      );
+      expect(missions.toDo.map((t) => t.id.value), ['active']);
     });
 
     test('splits by status: to-do, waiting for approval, done today', () {
@@ -230,6 +247,17 @@ void main() {
             by: _sibling),
       ];
       expect(streakDays(tasks, _me, _now), 1);
+    });
+
+    test('soft-deleted tasks are excluded from streak, but archived tasks are preserved', () {
+      final tasks = [
+        completed('d0', _now).copyWith(isArchived: true),
+        completed('d1', _now.subtract(const Duration(days: 1))).copyWith(isArchived: true),
+        completed('d2', _now.subtract(const Duration(days: 2))).copyWith(isDeleted: true),
+      ];
+      // d0 and d1 count because archived tasks are preserved for streaks.
+      // d2 is soft-deleted, so streak is 2 days.
+      expect(streakDays(tasks, _me, _now), 2);
     });
   });
 

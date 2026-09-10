@@ -165,17 +165,39 @@ class MockTaskRepository implements TaskRepository {
     try {
       await Future.delayed(const Duration(milliseconds: 100)); // Simulate network delay
       
-      final initialLength = _tasks.length;
-      _tasks.removeWhere((task) => task.id == taskId);
-      
-      if (_tasks.length == initialLength) {
+      final index = _tasks.indexWhere((task) => task.id == taskId);
+      if (index != -1) {
+        _tasks[index] = _tasks[index].copyWith(
+          isDeleted: true,
+          deletedAt: DateTime.now(),
+        );
+        _taskStreamController.add(List.from(_tasks));
+      } else {
         throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
       }
-      
-      _taskStreamController.add(List.from(_tasks));
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to delete task: $e', code: 'TASK_DELETE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> restoreTask(FamilyId familyId, TaskId taskId) async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 50));
+      final index = _tasks.indexWhere((task) => task.id == taskId);
+      if (index != -1) {
+        _tasks[index] = _tasks[index].copyWith(
+          isDeleted: false,
+          deletedAt: null,
+        );
+        _taskStreamController.add(List.from(_tasks));
+      } else {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to restore task: $e', code: 'TASK_RESTORE_ERROR');
     }
   }
 

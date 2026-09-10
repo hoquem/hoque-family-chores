@@ -24,6 +24,7 @@ class TaskListTile extends ConsumerStatefulWidget {
   final User user;
   final ValueChanged<bool?> onToggleStatus;
   final VoidCallback? onReturnToAvailable;
+  final VoidCallback? onResetForToday;
   final bool isUpdating;
 
   const TaskListTile({
@@ -32,6 +33,7 @@ class TaskListTile extends ConsumerStatefulWidget {
     required this.user,
     required this.onToggleStatus,
     this.onReturnToAvailable,
+    this.onResetForToday,
     this.isUpdating = false,
   });
 
@@ -537,6 +539,17 @@ class _TaskListTileState extends ConsumerState<TaskListTile> {
           style: OutlinedButton.styleFrom(
             foregroundColor: t.brick,
             side: BorderSide(color: t.brick),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          ),
+        );
+      case TaskAction.resetForToday:
+        return ElevatedButton.icon(
+          onPressed: widget.onResetForToday,
+          icon: const Icon(Icons.replay, size: 16),
+          label: const Text('Do again today'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: t.starGold,
+            foregroundColor: t.ink,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           ),
         );

@@ -58,6 +58,14 @@ class Task extends Equatable {
   final String? rejectionReason;
   final ChoreGuide? guide;
 
+  /// Soft-delete flag: true when a parent removed the task.
+  final bool isDeleted;
+  final DateTime? deletedAt;
+
+  /// Soft-archive flag: true when auto-maintenance or a parent archived an old completed task.
+  final bool isArchived;
+  final DateTime? archivedAt;
+
   /// Optimistic-concurrency counter. Bumped only when a task's editable detail
   /// fields are edited, so a concurrent edit can be detected and refused.
   /// Legacy tasks with no stored version read as 0.
@@ -92,6 +100,10 @@ class Task extends Equatable {
     this.rejectedAt,
     this.rejectionReason,
     this.guide,
+    this.isDeleted = false,
+    this.deletedAt,
+    this.isArchived = false,
+    this.archivedAt,
     this.version = 0,
   });
 
@@ -125,6 +137,10 @@ class Task extends Equatable {
     DateTime? rejectedAt,
     String? rejectionReason,
     ChoreGuide? guide,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    bool? isArchived,
+    DateTime? archivedAt,
     int? version,
   }) {
     return Task(
@@ -156,6 +172,10 @@ class Task extends Equatable {
       rejectedAt: rejectedAt ?? this.rejectedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       guide: guide ?? this.guide,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      isArchived: isArchived ?? this.isArchived,
+      archivedAt: archivedAt ?? this.archivedAt,
       version: version ?? this.version,
     );
   }
@@ -244,6 +264,10 @@ class Task extends Equatable {
         rejectedAt,
         rejectionReason,
         guide,
+        isDeleted,
+        deletedAt,
+        isArchived,
+        archivedAt,
         version,
       ];
 }

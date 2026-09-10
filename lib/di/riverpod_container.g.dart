@@ -577,6 +577,26 @@ final deleteTaskUseCaseProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DeleteTaskUseCaseRef = AutoDisposeProviderRef<DeleteTaskUseCase>;
+String _$restoreTaskUseCaseHash() =>
+    r'a7b3c2d1e0f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8';
+
+/// See also [restoreTaskUseCase].
+@ProviderFor(restoreTaskUseCase)
+final restoreTaskUseCaseProvider =
+    AutoDisposeProvider<RestoreTaskUseCase>.internal(
+      restoreTaskUseCase,
+      name: r'restoreTaskUseCaseProvider',
+      debugGetCreateSourceHash:
+          const bool.fromEnvironment('dart.vm.product')
+              ? null
+              : _$restoreTaskUseCaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef RestoreTaskUseCaseRef = AutoDisposeProviderRef<RestoreTaskUseCase>;
 String _$clearTaskPhotosUseCaseHash() =>
     r'1ba9e53f2d39644f0b0cb1dc330499c54c6aaa71';
 

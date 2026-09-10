@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
@@ -44,6 +45,7 @@ Future<void> _pumpMainScreenSignedIn(
   WidgetTester tester, {
   MockTaskRepository? taskRepository,
   Widget home = const MainScreen(),
+  UserRole role = UserRole.parent,
 }) async {
   final users = MockUserRepository();
   final container = ProviderContainer(
@@ -69,8 +71,8 @@ Future<void> _pumpMainScreenSignedIn(
   await tester.runAsync(() async {
     await container.read(authNotifierProvider.notifier).signInWithGoogle();
     final profile = await users.getUserProfile(UserId(_uid));
-    await users
-        .updateUserProfile(profile!.copyWith(familyId: FamilyId('family_1')));
+    await users.updateUserProfile(
+        profile!.copyWith(familyId: FamilyId('family_1'), role: role));
   });
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
@@ -85,9 +87,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    // Managing: the filter menu for all task views must be available.
-    expect(find.byType(PopupMenuButton<TaskFilterType>), findsOneWidget,
-        reason: 'the Chores tab must expose the chore filters');
+    // Managing: filter chips must be available, redundant popup menu removed.
+    expect(find.byKey(const ValueKey('filter_chip_all')), findsOneWidget,
+        reason: 'the Chores tab must expose the chore filter chips');
+    expect(find.byType(PopupMenuButton<TaskFilterType>), findsNothing,
+        reason: 'redundant filter popup menu has been removed');
 
     // Adding: the add-task button must always be reachable.
     expect(find.byType(FloatingActionButton), findsOneWidget,
@@ -154,5 +158,80 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('filter_chip_available')));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
+  });
+
+  testWidgets('parent can swipe to delete a chore and undo via snackbar',
+      (tester) async {
+    final taskRepo = MockTaskRepository();
+    taskRepo.addTaskSync(_availableTask(id: 'swipe_chore', title: 'Sweep floor'));
+    await _pumpMainScreenSignedIn(tester,
+        taskRepository: taskRepo, home: const TaskListScreen());
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    final sweepFinder = find.text('Sweep floor');
+    expect(sweepFinder, findsOneWidget);
+
+    final dismissibleFinder = find.byKey(const Key('dismiss_swipe_chore'));
+    expect(dismissibleFinder, findsOneWidget);
+
+    // Swipe left (endToStart) to dismiss
+    await tester.drag(dismissibleFinder, const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // The tile should be removed and SnackBar shown
+    expect(find.text('Sweep floor'), findsNothing);
+    expect(find.text('Chore "Sweep floor" deleted'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    // Tap Undo
+    await tester.tap(find.text('Undo'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    // The chore should be restored
+    expect(find.text('Sweep floor'), findsOneWidget);
+  });
+
+  testWidgets('child cannot swipe to delete a chore (no dismissible)',
+      (tester) async {
+    final taskRepo = MockTaskRepository();
+    taskRepo.addTaskSync(_availableTask(id: 'child_chore', title: 'Feed pet'));
+    await _pumpMainScreenSignedIn(tester,
+        taskRepository: taskRepo,
+        home: const TaskListScreen(),
+        role: UserRole.child);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    final feedFinder = find.text('Feed pet');
+    expect(feedFinder, findsOneWidget);
+
+    // Dismissible is not present for child
+    expect(find.byKey(const Key('dismiss_child_chore')), findsNothing);
+    expect(find.byType(Dismissible), findsNothing);
+  });
+
+  testWidgets('parent can reset completed chore with Do again today',
+      (tester) async {
+    await _pumpMainScreenSignedIn(tester, home: const TaskListScreen());
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    // Filter to completed chores
+    await tester.tap(find.byKey(const ValueKey('filter_chip_completed')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(find.text('Take out trash'), findsOneWidget);
+    expect(find.text('Do again today'), findsOneWidget);
+
+    await tester.tap(find.text('Do again today'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Reset for today! "Take out trash" is ready.'),
+        findsOneWidget);
   });
 }

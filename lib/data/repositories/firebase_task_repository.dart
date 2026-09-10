@@ -226,10 +226,36 @@ class FirebaseTaskRepository implements TaskRepository {
           .doc(familyId.value)
           .collection('tasks')
           .doc(taskId.value)
-          .delete();
+          .update({
+            'isDeleted': true,
+            'deletedAt': FieldValue.serverTimestamp(),
+          });
     } catch (e) {
       if (e is DataException) rethrow;
       throw ServerException('Failed to delete task: $e', code: 'TASK_DELETE_ERROR');
+    }
+  }
+
+  @override
+  Future<void> restoreTask(FamilyId familyId, TaskId taskId) async {
+    try {
+      final task = await getTask(familyId, taskId);
+      if (task == null) {
+        throw NotFoundException('Task not found', code: 'TASK_NOT_FOUND');
+      }
+
+      await _firestore
+          .collection('families')
+          .doc(familyId.value)
+          .collection('tasks')
+          .doc(taskId.value)
+          .update({
+            'isDeleted': false,
+            'deletedAt': null,
+          });
+    } catch (e) {
+      if (e is DataException) rethrow;
+      throw ServerException('Failed to restore task: $e', code: 'TASK_RESTORE_ERROR');
     }
   }
 
@@ -713,6 +739,18 @@ class FirebaseTaskRepository implements TaskRepository {
           : data['tips'] != null && data['tips'] is Map
               ? ChoreGuide.fromMap(Map<String, dynamic>.from(data['tips'] as Map))
               : null,
+      isDeleted: data['isDeleted'] as bool? ?? false,
+      deletedAt: data['deletedAt'] is Timestamp
+          ? (data['deletedAt'] as Timestamp).toDate()
+          : data['deletedAt'] != null
+              ? DateTime.tryParse(data['deletedAt'].toString())
+              : null,
+      isArchived: data['isArchived'] as bool? ?? false,
+      archivedAt: data['archivedAt'] is Timestamp
+          ? (data['archivedAt'] as Timestamp).toDate()
+          : data['archivedAt'] != null
+              ? DateTime.tryParse(data['archivedAt'].toString())
+              : null,
       version: (data['version'] as num?)?.toInt() ?? 0,
     );
   }
@@ -753,6 +791,10 @@ class FirebaseTaskRepository implements TaskRepository {
       'rejectedAt': task.rejectedAt,
       'rejectionReason': task.rejectionReason,
       'guide': task.guide?.toMap(),
+      'isDeleted': task.isDeleted,
+      'deletedAt': task.deletedAt,
+      'isArchived': task.isArchived,
+      'archivedAt': task.archivedAt,
       'version': task.version,
     };
   }

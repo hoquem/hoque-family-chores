@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/task_ordering.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
@@ -52,6 +53,7 @@ class TaskListScreen extends ConsumerWidget {
           await notifier.unassignTask(taskId);
           break;
         case TaskStatus.assigned:
+          await notifier.uncompleteTask(taskId);
           break;
         default:
           logger.w('TaskListScreen: Unhandled status update: $newStatus');
@@ -75,6 +77,76 @@ class TaskListScreen extends ConsumerWidget {
     }
   }
 
+  void _handleSwipeDelete(
+    BuildContext context,
+    WidgetRef ref,
+    FamilyId familyId,
+    Task task,
+  ) {
+    ref
+        .read(taskListNotifierProvider(familyId).notifier)
+        .deleteTask(task.id.value)
+        .catchError((e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not delete chore: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Chore "${task.title}" deleted'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: context.tokens.starGold,
+          onPressed: () {
+            ref
+                .read(taskListNotifierProvider(familyId).notifier)
+                .restoreTask(task.id.value);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleResetForToday(
+    BuildContext context,
+    WidgetRef ref,
+    FamilyId familyId,
+    Task task,
+    UserId creatorId,
+  ) async {
+    try {
+      await ref
+          .read(taskListNotifierProvider(familyId).notifier)
+          .resetTaskForToday(task, creatorId);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reset for today! "${task.title}" is ready.'),
+            backgroundColor: context.tokens.sproutDeep,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not reset chore: $e'),
+            backgroundColor: context.tokens.brickDeep,
+          ),
+        );
+      }
+    }
+  }
+
   void _navigateToAddTask(BuildContext context) {
     Navigator.push(
       context,
@@ -85,19 +157,21 @@ class TaskListScreen extends ConsumerWidget {
   /// Applies the selected filter; needs the current user for "My Tasks".
   List<Task> _applyFilter(
       List<Task> tasks, TaskFilterType filter, UserId userId) {
+    // Exclude soft-deleted and archived tasks from active list
+    final active = tasks.where((t) => !t.isDeleted && !t.isArchived).toList();
     switch (filter) {
       case TaskFilterType.all:
-        return tasks;
+        return active;
       case TaskFilterType.myTasks:
-        return tasks.where((t) => t.assignedToId == userId).toList();
+        return active.where((t) => t.assignedToId == userId).toList();
       case TaskFilterType.available:
-        return tasks.where((t) => t.status == TaskStatus.available).toList();
+        return active.where((t) => t.status == TaskStatus.available).toList();
       case TaskFilterType.pendingApproval:
-        return tasks
+        return active
             .where((t) => t.status == TaskStatus.pendingApproval)
             .toList();
       case TaskFilterType.completed:
-        return tasks.where((t) => t.status == TaskStatus.completed).toList();
+        return active.where((t) => t.status == TaskStatus.completed).toList();
     }
   }
 
@@ -141,10 +215,12 @@ class TaskListScreen extends ConsumerWidget {
             // Bottom room so the add-task FAB never sits over the last tile.
             padding: const EdgeInsets.only(bottom: 88),
             itemCount: tasks.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (itemContext, index) {
               final task = tasks[index];
+              final isAdult = currentUser.role == UserRole.parent ||
+                  currentUser.role == UserRole.guardian;
 
-              return EntranceStagger(
+              final tile = EntranceStagger(
                 index: index,
                 child: TaskListTile(
                   key: ValueKey(task.id.value),
@@ -161,7 +237,45 @@ class TaskListScreen extends ConsumerWidget {
                   onReturnToAvailable: () {
                     _handleTaskStatusUpdate(context, ref, familyId, task.id.value, TaskStatus.available, currentUser.id);
                   },
+                  onResetForToday: isAdult
+                      ? () => _handleResetForToday(context, ref, familyId, task, currentUser.id)
+                      : null,
                 ),
+              );
+
+              if (!isAdult) {
+                return tile;
+              }
+
+              return Dismissible(
+                key: Key('dismiss_${task.id.value}'),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  decoration: BoxDecoration(
+                    color: context.tokens.brick,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Delete',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.delete_outline, color: Colors.white, size: 24),
+                    ],
+                  ),
+                ),
+                onDismissed: (_) => _handleSwipeDelete(context, ref, familyId, task),
+                child: tile,
               );
             },
           ),
@@ -286,38 +400,8 @@ class TaskListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chores'),
-        actions: [
-          const HelpButton(content: kTasksHelp),
-          PopupMenuButton<TaskFilterType>(
-            onSelected: (TaskFilterType filter) {
-              ref.read(taskFilterNotifierProvider.notifier).setFilter(filter);
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(
-                value: TaskFilterType.all,
-                child: Text('All Chores'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.available,
-                child: Text('Up for grabs'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.myTasks,
-                child: Text('My Chores'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.pendingApproval,
-                child: Text('To approve'),
-              ),
-              const PopupMenuItem(
-                value: TaskFilterType.completed,
-                child: Text('Done'),
-              ),
-            ],
-            // icon: renders a default 48x48 IconButton (was a ~32px padded
-            // Icon via child: — below the touch-target floor).
-            icon: const Icon(Icons.filter_list),
-          ),
+        actions: const [
+          HelpButton(content: kTasksHelp),
         ],
       ),
       body: Column(
