@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -374,6 +375,9 @@ class FirebasePushNotificationRepository implements PushNotificationRepository {
   /// updating the badge without a visible notification requires a platform
   /// channel or a dedicated badge plugin. TODO: add Android support.
   Future<void> updateBadgeCount(int count) async {
+    // The badge notification has no Android details, and the Android plugin
+    // throws a NullPointerException building a channel without them.
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
     try {
       // iOS only for now — DarwinNotificationDetails supports badgeNumber.
       const id = 0xBAD6E;
