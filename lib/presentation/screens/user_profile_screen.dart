@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
 import 'package:hoque_family_chores/presentation/screens/about_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/edit_profile_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/notifications_screen.dart';
@@ -114,6 +115,12 @@ class UserProfileScreen extends ConsumerWidget {
     final displayName = currentUser.name;
     // Children join anonymously and have no email to show.
     final email = currentUser.email?.value ?? '';
+    // Same count as the Profile tab badge, so the row explains that number.
+    final unreadNotifications =
+        ref.watch(notificationsProvider(currentUser.id)).maybeWhen(
+              data: (list) => list.where((n) => !n.isRead).length,
+              orElse: () => 0,
+            );
 
     return Scaffold(
       appBar: AppBar(
@@ -164,7 +171,18 @@ class UserProfileScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.notifications),
             title: const Text('Notifications'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (unreadNotifications > 0)
+                  Badge(
+                    label: Text(unreadNotifications > 99
+                        ? '99+'
+                        : unreadNotifications.toString()),
+                  ),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
