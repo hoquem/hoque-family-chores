@@ -21,6 +21,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:hoque_family_chores/core/fresh_install_guard.dart';
+import 'package:hoque_family_chores/data/services/review_prompt_state_service.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/utils/navigator_key.dart';
 import 'package:hoque_family_chores/utils/home_widget_bridge.dart';
@@ -98,6 +99,18 @@ void main() async {
       logger.e("[Startup] Firebase initialization failed.", error: e, stackTrace: s);
       runApp(ErrorApp(error: e));
       return;
+    }
+
+    try {
+      // The 3-day "how old is this install" gate on the review prompt needs
+      // a first-seen date; seed it once here so it starts from first launch,
+      // not from whenever the first celebration happens to play. A setup
+      // failure is a missed review ask, not a reason to block startup.
+      logger.i("[Startup] Seeding review-prompt first-seen date...");
+      await ReviewPromptStateService().ensureFirstSeenSeeded();
+      logger.i("[Startup] Review-prompt first-seen date seeded.");
+    } catch (e, s) {
+      logger.e("[Startup] Review-prompt seeding failed.", error: e, stackTrace: s);
     }
 
     try {

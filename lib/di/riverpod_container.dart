@@ -18,6 +18,9 @@ import '../domain/usecases/reward/settle_redemption_usecase.dart';
 import '../data/repositories/repository_factory.dart';
 import '../data/services/photo_storage_service.dart';
 import '../data/services/chore_tips_service.dart';
+import '../data/services/review_prompt_service.dart';
+import '../data/services/review_prompt_state_service.dart';
+import '../data/services/review_requester.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
@@ -88,16 +91,12 @@ RewardRepository rewardRepository(Ref ref) {
 
 @riverpod
 ClaimRewardUseCase claimRewardUseCase(Ref ref) {
-  return ClaimRewardUseCase(
-    ref.watch(rewardRepositoryProvider),
-  );
+  return ClaimRewardUseCase(ref.watch(rewardRepositoryProvider));
 }
 
 @riverpod
 SettleRedemptionUseCase settleRedemptionUseCase(Ref ref) {
-  return SettleRedemptionUseCase(
-    ref.watch(rewardRepositoryProvider),
-  );
+  return SettleRedemptionUseCase(ref.watch(rewardRepositoryProvider));
 }
 
 @riverpod
@@ -403,4 +402,27 @@ PhotoStorageService photoStorageService(Ref ref) {
 /// Provider for generating chore tips, motivation, and learning takeaways.
 final choreTipsServiceProvider = Provider<ChoreTipsService>((ref) {
   return ChoreTipsService();
+});
+
+/// Persists the in-app-review ask history in `SharedPreferences`. See
+/// ``lib/data/services/review_prompt_state_service.dart``.
+final reviewPromptStateServiceProvider = Provider<ReviewPromptStateService>((
+  ref,
+) {
+  return ReviewPromptStateService();
+});
+
+/// Wraps `InAppReview.instance` behind a mockable seam. See
+/// ``lib/data/services/review_requester.dart``.
+final reviewRequesterProvider = Provider<ReviewRequester>((ref) {
+  return const InAppReviewRequester();
+});
+
+/// Turns a payoff moment into, at most, one store-review ask. Called from
+/// `CelebrationListener`. See ``lib/data/services/review_prompt_service.dart``.
+final reviewPromptServiceProvider = Provider<ReviewPromptService>((ref) {
+  return ReviewPromptService(
+    stateService: ref.watch(reviewPromptStateServiceProvider),
+    reviewRequester: ref.watch(reviewRequesterProvider),
+  );
 });
