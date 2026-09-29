@@ -26,23 +26,39 @@ class ReviewPromptService {
   final DateTime Function() _clock;
   final _logger = AppLogger();
 
-  /// Records a payoff moment for [viewerRole] and, if [shouldPromptForReview]
-  /// agrees and the platform reports [ReviewRequester.isAvailable], requests
-  /// the store's native review dialog.
+  /// Records a payoff moment for [viewerRole] and, if [canShowSheetNow],
+  /// [shouldPromptForReview] agrees and the platform reports
+  /// [ReviewRequester.isAvailable], requests the store's native review
+  /// dialog.
+  ///
+  /// The moment is always recorded regardless of [canShowSheetNow] — a
+  /// celebration that finishes with another one already queued behind it is
+  /// still a real positive moment, it just is not a safe time to interrupt
+  /// with a system dialog. [canShowSheetNow] controls only whether the ask
+  /// is even considered this time; counting it on every call, not only when
+  /// the sheet might show, is what stops back-to-back celebrations from
+  /// silently under-counting the audience that already earns the fewest of
+  /// them.
   ///
   /// A non-admin [viewerRole] (a child, or the unknown-role fallback) is
   /// skipped before anything is read or written — a child's session can
-  /// never spend the family's lifetime ask budget.
+  /// never spend the family's lifetime ask budget, and never pads the count
+  /// either.
   ///
   /// A [ReviewRequester.requestReview] that throws is logged but **not**
   /// recorded as an ask: the budget is for asks that were actually offered
   /// to the platform, not ones that errored before reaching it, so the next
   /// qualifying moment gets to try again rather than waiting out a 90-day
   /// cooldown for nothing.
-  Future<void> onPositiveMoment({required UserRole viewerRole}) async {
+  Future<void> onPositiveMoment({
+    required UserRole viewerRole,
+    bool canShowSheetNow = true,
+  }) async {
     if (!viewerRole.isAdmin) return;
     try {
       final history = await _stateService.recordPositiveMoment();
+      if (!canShowSheetNow) return;
+
       final now = _clock();
       if (!shouldPromptForReview(
         history: history,

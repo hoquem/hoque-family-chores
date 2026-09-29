@@ -83,6 +83,18 @@ Future<void> _pumpCelebration(
   ProviderContainer container,
   CelebrationKind kind,
 ) async {
+  await _pumpCelebrations(tester, container, [kind]);
+}
+
+/// Mounts [CelebrationListener], enqueues every [kinds] entry up front (so
+/// later ones are already queued behind the first when it finishes — the
+/// scenario `queue.isNotEmpty` after `advance()` exists to detect), then
+/// pumps past each celebration's 700ms envelope in turn.
+Future<void> _pumpCelebrations(
+  WidgetTester tester,
+  ProviderContainer container,
+  List<CelebrationKind> kinds,
+) async {
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
@@ -94,11 +106,17 @@ Future<void> _pumpCelebration(
       ),
     ),
   );
-  container.read(celebrationQueueProvider.notifier).celebrate(kind);
+  final notifier = container.read(celebrationQueueProvider.notifier);
+  for (final kind in kinds) {
+    notifier.celebrate(kind);
+  }
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 100));
-  // Past the overlay's 700ms envelope, plus a settle frame for onDone.
-  await tester.pump(const Duration(milliseconds: 800));
+  for (var i = 0; i < kinds.length; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    // Past the overlay's 700ms envelope, so this one's onDone fires and the
+    // next (if any) starts playing.
+    await tester.pump(const Duration(milliseconds: 800));
+  }
   await tester.pump(const Duration(milliseconds: 100));
 }
 
@@ -125,6 +143,15 @@ void main() {
 
       verify(() => requester.isAvailable()).called(1);
       verify(() => requester.requestReview()).called(1);
+
+      // The ask must actually be persisted — otherwise the lifetime cap and
+      // the 90-day cooldown are dead code that never fires in practice.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('review_prompt_times_asked'), 1);
+      expect(
+        prefs.getInt('review_prompt_last_asked_at'),
+        _eligibleNow.millisecondsSinceEpoch,
+      );
     },
   );
 
@@ -194,6 +221,72 @@ void main() {
 
       verify(() => requester.isAvailable()).called(1);
       verifyNever(() => requester.requestReview());
+    },
+  );
+
+  testWidgets(
+    'each reward celebration counts even when another is already queued behind it',
+    (tester) async {
+      final requester = _MockReviewRequester();
+      when(() => requester.isAvailable()).thenAnswer((_) async => true);
+      when(() => requester.requestReview()).thenAnswer((_) async {});
+
+      final container = _containerFor(
+        role: UserRole.parent,
+        reviewRequester: requester,
+        // One moment already banked; two more play back-to-back, queued
+        // together up front so the first is never alone in the queue when
+        // it finishes — the exact case a "only count when the queue just
+        // emptied" bug would silently drop.
+        prefs: {
+          'review_prompt_first_seen_at': _installedAt.millisecondsSinceEpoch,
+          'review_prompt_positive_moment_count': 1,
+        },
+      );
+      addTearDown(container.dispose);
+
+      await _pumpCelebrations(tester, container, const [
+        StarsAwarded(5),
+        StarsAwarded(5),
+      ]);
+
+      // 1 (banked) + 2 (this pair) = 3, clearing the gate — and the sheet
+      // must be offered exactly once, after both have played.
+      verify(() => requester.requestReview()).called(1);
+    },
+  );
+
+  testWidgets(
+    'a plugin failure is logged and swallowed, not recorded as an ask, and the celebration finishes clean',
+    (tester) async {
+      final requester = _MockReviewRequester();
+      when(() => requester.isAvailable()).thenAnswer((_) async => true);
+      when(
+        () => requester.requestReview(),
+      ).thenThrow(Exception('platform channel unavailable'));
+
+      final container = _containerFor(
+        role: UserRole.parent,
+        reviewRequester: requester,
+        prefs: {
+          'review_prompt_first_seen_at': _installedAt.millisecondsSinceEpoch,
+          'review_prompt_positive_moment_count': 2,
+        },
+      );
+      addTearDown(container.dispose);
+
+      await _pumpCelebration(tester, container, const StarsAwarded(10));
+
+      // The celebration itself must not crash — a review-prompt failure is
+      // logged, never surfaced.
+      expect(tester.takeException(), isNull);
+
+      // A request that errored before reaching the platform does not spend
+      // the lifetime ask budget: the next qualifying moment should still be
+      // free to try.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('review_prompt_times_asked'), isNull);
+      expect(prefs.getInt('review_prompt_last_asked_at'), isNull);
     },
   );
 

@@ -91,12 +91,16 @@ RewardRepository rewardRepository(Ref ref) {
 
 @riverpod
 ClaimRewardUseCase claimRewardUseCase(Ref ref) {
-  return ClaimRewardUseCase(ref.watch(rewardRepositoryProvider));
+  return ClaimRewardUseCase(
+    ref.watch(rewardRepositoryProvider),
+  );
 }
 
 @riverpod
 SettleRedemptionUseCase settleRedemptionUseCase(Ref ref) {
-  return SettleRedemptionUseCase(ref.watch(rewardRepositoryProvider));
+  return SettleRedemptionUseCase(
+    ref.watch(rewardRepositoryProvider),
+  );
 }
 
 @riverpod

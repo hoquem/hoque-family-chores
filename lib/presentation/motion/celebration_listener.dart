@@ -37,14 +37,19 @@ class CelebrationListener extends ConsumerWidget {
   }
 
   /// Advances the queue past the celebration that just finished playing, and
-  /// — once nothing else is queued behind it — offers a store-review ask.
+  /// records a review-prompt positive moment for it.
   ///
   /// This runs after the overlay's full envelope (star-burst, headline,
-  /// haptic) rather than at `celebrate()`, so the native review sheet can
-  /// never cover the animation the user is meant to see. Checking
-  /// `queue.isEmpty` after [advance] (not before) matters too: a second
-  /// celebration queued behind this one must play before we ever consider
-  /// interrupting with a system dialog.
+  /// haptic) rather than at `celebrate()`, so the native review sheet — if
+  /// [ReviewPromptService] decides to show one — can never cover the
+  /// animation the user is meant to see.
+  ///
+  /// The moment is always recorded, even when another celebration is already
+  /// queued behind this one; only *whether the sheet may appear right now*
+  /// depends on the queue having drained (`canShowSheetNow`). Gating the
+  /// count itself on an empty queue would silently drop moments whenever two
+  /// celebrations land back to back — exactly the parents who claim a treat
+  /// right after their stars land are the ones this would undercount.
   ///
   /// Only [StarsAwarded] and [TreatRedeemed] count as the "just been
   /// rewarded" moment the review prompt looks for (spec: ask after a
@@ -56,13 +61,16 @@ class CelebrationListener extends ConsumerWidget {
 
     final isRewardMoment = kind is StarsAwarded || kind is TreatRedeemed;
     if (!isRewardMoment) return;
-    if (ref.read(celebrationQueueProvider).isNotEmpty) return;
 
     final viewerRole = ref.read(authNotifierProvider).user?.role;
     if (viewerRole == null) return;
 
+    final canShowSheetNow = ref.read(celebrationQueueProvider).isEmpty;
     ref
         .read(reviewPromptServiceProvider)
-        .onPositiveMoment(viewerRole: viewerRole);
+        .onPositiveMoment(
+          viewerRole: viewerRole,
+          canShowSheetNow: canShowSheetNow,
+        );
   }
 }
