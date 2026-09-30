@@ -43,17 +43,29 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   bool _seriesStopped = false;
 
   Task get task => widget.task;
+  ChoreGuide? get _activeGuide => _dynamicGuide ?? task.guide;
 
   Future<void> _fetchGuideOnDemand() async {
     setState(() => _isLoadingGuide = true);
     try {
+      final existingTip = _activeGuide?.parentTip;
       final guide = await ref.read(choreTipsServiceProvider).generateChoreGuide(
             title: task.title,
             description: task.description,
             difficulty: task.difficulty,
+            parentTip: existingTip,
           );
       if (mounted) {
         setState(() => _dynamicGuide = guide);
+        try {
+          await ref.read(taskRepositoryProvider).updateTaskGuide(
+                task.familyId,
+                task.id,
+                guide,
+              );
+        } catch (e) {
+          _logger.w('Failed to persist on-demand guide: $e');
+        }
       }
     } catch (e) {
       _logger.e('Error loading guide: $e');
@@ -724,14 +736,13 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   // One card carries the task identity: title, status +
                   // difficulty pills, and the points/due-date meta. No more
                   _buildHeader(),
-                  if ((task.guide != null && task.guide!.isNotEmpty) ||
-                      (_dynamicGuide != null && _dynamicGuide!.isNotEmpty)) ...[
+                  if (_activeGuide != null && _activeGuide!.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     ChoreGuideCard(
-                      guide: task.guide ?? _dynamicGuide!,
+                      guide: _activeGuide!,
                       onEditParentTip: (currentUser?.role == UserRole.parent ||
                               currentUser?.role == UserRole.guardian)
-                          ? () => _handleEditHomeTip(task.guide ?? _dynamicGuide!)
+                          ? () => _handleEditHomeTip(_activeGuide!)
                           : null,
                     ),
                   ] else ...[

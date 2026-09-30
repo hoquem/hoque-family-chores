@@ -132,6 +132,37 @@ void main() {
       expect(guide.takeaway, contains('Spatial Organization'));
     });
 
+    test('returns vet visit tips when title mentions vet or vets (e.g. take Kumo to vets)', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'take Kumo to vets',
+        difficulty: TaskDifficulty.medium,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('Compassion mission'));
+      expect(guide.steps.any((s) => s.contains('carrier') || s.contains('harness') || s.contains('leash')), isTrue);
+      expect(guide.steps.any((s) => s.contains('calm') || s.contains('soothing')), isTrue);
+      expect(guide.takeaway, contains('Compassion & Empathy'));
+    });
+
+    test('returns dog walk tips when title mentions dog walk', () async {
+      when(() => mockCallable.call(any()))
+          .thenThrow(Exception('Network unavailable'));
+
+      final guide = await service.generateChoreGuide(
+        title: 'Walk the dog',
+        difficulty: TaskDifficulty.easy,
+      );
+
+      expect(guide.isNotEmpty, isTrue);
+      expect(guide.motivation, contains('Adventure patrol'));
+      expect(guide.steps.any((s) => s.contains('leash')), isTrue);
+      expect(guide.takeaway, contains('Consistency & Care'));
+    });
+
     test('returns generic tips for unknown custom chore when offline', () async {
       when(() => mockCallable.call(any()))
           .thenThrow(Exception('Network unavailable'));

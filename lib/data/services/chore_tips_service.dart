@@ -345,7 +345,67 @@ class ChoreTipsService {
       );
     }
 
-    // 7. Pets / Animals
+    // 7a. Vet / Pet Healthcare / Animal Clinic
+    if (_containsAny(combined, [
+      'vet',
+      'vets',
+      'veterinarian',
+      'clinic',
+      'animal hospital',
+      'vaccine',
+      'vaccination',
+      'checkup',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Compassion mission! Visiting the vet can feel a little scary for pets, but your calm presence will make them feel safe and loved.',
+        steps: [
+          'Ask a grown-up to help set up the pet carrier, harness, or leash securely',
+          'Place your pet’s favorite blanket or comfort toy inside to keep them cozy',
+          'Speak in a gentle, soothing voice to keep them calm on the journey',
+          'Wash your hands after the trip and give your brave pet some gentle affection',
+        ],
+        forYou:
+            'Learning to care for an animal in stressful moments builds deep empathy, patience, and maturity.',
+        forFamily:
+            'Having an attentive helper to comfort our pet makes the journey smooth and stress-free for everyone.',
+        forHome:
+            'Keeping our pets healthy and up-to-date with veterinary care ensures a safe, happy home for all of us.',
+        takeaway:
+            'Compassion & Empathy: Being a reliable protector for a pet is one of the greatest responsibilities in life.',
+      );
+    }
+
+    // 7b. Dog Walk / Pet Exercise
+    if (_containsAny(combined, [
+      'walk the dog',
+      'dog walk',
+      'walk dog',
+      'walk puppy',
+      'take dog',
+      'take the dog',
+      'dog park',
+    ])) {
+      return const ChoreGuide(
+        motivation:
+            'Adventure patrol! Fresh air, wagging tails, and great exercise for both of you.',
+        steps: [
+          'Attach the leash securely and make sure you have waste bags ready',
+          'Always walk alongside an adult or stay on designated safe sidewalks',
+          'Clean your pet’s paws if muddy and refill their water bowl when you get home',
+        ],
+        forYou:
+            'Outdoor movement boosts your energy and strengthens your special bond with your pet.',
+        forFamily:
+            'A well-exercised pet is calm, happy, and well-behaved around the house.',
+        forHome:
+            'Wiping paws keeps dirt outside and helps keep our floors clean.',
+        takeaway:
+            'Consistency & Care: Regular exercise is essential for the health of every living creature.',
+      );
+    }
+
+    // 7c. Pets / Animals (Feeding, Habitat, Grooming)
     if (_containsAny(combined, [
       'pet',
       'pets',
@@ -359,6 +419,18 @@ class ChoreTipsService {
       'litter',
       'leash',
       'feed',
+      'feeding',
+      'bunny',
+      'rabbit',
+      'guinea pig',
+      'reptile',
+      'turtle',
+      'cage',
+      'hutch',
+      'aquarium',
+      'tank',
+      'brush',
+      'groom',
     ])) {
       return const ChoreGuide(
         motivation:
@@ -499,20 +571,20 @@ class ChoreTipsService {
     // 12. Universal default
     return ChoreGuide(
       motivation:
-          'Every great hero takes pride in their space. Knock this mission out and claim your stars!',
+          'Every great hero takes pride in doing things well. Knock this mission out and claim your stars!',
       steps: [
-        'Gather any supplies or tools you need before you begin',
-        'Focus on completing one part of "$title" carefully at a time',
-        'Do a final 30-second inspection to make sure nothing was missed',
+        'Gather any supplies, gear, or tools you need before you begin',
+        'Focus on completing each step of "$title" carefully with patience and pride',
+        'Do a final check when finished to make sure everything was done right',
       ],
       forYou:
-          'Finishing what you set out to do builds confidence and self-trust.',
+          'Finishing what you set out to do builds confidence, capability, and self-trust.',
       forFamily:
-          'Teamwork makes the household run smoothly and shows love in action.',
+          'Stepping up to help keeps the family running smoothly and shows love in action.',
       forHome:
-          'Taking care of our home keeps it a peaceful, cozy haven for all of us.',
+          'Every positive contribution helps our home and family thrive happily together.',
       takeaway:
-          'Diligence & Ownership: Seeing a job through from start to finish is a superpower for life.',
+          'Diligence & Ownership: Seeing a task through from start to finish is a superpower for life.',
     );
   }
 }
