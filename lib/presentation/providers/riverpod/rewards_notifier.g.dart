@@ -374,7 +374,7 @@ class OutstandingClaimsFamily extends Family<AsyncValue<List<Redemption>>> {
 ///
 /// Copied from [outstandingClaims].
 class OutstandingClaimsProvider
-    extends AutoDisposeFutureProvider<List<Redemption>> {
+    extends AutoDisposeStreamProvider<List<Redemption>> {
   /// Outings the family still owes [userId].
   ///
   /// Expired claims are settled on the way past: the refund is lazy by design —
@@ -417,7 +417,7 @@ class OutstandingClaimsProvider
 
   @override
   Override overrideWith(
-    FutureOr<List<Redemption>> Function(OutstandingClaimsRef provider) create,
+    Stream<List<Redemption>> Function(OutstandingClaimsRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -435,7 +435,7 @@ class OutstandingClaimsProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<List<Redemption>> createElement() {
+  AutoDisposeStreamProviderElement<List<Redemption>> createElement() {
     return _OutstandingClaimsProviderElement(this);
   }
 
@@ -458,7 +458,7 @@ class OutstandingClaimsProvider
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-mixin OutstandingClaimsRef on AutoDisposeFutureProviderRef<List<Redemption>> {
+mixin OutstandingClaimsRef on AutoDisposeStreamProviderRef<List<Redemption>> {
   /// The parameter `familyId` of this provider.
   FamilyId get familyId;
 
@@ -467,7 +467,7 @@ mixin OutstandingClaimsRef on AutoDisposeFutureProviderRef<List<Redemption>> {
 }
 
 class _OutstandingClaimsProviderElement
-    extends AutoDisposeFutureProviderElement<List<Redemption>>
+    extends AutoDisposeStreamProviderElement<List<Redemption>>
     with OutstandingClaimsRef {
   _OutstandingClaimsProviderElement(super.provider);
 

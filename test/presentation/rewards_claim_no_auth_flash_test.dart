@@ -95,7 +95,7 @@ Future<ProviderContainer> _pumpSignedIn(
       outstandingClaimsProvider(
         _familyId,
         UserId(_uid),
-      ).overrideWith((ref) => Future.value(<Redemption>[])),
+      ).overrideWith((ref) => Stream.value(<Redemption>[])),
       ...rewardOverrides,
     ],
   );

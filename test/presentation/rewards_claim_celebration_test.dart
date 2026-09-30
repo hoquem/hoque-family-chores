@@ -62,7 +62,7 @@ void main() {
       familyRewardsProvider(_familyId)
           .overrideWith((ref) => Stream.value([_testReward])),
       outstandingClaimsProvider(_familyId, UserId('test_uid'))
-          .overrideWith((ref) => Future.value(<Redemption>[])),
+          .overrideWith((ref) => Stream.value(<Redemption>[])),
       claimRewardUseCaseProvider
           .overrideWith((_) => _MockClaimRewardUseCase()),
     ]);

@@ -214,14 +214,16 @@ class _OwedCard extends ConsumerWidget {
         ),
       ),
       (_) {
-        ref.invalidate(outstandingClaimsProvider(claim.familyId, userId));
-        // The star balance lives on the user profile, but settling a claim
-        // (fulfil or refund) happens entirely server-side in a Cloud
-        // Function. AuthNotifier already streams that Firestore document, so
-        // the new balance arrives on its own — no need to force a rebuild
-        // here. Doing so used to dispose the autoDispose AuthNotifier and
-        // briefly show `user: null`, which flashed the splash screen over
-        // the whole app (FamilyGate) every time someone settled a claim.
+        // Neither the owed list nor the star balance needs to be forced to
+        // refresh here: `outstandingClaimsProvider` derives from the live
+        // `familyRedemptionsProvider` stream and AuthNotifier streams the
+        // user's Firestore profile, so both pick up a settle (fulfil or
+        // refund) on their own. Invalidating either used to dispose an
+        // autoDispose provider a beat too eagerly -- the auth one flashed
+        // the splash screen over the whole app, and the claims one could
+        // race a concurrent mutation and leave a settled claim looking
+        // outstanding, so settling or re-claiming it failed with "That one
+        // is already settled."
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(happened ? 'Nice — enjoy it! 🎉' : 'Stars refunded'),
@@ -396,14 +398,10 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
                 familyId: user.familyId.value,
                 params: {'cost': reward.cost.value},
               );
-          ref.invalidate(outstandingClaimsProvider(user.familyId, user.id));
-          // The balance lives on the user profile, but claiming a reward
-          // deducts stars entirely server-side in a Cloud Function.
-          // AuthNotifier already streams that Firestore document, so the
-          // spent balance arrives on its own — invalidating it here used to
-          // dispose the autoDispose AuthNotifier and briefly show
-          // `user: null`, flashing the splash screen (FamilyGate) over the
-          // whole app on every claim.
+          // Neither the owed list nor the star balance needs a forced
+          // refresh: `outstandingClaimsProvider` derives from the live
+          // `familyRedemptionsProvider` stream and AuthNotifier streams the
+          // user's Firestore profile, so both pick up a claim on their own.
           ref.read(celebrationQueueProvider.notifier)
               .celebrate(TreatRedeemed(reward.title));
         },
