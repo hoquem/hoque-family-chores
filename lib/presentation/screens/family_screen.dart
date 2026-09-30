@@ -10,6 +10,7 @@ import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
+import 'package:hoque_family_chores/presentation/widgets/share_invite_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 
@@ -90,6 +91,17 @@ class _FamilyDetailsView extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
+              const SizedBox(height: 16),
+              // A second, always-visible entry point next to the app bar's
+              // bare icon: this one shares directly in a single tap, while
+              // the icon still opens the dialog below for Copy.
+              Center(
+                child: ShareInviteButton(
+                  inviteCode: family.inviteCode,
+                  source: 'family_tab',
+                  label: 'Invite someone',
+                ),
+              ),
               const SizedBox(height: 16),
               Text(
                 'Members',
@@ -178,7 +190,10 @@ class _FamilyDetailsView extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Share this code so they can join your family:'),
+            // The code is the only thing guarding the family's data and
+            // cannot be changed yet, and Share makes it easy to post
+            // anywhere.
+            const Text('Share this code only with people joining your family:'),
             const SizedBox(height: 16),
             // Grouped for reading aloud, and wrapped rather than clipped: a
             // twelve-character code at headline size does not fit one line on
@@ -209,6 +224,27 @@ class _FamilyDetailsView extends ConsumerWidget {
               );
             },
             child: const Text('Copy'),
+          ),
+          // Builder: the share sheet on iPad is a popover anchored to this
+          // button, so it needs the button's own context for its position.
+          Builder(
+            builder: (buttonContext) => FilledButton(
+              onPressed: () {
+                final box = buttonContext.findRenderObject() as RenderBox?;
+                final origin = box == null
+                    ? null
+                    : box.localToGlobal(Offset.zero) & box.size;
+                Navigator.of(dialogContext).pop();
+                shareInvite(
+                  context,
+                  ref,
+                  inviteCode: inviteCode,
+                  source: 'dialog',
+                  origin: origin,
+                );
+              },
+              child: const Text('Share invite'),
+            ),
           ),
         ],
       ),

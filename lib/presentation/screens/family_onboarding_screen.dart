@@ -174,10 +174,14 @@ class _FamilyOnboardingScreenState
                     controller: _inviteCodeController,
                     decoration: const InputDecoration(
                       labelText: 'Invite code',
-                      hintText: 'e.g. AB3XY9',
+                      hintText: 'e.g. ABCD EFGH JKMN',
                       border: OutlineInputBorder(),
                     ),
                     textCapitalization: TextCapitalization.characters,
+                    // Shared invites show the code in groups; autocorrect
+                    // rewrites a group when the space after it is typed.
+                    autocorrect: false,
+                    enableSuggestions: false,
                   ),
                   const SizedBox(height: 12),
                   Text(

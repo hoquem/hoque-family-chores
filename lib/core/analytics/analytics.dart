@@ -26,6 +26,12 @@ enum AnalyticsEventName {
   // Discovery / engagement.
   screenViewed,
   helpOpened,
+  // Growth: does prompting a solo family to invite someone turn into a
+  // second member, and where do shares actually come from?
+  inviteShared,
+  inviteStepShown,
+  inviteStepSkipped,
+  memberJoined,
 }
 
 /// Writes usage events to a Firestore `analyticsEvents` collection.
