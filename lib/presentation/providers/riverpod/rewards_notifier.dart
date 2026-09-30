@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../di/riverpod_container.dart';
-import 'auth_notifier.dart';
 import '../../../domain/entities/redemption.dart';
 import '../../../domain/entities/reward.dart';
 import '../../../domain/value_objects/family_id.dart';
@@ -40,23 +39,23 @@ Future<List<Redemption>> outstandingClaims(
   final now = DateTime.now();
 
   final live = <Redemption>[];
-  var refunded = false;
   for (final claim in all) {
     if (claim.isExpired(now)) {
       // The family let the deadline pass. Give the stars back rather than
       // quietly keeping them; the app is willing to say the family failed.
+      // The refund happens server-side in the same Cloud Function a manual
+      // settle uses, so it reaches the displayed balance through
+      // AuthNotifier's live profile stream on its own -- no need to force
+      // a rebuild of it here (that used to dispose the autoDispose
+      // AuthNotifier and flash the splash screen over the whole app).
       await ref.read(settleRedemptionUseCaseProvider)(
         redemption: claim,
         actor: claim.claimedBy,
         happened: false,
       );
-      refunded = true;
     } else {
       live.add(claim);
     }
   }
-  // A lazy refund put stars back on the profile — re-read it so the balance
-  // shown updates. The claim is now settled, so the next read won't loop.
-  if (refunded) ref.invalidate(authNotifierProvider);
   return live;
 }

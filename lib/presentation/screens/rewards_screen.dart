@@ -215,7 +215,13 @@ class _OwedCard extends ConsumerWidget {
       ),
       (_) {
         ref.invalidate(outstandingClaimsProvider(claim.familyId, userId));
-        ref.invalidate(authNotifierProvider);
+        // The star balance lives on the user profile, but settling a claim
+        // (fulfil or refund) happens entirely server-side in a Cloud
+        // Function. AuthNotifier already streams that Firestore document, so
+        // the new balance arrives on its own — no need to force a rebuild
+        // here. Doing so used to dispose the autoDispose AuthNotifier and
+        // briefly show `user: null`, which flashed the splash screen over
+        // the whole app (FamilyGate) every time someone settled a claim.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(happened ? 'Nice — enjoy it! 🎉' : 'Stars refunded'),
@@ -391,9 +397,13 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
                 params: {'cost': reward.cost.value},
               );
           ref.invalidate(outstandingClaimsProvider(user.familyId, user.id));
-          // The balance lives on the user profile, so it has to be re-read or
-          // the screen shows stars that are already spent.
-          ref.invalidate(authNotifierProvider);
+          // The balance lives on the user profile, but claiming a reward
+          // deducts stars entirely server-side in a Cloud Function.
+          // AuthNotifier already streams that Firestore document, so the
+          // spent balance arrives on its own — invalidating it here used to
+          // dispose the autoDispose AuthNotifier and briefly show
+          // `user: null`, flashing the splash screen (FamilyGate) over the
+          // whole app on every claim.
           ref.read(celebrationQueueProvider.notifier)
               .celebrate(TreatRedeemed(reward.title));
         },
