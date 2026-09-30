@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/services/home_stats.dart';
+import 'package:hoque_family_chores/domain/services/invite_prompt.dart';
+import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/invite_card_dismissal_providers.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 import 'package:hoque_family_chores/presentation/motion/streak_milestone_watcher.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/home_widget_provider.dart';
@@ -18,6 +21,7 @@ import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/greeting_header.dart';
+import 'package:hoque_family_chores/presentation/widgets/home/invite_family_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/leaderboard_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/progress_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/today_missions_card.dart';
@@ -205,6 +209,10 @@ class HomeScreen extends ConsumerWidget {
                 ref.read(bottomNavIndexNotifierProvider.notifier).setIndex(2),
           ),
           const SizedBox(height: 8),
+          if (_buildInviteCard(context, ref, currentUser) case final card?) ...[
+            card,
+            const SizedBox(height: 8),
+          ],
           if (missions.allDone) ...[
             const CelebrationCard(),
             const SizedBox(height: 8),
@@ -246,6 +254,51 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// The solo-family invite card, or null while it should stay hidden.
+  ///
+  /// Null whenever the members list or the family (needed for its invite
+  /// code) has not loaded yet, or errored — the same fail-soft treatment
+  /// `shouldShowInviteCard`'s doc calls for: a card that might flash in and
+  /// back out a frame later is worse than a card that is simply late.
+  Widget? _buildInviteCard(
+    BuildContext context,
+    WidgetRef ref,
+    User currentUser,
+  ) {
+    final members =
+        ref.watch(familyMembersNotifierProvider(currentUser.familyId)).valueOrNull;
+    if (members == null) return null;
+
+    final dismissedAtAsync =
+        ref.watch(inviteCardDismissedAtProvider(currentUser.familyId));
+    if (!dismissedAtAsync.hasValue) return null;
+
+    if (!shouldShowInviteCard(
+      memberCount: members.length,
+      viewerRole: currentUser.role,
+      dismissedAt: dismissedAtAsync.value,
+      now: DateTime.now(),
+    )) {
+      return null;
+    }
+
+    final inviteCode =
+        ref.watch(familyNotifierProvider(currentUser.familyId)).valueOrNull?.inviteCode;
+    if (inviteCode == null || inviteCode.isEmpty) return null;
+
+    return InviteFamilyCard(
+      inviteCode: inviteCode,
+      onDismiss: () => _dismissInviteCard(ref, currentUser.familyId),
+    );
+  }
+
+  Future<void> _dismissInviteCard(WidgetRef ref, FamilyId familyId) async {
+    await ref
+        .read(inviteCardDismissalServiceProvider)
+        .dismiss(familyId, DateTime.now());
+    ref.invalidate(inviteCardDismissedAtProvider(familyId));
   }
 
   Widget _buildLeaderboard(
