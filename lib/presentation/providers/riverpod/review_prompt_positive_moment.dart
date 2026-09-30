@@ -15,6 +15,16 @@ import 'review_prompt_pending_signal.dart';
 /// like a second one but is unreachable dead code — nothing in `lib/` calls
 /// it — so it does not call this and is not exercised by these tests.)
 ///
+/// A non-admin [UserRole] (a child — approving a sibling's chore is normal
+/// under this app's trust model, or the unknown-role fallback) returns
+/// before anything is read or written. This is not just an optimisation:
+/// [ReviewPromptService.onPositiveMoment] already refuses a non-admin role
+/// internally, but it does so *after* this function would otherwise have
+/// marked [ReviewPromptPendingSignal] — which would schedule a real (if
+/// harmless) check in `CelebrationListener` for a moment that was never
+/// actually recorded. Checking here keeps a child's approval from touching
+/// either side effect at all.
+///
 /// Always calls [ReviewPromptService.onPositiveMoment] with
 /// `canShowSheetNow: false` — an approval happens inside a notifier with no
 /// view into whether a dialog is open or the screen is mid-navigation-pop
@@ -28,11 +38,13 @@ import 'review_prompt_pending_signal.dart';
 /// treat personally would have their approvals counted forever without ever
 /// actually being asked.
 ///
-/// Awaited by its callers (both are already `async` and already awaited by
-/// their own callers, so this adds one local-storage write's worth of
-/// latency — negligible next to the network round trip the approval itself
-/// just made, and it means the moment is durably recorded before
-/// `approveTask` returns rather than racing it as a fire-and-forget call).
+/// Awaited by its caller (`TaskListNotifier.approveTask` is already `async`
+/// and already awaited by its own callers, so this adds one local-storage
+/// write's worth of latency — negligible next to the network round trip the
+/// approval itself just made — and it means the moment is durably recorded
+/// before `approveTask` returns rather than racing it as a fire-and-forget
+/// call; see the comment at that call site on reading everything from [ref]
+/// before an await near a `ref.invalidateSelf()`).
 ///
 /// Never throws: reading the signed-in user or reaching the service can fail
 /// for reasons that have nothing to do with the approval that just
@@ -42,10 +54,11 @@ import 'review_prompt_pending_signal.dart';
 Future<void> recordApprovalPositiveMoment(Ref ref) async {
   try {
     final viewerRole = ref.read(authNotifierProvider).user?.role;
-    if (viewerRole == null) return;
-    // Read before the await below, not after — see approveTask's own
-    // comment on reading everything before a `ref.invalidateSelf()`-adjacent
-    // await gap.
+    if (viewerRole == null || !viewerRole.isAdmin) return;
+    // Read before the await below, not after — invalidateSelf() runs just
+    // before this is called (see TaskListNotifier.approveTask), and every
+    // provider this needs is grabbed here, before the first await, so none
+    // of it depends on `ref` still being fully "current" afterward.
     final pendingSignal = ref.read(reviewPromptPendingSignalProvider.notifier);
     await ref
         .read(reviewPromptServiceProvider)

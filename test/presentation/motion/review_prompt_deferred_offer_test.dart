@@ -122,14 +122,18 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       verifyNever(() => requester.isAvailable());
 
-      // Close the dialog — CelebrationListener's route becomes current
-      // again, which should schedule the deferred check. pumpAndSettle
-      // alone only settles the dialog's own close transition; the extra
-      // pump crosses the 300ms settle delay measured from that point.
+      // Close the dialog. Route.isCurrent flips the moment Navigator.pop()
+      // updates the history — a single pump() sees the new value — well
+      // before the close *transition* finishes, so this deliberately does
+      // not call pumpAndSettle() here: that would run its own unbounded
+      // number of frames and could cross the 300ms settle delay by itself,
+      // hiding whether that delay is doing anything.
       Navigator.of(homeContext).pop();
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      verifyNever(() => requester.isAvailable());
 
+      await tester.pump(const Duration(milliseconds: 200));
       verify(() => requester.isAvailable()).called(1);
       verify(() => requester.requestReview()).called(1);
       expect(container.read(reviewPromptPendingSignalProvider), isFalse);
@@ -178,10 +182,17 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       verifyNever(() => requester.isAvailable());
 
+      // Not pumpAndSettle() here either — see the dialog test above for why:
+      // it would run an unbounded number of frames settling the pop's exit
+      // transition and could cross the 300ms settle delay by itself. A
+      // single pump() already sees isCurrent flip true, well before that
+      // transition visually finishes.
       Navigator.of(homeContext).pop();
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      verifyNever(() => requester.isAvailable());
 
+      await tester.pump(const Duration(milliseconds: 200));
       verify(() => requester.isAvailable()).called(1);
       verify(() => requester.requestReview()).called(1);
     },

@@ -30,6 +30,7 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/review_prompt_pending_signal.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 
 import '../mocks/mock_task_repository.dart';
@@ -98,6 +99,11 @@ void main() {
         .approveTask(_existingTaskId, _approverId, _familyId);
 
     expect(await _positiveMomentCount(), 1);
+    // The moment had nowhere safe to offer a sheet of its own, so it must
+    // leave word for CelebrationListener to check again later — see
+    // review_prompt_positive_moment.dart. Without this, an approval-only
+    // parent's moments would count but never actually surface an ask.
+    expect(harness.container.read(reviewPromptPendingSignalProvider), isTrue);
     verifyNever(() => harness.reviewRequester.isAvailable());
     verifyNever(() => harness.reviewRequester.requestReview());
   });
@@ -111,6 +117,7 @@ void main() {
         .approveTask(_existingTaskId, _approverId, _familyId);
 
     expect(await _positiveMomentCount(), 1);
+    expect(harness.container.read(reviewPromptPendingSignalProvider), isTrue);
   });
 
   test('a failed approval records nothing', () async {
@@ -125,6 +132,7 @@ void main() {
     );
 
     expect(await _positiveMomentCount(), 0);
+    expect(harness.container.read(reviewPromptPendingSignalProvider), isFalse);
   });
 
   test(
@@ -138,6 +146,12 @@ void main() {
           .approveTask(_existingTaskId, _approverId, _familyId);
 
       expect(await _positiveMomentCount(), 0);
+      // Not just "no moment" — a child's approval must not even leave a
+      // pending-check signal behind for CelebrationListener to act on.
+      expect(
+        harness.container.read(reviewPromptPendingSignalProvider),
+        isFalse,
+      );
     },
   );
 
@@ -155,6 +169,10 @@ void main() {
           .approveTask(_existingTaskId, UserId('user_2'), _familyId);
 
       expect(await _positiveMomentCount(), 0);
+      expect(
+        harness.container.read(reviewPromptPendingSignalProvider),
+        isFalse,
+      );
     },
   );
 }
