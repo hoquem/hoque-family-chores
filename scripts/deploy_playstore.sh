@@ -78,7 +78,7 @@ sed -i '' "s/^version: .*/version: ${version_name}+${next}/" "$REPO_ROOT/pubspec
 
 cd "$REPO_ROOT"
 rm -f "$AAB"
-flutter build appbundle --release --android-skip-build-dependency-validation
+flutter build appbundle --release
 
 [ -f "$AAB" ] || { echo "ERROR: expected bundle not found at $AAB" >&2; exit 1; }
 
