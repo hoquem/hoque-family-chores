@@ -3,6 +3,7 @@ import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/join_failure_message.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/just_created_family_notifier.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 
@@ -60,6 +61,10 @@ class FamilyOnboardingNotifier extends _$FamilyOnboardingNotifier {
               userId: creatorId.value,
               familyId: family.id.value,
             );
+        // Arms the post-create "Invite your family" step; see
+        // JustCreatedFamilyNotifier for why this lives outside FamilyGate's
+        // own routing condition.
+        ref.read(justCreatedFamilyProvider.notifier).markCreated(family);
         state = state.copyWith(isLoading: false, error: null);
         return true;
       },
@@ -93,12 +98,22 @@ class FamilyOnboardingNotifier extends _$FamilyOnboardingNotifier {
       },
       (family) {
         _logger.i('FamilyOnboarding: joined family ${family.id}');
-        ref.read(analyticsProvider).log(
-              AnalyticsEventName.familyJoined,
-              userId: userId.value,
-              familyId: family.id.value,
-              params: {'role': role.name},
-            );
+        final analytics = ref.read(analyticsProvider);
+        analytics.log(
+          AnalyticsEventName.familyJoined,
+          userId: userId.value,
+          familyId: family.id.value,
+          params: {'role': role.name},
+        );
+        // Separate from familyJoined: a narrower, invite-funnel-specific
+        // event (see scripts/usage_report.py) that only ever fires on the
+        // joiner's side of a successful join by code.
+        analytics.log(
+          AnalyticsEventName.memberJoined,
+          userId: userId.value,
+          familyId: family.id.value,
+          params: {'role': role.name},
+        );
         state = state.copyWith(isLoading: false, error: null);
         return true;
       },

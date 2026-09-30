@@ -486,6 +486,15 @@ class AuthNotifier extends _$AuthNotifier {
           familyId: family.id.value,
           params: const {'role': 'child'},
         );
+        // Same invite-funnel event FamilyOnboardingNotifier.joinFamily logs
+        // for an adult joiner — kids join through this separate pre-auth
+        // flow, so it needs its own call site to count as a second member.
+        analytics.log(
+          AnalyticsEventName.memberJoined,
+          userId: userId.value,
+          familyId: family.id.value,
+          params: const {'role': 'child'},
+        );
         _startUserProfileStream(userId);
         state = state.copyWith(
           isLoading: false,

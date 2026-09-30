@@ -12,7 +12,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/complete_profile_screen.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/just_created_family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/invite_your_family_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/login_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/main_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -277,6 +279,14 @@ class FamilyGate extends ConsumerWidget {
     if (user == null) return const _SplashScreen();
     if (user.familyId.value.isEmpty) {
       return FamilyOnboardingScreen(currentUser: user);
+    }
+    // Shown once, right after this session created a family: the profile
+    // stream has already updated familyId (which is why this check comes
+    // after the onboarding branch above, not instead of it), but the new
+    // family still has only its creator. See JustCreatedFamilyNotifier.
+    final justCreatedFamily = ref.watch(justCreatedFamilyProvider);
+    if (justCreatedFamily != null) {
+      return InviteYourFamilyScreen(family: justCreatedFamily);
     }
     return const MainScreen();
   }

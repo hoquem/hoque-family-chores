@@ -19,9 +19,12 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/entities/family.dart';
 import 'package:hoque_family_chores/main.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/just_created_family_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/complete_profile_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/invite_your_family_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 class _FixedAuthNotifier extends AuthNotifier {
@@ -41,16 +44,28 @@ User _adult({required String familyId}) => User(
       updatedAt: DateTime(2026),
     );
 
-Future<void> _pump(WidgetTester tester, AuthState state) async {
+Future<void> _pump(
+  WidgetTester tester,
+  AuthState state, {
+  List<Override> extraOverrides = const [],
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         authNotifierProvider.overrideWith(() => _FixedAuthNotifier(state)),
+        ...extraOverrides,
       ],
       child: MaterialApp(theme: appLightTheme, home: const FamilyGate()),
     ),
   );
   await tester.pump();
+}
+
+class _SeededJustCreatedFamily extends JustCreatedFamilyNotifier {
+  _SeededJustCreatedFamily(this._family);
+  final FamilyEntity _family;
+  @override
+  FamilyEntity? build() => _family;
 }
 
 void main() {
@@ -77,6 +92,32 @@ void main() {
 
     expect(find.text('Set up your family'), findsOneWidget);
     expect(find.text('Connecting...'), findsNothing);
+  });
+
+  testWidgets(
+      'signed in with a family, just created it → invite step, not MainScreen',
+      (tester) async {
+    final family = FamilyEntity(
+      id: FamilyId('fam_1'),
+      name: 'The Hoques',
+      description: '',
+      creatorId: UserId('adult_uid'),
+      memberIds: [UserId('adult_uid')],
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      inviteCode: 'ABCDEFGHJKMN',
+    );
+
+    await _pump(
+      tester,
+      AuthState(user: _adult(familyId: 'fam_1')),
+      extraOverrides: [
+        justCreatedFamilyProvider
+            .overrideWith(() => _SeededJustCreatedFamily(family)),
+      ],
+    );
+
+    expect(find.byType(InviteYourFamilyScreen), findsOneWidget);
   });
 
   testWidgets('needs profile completion → complete profile screen',
