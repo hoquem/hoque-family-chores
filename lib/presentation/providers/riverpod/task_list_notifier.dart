@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'review_prompt_positive_moment.dart';
 
 part 'task_list_notifier.g.dart';
 
@@ -321,7 +322,10 @@ class TaskListNotifier extends _$TaskListNotifier {
         approverId: approverId,
         familyId: familyId,
       );
-      
+
+      // Set inside the success branch below; read after fold() to decide
+      // whether to record a review-prompt moment (see the comment there).
+      var selfApproved = false;
       result.fold(
         (failure) => throw Exception(failure.message),
         (approved) {
@@ -330,15 +334,26 @@ class TaskListNotifier extends _$TaskListNotifier {
           // fact to count rather than an error to prevent. A bool, not a name:
           // analyticsEvents stays pseudonymous.
           final doerId = approved.submittedBy ?? approved.assignedToId;
+          selfApproved = doerId == approverId;
           ref.read(analyticsProvider).log(
                 AnalyticsEventName.taskApproved,
                 userId: approverId.value,
                 familyId: familyId.value,
-                params: {'selfApproved': doerId == approverId},
+                params: {'selfApproved': selfApproved},
               );
           ref.invalidateSelf();
         },
       );
+      // Only reached on success — the failure branch above throws. Skipped
+      // for a self-approval: the approver's own stars just rose, which
+      // already celebrates (StarAwardWatcher -> StarsAwarded) and counts a
+      // moment on its own — recording a second one here would double-count
+      // the same payoff. Awaited (not fire-and-forget) so the moment is
+      // durably recorded before this method returns; see
+      // recordApprovalPositiveMoment's docstring.
+      if (!selfApproved) {
+        await recordApprovalPositiveMoment(ref);
+      }
     } catch (e) {
       _logger.e('TaskListNotifier: Error approving task', error: e);
       throw Exception('Failed to approve task: $e');

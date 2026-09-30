@@ -37,7 +37,7 @@ introducing a new concept without adding it here first is a framework violation.
 | Approval | A family member (other than the doer) signs off a completed chore | Self-confirmation |
 | Claim | A member says "I'll do it" for an unassigned chore | Assignment by a parent |
 | Settle | The claimant marks their own treat redemption as done | An admin cancelling the treat |
-| Positive moment | A celebration that means the user was just rewarded — stars awarded, a treat claimed — as tracked toward the review-prompt gate (`shouldPromptForReview`) | Every celebration; a streak milestone is a celebration but not a reward, so it is not one |
+| Positive moment | A moment that means the user was just rewarded, or rewarded someone else — stars awarded, a treat claimed, a chore approved — as tracked toward the review-prompt gate (`shouldPromptForReview`) | Every celebration; a streak milestone is a celebration but not a reward, so it is not one |
 | Review prompt | The native store-rating dialog (`SKStoreReviewController` on iOS, the Play In-App Review API on Android), offered to a parent/guardian after enough positive moments | A custom in-app rating UI, or anything shown to a child |
 
 ### Bounded contexts

@@ -6,12 +6,23 @@ import 'review_requester.dart';
 
 /// Turns a payoff moment into, at most, one store-review ask.
 ///
-/// Called from `CelebrationListener` once a celebration has finished playing
-/// — see that widget's `onDone` for why that moment, and not the queue's
-/// `celebrate()` call, is the hook. [onPositiveMoment] never throws: every
-/// failure — storage, or the plugin itself — is logged with [AppLogger] and
-/// swallowed, so a review-prompt hiccup can never take a celebration down
-/// with it. Callers do not need to await it for that reason, though they may.
+/// Two entry points feed it:
+///
+/// - [onPositiveMoment] — called from `CelebrationListener` once a
+///   celebration has finished playing (see that widget's `onDone` for why
+///   that moment, and not the queue's `celebrate()` call, is the hook), and
+///   from an approval's success path (see
+///   `review_prompt_positive_moment.dart`). It always records the moment,
+///   and evaluates the gate itself only when [canShowSheetNow].
+/// - [offerIfDue] — evaluates the gate against whatever is already
+///   recorded, without adding a moment. This is what a deferred offer (an
+///   approval, which has no safe moment of its own to show a system dialog)
+///   uses once a later, genuinely safe moment arrives — see
+///   `ReviewPromptPendingSignal` and `CelebrationListener`.
+///
+/// Neither throws: every failure — storage, or the plugin itself — is
+/// logged with [AppLogger] and swallowed, so a review-prompt hiccup can
+/// never take whatever it was called from down with it.
 class ReviewPromptService {
   ReviewPromptService({
     required ReviewPromptStateService stateService,
@@ -27,9 +38,7 @@ class ReviewPromptService {
   final _logger = AppLogger();
 
   /// Records a payoff moment for [viewerRole] and, if [canShowSheetNow],
-  /// [shouldPromptForReview] agrees and the platform reports
-  /// [ReviewRequester.isAvailable], requests the store's native review
-  /// dialog.
+  /// evaluates the gate and may offer the sheet — see [_evaluateAndOffer].
   ///
   /// The moment is always recorded regardless of [canShowSheetNow] — a
   /// celebration that finishes with another one already queued behind it is
@@ -44,12 +53,6 @@ class ReviewPromptService {
   /// skipped before anything is read or written — a child's session can
   /// never spend the family's lifetime ask budget, and never pads the count
   /// either.
-  ///
-  /// A [ReviewRequester.requestReview] that throws is logged but **not**
-  /// recorded as an ask: the budget is for asks that were actually offered
-  /// to the platform, not ones that errored before reaching it, so the next
-  /// qualifying moment gets to try again rather than waiting out a 90-day
-  /// cooldown for nothing.
   Future<void> onPositiveMoment({
     required UserRole viewerRole,
     bool canShowSheetNow = true,
@@ -58,18 +61,7 @@ class ReviewPromptService {
     try {
       final history = await _stateService.recordPositiveMoment();
       if (!canShowSheetNow) return;
-
-      final now = _clock();
-      if (!shouldPromptForReview(
-        history: history,
-        viewerRole: viewerRole,
-        now: now,
-      )) {
-        return;
-      }
-      if (!await _reviewRequester.isAvailable()) return;
-      await _reviewRequester.requestReview();
-      await _stateService.recordAsked(now);
+      await _evaluateAndOffer(history, viewerRole);
     } catch (e, stackTrace) {
       _logger.e(
         '[ReviewPrompt] failed to process a positive moment',
@@ -77,5 +69,54 @@ class ReviewPromptService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Evaluates the gate against the moments already on record — without
+  /// adding one — and offers the sheet if due.
+  ///
+  /// For a moment that had no safe place to offer the sheet of its own (an
+  /// approval, recorded via [onPositiveMoment] with `canShowSheetNow:
+  /// false`), the caller marks a pending signal and calls this once it finds
+  /// a genuinely idle, undialogued, non-navigating moment — see
+  /// `CelebrationListener`.
+  Future<void> offerIfDue(UserRole viewerRole) async {
+    if (!viewerRole.isAdmin) return;
+    try {
+      final history = await _stateService.load();
+      await _evaluateAndOffer(history, viewerRole);
+    } catch (e, stackTrace) {
+      _logger.e(
+        '[ReviewPrompt] failed to evaluate a deferred offer',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Shared by both entry points: if [shouldPromptForReview] agrees and the
+  /// platform reports [ReviewRequester.isAvailable], requests the native
+  /// review dialog.
+  ///
+  /// A [ReviewRequester.requestReview] that throws is logged but **not**
+  /// recorded as an ask: the budget is for asks that were actually offered
+  /// to the platform, not ones that errored before reaching it, so the next
+  /// qualifying moment gets to try again rather than waiting out a 90-day
+  /// cooldown for nothing. (The throw propagates to each entry point's own
+  /// try/catch, which logs it — this method does not catch it itself.)
+  Future<void> _evaluateAndOffer(
+    ReviewPromptHistory history,
+    UserRole viewerRole,
+  ) async {
+    final now = _clock();
+    if (!shouldPromptForReview(
+      history: history,
+      viewerRole: viewerRole,
+      now: now,
+    )) {
+      return;
+    }
+    if (!await _reviewRequester.isAvailable()) return;
+    await _reviewRequester.requestReview();
+    await _stateService.recordAsked(now);
   }
 }

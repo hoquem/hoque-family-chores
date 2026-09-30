@@ -4,10 +4,14 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
+import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_notifier.dart';
 
 import '../mocks/mock_task_repository.dart';
@@ -18,13 +22,40 @@ const _taskId = 'task_2';
 final _doer = UserId('user_2');
 final _someoneElse = UserId('user_9');
 
+class _FixedAuthNotifier extends AuthNotifier {
+  _FixedAuthNotifier(this._state);
+  final AuthState _state;
+  @override
+  AuthState build() => _state;
+}
+
+/// approveTask also records a review-prompt positive moment now (see
+/// review_prompt_positive_moment.dart), which reads the signed-in user's
+/// role. Without this override, reading authNotifierProvider for the first
+/// time would build the *real* AuthNotifier and reach live FirebaseAuth —
+/// exactly what test/presentation/motion/celebration_listener_test.dart's
+/// own comment warns against.
+final _approver = User(
+  id: UserId('parent_1'),
+  name: 'Parent',
+  familyId: _familyId,
+  role: UserRole.parent,
+  points: Points(0),
+  joinedAt: DateTime(2026, 1, 1),
+  updatedAt: DateTime(2026, 1, 1),
+);
+
 /// Approves [_taskId] as [approver] and returns the logged analytics params.
 Future<Map<String, dynamic>?> _approveAndReadEvent(UserId approver) async {
+  SharedPreferences.setMockInitialValues({});
   final db = FakeFirebaseFirestore();
   final container = ProviderContainer(
     overrides: [
       taskRepositoryProvider.overrideWith((_) => MockTaskRepository()),
       analyticsProvider.overrideWith((_) => Analytics(db)),
+      authNotifierProvider.overrideWith(
+        () => _FixedAuthNotifier(AuthState(user: _approver)),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -44,8 +75,11 @@ void main() {
   group('the taskApproved event', () {
     test('records a self-approval as one', () async {
       final params = await _approveAndReadEvent(_doer);
-      expect(params, isNotNull,
-          reason: 'approving a chore must log a taskApproved event');
+      expect(
+        params,
+        isNotNull,
+        reason: 'approving a chore must log a taskApproved event',
+      );
       expect(params!['selfApproved'], isTrue);
     });
 
@@ -56,11 +90,15 @@ void main() {
     });
 
     test('carries no names — the collection is pseudonymous', () async {
+      SharedPreferences.setMockInitialValues({});
       final db = FakeFirebaseFirestore();
       final container = ProviderContainer(
         overrides: [
           taskRepositoryProvider.overrideWith((_) => MockTaskRepository()),
           analyticsProvider.overrideWith((_) => Analytics(db)),
+          authNotifierProvider.overrideWith(
+            () => _FixedAuthNotifier(AuthState(user: _approver)),
+          ),
         ],
       );
       addTearDown(container.dispose);

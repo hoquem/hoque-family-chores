@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
@@ -88,6 +89,14 @@ Future<void> pumpTestApp(WidgetTester tester, {User? user}) async {
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();
   });
+
+  // Approving a chore now also records a review-prompt positive moment
+  // (see review_prompt_positive_moment.dart), which persists a counter in
+  // SharedPreferences. Without a mock backing store, SharedPreferences.
+  // getInstance() falls through to the real method-channel implementation,
+  // which has no platform side in a widget test and never resolves —
+  // hanging pumpAndSettle instead of failing loudly.
+  SharedPreferences.setMockInitialValues({});
 
   final ctx = TaskTestContext.instance;
   ctx.mockAuthRepository = MockAuthRepository();
