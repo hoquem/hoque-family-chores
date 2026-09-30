@@ -109,7 +109,7 @@ async function processRule(db, ruleRef, now, TimestampCtor) {
       : null;
 
     const taskRef = db.collection(`families/${familyId}/tasks`).doc();
-    tx.set(taskRef, {
+    const taskData = {
       title: template.title,
       description: template.description || '',
       status: assigned ? 'assigned' : 'available',
@@ -125,7 +125,11 @@ async function processRule(db, ruleRef, now, TimestampCtor) {
       requiresPhotoProof: !!template.requiresPhotoProof,
       ruleId: ruleRef.id,
       version: 0,
-    });
+    };
+    if (template.guide) {
+      taskData.guide = template.guide;
+    }
+    tx.set(taskRef, taskData);
 
     if (!next) {
       // No further occurrences — end the series cleanly.
