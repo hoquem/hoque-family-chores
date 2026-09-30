@@ -26,6 +26,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/main.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/bottom_nav_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/rewards_notifier.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -48,7 +49,7 @@ final _testReward = Reward(
   createdAt: DateTime(2026, 7, 20),
 );
 
-/// Claims by handing stars back through the same [MockUserRepository]
+/// Spends stars by writing straight through the same [MockUserRepository]
 /// `streamUserProfile` is watching, standing in for the Cloud Function that
 /// owns `points` server-side and writes it straight to Firestore.
 class _MockClaimRewardUseCase implements ClaimRewardUseCase {
@@ -182,6 +183,14 @@ void main() {
             'remounted -- that is the visible flash',
       );
       expect(find.textContaining('Connecting'), findsNothing);
+      // Another autoDispose provider MainScreen owns: tearing the subtree
+      // down loses the selected tab along with it, silently bouncing the
+      // user back to Home mid-claim.
+      expect(
+        container.read(bottomNavIndexNotifierProvider),
+        2,
+        reason: 'the Treats tab must still be selected after the claim',
+      );
     },
   );
 
@@ -211,17 +220,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Re-select the Treats tab: it's a fixed-price bug-severity guard, not
-    // part of the assertion -- when the flash tears down MainScreen it also
-    // takes bottomNavIndexNotifierProvider with it (autoDispose, last
-    // listener gone), so the tab silently pops back to Home. Tapping the
-    // already-selected tab post-fix is a harmless no-op.
-    await tester.tap(find.text('Treats').last);
-    await tester.pump(const Duration(milliseconds: 300));
-
     // The claim use case spent stars purely by writing through the profile
     // repository (standing in for the server-side Cloud Function); the
-    // balance shown must still follow, via the live profile stream alone.
+    // balance shown must still follow, via the live profile stream alone,
+    // while staying on the Treats tab throughout.
     expect(find.text('45 ⭐'), findsOneWidget);
   });
 }
