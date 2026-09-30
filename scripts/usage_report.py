@@ -132,6 +132,18 @@ def field(doc: dict, name: str):
     return None
 
 
+def map_field(doc: dict, name: str, key: str):
+    """Decode one string value nested inside a Firestore REST map field.
+
+    ``analyticsEvents.params`` is a ``mapValue``; this reaches into it for
+    one key (e.g. ``source`` on an ``inviteShared`` event) without decoding
+    the whole map.
+    """
+    mapped = doc.get("fields", {}).get(name, {}).get("mapValue", {}).get("fields", {})
+    v = mapped.get(key)
+    return v.get("stringValue") if v else None
+
+
 def family_id_of_task(doc: dict) -> str:
     """Tasks live at ``families/{familyId}/tasks/{taskId}``."""
     parts = doc["name"].split("/documents/")[1].split("/")
@@ -187,6 +199,31 @@ def main() -> None:
             if (field(f, "createdAt") or datetime.min.replace(tzinfo=timezone.utc)) >= since
         ]
 
+    # "Invite your family" funnel: does prompting a solo family to invite
+    # someone turn into a second member? See
+    # lib/core/analytics/analytics.dart for the event vocabulary and
+    # docs/superpowers/specs/2026-09-29-review-prompt-and-invite-share-design.md
+    # for the feature this measures.
+    GROWTH_EVENT_NAMES = (
+        "inviteStepShown",
+        "inviteStepSkipped",
+        "inviteShared",
+        "memberJoined",
+    )
+    growth_events = [
+        e
+        for e in run_query(token, "analyticsEvents")
+        if field(e, "name") in GROWTH_EVENT_NAMES
+        and field(e, "familyId") not in excluded
+    ]
+
+    def growth_events_in(since):
+        return [
+            e
+            for e in growth_events
+            if (field(e, "createdAt") or datetime.min.replace(tzinfo=timezone.utc)) >= since
+        ]
+
     print(f"Chores Star usage, {now:%Y-%m-%d %H:%M} UTC (excluding demo family)")
     print(f"  Families:                  {len(families)}")
     print(f"  Families with 2+ members:  {sum(1 for c in members.values() if c >= 2)}")
@@ -199,6 +236,23 @@ def main() -> None:
         print(f"     Chores created:         {len(created_in(since))}")
         print(f"     Chores approved:        {len(approved)}")
         print(f"     Active families:        {len({family_id_of_task(t) for t in approved})}  (1+ chore approved)")
+
+    print("  Invite your family funnel")
+    for label, since in ((f"last {args.days} days", short), ("last 30 days", month)):
+        window = growth_events_in(since)
+        counts = Counter(field(e, "name") for e in window)
+        sources = Counter(
+            map_field(e, "params", "source") or "unknown"
+            for e in window
+            if field(e, "name") == "inviteShared"
+        )
+        print(f"  -- {label}")
+        print(f"     Invite step shown:      {counts['inviteStepShown']}")
+        print(f"     Invite step skipped:    {counts['inviteStepSkipped']}")
+        print(f"     Invites shared:         {counts['inviteShared']}"
+              + (f"  ({', '.join(f'{k} {v}' for k, v in sorted(sources.items()))})"
+                 if sources else ""))
+        print(f"     Members joined by code: {counts['memberJoined']}")
 
 
 if __name__ == "__main__":
