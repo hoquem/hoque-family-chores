@@ -520,7 +520,8 @@ exports.generateChoreGuide = onCall({ secrets: [geminiApiKey] }, async (request)
 
 exports.onTaskCreated = onDocumentCreated({ document: 'families/{familyId}/tasks/{taskId}', secrets: [geminiApiKey] }, async (event) => {
   const { familyId, taskId } = event.params;
-  const task = event.data.after.data();
+  // A v2 create event's data is the new snapshot itself (no before/after).
+  const task = event.data?.data();
   if (!task) return;
 
   const creatorSnap = await db.doc(`users/${task.createdById}`).get();
@@ -529,7 +530,11 @@ exports.onTaskCreated = onDocumentCreated({ document: 'families/{familyId}/tasks
   const title = task.title || 'a new chore';
   const points = Number(task.points) || 0;
 
-  await notifyFamily(
+  // A recurring occurrence is spawned by the engine, not added by a person:
+  // announcing "X added a new chore" on every repeat would be noise.
+  const isRecurringOccurrence = Boolean(task.ruleId);
+
+  if (!isRecurringOccurrence) await notifyFamily(
     familyId,
     task.createdById,
     `New chore: ${title}`,

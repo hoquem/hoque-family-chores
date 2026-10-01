@@ -129,6 +129,18 @@ await expectFail('profile-less dave cannot refund', 'permission-denied', callAs(
 await expectEq("dave's claim is still open", status('families/famA/redemptions/daveClaim'), 'claimed');
 await expectEq('no dave profile was created', exists('users/dave'), false);
 
+console.log('\n-- new chore: onTaskCreated notifies the rest of the family --');
+const before = { alice: await count('users/alice/notifications'), carol: await count('users/carol/notifications') };
+await adb.doc('families/famA/tasks/newChore').set({ title: 'feed the cat', status: 'available', createdById: 'alice', points: 15, guide: { motivation: 'm', steps: ['s'] } });
+await expectEq('carol is notified about the new chore', waitFor(async () => (await count('users/carol/notifications')) > before.carol), true);
+await expectEq('the creator is not notified about her own chore', count('users/alice/notifications'), before.alice);
+
+console.log('\n-- new chore: a recurring occurrence does not notify the family --');
+const beforeRec = await count('users/carol/notifications');
+await adb.doc('families/famA/tasks/recurringOccurrence').set({ title: 'bins', status: 'available', createdById: 'alice', ruleId: 'rule1', points: 5, guide: { motivation: 'm', steps: ['s'] } });
+await sleep(5000); // let onTaskCreated run
+await expectEq('no "new chore" notification for a recurring occurrence', count('users/carol/notifications'), beforeRec);
+
 console.log('\n-- account deletion: profile delete+restore alone releases nothing --');
 // DeleteAccountUseCase deletes the profile first and RESTORES it if the auth
 // delete needs a recent login. That path must leave the member intact.
