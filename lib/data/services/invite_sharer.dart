@@ -8,15 +8,21 @@ abstract interface class InviteSharer {
   /// :param text: what to share.
   /// :param origin: the tapped control's global rect. Required on iPad, where
   ///     the share sheet is a popover that must point at something.
-  Future<void> share(String text, {Rect? origin});
+  /// :returns: false only when the person dismissed the share sheet without
+  ///     picking anything — the caller must not log a share or treat it as
+  ///     one for that result. True otherwise, including when the platform
+  ///     cannot report what happened (`unavailable`, common on Android):
+  ///     silence must not turn into an undercount.
+  Future<bool> share(String text, {Rect? origin});
 }
 
 class SystemInviteSharer implements InviteSharer {
   @override
-  Future<void> share(String text, {Rect? origin}) async {
-    await SharePlus.instance.share(
+  Future<bool> share(String text, {Rect? origin}) async {
+    final result = await SharePlus.instance.share(
       ShareParams(text: text, sharePositionOrigin: origin),
     );
+    return result.status != ShareResultStatus.dismissed;
   }
 }
 

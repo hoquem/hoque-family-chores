@@ -17,8 +17,9 @@ class _FakeSharer implements InviteSharer {
   final shared = <String>[];
 
   @override
-  Future<void> share(String text, {Rect? origin}) async {
+  Future<bool> share(String text, {Rect? origin}) async {
     shared.add(text);
+    return true;
   }
 }
 

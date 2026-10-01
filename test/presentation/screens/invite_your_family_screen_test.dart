@@ -32,11 +32,13 @@ final _family = FamilyEntity(
 class _FakeSharer implements InviteSharer {
   final shared = <String>[];
   Object? throwOnShare;
+  bool dismissed = false;
 
   @override
-  Future<void> share(String text, {Rect? origin}) async {
+  Future<bool> share(String text, {Rect? origin}) async {
     if (throwOnShare != null) throw throwOnShare!;
     shared.add(text);
+    return !dismissed;
   }
 }
 
@@ -144,5 +146,28 @@ void main() {
     await pump(tester);
 
     expect(find.text('Copy'), findsOneWidget);
+  });
+
+  testWidgets(
+      'dismissing the share sheet without picking anything is not a share',
+      (tester) async {
+    sharer.dismissed = true;
+    await pump(tester);
+
+    await tester.tap(find.text('Share invite'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump();
+
+    // Still "Maybe later", not "Done" — a cancelled share sheet must not be
+    // treated as a completed share.
+    expect(find.text('Maybe later'), findsOneWidget);
+    expect(find.text('Done'), findsNothing);
+
+    final events =
+        await tester.runAsync(() => firestore.collection('analyticsEvents').get());
+    expect(
+      events!.docs.map((d) => d['name']),
+      isNot(contains('inviteShared')),
+    );
   });
 }

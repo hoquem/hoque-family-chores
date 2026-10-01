@@ -32,9 +32,13 @@ Future<void> shareInvite(
   VoidCallback? onShared,
 }) async {
   try {
-    await ref
+    final shared = await ref
         .read(inviteSharerProvider)
         .share(inviteMessage(inviteCode), origin: origin);
+    // Dismissed without picking anything: not a share. Logging it anyway
+    // would overcount inviteShared and, on the onboarding step, would wrongly
+    // relabel "Maybe later" to "Done".
+    if (!shared) return;
     onShared?.call();
     final currentUser = ref.read(authNotifierProvider).user;
     if (currentUser != null) {

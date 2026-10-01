@@ -40,9 +40,10 @@ class _FakeSharer implements InviteSharer {
   Object? throwOnShare;
 
   @override
-  Future<void> share(String text, {Rect? origin}) async {
+  Future<bool> share(String text, {Rect? origin}) async {
     if (throwOnShare != null) throw throwOnShare!;
     shared.add(text);
+    return true;
   }
 }
 
