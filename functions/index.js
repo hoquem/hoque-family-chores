@@ -105,7 +105,16 @@ async function sendPushToUser(userId, title, body, data) {
 }
 
 /// Create an in-app notification AND optionally send a push.
+///
+/// Skips a user whose profile is gone (deleted account): the write would not
+/// fail, it would leave orphan docs, and their leftover fcmTokens could still
+/// push to a device that has deleted its account.
 async function notify(userId, title, message, data, pushTitle, pushBody) {
+  const profile = await db.doc(`users/${userId}`).get();
+  if (!profile.exists) {
+    console.warn(`[notify] Skipping ${data?.type || 'generic'} for ${userId}: no profile (account deleted?)`);
+    return;
+  }
   await createInAppNotification(userId, {
     title,
     message,
@@ -149,6 +158,7 @@ exports.approveTask = onCall(async (request) => {
   let doerId;
   let taskTitle;
   let points;
+  let doerExists;
 
   await db.runTransaction(async (tx) => {
     const approverSnap = await tx.get(approverRef);
@@ -173,13 +183,30 @@ exports.approveTask = onCall(async (request) => {
     taskTitle = task.title || 'a chore';
     points = Number(task.points) || 0;
 
+    // The doer may have deleted their account. The chore was still done, so
+    // approve it, but there is no profile to pay: tx.update on a missing doc
+    // fails the whole transaction (NOT_FOUND), and set() would resurrect a
+    // ghost profile. All reads must precede the writes in a transaction.
+    const doerRef = db.doc(`users/${doerId}`);
+    doerExists = (await tx.get(doerRef)).exists;
+
     tx.update(taskRef, {
       status: 'completed',
       approvedBy: uid,
       approvedAt: FieldValue.serverTimestamp(),
     });
-    tx.update(db.doc(`users/${doerId}`), { points: FieldValue.increment(points) });
+    if (doerExists) {
+      tx.update(doerRef, { points: FieldValue.increment(points) });
+    }
   });
+
+  if (!doerExists) {
+    console.warn(
+      `[approveTask] Doer ${doerId} has no profile (account deleted); ` +
+      `task ${familyId}/${taskId} completed without awarding ${points} stars.`,
+    );
+    return { ok: true, starsAwarded: false, reason: 'doer-left' };
+  }
 
   // Notify doer: their task was approved.
   const approverSnap = await approverRef.get();
@@ -194,7 +221,7 @@ exports.approveTask = onCall(async (request) => {
     `'${taskTitle}' was checked off — you earned ${points}⭐`
   );
 
-  return { ok: true };
+  return { ok: true, starsAwarded: true };
 });
 
 // Spend stars on a reward: deduct the cost and record the redemption in one
@@ -278,9 +305,15 @@ exports.settleRedemption = onCall(async (request) => {
   let rewardTitle;
   let settledStatus;
 
+  const settlerRef = db.doc(`users/${uid}`);
+
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(redemptionRef);
     if (!snap.exists) throw new HttpsError('not-found', 'Claim not found.');
+    // A refund updates the caller's profile; without this read a caller whose
+    // profile is gone gets an opaque INTERNAL (tx.update NOT_FOUND).
+    const settlerSnap = await tx.get(settlerRef);
+    if (!settlerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
     const r = snap.data();
     if (r.claimedBy !== uid) {
       throw new HttpsError('permission-denied', 'Only the person who claimed this can settle it.');
@@ -298,12 +331,12 @@ exports.settleRedemption = onCall(async (request) => {
     });
     if (!happened) {
       const cost = Number(r.cost) || 0;
-      tx.update(db.doc(`users/${uid}`), { points: FieldValue.increment(cost) });
+      tx.update(settlerRef, { points: FieldValue.increment(cost) });
     }
   });
 
   // Notify claimant: their treat was settled.
-  const settlerSnap = await db.doc(`users/${uid}`).get();
+  const settlerSnap = await settlerRef.get();
   const settlerPhoto = settlerSnap.data()?.photoUrl || '';
   await notify(
     uid,
