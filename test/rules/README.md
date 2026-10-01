@@ -31,6 +31,7 @@ can't leak into another's assertions. Exit code is non-zero if any check fails.
 | `points_lock` | No client writes `points`, self or parent. All star movement goes through the Cloud Functions. |
 | `role_lock` | `role` is pinned once you are in a family, so nobody can promote themselves into `approveTask`'s parent exemption — while a joiner picking parent or child, and a parent re-grading a member, both still work. |
 | `notification_read` | Notifications are readable and markable only by their owner. |
+| `member_cleanup` | Deleting an account releases the leaver's unfinished chores and recurring-rule assignments and drops them from `memberIds`; `pendingApproval` work stays approvable; a second run is a no-op. |
 
 **Adding a suite?** Wire it into `package.json` — `npm test` runs the named
 scripts, so a file that isn't listed never runs.

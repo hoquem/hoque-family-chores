@@ -2,7 +2,7 @@
 // Verifies award (approve), the self-approve guard + parent override, spend
 // (claim), the insufficient-stars guard, and refund + double-settle guard.
 // Also: a member who deleted their account (profile doc gone) must not wedge
-// approval or notifications.
+// approval or notifications, and the auth-delete trigger releases their chores.
 import adminPkg from 'firebase-admin';
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, signInWithCustomToken } from 'firebase/auth';
@@ -17,18 +17,22 @@ const adb = adminPkg.firestore();
 const aauth = adminPkg.auth();
 
 // --- seed auth users + firestore ---
-for (const uid of ['alice', 'bob', 'carol', 'dave']) {
+for (const uid of ['alice', 'bob', 'carol', 'dave', 'erin', 'frank']) {
   await aauth.createUser({ uid }).catch(() => {});
 }
 await adb.doc('users/alice').set({ familyId: 'famA', role: 'parent', points: 0 });
 await adb.doc('users/bob').set({ familyId: 'famA', role: 'child', points: 100 });
 await adb.doc('users/carol').set({ familyId: 'famA', role: 'child', points: 0 });
+await adb.doc('users/erin').set({ familyId: 'famA', role: 'child', points: 0 });
+await adb.doc('users/frank').set({ familyId: 'famA', role: 'child', points: 0 });
 // dave has an auth user but no profile doc; 'ghost' has neither (deleted account).
-await adb.doc('families/famA').set({ memberIds: ['alice', 'bob', 'carol'], creatorId: 'alice' });
+await adb.doc('families/famA').set({ memberIds: ['alice', 'bob', 'carol', 'erin', 'frank'], creatorId: 'alice' });
 await adb.doc('families/famA/tasks/task1').set({ title: 'chore', status: 'pendingApproval', assignedToId: 'bob', points: 100 });
 await adb.doc('families/famA/tasks/task2').set({ title: 'parent chore', status: 'pendingApproval', assignedToId: 'alice', points: 30 });
 await adb.doc('families/famA/tasks/ghostTask').set({ title: 'left behind', status: 'pendingApproval', assignedToId: 'ghost', points: 40 });
 await adb.doc('families/famA/tasks/ghostRevision').set({ title: 'sent back', status: 'pendingApproval', assignedToId: 'ghost', points: 5 });
+await adb.doc('families/famA/tasks/erinTask').set({ title: 'erin chore', status: 'assigned', assignedToId: 'erin', points: 10 });
+await adb.doc('families/famA/tasks/frankTask').set({ title: 'frank chore', status: 'assigned', assignedToId: 'frank', points: 10 });
 await adb.doc('families/famA/redemptions/daveClaim').set({ rewardTitle: 'x', cost: 10, claimedBy: 'dave', status: 'claimed' });
 await adb.doc('families/famA/rewards/rw1').set({ title: 'movie', cost: 60, timeframe: 'openEnded', createdBy: 'alice' });
 
@@ -49,7 +53,13 @@ const status = async (path) => (await adb.doc(path).get()).data().status;
 const field = async (path, name) => (await adb.doc(path).get()).data()[name];
 const exists = async (path) => (await adb.doc(path).get()).exists;
 const count = async (path) => (await adb.collection(path).get()).size;
+const memberIds = async () => (await adb.doc('families/famA').get()).data().memberIds;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function waitFor(pred, ms = 20000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) { if (await pred()) return true; await sleep(250); }
+  return false;
+}
 
 let pass = 0, fail = 0;
 async function expectOk(name, promise) {
@@ -118,6 +128,24 @@ console.log('\n-- settle: a caller with no profile gets a clean error, not INTER
 await expectFail('profile-less dave cannot refund', 'permission-denied', callAs('dave', 'settleRedemption', { familyId: 'famA', redemptionId: 'daveClaim', happened: false }));
 await expectEq("dave's claim is still open", status('families/famA/redemptions/daveClaim'), 'claimed');
 await expectEq('no dave profile was created', exists('users/dave'), false);
+
+console.log('\n-- account deletion: profile delete+restore alone releases nothing --');
+// DeleteAccountUseCase deletes the profile first and RESTORES it if the auth
+// delete needs a recent login. That path must leave the member intact.
+const frankProfile = (await adb.doc('users/frank').get()).data();
+await adb.doc('users/frank').delete();
+await adb.doc('users/frank').set(frankProfile);
+await sleep(4000);
+await expectEq('frank still in memberIds', (await memberIds()).includes('frank'), true);
+await expectEq("frank's chore still assigned", status('families/famA/tasks/frankTask'), 'assigned');
+
+console.log('\n-- account deletion: auth delete releases chores and the roster slot --');
+await adb.doc('users/erin').delete();
+await aauth.deleteUser('erin');
+await expectEq('erin removed from memberIds', waitFor(async () => !(await memberIds()).includes('erin')), true);
+await expectEq("erin's assigned chore back to available", status('families/famA/tasks/erinTask'), 'available');
+await expectEq("erin's chore unassigned", field('families/famA/tasks/erinTask', 'assignedToId'), null);
+await expectEq('everyone else still in memberIds', (await memberIds()).join(','), 'alice,bob,carol,frank');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);

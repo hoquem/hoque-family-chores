@@ -11,11 +11,14 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+// Gen 2 has no auth-user-deleted trigger; gen 1's is the only one.
+const functionsV1 = require('firebase-functions/v1');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const { spawnDueOccurrences } = require('./recurringEngine');
+const { releaseDeletedMember } = require('./memberCleanup');
 
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
@@ -621,6 +624,22 @@ exports.onTaskUpdated = onDocumentUpdated('families/{familyId}/tasks/{taskId}', 
     );
     return;
   }
+});
+
+// ---------------------------------------------------------------------------
+// Account deletion
+// ---------------------------------------------------------------------------
+
+// Fires only once the auth user is really gone. Not onDocumentDeleted on the
+// profile: the app deletes users/{uid} FIRST and restores it if the auth delete
+// needs a recent login, so a profile-delete trigger would strip a still-live
+// member off their family's roster (locking them out via the rules).
+exports.onAuthUserDeleted = functionsV1.auth.user().onDelete(async (user) => {
+  const result = await releaseDeletedMember(db, user.uid);
+  console.log(
+    `[accountDeleted] ${user.uid}: left [${result.families.join(', ')}], ` +
+    `${result.tasksReleased} chores released, ${result.rulesUnassigned} recurring rules unassigned`,
+  );
 });
 
 // First scheduled function. Every 15 min at :07/:22/:37/:52 — off the
