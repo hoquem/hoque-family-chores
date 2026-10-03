@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get Chores Star</title>
+<meta name="description" content="Chores Star: kids pick up chores, an AI coach shows them how, and they earn stars for treats. Free, no ads.">
+<link rel="icon" href="icon.png">
+<meta property="og:title" content="Chores Star">
+<meta property="og:description" content="Kids pick up chores, an AI coach shows them how, and they earn stars for treats. Free, no ads.">
+<meta property="og:image" content="https://hoquem.github.io/hoque-family-chores/get/icon.png">
+<meta property="og:url" content="https://hoquem.github.io/hoque-family-chores/get/">
+<!--
+  Smart link: one URL for every channel. iPhone/iPad go straight to the App
+  Store; Android sees the tester steps until Google Play production launches
+  (then swap ANDROID_STEPS for the store listing). ?c=<channel> tags the App
+  Store campaign (ct) so App Store Connect shows which channel brought the
+  download, e.g. /get/?c=flyer
+-->
+<style>
+  :root { --bg:#FBF6EF; --card:#FFF1E6; --ink:#2B2118; --soft:#6B5B4B; --accent:#E0891E; --accentInk:#2B2118; --line:#EADCCB; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:460px; margin:0 auto; padding:32px 16px 48px; text-align:center; }
+  img.icon { width:96px; height:96px; border-radius:22px; }
+  h1 { font-size:28px; margin:16px 0 4px; }
+  .tag { color:var(--soft); margin:0 0 24px; }
+  .card { background:var(--card); border-radius:18px; padding:20px; margin:16px 0; text-align:left; }
+  .card h2 { font-size:18px; margin:0 0 12px; }
+  a.btn { display:block; text-align:center; background:var(--accent); color:var(--accentInk); font-weight:700; text-decoration:none; border-radius:999px; padding:14px 16px; margin:10px 0; }
+  a.btn.secondary { background:transparent; border:1.5px solid var(--line); }
+  ol { list-style:none; padding-left:0; margin:0; }
+  li { margin:0 0 12px; }
+  .note { font-size:14px; color:var(--soft); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+  <img class="icon" src="icon.png" alt="">
+  <h1>Chores Star</h1>
+  <p class="tag">Stop nagging. Start Chores Star.<br>Kids pick up chores, an AI coach shows them how, and they earn stars for treats. Free, no ads.</p>
+
+  <section id="ios" class="card">
+    <h2>iPhone and iPad</h2>
+    <a class="btn" id="appStoreLink" href="https://apps.apple.com/app/id6746752194?pt=127879651&amp;ct=smartlink&amp;mt=8">View Chores Star on the App Store</a>
+  </section>
+
+  <section id="android" class="card">
+    <h2>Android (early access)</h2>
+    <p class="note">Chores Star is in testing on Google Play. It takes 3 quick steps, using the same Google account as your Play Store:</p>
+    <ol>
+      <li><a class="btn secondary" href="https://groups.google.com/g/chores-star-testers/about">1. Join the tester group</a>
+        <span class="note">Tap <b>Join group</b>, then <b>Join group</b> again to confirm.</span></li>
+      <li><a class="btn secondary" href="https://play.google.com/apps/testing/com.hoque.familychores">2. Become a tester</a></li>
+      <li><span class="note">3. Install Chores Star from the link on that page. If Play says "Item not found", wait 15 to 30 minutes and try again.</span></li>
+    </ol>
+  </section>
+
+  <p class="note">Questions? See <a href="../">support</a>.</p>
+</main>
+<script>
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    var isAndroid = /Android/i.test(ua);
+    var channel = new URLSearchParams(location.search).get("c");
+    var link = document.getElementById("appStoreLink");
+    if (channel && /^[a-z0-9_-]{1,40}$/i.test(channel)) {
+      link.href = link.href.replace("ct=smartlink", "ct=" + encodeURIComponent(channel));
+    }
+    if (isIOS) {
+      document.getElementById("android").className += " hidden";
+      location.replace(link.href);
+    } else if (isAndroid) {
+      document.getElementById("ios").className += " hidden";
+    }
+  })();
+</script>
+</body>
+</html>
