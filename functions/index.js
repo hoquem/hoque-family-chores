@@ -21,6 +21,11 @@ const { spawnDueOccurrences } = require('./recurringEngine');
 const { releaseDeletedMember } = require('./memberCleanup');
 
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
+// Gemini model for Mission Guides. Google retires models (gemini-2.5-flash
+// started returning 404 "no longer available to new users" in Oct 2026), so
+// it lives in one place and can be overridden with GEMINI_MODEL in the
+// functions environment without a code change.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 initializeApp();
 const db = getFirestore();
@@ -369,7 +374,7 @@ function sanitizePromptInput(text) {
 }
 
 async function callGeminiForGuide({ title, description, difficulty, parentTip, apiKey }) {
-  const uri = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const uri = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
   const cleanTitle = sanitizePromptInput(title);
   const cleanDescription = sanitizePromptInput(description);
