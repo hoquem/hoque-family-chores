@@ -10,6 +10,7 @@ import 'package:hoque_family_chores/presentation/screens/notifications_screen.da
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 import 'package:hoque_family_chores/presentation/screens/security_screen.dart';
+import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -186,6 +187,13 @@ class UserProfileScreen extends ConsumerWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const NotificationsScreen()),
             ),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.volume_up),
+            title: const Text('Sound effects'),
+            value: ref.watch(soundEnabledProvider),
+            onChanged: (on) =>
+                ref.read(soundEnabledProvider.notifier).setEnabled(on),
           ),
           ListTile(
             leading: const Icon(Icons.security),
