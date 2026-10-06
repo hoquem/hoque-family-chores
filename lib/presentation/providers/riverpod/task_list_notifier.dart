@@ -8,6 +8,8 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/utils/logger.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/presentation/sound/app_sound.dart';
+import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 import 'review_prompt_positive_moment.dart';
 
 part 'task_list_notifier.g.dart';
@@ -302,6 +304,8 @@ class TaskListNotifier extends _$TaskListNotifier {
                 userId: userId.value,
                 familyId: familyId.value,
               );
+          // Not awaited: the tick must never add latency to marking done.
+          ref.read(soundServiceProvider).play(AppSound.choreDone);
           ref.invalidateSelf();
         },
       );
