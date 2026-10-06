@@ -6,14 +6,15 @@ import 'package:hoque_family_chores/presentation/motion/star_burst_painter.dart'
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 Future<void> _pump(WidgetTester tester, CelebrationKind kind,
-    {bool reducedMotion = false, VoidCallback? onDone}) async {
+    {bool reducedMotion = false, VoidCallback? onDone, VoidCallback? onShow}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: appLightTheme,
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reducedMotion),
         child: Scaffold(
-          body: CelebrationOverlayView(kind: kind, onDone: onDone ?? () {}),
+          body: CelebrationOverlayView(
+              kind: kind, onDone: onDone ?? () {}, onShow: onShow),
         ),
       ),
     ),
@@ -21,6 +22,22 @@ Future<void> _pump(WidgetTester tester, CelebrationKind kind,
 }
 
 void main() {
+  testWidgets('onShow fires once when the celebration starts', (tester) async {
+    var shows = 0;
+    await _pump(tester, const StarsAwarded(10), onShow: () => shows++);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(shows, 1);
+  });
+
+  testWidgets('reduced motion still fires onShow (sound is not motion)',
+      (tester) async {
+    var shows = 0;
+    await _pump(tester, const StarsAwarded(5),
+        reducedMotion: true, onShow: () => shows++);
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+    expect(shows, 1);
+  });
+
   testWidgets('stars awarded shows +N and finishes', (tester) async {
     var done = false;
     await _pump(tester, const StarsAwarded(10), onDone: () => done = true);
