@@ -52,7 +52,7 @@ class _CelebrationOverlayViewState extends State<CelebrationOverlayView>
     // Post-frame: prefersReducedMotion needs MediaQuery, unavailable in initState.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      SemanticsService.announce(_announcement, TextDirection.ltr);
+      SemanticsService.sendAnnouncement(View.of(context), _announcement, TextDirection.ltr);
       widget.onShow?.call();
       if (context.prefersReducedMotion) {
         // Static variant: the information, a beat to read it, no movement.

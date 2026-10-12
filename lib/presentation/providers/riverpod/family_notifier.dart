@@ -31,7 +31,7 @@ class FamilyNotifier extends _$FamilyNotifier {
       final getFamilyUseCase = ref.watch(getFamilyUseCaseProvider);
       final result = await getFamilyUseCase.call(familyId: familyId);
       
-      return result.fold(
+      return result.fold<FamilyEntity>(
         (failure) => throw Exception(failure.message),
         (family) {
           _logger.d('FamilyNotifier: Loaded family ${family.name}');

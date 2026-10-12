@@ -57,7 +57,7 @@ class CreateFamilyUseCase {
       );
 
       if (validationResult.isLeft()) {
-        return validationResult.fold(
+        return validationResult.fold<Either<Failure, FamilyEntity>>(
           (failure) => Left(failure),
           (_) => throw Exception('Unexpected success in validation'),
         );
