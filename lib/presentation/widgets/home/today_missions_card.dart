@@ -36,6 +36,7 @@ class TodayMissionsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: context.tokens.lagoonTint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

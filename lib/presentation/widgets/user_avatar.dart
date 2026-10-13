@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../domain/entities/user.dart';
+import '../theme/app_tokens.dart';
 
 /// A member's avatar, resolved by precedence: chosen emoji → photo → initial.
 ///
@@ -19,7 +20,7 @@ class UserAvatar extends StatelessWidget {
     if (emoji != null && emoji.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+        backgroundColor: memberColor(user.id.value),
         // Emoji scaled to the circle; a hair under the diameter so it doesn't
         // clip against the edge.
         child: Text(emoji, style: TextStyle(fontSize: radius * 1.1)),
@@ -36,9 +37,11 @@ class UserAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
+      backgroundColor: memberColor(user.id.value),
       child: Text(
         user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-        style: TextStyle(fontSize: radius * 0.8),
+        // Ink on every member colour is 7.6:1 or better.
+        style: TextStyle(fontSize: radius * 0.8, color: context.tokens.ink),
       ),
     );
   }
