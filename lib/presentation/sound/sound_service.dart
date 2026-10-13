@@ -37,11 +37,12 @@ class SoundService {
 /// toolchain.
 class SoundEnabled extends Notifier<bool> {
   static const _key = 'sound_effects_enabled';
+  static const _onByDefault = true;
 
   @override
   bool build() {
     _load();
-    return true;
+    return _onByDefault;
   }
 
   Future<void> _load() async {
@@ -49,7 +50,7 @@ class SoundEnabled extends Notifier<bool> {
     // unhandled async error; sound simply stays on.
     try {
       final prefs = await SharedPreferences.getInstance();
-      state = prefs.getBool(_key) ?? true;
+      state = prefs.getBool(_key) ?? _onByDefault;
     } catch (e) {
       AppLogger().w('[Sound] could not read the toggle: $e');
     }
