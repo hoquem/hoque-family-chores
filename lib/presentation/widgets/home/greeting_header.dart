@@ -5,13 +5,9 @@ import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
 
 /// Friendly avatar + greeting row at the top of the Home screen.
 class GreetingHeader extends StatelessWidget {
-  const GreetingHeader({super.key, required this.user, this.foreground});
+  const GreetingHeader({super.key, required this.user});
 
   final User user;
-
-  /// Text colour when the header sits on a coloured panel (the Home hero);
-  /// null keeps the theme's.
-  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +27,12 @@ class GreetingHeader extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .displaySmall
-                    ?.copyWith(fontWeight: FontWeight.bold, color: foreground),
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
                 'Level $level • ${user.points.value} ⭐',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: foreground),
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
           ),

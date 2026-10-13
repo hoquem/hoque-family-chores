@@ -397,7 +397,9 @@ void main() {
 
       expect(container.read(bottomNavIndexNotifierProvider), 0);
 
-      await tester.tap(find.byType(ProgressCard));
+      // The progress part, not the card's centre: the greeting shares the
+      // panel but is deliberately outside the tap target.
+      await tester.tap(find.textContaining('to next level'));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 

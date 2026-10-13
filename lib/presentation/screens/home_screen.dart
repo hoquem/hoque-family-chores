@@ -199,10 +199,7 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           ProgressCard(
-            header: GreetingHeader(
-              user: currentUser,
-              foreground: context.tokens.cream,
-            ),
+            header: GreetingHeader(user: currentUser),
             points: currentUser.points.value,
             streak: streak,
             // Treats is index 2 in MainScreen. A star balance with nothing to

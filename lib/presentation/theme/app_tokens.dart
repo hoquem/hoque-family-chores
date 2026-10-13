@@ -176,7 +176,7 @@ const CustomColors kLightTokens = CustomColors(
   brick: Color(0xFFC6412A),
   brickDeep: Color(0xFF9E3022),
   cream: Color(0xFFFFF8EC),
-  surface: Color(0xFFFCF9F4),
+  surface: Color(0xFFFFFDF9),
   ink: Color(0xFF241D14),
   inkSoft: Color(0xFF5C5346),
   inkMuted: Color(0xFF8A8067),
@@ -257,6 +257,13 @@ final ThemeData appLightTheme = ThemeData(
   useMaterial3: true,
   textTheme: kFridgeDoorTextTheme,
   primaryColor: kLightTokens.marigold,
+  // Cards state their colour. Left to M3 they take a peach surfaceContainer
+  // derived from the seed, which reads as beige-on-cream; a warm white lifts
+  // them off the sunny canvas.
+  cardTheme: CardThemeData(
+    color: kLightTokens.surface,
+    surfaceTintColor: Colors.transparent,
+  ),
   scaffoldBackgroundColor: kLightTokens.cream,
   // Buttons state their colours. Left to ColorScheme.fromSeed, M3 derives a
   // light container with primary-coloured text from the light marigold seed —

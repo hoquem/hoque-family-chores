@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/widgets/hero_panel.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/notifications_provider.dart';
 import 'package:hoque_family_chores/presentation/screens/about_screen.dart';
@@ -132,8 +133,10 @@ class UserProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         children: [
           // User profile header
-          Center(
-            child: Column(
+          HeroPanel(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
               children: [
                 UserAvatar(user: currentUser, radius: 50),
                 const SizedBox(height: 16),
@@ -154,11 +157,11 @@ class UserProfileScreen extends ConsumerWidget {
                   child: AnimatedStarCount(currentUser.points.value),
                 ),
               ],
+              ),
             ),
           ),
 
-          const SizedBox(height: 24),
-          const Divider(),
+          const SizedBox(height: 16),
 
           // Menu Options
           ListTile(
