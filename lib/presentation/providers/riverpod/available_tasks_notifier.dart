@@ -32,7 +32,7 @@ class AvailableTasksNotifier extends _$AvailableTasksNotifier {
       final getTasksUseCase = ref.watch(getTasksUseCaseProvider);
       final result = await getTasksUseCase.call(familyId: familyId);
       
-      return result.fold(
+      return result.fold<List<Task>>(
         (failure) => throw Exception(failure.message),
         (tasks) {
           // Filter to only available tasks

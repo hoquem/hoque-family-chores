@@ -337,6 +337,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             _logger.w('Failed to update task guide during save edits: $e');
           }
         }
+        if (!mounted) return;
         Navigator.of(context).pop(true);
       case TaskEditOutcome.conflict:
         await _handleEditConflict(currentUser);
@@ -674,7 +675,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       labelText: 'Assign To (Optional)',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedAssignee,
+                    initialValue: _selectedAssignee,
                     items: [
                       const DropdownMenuItem<User?>(
                         value: null,
@@ -705,7 +706,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                       border: OutlineInputBorder(),
                       helperText: 'Loading family members…',
                     ),
-                    value: null,
+                    initialValue: null,
                     items: const [],
                     onChanged: null,
                   ),
@@ -742,7 +743,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                     labelText: 'Assign To (Optional)',
                     border: OutlineInputBorder(),
                   ),
-                  value: null,
+                  initialValue: null,
                   items: const [],
                   onChanged: null,
                 ),

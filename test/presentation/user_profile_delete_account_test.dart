@@ -64,6 +64,10 @@ void main() {
       find.byType(ListView),
       const Offset(0, -100),
     );
+    // dragUntilVisible stops once the row is built, which the ListView's
+    // cache extent does off-screen; ensureVisible scrolls it into view.
+    await tester.ensureVisible(find.text('Delete Account'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete Account'));
     await tester.pumpAndSettle();
 
@@ -90,6 +94,10 @@ void main() {
       find.byType(ListView),
       const Offset(0, -100),
     );
+    // dragUntilVisible stops once the row is built, which the ListView's
+    // cache extent does off-screen; ensureVisible scrolls it into view.
+    await tester.ensureVisible(find.text('Delete Account'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete Account'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
@@ -117,6 +125,10 @@ void main() {
       find.byType(ListView),
       const Offset(0, -100),
     );
+    // dragUntilVisible stops once the row is built, which the ListView's
+    // cache extent does off-screen; ensureVisible scrolls it into view.
+    await tester.ensureVisible(find.text('Delete Account'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete Account'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, 'Delete'));

@@ -6,6 +6,8 @@ import 'package:hoque_family_chores/presentation/motion/celebration_overlay.dart
 import 'package:hoque_family_chores/presentation/motion/star_award_watcher.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/review_prompt_pending_signal.dart';
+import 'package:hoque_family_chores/presentation/sound/app_sound.dart';
+import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 
 /// Bridges the celebration queue to the screen: plays the queue's head as an
 /// overlay above [child], advancing when each one finishes. Mounted once,
@@ -65,6 +67,9 @@ class _CelebrationListenerState extends ConsumerState<CelebrationListener> {
               key: ValueKey(queue.first.seq),
               kind: queue.first.kind,
               onDone: () => _onCelebrationDone(queue.first.kind),
+              onShow: () => ref
+                  .read(soundServiceProvider)
+                  .play(AppSound.forCelebration(queue.first.kind)),
             ),
           ),
       ],

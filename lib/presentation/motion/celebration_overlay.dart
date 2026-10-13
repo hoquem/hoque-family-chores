@@ -6,13 +6,23 @@ import 'package:hoque_family_chores/presentation/motion/star_burst_painter.dart'
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/theme/motion.dart';
 
-/// Plays one celebration (spec §2): star-burst + headline + one haptic, then
-/// calls [onDone]. One-shot by construction — the controller never repeats.
+/// Plays one celebration (spec §2): star-burst + headline + one haptic, plus
+/// [onShow] (the sound), then calls [onDone]. One-shot by construction — the controller never repeats.
 class CelebrationOverlayView extends StatefulWidget {
-  const CelebrationOverlayView({super.key, required this.kind, required this.onDone});
+  const CelebrationOverlayView({
+    super.key,
+    required this.kind,
+    required this.onDone,
+    this.onShow,
+  });
 
   final CelebrationKind kind;
   final VoidCallback onDone;
+
+  /// Called once as the celebration starts, in both the animated and the
+  /// reduced-motion variant (reduced motion is about movement, not sound).
+  /// The listener plays the celebration's sound from here.
+  final VoidCallback? onShow;
 
   @override
   State<CelebrationOverlayView> createState() => _CelebrationOverlayViewState();
@@ -42,7 +52,8 @@ class _CelebrationOverlayViewState extends State<CelebrationOverlayView>
     // Post-frame: prefersReducedMotion needs MediaQuery, unavailable in initState.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      SemanticsService.announce(_announcement, TextDirection.ltr);
+      SemanticsService.sendAnnouncement(View.of(context), _announcement, TextDirection.ltr);
+      widget.onShow?.call();
       if (context.prefersReducedMotion) {
         // Static variant: the information, a beat to read it, no movement.
         Future<void>.delayed(const Duration(milliseconds: 1200), () {
