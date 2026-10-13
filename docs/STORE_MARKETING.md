@@ -2,6 +2,8 @@
 
 This document contains the official App Store and Google Play Store marketing copy, positioning, and keywords for **Chores Star**, focusing on the **AI Chore Coach**, motivation, and family life-skill learning.
 
+> **Superseded (2026-10-13).** The copy below predates the 29 Sep 2026 listing refresh and still offers allowance and screen time as treats, which the Reward rule forbids (`lib/domain/entities/reward.dart`). The live store listing is the source of truth; take wording from there.
+
 ---
 
 ## 🎯 Strategic Value Proposition & Marketing Angles
@@ -151,13 +153,7 @@ Download Chores Star today and turn daily chores into family superpowers!
 ## 🛠️ How to Update via Script or Console
 
 ### Apple App Store Connect:
-To re-run automated sync:
-```bash
-python3 scripts/update_appstore_metadata.py
-```
-This updates:
-1. Live versions: `promotionalText` (active immediately on App Store).
-2. Prepared versions: full description, keywords, promotional text, release notes, and attaches the latest eligible build.
+Edit the listing in App Store Connect. A new version copies the live version's description and keywords, so a release only needs its "What's New" text set.
 
 ### Google Play Console:
 - **Option A (Manual Copy-Paste in 30 seconds)**:
