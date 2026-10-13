@@ -14,14 +14,18 @@ colors:
   carrot-deep: "#9E5600"
   brick: "#C6412A"
   brick-deep: "#9E3022"
-  cream-bg: "#FBF7F0"
-  surface: "#FCF9F4"
+  cream-bg: "#FFF8EC"
+  surface: "#FFFDF9"
+  lagoon: "#0F5F6B"
+  lagoon-deep: "#0A464F"
+  lagoon-tint: "#E3F4F2"
+  sunshine-tint: "#FFF1C9"
   ink: "#241D14"
   ink-soft: "#5C5346"
   ink-muted: "#8A8067"
   line: "#E8E0D2"
-  warm-charcoal: "#1E1812"
-  warm-charcoal-surface: "#2A2218"
+  night-lagoon: "#0E2A30"
+  night-lagoon-surface: "#163A41"
 typography:
   display:
     fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", system-ui, sans-serif"
@@ -143,8 +147,11 @@ gamification** (confetti, popups, and animations competing for attention).
 **Key Characteristics:**
 
 - Warm, sunlit palette (amber/marigold primary, star-gold reward, coral
-  celebration) on warm-tinted neutrals — never pure white, never pure black,
-  never default purple.
+  celebration) on warm-tinted neutrals, with one cool counterpoint: a deep
+  **Lagoon** hero panel per screen, where gold stars sit on teal. Never pure
+  white, never pure black, never default purple.
+- Every family member has their own colour, on their avatar wherever they
+  appear: the informal "that one is mine" cue.
 - Chunky shapes: 16px corners on cards and buttons, 12px on inputs, full
   pills on status. Min 48px tap targets throughout.
 - One celebration moment per screen. Motion conveys state (progress,
@@ -153,11 +160,17 @@ gamification** (confetti, popups, and animations competing for attention).
   hue still reads state.
 - Flat by default; depth is warm tonal layering, not heavy shadows.
 
-## 2. Colors: The Fridge Door Palette
+## 2. Colors: The Fridge Door Palette ("Saturday Morning")
 
 A warm, sunlit palette built on a marigold primary and a star-gold reward
 color (already the app's ⭐ currency), with warm-tinted neutrals and a small
 functional status set that is *always* reinforced by icon + label.
+
+**Saturday Morning (2026-10-13)** turned the energy up without changing the
+identity. An all-warm palette read as calm, not exciting: the stars had
+nothing to stand out against. The fix is one cool counterpoint (Lagoon) used
+as each screen's single hero region, tinted cards instead of a beige stack,
+and a personal colour per family member.
 
 ### Primary
 
@@ -178,10 +191,39 @@ functional status set that is *always* reinforced by icon + label.
 
 ### Neutral
 
-- **Cream** (#FBF7F0): the app background. Warm off-white, tinted toward
+- **Cream** (#FFF8EC): the app background. A sunny off-white, tinted toward
   marigold. Replaces pure white surfaces.
-- **Surface** (#FCF9F4): card and elevated-container background, a hair
-  warmer/lighter than the page.
+- **Surface** (#FFFDF9): card background, a warm white that lifts cards off
+  the canvas. Stated in the theme's `cardTheme`: left to Material 3, cards
+  take a peach container colour derived from the seed.
+
+### Hero: Lagoon (the cool counterpoint)
+
+- **Lagoon** (#0F5F6B): the one bold region per screen, drawn by
+  `HeroPanel` (`lib/presentation/widgets/hero_panel.dart`): the Home greeting
+  and level, the Treats balance, the Family header, the Profile header.
+  Content on it is Cream (6.93:1); stars and filled buttons are Star Gold
+  with Ink labels.
+- **Lagoon Deep** (#0A464F): the level bar's track under a Star Gold fill
+  (5.84:1).
+- **Never Marigold on Lagoon** (2.73:1, under the 3:1 control floor). That is
+  why `HeroPanel` re-themes filled buttons to Star Gold.
+
+### Card tints
+
+- **Lagoon Tint** (#E3F4F2): Today's Missions. **Sunshine Tint** (#FFF1C9):
+  This Week's Stars. Each Home card gets its own tint so the stack reads as
+  distinct things, not one beige list. Ink on either is 14.7:1 or better.
+
+### Member colours
+
+Sky #6CC4FF, Mint #5FD3A0, Bubblegum #FF8FB8, Lilac #B9A2FF, Sunshine
+#FFD23F, Tangerine #FF9A3D (`kMemberColors`). One per person, picked
+deterministically from the uid by `memberColor`, on the avatar background
+behind an Ink initial or emoji (7.6:1 or better). Lilac is one person's
+colour, never an app colour: it must not drift toward the template purple.
+Six colours means two members of a large family can share one; a stored,
+chosen colour is the follow-up.
 - **Ink** (#241D14): primary text and on-marigold text. Warm near-black,
   never pure #000.
 - **Ink Soft** (#5C5346): secondary text, captions, metadata. AA on cream
@@ -224,16 +266,22 @@ test tells you what it costs.
 
 | Foreground | Background | Ratio | Use |
 |---|---|---|---|
-| Ink #241D14 | Cream #FBF7F0 | 15.60:1 | body text (AAA) |
-| Ink-Soft #5C5346 | Cream #FBF7F0 | 7.07:1 | secondary text (AA) |
+| Ink #241D14 | Cream #FFF8EC | 15.78:1 | body text (AAA) |
+| Ink-Soft #5C5346 | Cream #FFF8EC | 7.15:1 | secondary text (AA) |
+| Cream #FFF8EC | Lagoon #0F5F6B | 6.93:1 | hero text (AA) |
+| Star Gold #FFB300 | Lagoon #0F5F6B | 4.08:1 | hero stars, button edge (3:1) |
+| Star Gold #FFB300 | Lagoon Deep #0A464F | 5.84:1 | level bar fill on track (3:1) |
+| Ink #241D14 | Lagoon / Sunshine tint | 14.66 / 14.81:1 | card text (AAA) |
+| Ink #241D14 | any member colour | 7.67–11.53:1 | avatar initial (AA) |
 | Ink #241D14 | Marigold #E08A1E | 6.20:1 | primary button text (AA) |
 | Ink #241D14 | Star Gold #FFB300 | 9.28:1 | tonal button / FAB icon (AAA) |
-| Ink-Muted #8A8067 | Cream #FBF7F0 | 3.67:1 | large text / hints only — never body |
+| Ink-Muted #8A8067 | Cream #FFF8EC | 3.71:1 | large text / hints only, never body |
 | Ink #241D14 | any 12% status tint | 13.2–14.3:1 | status pill label |
 | status -deep | its own 12% tint | 4.3–5.7:1 | status pill icon (needs 3:1) |
 
-**Prohibited:** white on Marigold (2.68:1) and white on Star Gold (1.79:1) —
-both far under 4.5:1. Use Ink on every light brand surface.
+**Prohibited:** white on Marigold (2.68:1) and white on Star Gold (1.79:1),
+both far under 4.5:1. Use Ink on every light brand surface. Also Marigold on
+Lagoon (2.73:1).
 
 **Also prohibited:** Cream on Toasted Marigold. A previous revision listed this
 at "~4.6:1 (AA)" as the white-text variant; it is actually **3.85:1 and fails**
@@ -242,16 +290,20 @@ is a background for Ink text and a tone for icons, not a way to get white text.
 
 ### Dark Theme (planned; not yet in code)
 
-- **Warm Charcoal** (#1E1812) background, **Warm Charcoal Surface** (#2A2218)
-  cards, with marigold/star-gold carried over and ink inverted to cream tones.
-  The warm undertone must survive the inversion — never a neutral zinc dark
-  mode. (Implementation target for the `colorize` pass.)
+- **Night Lagoon** (#0E2A30) background, **Night Lagoon Surface** (#163A41)
+  cards, with star-gold carried over (8.40:1) and text in Cream (14.28:1 on
+  the background, 11.59:1 on cards). The stars look better at night than by
+  day; never a neutral zinc dark mode.
 
 ### Named Rules
 
 **The Warm-Neutral Rule.** Every neutral is tinted toward marigold. Pure
 `#FFFFFF` and pure `#000000` are prohibited. Even a 0.005–0.01 chroma tilt
 toward the brand hue is required.
+
+**The One-Hero Rule.** A screen has at most one Lagoon panel, at the top,
+holding who or what the screen is about. Lagoon is never a button, a chip or
+a card in a list; scattered, it stops being an event.
 
 **The One-Celebration Rule.** Coral and full-saturation accents appear on one
 moment per screen at most. A celebration card earns coral; a screen with a
@@ -399,7 +451,8 @@ three call sites each rolled their own and all three drifted.
 ### Cards / Containers
 
 - **Corner:** 16px (lg).
-- **Background:** Surface (#FCF9F4), warm hairline (Line) optional.
+- **Background:** Surface (#FFFDF9) by default (`cardTheme`); Home's cards
+  take a tint (Lagoon or Sunshine). Warm hairline (Line) optional.
 - **Shadow:** Ambient at rest, none needed for most. Never nested.
 - **Internal padding:** 16px (lg).
 - **Anti-pattern:** the current Chore Details screen stacks a Card per
@@ -426,14 +479,13 @@ three call sites each rolled their own and all three drifted.
 
 ### Progress
 
-- **LinearProgressIndicator:** chunky 12–16px track, Cream track, Marigold
-  fill. Conveys level progress only.
+- **LinearProgressIndicator:** chunky 12–16px track. On the Lagoon hero:
+  Star Gold fill on a Lagoon Deep track. Conveys level progress only.
 
 ### Avatars
 
-- **Circular,** initial in bold Ink, 28–56px. The current `CircleAvatar`
-  default is the right shape; tint its background toward marigold (currently
-  `primaryColorLight`).
+- **Circular,** initial in Ink, 28–56px, on the member's own colour
+  (`memberColor`). An emoji avatar sits on the same colour.
 
 ### Signature Component: Today's Missions
 

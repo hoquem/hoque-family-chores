@@ -2,6 +2,7 @@
 // The emoji branch is the new one (TASK-455); the initial fallback must survive.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
@@ -21,7 +22,10 @@ User _user({String? emoji, String? photoUrl, String name = 'Ada'}) => User(
     );
 
 Future<void> _pump(WidgetTester tester, User user) => tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: UserAvatar(user: user))),
+      MaterialApp(
+        theme: appLightTheme,
+        home: Scaffold(body: UserAvatar(user: user)),
+      ),
     );
 
 void main() {

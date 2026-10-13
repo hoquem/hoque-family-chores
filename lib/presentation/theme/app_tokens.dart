@@ -23,6 +23,12 @@ class CustomColors extends ThemeExtension<CustomColors> {
   final Color starGold;
   final Color coral;
 
+  // Cool counterpoint ("Saturday Morning"): the hero panel and its tints.
+  final Color lagoon;
+  final Color lagoonDeep;
+  final Color lagoonTint;
+  final Color sunshineTint;
+
   // Status (functional)
   final Color sprout;
   final Color sproutDeep;
@@ -46,6 +52,10 @@ class CustomColors extends ThemeExtension<CustomColors> {
     required this.marigoldDeep,
     required this.starGold,
     required this.coral,
+    required this.lagoon,
+    required this.lagoonDeep,
+    required this.lagoonTint,
+    required this.sunshineTint,
     required this.sprout,
     required this.sproutDeep,
     required this.amberWarn,
@@ -68,6 +78,10 @@ class CustomColors extends ThemeExtension<CustomColors> {
     Color? marigoldDeep,
     Color? starGold,
     Color? coral,
+    Color? lagoon,
+    Color? lagoonDeep,
+    Color? lagoonTint,
+    Color? sunshineTint,
     Color? sprout,
     Color? sproutDeep,
     Color? amberWarn,
@@ -88,6 +102,10 @@ class CustomColors extends ThemeExtension<CustomColors> {
       marigoldDeep: marigoldDeep ?? this.marigoldDeep,
       starGold: starGold ?? this.starGold,
       coral: coral ?? this.coral,
+      lagoon: lagoon ?? this.lagoon,
+      lagoonDeep: lagoonDeep ?? this.lagoonDeep,
+      lagoonTint: lagoonTint ?? this.lagoonTint,
+      sunshineTint: sunshineTint ?? this.sunshineTint,
       sprout: sprout ?? this.sprout,
       sproutDeep: sproutDeep ?? this.sproutDeep,
       amberWarn: amberWarn ?? this.amberWarn,
@@ -115,6 +133,10 @@ class CustomColors extends ThemeExtension<CustomColors> {
       marigoldDeep: Color.lerp(marigoldDeep, other.marigoldDeep, t)!,
       starGold: Color.lerp(starGold, other.starGold, t)!,
       coral: Color.lerp(coral, other.coral, t)!,
+      lagoon: Color.lerp(lagoon, other.lagoon, t)!,
+      lagoonDeep: Color.lerp(lagoonDeep, other.lagoonDeep, t)!,
+      lagoonTint: Color.lerp(lagoonTint, other.lagoonTint, t)!,
+      sunshineTint: Color.lerp(sunshineTint, other.sunshineTint, t)!,
       sprout: Color.lerp(sprout, other.sprout, t)!,
       sproutDeep: Color.lerp(sproutDeep, other.sproutDeep, t)!,
       amberWarn: Color.lerp(amberWarn, other.amberWarn, t)!,
@@ -141,6 +163,10 @@ const CustomColors kLightTokens = CustomColors(
   marigoldDeep: Color(0xFFB86A12),
   starGold: Color(0xFFFFB300),
   coral: Color(0xFFFF6B5C),
+  lagoon: Color(0xFF0F5F6B),
+  lagoonDeep: Color(0xFF0A464F),
+  lagoonTint: Color(0xFFE3F4F2),
+  sunshineTint: Color(0xFFFFF1C9),
   sprout: Color(0xFF4CAF50),
   sproutDeep: Color(0xFF2E7D32),
   amberWarn: Color(0xFFF59E0B),
@@ -149,13 +175,29 @@ const CustomColors kLightTokens = CustomColors(
   carrotDeep: Color(0xFF9E5600),
   brick: Color(0xFFC6412A),
   brickDeep: Color(0xFF9E3022),
-  cream: Color(0xFFFBF7F0),
-  surface: Color(0xFFFCF9F4),
+  cream: Color(0xFFFFF8EC),
+  surface: Color(0xFFFFFDF9),
   ink: Color(0xFF241D14),
   inkSoft: Color(0xFF5C5346),
   inkMuted: Color(0xFF8A8067),
   line: Color(0xFFE8E0D2),
 );
+
+/// One colour per family member, for their avatar and leaderboard row: the
+/// informal "this one is mine" cue. Every one carries Ink text at 7.6:1 or
+/// better. Picked from the uid so it is stable without a stored field.
+const List<Color> kMemberColors = [
+  Color(0xFF6CC4FF), // sky
+  Color(0xFF5FD3A0), // mint
+  Color(0xFFFF8FB8), // bubblegum
+  Color(0xFFB9A2FF), // lilac
+  Color(0xFFFFD23F), // sunshine
+  Color(0xFFFF9A3D), // tangerine
+];
+
+/// [id]'s member colour; the same id always gets the same colour.
+Color memberColor(String id) =>
+    kMemberColors[id.codeUnits.fold<int>(0, (a, c) => a + c) % kMemberColors.length];
 
 /// The "Fridge Door" type scale (DESIGN.md §3), stated explicitly.
 ///
@@ -215,6 +257,13 @@ final ThemeData appLightTheme = ThemeData(
   useMaterial3: true,
   textTheme: kFridgeDoorTextTheme,
   primaryColor: kLightTokens.marigold,
+  // Cards state their colour. Left to M3 they take a peach surfaceContainer
+  // derived from the seed, which reads as beige-on-cream; a warm white lifts
+  // them off the sunny canvas.
+  cardTheme: CardThemeData(
+    color: kLightTokens.surface,
+    surfaceTintColor: Colors.transparent,
+  ),
   scaffoldBackgroundColor: kLightTokens.cream,
   // Buttons state their colours. Left to ColorScheme.fromSeed, M3 derives a
   // light container with primary-coloured text from the light marigold seed —

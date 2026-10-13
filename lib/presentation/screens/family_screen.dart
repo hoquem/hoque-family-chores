@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/presentation/widgets/hero_panel.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -78,6 +79,12 @@ class _FamilyDetailsView extends ConsumerWidget {
           data: (family) => ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              HeroPanel(
+                // Builder: the styles below must resolve inside the panel's theme.
+                child: Builder(builder: (context) => Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
               Text(
                 family.name,
                 textAlign: TextAlign.center,
@@ -101,6 +108,10 @@ class _FamilyDetailsView extends ConsumerWidget {
                   source: 'family_tab',
                   label: 'Invite someone',
                 ),
+              ),
+                    ],
+                  ),
+                )),
               ),
               const SizedBox(height: 16),
               Text(

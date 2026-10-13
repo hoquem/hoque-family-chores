@@ -198,9 +198,8 @@ class HomeScreen extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16.0),
         children: [
-          GreetingHeader(user: currentUser),
-          const SizedBox(height: 16),
           ProgressCard(
+            header: GreetingHeader(user: currentUser),
             points: currentUser.points.value,
             streak: streak,
             // Treats is index 2 in MainScreen. A star balance with nothing to

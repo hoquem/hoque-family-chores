@@ -13,6 +13,7 @@ import '../../utils/logger.dart';
 import '../motion/celebration.dart';
 import '../motion/snappy_press.dart';
 import '../theme/app_tokens.dart';
+import '../widgets/hero_panel.dart';
 import 'add_reward_screen.dart';
 import '../widgets/help_button.dart';
 
@@ -116,7 +117,7 @@ class _BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.tokens;
-    return Card(
+    return HeroPanel(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -128,10 +129,10 @@ class _BalanceCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .headlineMedium
-                  ?.copyWith(color: t.ink),
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Spacer(),
-            Text('to spend', style: TextStyle(color: t.inkSoft)),
+            const Text('to spend'),
           ],
         ),
       ),
