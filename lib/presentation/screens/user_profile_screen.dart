@@ -134,7 +134,8 @@ class UserProfileScreen extends ConsumerWidget {
         children: [
           // User profile header
           HeroPanel(
-            child: Padding(
+            // Builder: the styles below must resolve inside the panel's theme.
+            child: Builder(builder: (context) => Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
               children: [
@@ -158,7 +159,7 @@ class UserProfileScreen extends ConsumerWidget {
                 ),
               ],
               ),
-            ),
+            )),
           ),
 
           const SizedBox(height: 16),

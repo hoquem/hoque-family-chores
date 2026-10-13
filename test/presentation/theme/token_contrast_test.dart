@@ -173,5 +173,48 @@ void main() {
     test('white on starGold fails', () {
       expect(contrast(white, t.starGold), lessThan(4.5));
     });
+    test('marigold on lagoon fails, so HeroPanel buttons are star gold', () {
+      // 2.73:1, under the 3:1 floor for a control's edge.
+      expect(contrast(t.marigold, t.lagoon), lessThan(3));
+    });
+  });
+
+  group('Saturday Morning: the Lagoon hero', () {
+    void expectAtLeast(String name, Color fg, Color bg, double min) {
+      final r = contrast(fg, bg);
+      expect(r, greaterThanOrEqualTo(min),
+          reason: '$name is ${r.toStringAsFixed(2)}:1, needs $min:1');
+    }
+
+    test('cream on lagoon meets AA (hero text)',
+        () => expectAtLeast('cream/lagoon', t.cream, t.lagoon, 4.5));
+    test('star gold on lagoon clears 3:1 (hero buttons and stars)',
+        () => expectAtLeast('starGold/lagoon', t.starGold, t.lagoon, 3));
+    test('ink on star gold meets AA (hero button label)',
+        () => expectAtLeast('ink/starGold', t.ink, t.starGold, 4.5));
+    test('star gold fill on its lagoonDeep track clears 3:1 (level bar)',
+        () => expectAtLeast('starGold/lagoonDeep', t.starGold, t.lagoonDeep, 3));
+    test('ink and inkSoft on the card tints meet AA', () {
+      for (final tint in [t.lagoonTint, t.sunshineTint, t.surface]) {
+        expectAtLeast('ink/$tint', t.ink, tint, 4.5);
+        expectAtLeast('inkSoft/$tint', t.inkSoft, tint, 4.5);
+      }
+    });
+    test('status icons on the card tints clear 3:1', () {
+      for (final tint in [t.lagoonTint, t.sunshineTint]) {
+        for (final icon in [t.marigoldDeep, t.amberWarnDeep, t.sproutDeep]) {
+          expectAtLeast('$icon/$tint', icon, tint, 3);
+        }
+      }
+    });
+    test('ink on every member colour meets AA (avatar initial)', () {
+      for (final c in kMemberColors) {
+        expectAtLeast('ink/$c', t.ink, c, 4.5);
+      }
+    });
+    test('memberColor is stable for the same id', () {
+      expect(memberColor('abc'), memberColor('abc'));
+      expect(kMemberColors, contains(memberColor('zCYSyK1snQRtgJ5DkbCTWGD2XyH2')));
+    });
   });
 }

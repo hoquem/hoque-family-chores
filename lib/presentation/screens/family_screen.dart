@@ -80,7 +80,8 @@ class _FamilyDetailsView extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               HeroPanel(
-                child: Padding(
+                // Builder: the styles below must resolve inside the panel's theme.
+                child: Builder(builder: (context) => Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
@@ -110,7 +111,7 @@ class _FamilyDetailsView extends ConsumerWidget {
               ),
                     ],
                   ),
-                ),
+                )),
               ),
               const SizedBox(height: 16),
               Text(
