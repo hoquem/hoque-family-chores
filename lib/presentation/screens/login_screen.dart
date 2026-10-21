@@ -1,4 +1,5 @@
 // lib/presentation/screens/login_screen.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
@@ -55,11 +56,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SignInWithAppleButton(
-                onPressed: () =>
-                    ref.read(authNotifierProvider.notifier).signInWithApple(),
-              ),
-              const SizedBox(height: 12),
+              // iOS only: on Android the plugin needs webAuthenticationOptions
+              // (a Services ID + redirect), which the app doesn't configure.
+              if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                SignInWithAppleButton(
+                  onPressed: () =>
+                      ref.read(authNotifierProvider.notifier).signInWithApple(),
+                ),
+                const SizedBox(height: 12),
+              ],
               ElevatedButton.icon(
                 onPressed: () =>
                     ref.read(authNotifierProvider.notifier).signInWithGoogle(),

@@ -24,14 +24,23 @@ Future<MockAuthRepository> _pumpLoginScreen(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('shows the Apple and Google buttons', (tester) async {
+  testWidgets('shows the Apple and Google buttons on iOS', (tester) async {
     await _pumpLoginScreen(tester);
 
     expect(find.byType(SignInWithAppleButton), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     // Email/password is hidden by default (App Store review only) —
     // covered in login_screen_email_hidden_test.dart.
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  // Sign in with Apple needs webAuthenticationOptions on Android, which the
+  // app doesn't configure, so the button would only ever fail there.
+  testWidgets('hides the Apple button on Android', (tester) async {
+    await _pumpLoginScreen(tester);
+
+    expect(find.byType(SignInWithAppleButton), findsNothing);
+    expect(find.text('Continue with Google'), findsOneWidget);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('tapping Continue with Google signs in through the repository',
       (tester) async {
@@ -56,5 +65,5 @@ void main() {
 
     expect(auth.currentUser, isNotNull);
     expect(auth.currentUser.uid, 'mock_apple_uid');
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 }
