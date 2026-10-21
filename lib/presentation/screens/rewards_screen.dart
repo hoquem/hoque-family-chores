@@ -12,6 +12,7 @@ import '../providers/riverpod/rewards_notifier.dart';
 import '../../utils/logger.dart';
 import '../motion/celebration.dart';
 import '../motion/snappy_press.dart';
+import '../motion/star_award_watcher.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/hero_panel.dart';
 import 'add_reward_screen.dart';
@@ -201,11 +202,16 @@ class _OwedCard extends ConsumerWidget {
     Redemption claim,
     bool happened,
   ) async {
+    // Announced before the call: the refunded balance can stream in before
+    // the call returns, and it must not be celebrated as stars earned.
+    final watcher = ref.read(starAwardWatcherProvider.notifier);
+    if (!happened) watcher.expectRefund(claim.cost);
     final result = await ref.read(settleRedemptionUseCaseProvider)(
       redemption: claim,
       actor: userId,
       happened: happened,
     );
+    if (result.isLeft() && !happened) watcher.cancelRefund(claim.cost);
     if (!context.mounted) return;
     result.fold(
       (failure) => ScaffoldMessenger.of(context).showSnackBar(

@@ -115,6 +115,56 @@ void main() {
     expect(container.read(celebrationQueueProvider).length, 1);
   });
 
+  group('refunds', () {
+    late _FakeAuthNotifier fake;
+    late ProviderContainer container;
+
+    setUp(() {
+      fake = _FakeAuthNotifier(AuthState(user: _user(45)));
+      container = ProviderContainer(overrides: [
+        authNotifierProvider.overrideWith(() => fake),
+      ]);
+      container.read(starAwardWatcherProvider);
+    });
+    tearDown(() => container.dispose());
+
+    StarAwardWatcher watcher() =>
+        container.read(starAwardWatcherProvider.notifier);
+
+    test('an expected refund does not celebrate', () {
+      watcher().expectRefund(Points(15));
+      fake.setUser(_user(60));
+
+      expect(container.read(celebrationQueueProvider), isEmpty);
+    });
+
+    test('an award arriving with a refund celebrates only the award', () {
+      watcher().expectRefund(Points(15));
+      fake.setUser(_user(70));
+
+      final kinds = container.read(celebrationQueueProvider).map((q) => q.kind);
+      expect(kinds, [const StarsAwarded(10)]);
+    });
+
+    test('a refund is absorbed once, so the next rise celebrates', () {
+      watcher().expectRefund(Points(15));
+      fake.setUser(_user(60));
+      fake.setUser(_user(75));
+
+      final kinds = container.read(celebrationQueueProvider).map((q) => q.kind);
+      expect(kinds, [const StarsAwarded(15)]);
+    });
+
+    test('a cancelled refund no longer hides a rise', () {
+      watcher().expectRefund(Points(15));
+      watcher().cancelRefund(Points(15));
+      fake.setUser(_user(60));
+
+      final kinds = container.read(celebrationQueueProvider).map((q) => q.kind);
+      expect(kinds, [const StarsAwarded(15)]);
+    });
+  });
+
   test('claim sequence: spend does not celebrate from watcher', () {
     // Simulates: points 60 → treat claimed → points 45 → 45 again.
     final fake = _FakeAuthNotifier(AuthState(user: _user(60)));

@@ -9,6 +9,7 @@ import '../../../domain/entities/reward.dart';
 import '../../../domain/value_objects/family_id.dart';
 import '../../../domain/value_objects/user_id.dart';
 import '../../../utils/logger.dart';
+import '../../motion/star_award_watcher.dart';
 
 part 'rewards_notifier.g.dart';
 
@@ -61,11 +62,16 @@ Stream<List<Redemption>> outstandingClaims(
 
   Future<void> refund(Redemption claim) async {
     if (!refunding.add(claim.id)) return;
+    // Only ever read for the signed-in user, so the stars come back to this
+    // device's balance; that rise must not be celebrated as stars earned.
+    final watcher = ref.read(starAwardWatcherProvider.notifier)
+      ..expectRefund(claim.cost);
     final result = await ref.read(settleRedemptionUseCaseProvider)(
       redemption: claim,
       actor: claim.claimedBy,
       happened: false,
     );
+    if (result.isLeft()) watcher.cancelRefund(claim.cost);
     result.fold(
       // Logged, not swallowed: a failed lazy refund would otherwise vanish
       // with no trace anywhere, and the claim stays outstanding (correctly)

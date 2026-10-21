@@ -25,6 +25,7 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/main.dart';
+import 'package:hoque_family_chores/presentation/motion/celebration.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -167,6 +168,53 @@ void main() {
 
       expect(find.text('Stars refunded'), findsOneWidget);
       expect(find.textContaining('already settled'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    '"Not yet" refunds stars without celebrating them as earned',
+    (tester) async {
+      final auth = MockAuthRepository();
+      final users = MockUserRepository();
+      final rewards = MockRewardRepository(claimant: UserId(_uid))
+        ..seedReward(_testReward);
+      addTearDown(rewards.dispose);
+      final container = await _pumpSignedIn(
+        tester,
+        auth,
+        users,
+        rewards,
+        points: 50,
+      );
+      addTearDown(container.dispose);
+
+      await tester.tap(find.text('5 ⭐'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Not yet'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The mock repository does not own the balance; play the server's
+      // refund write (settleRedemption increments points by the cost).
+      await tester.runAsync(() async {
+        final profile = await users.getUserProfile(UserId(_uid));
+        await users.updateUserProfile(
+          profile!.copyWith(points: Points(profile.points.value + 5)),
+        );
+      });
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Claiming queues its own celebration; only a StarsAwarded is wrong.
+      expect(
+        container
+            .read(celebrationQueueProvider)
+            .map((q) => q.kind)
+            .whereType<StarsAwarded>(),
+        isEmpty,
+        reason: 'a refund is stars coming back, not stars earned',
+      );
     },
   );
 
