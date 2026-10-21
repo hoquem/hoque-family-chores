@@ -48,6 +48,12 @@ class MockRewardRepository implements RewardRepository {
 
   void seedReward(Reward reward) => _rewards.add(reward);
 
+  /// Seeds an existing claim, e.g. one whose deadline has already passed.
+  void seedRedemption(Redemption redemption) {
+    _redemptions.add(redemption);
+    _visibleRedemptions = List.of(_redemptions);
+  }
+
   @override
   Stream<List<Reward>> streamRewards(FamilyId familyId) async* {
     yield _rewardsForFamily(familyId);
