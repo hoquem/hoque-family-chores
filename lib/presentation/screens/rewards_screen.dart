@@ -51,18 +51,19 @@ class RewardsScreen extends ConsumerWidget {
       floatingActionButton: actingAs != null
           ? null
           : FloatingActionButton(
-        // MainScreen keeps every tab alive in an IndexedStack, so this FAB and
-        // the Tasks tab's exist at the same time. Without distinct tags they
-        // collide on Flutter's default hero tag and throw.
-        heroTag: 'rewards_fab',
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddRewardScreen()),
-        ),
-        backgroundColor: context.tokens.starGold,
-        foregroundColor: context.tokens.ink,
-        tooltip: 'Add a treat',
-        child: const Icon(Icons.add),
-      ),
+              // MainScreen keeps every tab alive in an IndexedStack, so this
+              // FAB and the Tasks tab's exist at the same time. Without
+              // distinct tags they collide on Flutter's default hero tag and
+              // throw.
+              heroTag: 'rewards_fab',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddRewardScreen()),
+              ),
+              backgroundColor: context.tokens.starGold,
+              foregroundColor: context.tokens.ink,
+              tooltip: 'Add a treat',
+              child: const Icon(Icons.add),
+            ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(familyRewardsProvider(user.familyId));
