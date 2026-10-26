@@ -18,6 +18,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import '../utils/task_status_label.dart';
 
 /// Detail screen for a family member: shows their task activity, current
@@ -38,8 +39,22 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
   Widget build(BuildContext context) {
     // The live profile, so stars and the managed state follow the server; the
     // member passed in is what shows until the stream's first event.
-    final member = ref.watch(memberProfileProvider(widget.member.id)).value ??
-        widget.member;
+    final profile = ref.watch(memberProfileProvider(widget.member.id));
+    ref.listen(memberProfileProvider(widget.member.id), (_, next) {
+      if (next.hasError) {
+        logger.e('MemberDetailScreen: live profile failed',
+            error: next.error, stackTrace: next.stackTrace);
+      }
+    });
+    if (profile.hasValue && profile.valueOrNull == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.member.name)),
+        body: Center(
+          child: Text('${widget.member.name} is no longer in this family'),
+        ),
+      );
+    }
+    final member = profile.valueOrNull ?? widget.member;
     final familyId = member.familyId;
     final tasksAsync = ref.watch(taskListStreamProvider(familyId));
 
@@ -92,6 +107,15 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (profile.hasError)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Text(
+                          "Couldn't update ${member.name}'s details",
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
+                        ),
+                      ),
                     // Header card
                     _HeaderCard(
                       member: member,
@@ -457,12 +481,15 @@ class _ManagedChildActionsState extends ConsumerState<_ManagedChildActions> {
           .createLinkCode(member.familyId, member.id);
     } on DataException catch (e) {
       if (!mounted) return;
-      setState(() => _creatingLinkCode = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       return;
+    } finally {
+      if (mounted) setState(() => _creatingLinkCode = false);
     }
     if (!mounted) return;
-    setState(() => _creatingLinkCode = false);
+    // The child may have linked a phone while the code was being made.
+    final viewer = ref.read(authNotifierProvider).user;
+    if (viewer == null || !canActForMember(viewer: viewer, member: member)) return;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(

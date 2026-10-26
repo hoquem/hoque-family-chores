@@ -9,6 +9,7 @@ import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/member_profile_provider.dart';
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
@@ -78,6 +79,8 @@ Future<ProviderContainer> _pumpScreen(
       // The screen reads the viewer (managed-child actions); keep it off Firebase.
       authRepositoryProvider.overrideWith((_) => MockAuthRepository()),
       userRepositoryProvider.overrideWith((_) => MockUserRepository()),
+      // The member's live profile: an unknown member would read as deleted.
+      memberProfileProvider(member.id).overrideWith((_) => Stream.value(member)),
     ],
   );
   addTearDown(container.dispose);

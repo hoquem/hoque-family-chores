@@ -51,31 +51,35 @@ class _SnapshotFamilyRepository extends MockFamilyRepository {
       [_kid(points: 0, managed: true)];
 }
 
+Future<void> _pump(WidgetTester tester, StreamController<User?> live) async {
+  final users = MockUserRepository();
+  final container = ProviderContainer(overrides: [
+    authRepositoryProvider.overrideWith((_) => MockAuthRepository()),
+    userRepositoryProvider.overrideWith((_) => users),
+    familyRepositoryProvider.overrideWith((_) => _SnapshotFamilyRepository()),
+    memberProfileProvider(UserId('kid')).overrideWith((_) => live.stream),
+  ]);
+  addTearDown(container.dispose);
+
+  await tester.pumpWidget(UncontrolledProviderScope(
+    container: container,
+    child: MaterialApp(theme: appLightTheme, home: const FamilyScreen()),
+  ));
+  await tester.runAsync(() async {
+    await container.read(authNotifierProvider.notifier).signInWithGoogle();
+    final profile = await users.getUserProfile(UserId(_uid));
+    await users.updateUserProfile(profile!.copyWith(familyId: _familyId));
+  });
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
 void main() {
   testWidgets('a member row follows the live profile, not the loaded snapshot',
       (tester) async {
     final live = StreamController<User?>();
     addTearDown(live.close);
-    final users = MockUserRepository();
-    final container = ProviderContainer(overrides: [
-      authRepositoryProvider.overrideWith((_) => MockAuthRepository()),
-      userRepositoryProvider.overrideWith((_) => users),
-      familyRepositoryProvider.overrideWith((_) => _SnapshotFamilyRepository()),
-      memberProfileProvider(UserId('kid')).overrideWith((_) => live.stream),
-    ]);
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(theme: appLightTheme, home: const FamilyScreen()),
-    ));
-    await tester.runAsync(() async {
-      await container.read(authNotifierProvider.notifier).signInWithGoogle();
-      final profile = await users.getUserProfile(UserId(_uid));
-      await users.updateUserProfile(profile!.copyWith(familyId: _familyId));
-    });
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pump(const Duration(milliseconds: 300));
+    await _pump(tester, live);
 
     // While the live stream has not emitted, the snapshot is shown.
     expect(find.text('Child · No phone'), findsOneWidget);
@@ -89,6 +93,31 @@ void main() {
     live.add(_kid(points: 5, managed: false));
     await tester.pumpAndSettle();
     expect(find.text('Child'), findsOneWidget);
+    expect(find.textContaining('No phone'), findsNothing);
+  });
+
+  testWidgets('a profile stream error is shown on the row, not hidden',
+      (tester) async {
+    final live = StreamController<User?>();
+    addTearDown(live.close);
+    await _pump(tester, live);
+
+    live.addError(Exception('permission-denied'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't update"), findsOneWidget);
+  });
+
+  testWidgets('a deleted profile marks the member as gone', (tester) async {
+    final live = StreamController<User?>();
+    addTearDown(live.close);
+    await _pump(tester, live);
+
+    live.add(null);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No longer in this family'), findsOneWidget);
     expect(find.textContaining('No phone'), findsNothing);
   });
 }

@@ -273,13 +273,32 @@ class _MemberRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final member = ref.watch(memberProfileProvider(snapshot.id)).value ?? snapshot;
+    final profile = ref.watch(memberProfileProvider(snapshot.id));
+    ref.listen(memberProfileProvider(snapshot.id), (_, next) {
+      if (next.hasError) {
+        logger.e('FamilyScreen: live profile failed',
+            error: next.error, stackTrace: next.stackTrace);
+      }
+    });
+    // The snapshot stands in only while the stream has not produced anything.
+    if (profile.hasValue && profile.valueOrNull == null) {
+      return ListTile(
+        leading: UserAvatar(user: snapshot),
+        title: Text(snapshot.name),
+        subtitle: const Text('No longer in this family'),
+      );
+    }
+    final member = profile.valueOrNull ?? snapshot;
+    final updateFailed = profile.hasError;
     return ListTile(
       leading: UserAvatar(user: member),
       title: Text(member.name),
-      subtitle: Text(member.isManaged
-          ? '${member.role.displayName} · No phone'
-          : member.role.displayName),
+      subtitle: updateFailed
+          ? Text("Couldn't update",
+              style: TextStyle(color: Theme.of(context).colorScheme.error))
+          : Text(member.isManaged
+              ? '${member.role.displayName} · No phone'
+              : member.role.displayName),
       trailing: DefaultTextStyle(
         style: Theme.of(context).textTheme.titleMedium!,
         child: AnimatedStarCount(member.points.toInt()),
