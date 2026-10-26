@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoque_family_chores/core/analytics/analytics.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -49,6 +50,16 @@ final _task = Task(
   familyId: _familyId,
 );
 
+class _NoAnalytics extends Analytics {
+  @override
+  Future<void> log(
+    AnalyticsEventName name, {
+    required String userId,
+    String? familyId,
+    Map<String, Object?> params = const {},
+  }) async {}
+}
+
 /// Pumps the screen with a parent signed in, optionally acting as [_kid].
 Future<void> _pump(WidgetTester tester, {User? actingAs, Task? task}) async {
   tester.view.physicalSize = const Size(430, 932);
@@ -66,6 +77,8 @@ Future<void> _pump(WidgetTester tester, {User? actingAs, Task? task}) async {
     taskRepositoryProvider.overrideWith((_) => MockTaskRepository()),
     notificationRepositoryProvider
         .overrideWith((_) => MockNotificationRepository()),
+    // Keeps the sign-in's analytics event off real Firebase.
+    analyticsProvider.overrideWithValue(_NoAnalytics()),
   ]);
   addTearDown(container.dispose);
 
