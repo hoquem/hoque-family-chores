@@ -8,7 +8,9 @@ rules_version = '2';
 // upload — see docs/superpowers/specs/2026-07-16-before-after-photos-design.md.
 //
 // Photos are of children, in their homes. Read access is family-only, and only
-// the child a task is assigned to may attach or remove its photos.
+// the child a task is assigned to may attach or remove its photos, except that
+// a parent attaches them for a managed child (no phone of their own), whose
+// chores are done on the parent's signed-in phone.
 
 service firebase.storage {
   match /b/{bucket}/o {
@@ -52,6 +54,18 @@ service firebase.storage {
              .data.role in ['parent', 'guardian'];
     }
 
+    // The task is assigned to a managed child of this family: a child with no
+    // phone of their own, who uses a parent's phone while Firebase stays
+    // signed in as the parent. The familyId check stops another family's
+    // managed child (stray assignedToId) from unlocking this family's photos.
+    function isForManagedChildOf(familyId, taskId) {
+      let assignee = firestore.get(/databases/(default)/documents/users/$(
+        firestore.get(/databases/(default)/documents/families/$(familyId)/tasks/$(taskId))
+          .data.assignedToId)).data;
+      return assignee.get('managed', false) == true
+        && assignee.familyId == familyId;
+    }
+
     // JPEG specifically, not image/*. PhotoStorageService compresses every
     // photo to JPEG before upload, so anything else reaching the bucket is a
     // bug or an outside caller — either way it should be refused rather than
@@ -70,10 +84,14 @@ service firebase.storage {
       // it, and siblings see the task list.
       allow read: if isFamilyMember(familyId);
 
-      // Only the assignee attaches photos, and only to their own task. The 5MB
-      // cap is a backstop — PhotoStorageService already compresses to under
-      // 1MB and refuses rather than upload something bigger.
-      allow create, update: if isAssignee(familyId, taskId) && isAJpegUnder(5);
+      // Only the assignee attaches photos, and only to their own task, or a
+      // parent on a managed child's behalf (the child view on the parent's
+      // phone). The 5MB cap is a backstop — PhotoStorageService already
+      // compresses to under 1MB and refuses rather than upload something
+      // bigger.
+      allow create, update: if isAJpegUnder(5)
+        && (isAssignee(familyId, taskId)
+            || (isFamilyParent(familyId) && isForManagedChildOf(familyId, taskId)));
 
       // Two people delete photos, for two different reasons:
       //

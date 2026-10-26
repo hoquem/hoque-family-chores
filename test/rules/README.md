@@ -33,6 +33,7 @@ can't leak into another's assertions. Exit code is non-zero if any check fails.
 | `notification_read` | Notifications are readable and markable only by their owner. |
 | `member_cleanup` | Deleting an account releases the leaver's unfinished chores and recurring-rule assignments and drops them from `memberIds`; `pendingApproval` work stays approvable; a second run is a no-op. |
 | `managed_lock` | No client sets or clears `managed`, and no client reads or writes `profileLinks`; renaming a managed child still works. |
+| `storage_managed` | `storage.rules` (storage + firestore emulators): a parent or guardian may upload a JPEG for a managed child's chore (the child view on the parent's phone), but not for a signed-in child's chore, not into another family, and not for another family's managed child; the assignee still can; non-JPEG is refused. Run alone with `npm run test:storage`. |
 
 **Adding a suite?** Wire it into `package.json` — `npm test` runs the named
 scripts, so a file that isn't listed never runs.
