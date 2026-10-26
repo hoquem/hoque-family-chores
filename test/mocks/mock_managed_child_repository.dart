@@ -14,6 +14,9 @@ class MockManagedChildRepository implements ManagedChildRepository {
   /// Codes [redeemLinkCode] refuses, mapped to the server's message.
   final Map<String, String> refusedCodes = {};
 
+  /// Codes [redeemLinkCode] fails on, mapped to the error it throws.
+  final Map<String, Object> failingCodes = {};
+
   @override
   Future<UserId> addManagedChild(FamilyId familyId, String name) async {
     added.add(name);
@@ -36,6 +39,8 @@ class MockManagedChildRepository implements ManagedChildRepository {
 
   @override
   Future<String> redeemLinkCode(String code) async {
+    final failure = failingCodes[code];
+    if (failure != null) throw failure;
     final refusal = refusedCodes[code];
     if (refusal != null) {
       throw ValidationException(refusal, code: 'failed-precondition');

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
 import 'package:hoque_family_chores/domain/usecases/family/link_child_device_usecase.dart';
 
 import '../../../mocks/mock_auth_repository.dart';
@@ -20,6 +21,37 @@ void main() {
     final result = await LinkChildDeviceUseCase(repo, MockAuthRepository())(code: 'OLDCODE');
     result.fold(
       (f) => expect(f.message, 'This code has expired. Ask a parent for a new one.'),
+      (_) => fail('should not link'),
+    );
+  });
+
+  test('a not-found refusal reaches the child word for word', () async {
+    final repo = MockManagedChildRepository()
+      ..failingCodes['TYPO'] = NotFoundException(
+          "That code didn't work. Check it, or ask a parent for a new one.",
+          code: 'not-found');
+    final result = await LinkChildDeviceUseCase(repo, MockAuthRepository())(code: 'TYPO');
+    result.fold(
+      (f) => expect(f.message, "That code didn't work. Check it, or ask a parent for a new one."),
+      (_) => fail('should not link'),
+    );
+  });
+
+  test('a server fault shows a friendly message, not the raw server text', () async {
+    final repo = MockManagedChildRepository()
+      ..failingCodes['BROKEN'] = const ServerException('INTERNAL', code: 'internal');
+    final result = await LinkChildDeviceUseCase(repo, MockAuthRepository())(code: 'BROKEN');
+    result.fold(
+      (f) => expect(f.message, 'Something went wrong. Ask a parent for a new code.'),
+      (_) => fail('should not link'),
+    );
+  });
+
+  test('an unexpected error shows the same friendly message', () async {
+    final repo = MockManagedChildRepository()..failingCodes['ODD'] = StateError('boom');
+    final result = await LinkChildDeviceUseCase(repo, MockAuthRepository())(code: 'ODD');
+    result.fold(
+      (f) => expect(f.message, 'Something went wrong. Ask a parent for a new code.'),
       (_) => fail('should not link'),
     );
   });
