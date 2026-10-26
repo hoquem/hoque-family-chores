@@ -32,6 +32,11 @@ enum AnalyticsEventName {
   inviteStepShown,
   inviteStepSkipped,
   memberJoined,
+  // Children without a phone: does adding one (instead of inviting) get a
+  // solo family using the app, and do they later move to their own phone?
+  managedChildAdded,
+  childModeEntered,
+  linkCodeRedeemed,
 }
 
 /// Writes usage events to a Firestore `analyticsEvents` collection.

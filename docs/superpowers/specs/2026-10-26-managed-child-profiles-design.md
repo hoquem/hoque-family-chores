@@ -92,10 +92,10 @@ account to hold **Service Account Token Creator** on itself
 
 ### Active member
 
-A new `ActiveMemberNotifier` (Riverpod, keepAlive) holds `null` (the signed-in
-user, the normal case) or the managed child currently using the phone. It is
-not persisted: a cold start always opens the parent's view. It resets to
-`null` when the child's profile is removed or stops being `managed`.
+"Who is using the phone" is the `ChildModeScreen` route itself: it holds the
+child's id, and popping it returns to the signed-in parent. Nothing is
+persisted, so a cold start always opens the parent's view. The route closes
+itself when the child's profile is removed or stops being `managed`.
 
 Existing use cases already take a `userId`. `CompleteTaskUseCase` checks
 `task.assignedToId == userId`, so the child view passes `childId` and Done
