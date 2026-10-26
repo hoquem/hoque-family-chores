@@ -8,6 +8,7 @@ import '../../domain/entities/user.dart';
 import '../../domain/services/task_actions.dart';
 import '../../domain/value_objects/user_id.dart';
 import '../motion/animated_star_count.dart';
+import '../motion/celebration_listener.dart';
 import '../providers/riverpod/auth_notifier.dart';
 import '../providers/riverpod/task_list_notifier.dart';
 import '../theme/app_tokens.dart';
@@ -107,35 +108,41 @@ class _ChildModeScreenState extends ConsumerState<ChildModeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Row(
-          children: [
-            UserAvatar(user: child, radius: 18),
-            const SizedBox(width: 12),
-            Flexible(child: Text(child.name, overflow: TextOverflow.ellipsis)),
-            const SizedBox(width: 12),
-            AnimatedStarCount(child.points.toInt()),
+    // This route covers MainScreen, whose CelebrationListener is offstage
+    // under it, so the child's own celebrations (a treat claimed) play here.
+    // No review prompt: the child, not the signed-in parent, has the phone.
+    return CelebrationListener(
+      offersReviewPrompt: false,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Row(
+            children: [
+              UserAvatar(user: child, radius: 18),
+              const SizedBox(width: 12),
+              Flexible(child: Text(child.name, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 12),
+              AnimatedStarCount(child.points.toInt()),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              key: const Key('child_mode_back'),
+              icon: const Icon(Icons.swap_horiz),
+              label: Text('Back to ${widget.parentName}'),
+              onPressed: _close,
+            ),
           ],
         ),
-        actions: [
-          TextButton.icon(
-            key: const Key('child_mode_back'),
-            icon: const Icon(Icons.swap_horiz),
-            label: Text('Back to ${widget.parentName}'),
-            onPressed: _close,
-          ),
-        ],
-      ),
-      body: _tab == 0 ? _ChildChores(child: child) : RewardsScreen(actingAs: child),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.checklist), label: 'My chores'),
-          NavigationDestination(icon: Icon(Icons.card_giftcard), label: 'Treats'),
-        ],
+        body: _tab == 0 ? _ChildChores(child: child) : RewardsScreen(actingAs: child),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _tab,
+          onDestinationSelected: (i) => setState(() => _tab = i),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.checklist), label: 'My chores'),
+            NavigationDestination(icon: Icon(Icons.card_giftcard), label: 'Treats'),
+          ],
+        ),
       ),
     );
   }

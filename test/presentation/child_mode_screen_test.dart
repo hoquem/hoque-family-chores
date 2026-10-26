@@ -1,21 +1,33 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart' show Either, Right, Unit, unit;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoque_family_chores/core/analytics/analytics.dart';
+import 'package:hoque_family_chores/core/error/failures.dart';
+import 'package:hoque_family_chores/data/services/review_prompt_service.dart';
 import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/entities/redemption.dart';
+import 'package:hoque_family_chores/domain/entities/reward.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/value_objects/family_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
+import 'package:hoque_family_chores/domain/usecases/reward/claim_reward_usecase.dart';
+import 'package:hoque_family_chores/presentation/motion/celebration.dart';
+import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
+import 'package:hoque_family_chores/presentation/motion/celebration_overlay.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/rewards_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/sound/sound_player.dart';
 import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_auth_repository.dart';
 import '../mocks/mock_task_repository.dart';
@@ -75,16 +87,76 @@ class _NoAnalytics extends Analytics {
   }) async {}
 }
 
-class _SilentSoundPlayer implements SoundPlayer {
+class _CountingSoundPlayer implements SoundPlayer {
+  final played = <String>[];
+
   @override
-  Future<void> play(String asset) async {}
+  Future<void> play(String asset) async => played.add(asset);
+}
+
+final _treat = Reward(
+  id: 'park',
+  familyId: _familyId,
+  title: 'Park trip',
+  cost: Points(5),
+  timeframe: RewardTimeframe.openEnded,
+  createdBy: UserId('mum'),
+  createdAt: DateTime(2026),
+);
+
+class _FixedAuthNotifier extends AuthNotifier {
+  _FixedAuthNotifier(this._state);
+  final AuthState _state;
+  @override
+  AuthState build() => _state;
+}
+
+final _mum = User(
+  id: UserId('mum'),
+  name: 'Mum',
+  familyId: _familyId,
+  role: UserRole.parent,
+  points: Points(0),
+  joinedAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
+
+/// Records the review-prompt hooks a celebration reaches.
+class _RecordingReviewPrompt implements ReviewPromptService {
+  final moments = <UserRole>[];
+  final offers = <UserRole>[];
+
+  @override
+  Future<void> onPositiveMoment({
+    required UserRole viewerRole,
+    bool canShowSheetNow = true,
+  }) async =>
+      moments.add(viewerRole);
+
+  @override
+  Future<void> offerIfDue(UserRole viewerRole) async => offers.add(viewerRole);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ClaimSucceeds implements ClaimRewardUseCase {
+  @override
+  Future<Either<Failure, Unit>> call({
+    required Reward reward,
+    UserId? forMemberId,
+  }) async =>
+      const Right(unit);
 }
 
 Future<_RecordingTaskRepository> _pump(
   WidgetTester tester, {
   required Stream<User?> kid,
   required List<Task> tasks,
+  _CountingSoundPlayer? sound,
+  _RecordingReviewPrompt? review,
 }) async {
+  SharedPreferences.setMockInitialValues({});
   final repo = _RecordingTaskRepository(tasks);
   await tester.pumpWidget(ProviderScope(
     overrides: [
@@ -94,18 +166,29 @@ Future<_RecordingTaskRepository> _pump(
       userRepositoryProvider.overrideWith((_) => MockUserRepository()),
       taskRepositoryProvider.overrideWith((_) => repo),
       analyticsProvider.overrideWithValue(_NoAnalytics()),
-      soundPlayerProvider.overrideWithValue(_SilentSoundPlayer()),
+      soundPlayerProvider.overrideWithValue(sound ?? _CountingSoundPlayer()),
       memberProfileProvider(UserId('kid')).overrideWith((_) => kid),
+      familyRewardsProvider(_familyId).overrideWith((_) => Stream.value([_treat])),
+      outstandingClaimsProvider(_familyId, UserId('kid'))
+          .overrideWith((_) => Stream.value(<Redemption>[])),
+      claimRewardUseCaseProvider.overrideWith((_) => _ClaimSucceeds()),
+      // A parent is signed in, as on the real shared phone.
+      authNotifierProvider.overrideWith(() => _FixedAuthNotifier(AuthState(user: _mum))),
+      reviewPromptServiceProvider.overrideWith((_) => review ?? _RecordingReviewPrompt()),
     ],
     child: MaterialApp(
       theme: appLightTheme,
+      // The parent's screen celebrates too, as MainScreen does: the child
+      // view must not double-play with it.
       home: Builder(
         builder: (context) => Scaffold(
-          body: TextButton(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ChildModeScreen(childId: UserId('kid'), parentName: 'Mum'),
-            )),
-            child: const Text('open'),
+          body: CelebrationListener(
+            child: TextButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ChildModeScreen(childId: UserId('kid'), parentName: 'Mum'),
+              )),
+              child: const Text('open'),
+            ),
           ),
         ),
       ),
@@ -222,5 +305,71 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('lost'), findsOneWidget);
     expect(find.text('Back to Mum'), findsOneWidget);
+  });
+
+  group('celebrations play in the child view, once', () {
+    Finder inChildView(Finder f) =>
+        find.descendant(of: find.byType(ChildModeScreen), matching: f);
+
+    testWidgets('claiming a treat celebrates where the child can see it',
+        (tester) async {
+      final sound = _CountingSoundPlayer();
+      await _pump(tester, kid: Stream.value(_kid()), tasks: const [], sound: sound);
+      await tester.tap(find.text('Treats'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('5 ⭐'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(inChildView(find.byType(CelebrationOverlayView)), findsOneWidget);
+      expect(find.byType(CelebrationOverlayView), findsOneWidget,
+          reason: "the parent's screen underneath must not play it too");
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      expect(sound.played, hasLength(1), reason: 'one sound, not one per screen');
+      expect(find.byType(CelebrationOverlayView), findsNothing);
+    });
+
+    testWidgets("the child's celebration never asks the parent for a review",
+        (tester) async {
+      final review = _RecordingReviewPrompt();
+      await _pump(tester, kid: Stream.value(_kid()), tasks: const [], review: review);
+      await tester.tap(find.text('Treats'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('5 ⭐'));
+      await tester.pump();
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(find.byType(CelebrationOverlayView), findsNothing,
+          reason: 'the celebration has finished');
+      expect(review.moments, isEmpty,
+          reason: 'the child is holding the phone, not the signed-in parent');
+      expect(review.offers, isEmpty);
+    });
+
+    testWidgets('two queued celebrations both play, one after the other',
+        (tester) async {
+      final sound = _CountingSoundPlayer();
+      await _pump(tester, kid: Stream.value(_kid()), tasks: const [], sound: sound);
+      final container = ProviderScope.containerOf(
+          tester.element(find.byType(ChildModeScreen)));
+
+      container.read(celebrationQueueProvider.notifier)
+        ..celebrate(const StarsAwarded(10))
+        ..celebrate(const StreakMilestone(3));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(inChildView(find.textContaining('+10')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(inChildView(find.textContaining('3-day streak')), findsOneWidget);
+
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      expect(container.read(celebrationQueueProvider), isEmpty);
+      expect(sound.played, hasLength(2));
+    });
   });
 }
