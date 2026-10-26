@@ -120,11 +120,21 @@ async function removeManagedChild(db, uid, { familyId, childId }) {
   await releaseManagedChild(db, childId);
 }
 
+/**
+ * Require that ``uid`` may act for ``memberId`` on the shared phone: a parent
+ * or guardian in ``familyId`` acting for a managed child of that family.
+ */
+async function requireMayActFor(tx, db, uid, memberId, familyId) {
+  await requireAdultIn(tx, db, uid, familyId);
+  await requireManagedChildIn(tx, db, memberId, familyId);
+}
+
 module.exports = {
   MAX_MANAGED_CHILDREN,
   isAdultRole,
   requireAdultIn,
   requireManagedChildIn,
+  requireMayActFor,
   addManagedChild,
   removeManagedChild,
   releaseManagedChild,

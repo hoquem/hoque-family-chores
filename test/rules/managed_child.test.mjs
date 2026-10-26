@@ -113,6 +113,30 @@ await expectEq("the child's chore is unassigned",
 await expectEq("the child's link code is deleted", exists('profileLinks/ZAYNCODE2345'), false);
 await expectEq('the teen is untouched', exists('users/teen'), true);
 
+console.log('\n-- forMemberId: claim and settle for a managed child --');
+await adb.doc(`users/${amira}`).update({ points: 50 });
+await adb.doc('families/famA/rewards/park').set({ title: 'park', cost: 20, timeframe: 'openEnded', createdBy: 'mum' });
+await expectFail('a child cannot claim for a managed child', 'permission-denied',
+  callAs('teen', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+await expectFail("another family's parent cannot claim for her", 'permission-denied',
+  callAs('otherMum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+await expectFail('a parent cannot claim for a signed-in child', 'not-found',
+  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: 'teen' }));
+const claim = await expectOk('a parent claims for the managed child',
+  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+const claimId = claim?.data?.redemptionId;
+await expectEq('the child paid 20 (50 -> 30)', (async () => (await profile(amira)).points)(), 30);
+await expectEq("the parent's stars are untouched", (async () => (await profile('mum')).points)(), 0);
+const redPath = `families/famA/redemptions/${claimId}`;
+await expectEq('claimedBy is the child', (async () => (await adb.doc(redPath).get()).data().claimedBy)(), amira);
+await expectEq('claimedVia is the parent', (async () => (await adb.doc(redPath).get()).data().claimedVia)(), 'mum');
+await expectFail('settling without forMemberId is refused (the parent did not claim it)', 'permission-denied',
+  callAs('mum', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false }));
+await expectOk('a parent refunds it for the child',
+  callAs('dad', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false, forMemberId: amira }));
+await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(amira)).points)(), 50);
+await expectEq('the parent still has 0', (async () => (await profile('mum')).points)(), 0);
+
 // --- Task 3 and Task 4 sections go here ---
 
 console.log(`\n${pass} passed, ${fail} failed`);

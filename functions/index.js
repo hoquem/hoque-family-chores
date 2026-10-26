@@ -251,7 +251,11 @@ exports.claimReward = onCall(async (request) => {
   const uid = requireAuth(request);
   const { familyId, rewardId } = requireArgs(request.data, ['familyId', 'rewardId']);
 
-  const claimerRef = db.doc(`users/${uid}`);
+  // On the shared phone a parent claims for a managed child (a child with no
+  // phone of their own); the stars and the claim are the child's.
+  const forMemberId = request.data && request.data.forMemberId;
+  const claimerId = forMemberId || uid;
+  const claimerRef = db.doc(`users/${claimerId}`);
   const rewardRef = db.doc(`families/${familyId}/rewards/${rewardId}`);
   const redemptionRef = db.collection(`families/${familyId}/redemptions`).doc();
   const now = new Date();
@@ -261,6 +265,7 @@ exports.claimReward = onCall(async (request) => {
   let cost;
 
   await db.runTransaction(async (tx) => {
+    if (forMemberId) await managed.requireMayActFor(tx, db, uid, forMemberId, familyId);
     const claimerSnap = await tx.get(claimerRef);
     const rewardSnap = await tx.get(rewardRef);
     if (!claimerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
@@ -286,7 +291,8 @@ exports.claimReward = onCall(async (request) => {
       rewardId,
       rewardTitle,
       cost,
-      claimedBy: uid,
+      claimedBy: claimerId,
+      ...(forMemberId ? { claimedVia: uid } : {}),
       claimedAt: Timestamp.fromDate(now),
       status: 'claimed',
       dueBy: due ? Timestamp.fromDate(due) : null,
@@ -326,9 +332,12 @@ exports.settleRedemption = onCall(async (request) => {
   let rewardTitle;
   let settledStatus;
 
-  const settlerRef = db.doc(`users/${uid}`);
+  const forMemberId = request.data && request.data.forMemberId;
+  const settlerId = forMemberId || uid;
+  const settlerRef = db.doc(`users/${settlerId}`);
 
   await db.runTransaction(async (tx) => {
+    if (forMemberId) await managed.requireMayActFor(tx, db, uid, forMemberId, familyId);
     const snap = await tx.get(redemptionRef);
     if (!snap.exists) throw new HttpsError('not-found', 'Claim not found.');
     // A refund updates the caller's profile; without this read a caller whose
@@ -336,7 +345,7 @@ exports.settleRedemption = onCall(async (request) => {
     const settlerSnap = await tx.get(settlerRef);
     if (!settlerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
     const r = snap.data();
-    if (r.claimedBy !== uid) {
+    if (r.claimedBy !== settlerId) {
       throw new HttpsError('permission-denied', 'Only the person who claimed this can settle it.');
     }
     if (r.status !== 'claimed') {
@@ -360,7 +369,7 @@ exports.settleRedemption = onCall(async (request) => {
   const settlerSnap = await settlerRef.get();
   const settlerPhoto = settlerSnap.data()?.photoUrl || '';
   await notify(
-    uid,
+    settlerId,
     `Treat ${settledStatus} ${happened ? '✅' : '💫'}`,
     `'${rewardTitle}' was ${settledStatus}`,
     { type: 'rewardSettled', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionId, imageUrl: settlerPhoto },
