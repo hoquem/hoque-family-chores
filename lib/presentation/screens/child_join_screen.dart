@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoque_family_chores/domain/value_objects/shared_enums.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/link_child_device_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
 /// Lets a child join their family with just a first name and the family's
@@ -97,6 +98,17 @@ class _ChildJoinScreenState extends ConsumerState<ChildJoinScreen> {
                     ),
                     child: const Text('Join'),
                   ),
+            const SizedBox(height: 16),
+            TextButton(
+              key: const Key('child_link_code_button'),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const LinkChildDeviceScreen(),
+              )),
+              child: const Text(
+                "Already in your family on a parent's phone? Use a link code.",
+                textAlign: TextAlign.center,
+              ),
+            ),
           ],
         ),
       ),

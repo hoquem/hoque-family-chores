@@ -504,6 +504,48 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
+  /// Moves a managed child onto this phone with a parent's link code.
+  ///
+  /// Signs in as the child's existing account, stars and history included.
+  /// On failure the server's message (expired, already used, ...) is shown
+  /// as-is and the state returns to unauthenticated.
+  ///
+  /// :param code: the link code the parent generated for the child.
+  Future<void> linkChildDevice({required String code}) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.authenticating,
+    );
+
+    final result = await ref.read(linkChildDeviceUseCaseProvider)(code: code);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Link failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+          status: AuthStatus.unauthenticated,
+        );
+      },
+      (userId) {
+        final analytics = ref.read(analyticsProvider);
+        analytics.log(
+          AnalyticsEventName.signedIn,
+          userId: userId.value,
+          params: const {'method': 'link_code'},
+        );
+        analytics.log(AnalyticsEventName.linkCodeRedeemed, userId: userId.value);
+        _startUserProfileStream(userId);
+        state = state.copyWith(
+          isLoading: false,
+          status: AuthStatus.authenticated,
+        );
+      },
+    );
+  }
+
   /// Leaves the family the current user belongs to.
   ///
   /// Returns ``null`` on success, or a human-readable error message on failure
