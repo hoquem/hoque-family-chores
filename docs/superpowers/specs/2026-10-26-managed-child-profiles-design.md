@@ -57,8 +57,21 @@ links a phone) and finds no FCM tokens, so no push is sent. No change needed.
 | `addManagedChild({familyId, name})` | parent/guardian in `familyId` | One transaction: refuse if the family already has 10 managed children; create the profile; `arrayUnion` the id into `memberIds`. Returns `{childId}`. |
 | `removeManagedChild({familyId, childId})` | parent/guardian in `familyId` | Refuse unless the target is `managed` and in the family. Run `releaseDeletedMember` (memberCleanup.js) to release chores and unassign rules, then delete the profile and any link code for it. |
 | `createLinkCode({familyId, childId})` | parent/guardian in `familyId` | Target must be `managed` and in the family. Delete any existing code for this child, write `profileLinks/{code}` `{childId, familyId, createdBy, expiresAt: now + 24h}`. Code: 12 characters from the invite-code alphabet. Returns `{code, expiresAt}`. |
-| `redeemLinkCode({code})` | anyone, signed in or not | One transaction: code exists, not expired, child profile exists and is still `managed`; delete the code. Then return `{token: createCustomToken(childId)}`. Does **not** clear `managed` (see `onAuthUserCreated`). |
-| `onAuthUserCreated` (v1 auth trigger) | system | If `users/{uid}` exists with `managed: true`, set `managed: false`. This is the only place `managed` is cleared, so it flips only once the child's phone has really signed in. |
+| `redeemLinkCode({code})` | anyone, signed in or not | One transaction: code exists, not expired, child profile exists and is still `managed`; delete the code. Then return `{token: createCustomToken(childId)}`. Does **not** clear `managed` (see `completeLink`). |
+| `completeLink()` | any signed-in user, for their own profile only | Requires auth. `users/{request.auth.uid}` must exist (else `not-found`). If it is `managed: true`, set `managed: false` and `updatedAt`; if not, succeed as a no-op. Returns `{linked: true}`. This is the only place `managed` is cleared, and only the child's own signed-in phone can call it for that child, so it flips only once the phone has really signed in. |
+
+**Why a callable, not an auth trigger.** The first design cleared `managed` in a v1
+`auth.user().onCreate` trigger (`onAuthUserCreated`). The emulator fires that
+trigger, so the tests were green, but production does not: "A Cloud Functions
+event is not triggered when a user signs in for the first time using a custom
+token." (https://firebase.google.com/docs/functions/auth-events). In production
+a linked child stayed `managed: true` for good. The trigger is gone.
+
+**Client self-heal.** `AuthNotifier` calls `completeLink` (through
+`ManagedChildRepository.completeLink`) when the signed-in user's own streamed
+profile arrives with `isManaged == true`, once per session per user. This is
+the single mechanism: it covers the first link, and any later launch after a
+call that failed. A failure is logged and does not sign the child out.
 
 ### Changes to existing functions
 
@@ -176,7 +189,8 @@ approving chores weekly), rather than families with 2+ signed-in members.
 ## 3. Errors and edge cases
 
 - **Link sign-in fails after redeem** (e.g. network drop): the code is used up
-  but `managed` is still true, because only `onAuthUserCreated` clears it. The
+  but `managed` is still true, because only `completeLink` (called by the
+  signed-in phone) clears it. The
   parent makes a new code. The error says so: "That didn't finish. Ask a
   parent for a new code."
 - **Link code errors** each get their own message: expired ("This code has
@@ -202,7 +216,9 @@ approving chores weekly), rather than families with 2+ signed-in members.
     caller's family; refused for a child caller, another family's parent, and
     a non-managed target; stars move on the target, `claimedVia` recorded.
   - link codes: expiry, single use, one active code per child, refuse after
-    removal; `onAuthUserCreated` clears `managed`.
+    removal; after `signInWithCustomToken` the child is still managed (no
+    trigger reliance); `completeLink` as the child clears it, again is a no-op
+    success, signed out is `unauthenticated`, and with no profile `not-found`.
   - `onAuthUserDeleted` removes managed children when the last adult goes.
   - rules: a client cannot write `managed` or read `profileLinks`.
 - **Dart unit tests (test-first):** `ActiveMemberNotifier`, the pure "who may

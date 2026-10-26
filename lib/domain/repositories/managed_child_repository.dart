@@ -24,4 +24,12 @@ abstract class ManagedChildRepository {
 
   /// Spends [code]. Returns a custom token that signs in as the child.
   Future<String> redeemLinkCode(String code);
+
+  /// Clears `managed` on the signed-in user's own profile: called from the
+  /// child's phone once it is signed in as the child. Idempotent.
+  ///
+  /// Nothing server-side does this on sign-in: production fires no auth
+  /// onCreate event for a first custom-token sign-in
+  /// (https://firebase.google.com/docs/functions/auth-events).
+  Future<void> completeLink();
 }

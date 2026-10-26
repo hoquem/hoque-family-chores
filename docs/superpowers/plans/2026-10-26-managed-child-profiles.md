@@ -687,14 +687,22 @@ git commit -m "Let a parent claim and settle treats for a child without a phone"
 
 ### Task 4: Link codes, the linked flip, and last-adult cleanup
 
+> **Revised 2026-10-26 after a production finding.** This task first cleared
+> `managed` in a v1 `onAuthUserCreated` trigger. The emulator fires it, but
+> production does not: "A Cloud Functions event is not triggered when a user
+> signs in for the first time using a custom token." (https://firebase.google.com/docs/functions/auth-events).
+> The trigger is replaced by the `completeLink` callable, which the child's
+> signed-in phone calls from `AuthNotifier` whenever its own profile is still
+> managed (client self-heal). The text below reflects the fix.
+
 **Files:**
 - Modify: `functions/managedChildren.js`
-- Modify: `functions/index.js` (two callables, `onAuthUserCreated`, `onAuthUserDeleted`)
+- Modify: `functions/index.js` (three callables `createLinkCode`, `redeemLinkCode`, `completeLink`; `onAuthUserDeleted`)
 - Modify: `test/rules/managed_child.test.mjs` (append)
 
 **Interfaces:**
-- Produces (module): `newLinkCode() -> string`, `createLinkCode(db, uid, {familyId, childId}) -> {code, expiresAt}` (`expiresAt` in epoch ms), `redeemLinkCode(db, auth, {code}) -> {token}`, `markLinked(db, uid) -> Promise<void>`, `removeOrphanedManagedChildren(db, familyIds) -> Promise<number>`.
-- Produces (callables/triggers): `createLinkCode`, `redeemLinkCode` (no auth required), `onAuthUserCreated`; `onAuthUserDeleted` additionally removes managed children of families left with no adult.
+- Produces (module): `newLinkCode() -> string`, `createLinkCode(db, uid, {familyId, childId}) -> {code, expiresAt}` (`expiresAt` in epoch ms), `redeemLinkCode(db, auth, {code}) -> {token}`, `completeLink(db, uid) -> Promise<void>` (throws `not-found` when the caller has no profile), `removeOrphanedManagedChildren(db, familyIds) -> Promise<number>`.
+- Produces (callables/triggers): `createLinkCode`, `redeemLinkCode` (no auth required), `completeLink` (auth required, clears only the caller's own `managed`, idempotent, returns `{linked: true}`); `onAuthUserDeleted` additionally removes managed children of families left with no adult.
 - Error contract the app relies on (Task 7 shows these messages verbatim): unknown or used code: `not-found` "That code didn't work. Check it, or ask a parent for a new one."; expired: `failed-precondition` "This code has expired. Ask a parent for a new one."; child removed or already linked: `failed-precondition` "This code is no longer valid. Ask a parent for a new one."
 
 - [ ] **Step 1: Append the failing tests**
@@ -729,8 +737,22 @@ await expectEq('still managed until the phone actually signs in',
   (async () => (await profile(amira)).managed)(), true);
 await signInWithCustomToken(auth, redeemed.data.token);
 await expectEq('the phone is signed in as the child', auth.currentUser?.uid, amira);
-await expectEq('onAuthUserCreated clears managed',
-  waitFor(async () => (await profile(amira)).managed === false), true);
+// No auth trigger fires for a first custom-token sign-in in production
+// (https://firebase.google.com/docs/functions/auth-events).
+await sleep(4000);
+await expectEq('signing in alone does not clear managed',
+  (async () => (await profile(amira)).managed)(), true);
+const completed = await expectOk('the child completes the link from their own phone',
+  httpsCallable(functions, 'completeLink')());
+await expectEq('completeLink reports linked', completed?.data?.linked, true);
+await expectEq('completeLink clears managed', (async () => (await profile(amira)).managed)(), false);
+await expectOk('completing again is a no-op success',
+  httpsCallable(functions, 'completeLink')());
+await expectFail('completeLink needs a signed-in caller', 'unauthenticated',
+  callSignedOut('completeLink'));
+await aauth.createUser({ uid: 'noProfile' }).catch(() => {});
+await expectFail('completeLink needs the caller to have a profile', 'not-found',
+  callAs('noProfile', 'completeLink'));
 await expectEq('her stars came with her', (async () => (await profile(amira)).points)(), 50);
 await expectFail('a linked child can no longer get a code', 'not-found',
   callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
@@ -803,9 +825,9 @@ async function createLinkCode(db, uid, { familyId, childId }) {
  * Spend a link code and return a custom token for the child's existing uid.
  *
  * Does NOT clear ``managed``: the code is used up here, but the phone has not
- * signed in yet. ``markLinked`` (onAuthUserCreated) clears it once it has, so
- * a sign-in that fails leaves the child managed and a parent can make a new
- * code.
+ * signed in yet. The phone, once signed in as the child, calls the
+ * ``completeLink`` callable, so a sign-in that fails leaves the child managed
+ * and a parent can make a new code.
  *
  * :returns: ``{ token }``.
  */
@@ -834,13 +856,16 @@ async function redeemLinkCode(db, auth, { code }) {
 }
 
 /**
- * Clear ``managed`` once a managed child's uid really has signed in.
+ * Clear ``managed`` on the caller's own profile. Idempotent. Called by the
+ * phone (the ``completeLink`` callable), not an auth trigger: production
+ * never fires one for a first custom-token sign-in.
  */
-async function markLinked(db, uid) {
+async function completeLink(db, uid) {
   const ref = db.doc(`users/${uid}`);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (snap.exists && snap.data().managed === true) {
+    if (!snap.exists) throw new HttpsError('not-found', 'No profile found.');
+    if (snap.data().managed === true) {
       tx.update(ref, { managed: false, updatedAt: Timestamp.now() });
     }
   });
@@ -868,7 +893,7 @@ async function removeOrphanedManagedChildren(db, familyIds) {
 }
 ```
 
-- [ ] **Step 4: Wire callables and triggers**
+- [ ] **Step 4: Wire the callables**
 
 In `functions/index.js` add `const { getAuth } = require('firebase-admin/auth');` with the other admin requires, then after the `removeManagedChild` export:
 
@@ -885,10 +910,13 @@ exports.redeemLinkCode = onCall(async (request) => {
   return managed.redeemLinkCode(db, getAuth(), { code: request.data && request.data.code });
 });
 
-// The only place `managed` is cleared: once a managed child's uid has really
-// signed in on their own phone (custom-token sign-in creates the auth user).
-exports.onAuthUserCreated = functionsV1.auth.user().onCreate(async (user) => {
-  await managed.markLinked(db, user.uid);
+// The only place `managed` is cleared: the linked phone, signed in as the
+// child, calls this (AuthNotifier self-heal). Not an auth onCreate trigger:
+// production never fires one for a first custom-token sign-in.
+exports.completeLink = onCall(async (request) => {
+  const uid = requireAuth(request);
+  await managed.completeLink(db, uid);
+  return { linked: true };
 });
 ```
 
@@ -913,7 +941,7 @@ Expected: both `0 failed`.
 
 ```bash
 git add functions/managedChildren.js functions/index.js test/rules/managed_child.test.mjs
-git commit -m "Add link codes that move a child without a phone onto their own phone" -m "managed is cleared only by onAuthUserCreated, so a link whose sign-in fails leaves the child managed and the parent can make a new code. A family whose last adult deletes their account loses its managed children, since nobody is left to look after them." -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git commit -m "Add link codes that move a child without a phone onto their own phone" -m "managed is cleared only by completeLink, called by the signed-in phone, so a link whose sign-in fails leaves the child managed and the parent can make a new code. A family whose last adult deletes their account loses its managed children, since nobody is left to look after them." -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
@@ -3367,7 +3395,7 @@ Expected: shows whether the functions' runtime service account (`<project-number
 - [ ] **Step 3: Deploy rules, then functions (with owner sign-off)**
 
 Run: `firebase deploy --only firestore:rules --project hoque-family-chores-app`, then `firebase deploy --only functions --project hoque-family-chores-app`
-Expected: both succeed; `firebase functions:list` shows `addManagedChild`, `removeManagedChild`, `createLinkCode`, `redeemLinkCode`, `onAuthUserCreated`.
+Expected: both succeed; `firebase functions:list` shows `addManagedChild`, `removeManagedChild`, `createLinkCode`, `redeemLinkCode`, `completeLink`, and no `onAuthUserCreated` (deploy prompts to delete it; accept).
 
 - [ ] **Step 4: Manual check on the iOS simulator (throwaway family, never the live board)**
 

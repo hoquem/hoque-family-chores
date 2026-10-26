@@ -197,9 +197,9 @@ async function createLinkCode(db, uid, { familyId, childId }) {
  * Spend a link code and return a custom token for the child's existing uid.
  *
  * Does NOT clear ``managed``: the code is used up here, but the phone has not
- * signed in yet. ``markLinked`` (onAuthUserCreated) clears it once it has, so
- * a sign-in that fails leaves the child managed and a parent can make a new
- * code.
+ * signed in yet. The phone, once signed in as the child, calls the
+ * ``completeLink`` callable, so a sign-in that fails leaves the child managed
+ * and a parent can make a new code.
  *
  * :returns: ``{ token }``.
  */
@@ -232,13 +232,24 @@ async function redeemLinkCode(db, auth, { code }) {
 }
 
 /**
- * Clear ``managed`` once a managed child's uid really has signed in.
+ * Clear ``managed`` on the caller's own profile: the caller is signed in as
+ * ``uid``, so a managed child's phone really has signed in. Idempotent: a
+ * profile that is already not managed is left alone.
+ *
+ * Called by the phone (the ``completeLink`` callable), not an auth trigger:
+ * production never fires an auth onCreate event for a first custom-token
+ * sign-in (https://firebase.google.com/docs/functions/auth-events).
+ *
+ * :param db: Firestore admin instance.
+ * :param uid: the signed-in caller.
+ * :raises HttpsError: ``not-found`` when the caller has no profile.
  */
-async function markLinked(db, uid) {
+async function completeLink(db, uid) {
   const ref = db.doc(`users/${uid}`);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (snap.exists && snap.data().managed === true) {
+    if (!snap.exists) throw new HttpsError('not-found', 'No profile found.');
+    if (snap.data().managed === true) {
       tx.update(ref, { managed: false, updatedAt: Timestamp.now() });
     }
   });
@@ -278,6 +289,6 @@ module.exports = {
   newLinkCode,
   createLinkCode,
   redeemLinkCode,
-  markLinked,
+  completeLink,
   removeOrphanedManagedChildren,
 };

@@ -11,6 +11,12 @@ class MockManagedChildRepository implements ManagedChildRepository {
   final List<UserId> removed = [];
   final List<UserId> linkCodesFor = [];
 
+  /// How many times [completeLink] was called.
+  int completeLinkCalls = 0;
+
+  /// When set, [completeLink] throws it (after counting the call).
+  Object? completeLinkError;
+
   /// Codes [redeemLinkCode] refuses, mapped to the server's message.
   final Map<String, String> refusedCodes = {};
 
@@ -46,5 +52,12 @@ class MockManagedChildRepository implements ManagedChildRepository {
       throw ValidationException(refusal, code: 'failed-precondition');
     }
     return code;
+  }
+
+  @override
+  Future<void> completeLink() async {
+    completeLinkCalls++;
+    final error = completeLinkError;
+    if (error != null) throw error;
   }
 }

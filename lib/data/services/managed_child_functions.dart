@@ -52,4 +52,9 @@ class ManagedChildFunctions implements ManagedChildRepository {
     });
     return data!['token'] as String;
   }
+
+  @override
+  Future<void> completeLink() async {
+    await callFunction(_functions, 'completeLink', {});
+  }
 }

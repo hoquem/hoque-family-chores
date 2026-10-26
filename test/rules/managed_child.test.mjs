@@ -190,8 +190,25 @@ await expectEq('still managed until the phone actually signs in',
   (async () => (await profile(amira)).managed)(), true);
 await signInWithCustomToken(auth, redeemed.data.token);
 await expectEq('the phone is signed in as the child', auth.currentUser?.uid, amira);
-await expectEq('onAuthUserCreated clears managed',
-  waitFor(async () => (await profile(amira)).managed === false), true);
+// Production never fires an auth onCreate trigger for a first custom-token
+// sign-in (https://firebase.google.com/docs/functions/auth-events), so nothing
+// server-side may clear `managed` on sign-in. Give any such trigger time to
+// run, then check the flag is untouched: the phone must call completeLink.
+await sleep(4000);
+await expectEq('signing in alone does not clear managed',
+  (async () => (await profile(amira)).managed)(), true);
+const completed = await expectOk('the child completes the link from their own phone',
+  httpsCallable(functions, 'completeLink')());
+await expectEq('completeLink reports linked', completed?.data?.linked, true);
+await expectEq('completeLink clears managed', (async () => (await profile(amira)).managed)(), false);
+await expectOk('completing again is a no-op success',
+  httpsCallable(functions, 'completeLink')());
+await expectEq('still not managed', (async () => (await profile(amira)).managed)(), false);
+await expectFail('completeLink needs a signed-in caller', 'unauthenticated',
+  callSignedOut('completeLink'));
+await aauth.createUser({ uid: 'noProfile' }).catch(() => {});
+await expectFail('completeLink needs the caller to have a profile', 'not-found',
+  callAs('noProfile', 'completeLink'));
 await expectEq('her stars came with her', (async () => (await profile(amira)).points)(), 50);
 await expectFail('a linked child can no longer get a code', 'not-found',
   callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));

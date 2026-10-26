@@ -260,10 +260,16 @@ exports.redeemLinkCode = onCall(async (request) => {
   return managed.redeemLinkCode(db, getAuth(), { code: request.data && request.data.code });
 });
 
-// The only place `managed` is cleared: once a managed child's uid has really
-// signed in on their own phone (custom-token sign-in creates the auth user).
-exports.onAuthUserCreated = functionsV1.auth.user().onCreate(async (user) => {
-  await managed.markLinked(db, user.uid);
+// The only place `managed` is cleared: the linked phone, signed in as the
+// child, calls this. Not an auth onCreate trigger: production never fires one
+// for a first custom-token sign-in
+// (https://firebase.google.com/docs/functions/auth-events), so the app calls
+// this whenever its own profile still says managed. It can only clear the
+// caller's own flag.
+exports.completeLink = onCall(async (request) => {
+  const uid = requireAuth(request);
+  await managed.completeLink(db, uid);
+  return { linked: true };
 });
 
 // Spend stars on a reward: deduct the cost and record the redemption in one
