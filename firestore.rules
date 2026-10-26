@@ -24,12 +24,14 @@ service cloud.firestore {
         && (request.auth.uid == userId
             || resource.data.familyId == me().familyId);
       // A new profile starts with zero stars and no family; both are set later
-      // (points only ever by the Cloud Functions).
+      // (points only ever by the Cloud Functions). `managed` (a child with no
+      // sign-in of their own) is set only by the addManagedChild Cloud Function.
       allow create: if isSignedIn() && request.auth.uid == userId
         && (!('points' in request.resource.data)
             || request.resource.data.points == 0)
         && (!('familyId' in request.resource.data)
-            || request.resource.data.familyId == '');
+            || request.resource.data.familyId == '')
+        && !('managed' in request.resource.data);
       // Self-updates (profile edits, joining a family) or a parent/guardian in
       // the same family (e.g. role changes). Two things are locked down:
       //  - `points` is OFF LIMITS to every client — all star changes go through
@@ -43,8 +45,14 @@ service cloud.firestore {
       //    parent sign off their own chore, so a member who could re-grade
       //    themselves could mint stars. Only a parent may change a member's role
       //    from then on, via the branch below.
+      //  - `managed` is OFF LIMITS to every client, set or cleared alike. Only the
+      //    Cloud Functions change it: it decides who a link code may sign in as,
+      //    and who a parent may act for.
       allow update: if isSignedIn()
         && request.resource.data.points == resource.data.points
+        // Only the Cloud Functions set or clear `managed`: it decides who a
+        // link code may sign in as, and who a parent may act for.
+        && request.resource.data.get('managed', false) == resource.data.get('managed', false)
         && ((request.auth.uid == userId
               && (request.resource.data.get('role', '') == resource.data.get('role', '')
                   || resource.data.get('familyId', '') == '')
@@ -195,6 +203,13 @@ service cloud.firestore {
         && request.resource.data.familyId is string
         && isFamilyMember(request.resource.data.familyId);
       allow update, delete: if false;
+    }
+
+    // Live link codes for moving a managed child onto their own phone. A code
+    // is a bearer credential for the child's account, so only the Cloud
+    // Functions (admin) read or write these.
+    match /profileLinks/{code} {
+      allow read, write: if false;
     }
 
     // Photo-proof completions (not yet surfaced in the UI).
