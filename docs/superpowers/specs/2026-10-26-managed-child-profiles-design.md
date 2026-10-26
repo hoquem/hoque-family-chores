@@ -82,6 +82,24 @@ links a phone) and finds no FCM tokens, so no push is sent. No change needed.
 - No current client writes `managed`, so the rules can deploy ahead of the
   client build (see the rules-deploy-ordering note).
 
+### Storage rules (task photos)
+
+In the child view Firebase is signed in as the parent while a photo-proof
+chore is assigned to the managed child, so the old assignee-only rule would
+deny every upload there. `storage.rules` now lets the assignee **or any parent
+or guardian of the family** upload, replace and delete a task's photos, for
+any of the family's chores (trust-based, matching the product philosophy:
+show who did what rather than forbid). The parent check reads only the
+caller's own `users/{uid}` profile (role in parent/guardian, and `familyId`
+equal to the path's family). That is a sound membership check because
+`firestore.rules` only lets a profile's `familyId` be set to a family the
+caller is actually a member of. Production allows at most two Firestore
+documents per Storage rules evaluation, and the emulator does not enforce
+this, so every allow is kept to two reads at worst (the task, then the
+caller's profile). The earlier parent-delete path read three (task, family,
+profile) and so likely failed in production. A widening change: deploy it
+ahead of the client.
+
 ### Infrastructure
 
 `createCustomToken` from Cloud Functions needs the functions' runtime service

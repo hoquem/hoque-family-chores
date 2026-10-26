@@ -1,8 +1,9 @@
-// Task photos for a managed child (no phone of their own). On the shared
-// phone Firebase is signed in as the PARENT while the chore is assigned to the
-// child, so "only the assignee uploads" would refuse every photo-proof chore
-// in the child view. A parent of the family may upload for a MANAGED child's
-// chore; a signed-in child's chore stays the child's alone.
+// Task photos: the assignee, or any parent or guardian of the family, may
+// attach, replace and remove a chore's photos (trust-based). That covers the
+// child view, where Firebase is signed in as the PARENT while the chore is
+// assigned to a managed child. Each allow must stay within the production
+// limit of two Firestore documents per evaluation, which this emulator does
+// not enforce (see the comment in storage.rules).
 // Runs against the storage + firestore emulators (cross-service rules).
 import {
   initializeTestEnvironment,
@@ -35,16 +36,17 @@ await testEnv.withSecurityRulesDisabled(async (ctx) => {
   await setDoc(doc(db, 'families/famB'), { memberIds: ['otherMum', 'otherKid'] });
   await setDoc(doc(db, 'families/famA/tasks/kidChore'), { assignedToId: 'kid' });
   await setDoc(doc(db, 'families/famA/tasks/teenChore'), { assignedToId: 'teen' });
-  // A famA task pointing at another family's managed child: that child's
-  // profile must not unlock famA's photos.
-  await setDoc(doc(db, 'families/famA/tasks/strayChore'), { assignedToId: 'otherKid' });
 });
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+const photo = (taskId) => `families/famA/tasks/${taskId}/before-123.jpg`;
 const upload = (uid, taskId, contentType = 'image/jpeg') =>
-  testEnv.authenticatedContext(uid).storage()
-    .ref(`families/famA/tasks/${taskId}/before-123.jpg`)
-    .put(JPEG, { contentType });
+  testEnv.authenticatedContext(uid).storage().ref(photo(taskId)).put(JPEG, { contentType });
+const remove = (uid, taskId) =>
+  testEnv.authenticatedContext(uid).storage().ref(photo(taskId)).delete();
+// Puts a photo in place with rules off, so a delete check has something to hit.
+const seedPhoto = (taskId) => testEnv.withSecurityRulesDisabled((ctx) =>
+  ctx.storage().ref(photo(taskId)).put(JPEG, { contentType: 'image/jpeg' }));
 
 let pass = 0, fail = 0;
 async function check(name, promise, shouldSucceed) {
@@ -58,18 +60,27 @@ async function check(name, promise, shouldSucceed) {
   }
 }
 
-console.log('\n-- a managed child\'s chore photos --');
+console.log('\n-- a parent or guardian, for any of the family\'s chores --');
 await check('a parent CAN upload for a managed child\'s chore', upload('mum', 'kidChore'), true);
 await check('a guardian CAN upload for a managed child\'s chore', upload('dad', 'kidChore'), true);
-await check('a parent CANNOT upload a non-JPEG for a managed child', upload('mum', 'kidChore', 'image/png'), false);
-await check('a sibling CANNOT upload for a managed child\'s chore', upload('teen', 'kidChore'), false);
-await check("another family's parent CANNOT upload for a managed child's chore", upload('otherMum', 'kidChore'), false);
-await check("a parent CANNOT upload for another family's managed child on their own task", upload('mum', 'strayChore'), false);
+await check('a parent CAN upload for a signed-in child\'s chore', upload('mum', 'teenChore'), true);
+await check('a parent CANNOT upload a non-JPEG', upload('mum', 'kidChore', 'image/png'), false);
+await seedPhoto('kidChore');
+await check('a parent CAN delete a managed child\'s chore photo', remove('mum', 'kidChore'), true);
+await seedPhoto('teenChore');
+await check('a parent CAN delete a signed-in child\'s chore photo', remove('mum', 'teenChore'), true);
 
-console.log('\n-- a signed-in child\'s chore photos stay theirs --');
-await check('a parent CANNOT upload for a signed-in child\'s chore', upload('mum', 'teenChore'), false);
+console.log('\n-- outsiders and other children --');
+await check("another family's parent CANNOT upload", upload('otherMum', 'kidChore'), false);
+await seedPhoto('kidChore');
+await check("another family's parent CANNOT delete", remove('otherMum', 'kidChore'), false);
+await check('a child who is not the assignee CANNOT upload', upload('teen', 'kidChore'), false);
+await check('a child who is not the assignee CANNOT delete', remove('teen', 'kidChore'), false);
+
+console.log('\n-- the assignee --');
 await check('the assignee CAN upload for their own chore', upload('teen', 'teenChore'), true);
 await check('the assignee CANNOT upload a non-JPEG', upload('teen', 'teenChore', 'image/png'), false);
+await check('the assignee CAN delete their own chore photo', remove('teen', 'teenChore'), true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await testEnv.cleanup();
