@@ -34,14 +34,16 @@ async function requireAdultIn(tx, db, uid, familyId) {
 }
 
 /**
- * Read ``childId`` and require a managed child of ``familyId``.
+ * Read ``childId`` and require a managed child of ``familyId``. Managed means
+ * child: a managed profile with any other role is refused too, so a parent
+ * can never act as, or link, another adult.
  *
  * :returns: the child's profile data.
  */
 async function requireManagedChildIn(tx, db, childId, familyId) {
   const snap = await tx.get(db.doc(`users/${childId}`));
   const child = snap.exists ? snap.data() : null;
-  if (!child || child.managed !== true || child.familyId !== familyId) {
+  if (!child || child.managed !== true || child.role !== 'child' || child.familyId !== familyId) {
     throw new HttpsError('not-found', "That child isn't in this family without a phone any more.");
   }
   return child;
@@ -129,6 +131,27 @@ async function requireMayActFor(tx, db, uid, memberId, familyId) {
   await requireManagedChildIn(tx, db, memberId, familyId);
 }
 
+/**
+ * Read the optional ``forMemberId`` of a call a parent makes on a managed
+ * child's behalf.
+ *
+ * Absent (``undefined``/``null``) means the caller acts for themselves.
+ * Anything else must be a usable document id: a blank, non-string or
+ * ``/``-containing value is refused rather than silently acting as the
+ * caller or failing as an opaque INTERNAL.
+ *
+ * :param data: the callable's request data.
+ * :returns: the member id, or ``null`` when absent.
+ */
+function optionalForMemberId(data) {
+  const value = data ? data.forMemberId : undefined;
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string' || value === '' || value.includes('/')) {
+    throw new HttpsError('invalid-argument', '"forMemberId" must be a member id.');
+  }
+  return value;
+}
+
 const LINK_CODE_TTL_MS = 24 * 60 * 60 * 1000;
 // Same alphabet and length as family invite codes (create_family_usecase.dart):
 // no 0/O, 1/I/L, so a code read aloud survives the trip.
@@ -144,6 +167,12 @@ function newLinkCode() {
 // Mirrors normaliseInviteCode in join_family_usecase.dart: spaces, dashes and
 // case are how people write a long code down, not a different code.
 const normaliseCode = (raw) => String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+// Real codes are 12 characters. Anything far longer is not a code, and must
+// not reach Firestore as a document id (ids have a byte limit, and the error
+// would surface as INTERNAL).
+const MAX_CODE_INPUT_LENGTH = 32;
+const CODE_NOT_FOUND = "That code didn't work. Check it, or ask a parent for a new one.";
 
 /**
  * Mint a one-time code that moves a managed child onto their own phone,
@@ -177,12 +206,13 @@ async function createLinkCode(db, uid, { familyId, childId }) {
 async function redeemLinkCode(db, auth, { code }) {
   const id = normaliseCode(code);
   if (!id) throw new HttpsError('invalid-argument', 'Please enter the code.');
+  if (id.length > MAX_CODE_INPUT_LENGTH) throw new HttpsError('not-found', CODE_NOT_FOUND);
   const ref = db.doc(`profileLinks/${id}`);
-  let childId;
+  let token;
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists) {
-      throw new HttpsError('not-found', "That code didn't work. Check it, or ask a parent for a new one.");
+      throw new HttpsError('not-found', CODE_NOT_FOUND);
     }
     const link = snap.data();
     const child = await tx.get(db.doc(`users/${link.childId}`));
@@ -192,10 +222,13 @@ async function redeemLinkCode(db, auth, { code }) {
     if (!child.exists || child.data().managed !== true) {
       throw new HttpsError('failed-precondition', 'This code is no longer valid. Ask a parent for a new one.');
     }
+    // Mint before spending: if minting fails the transaction aborts and the
+    // code survives. A token for a code that is never spent is harmless (it
+    // only signs in as the child the code was for).
+    token = await auth.createCustomToken(link.childId);
     tx.delete(ref);
-    childId = link.childId;
   });
-  return { token: await auth.createCustomToken(childId) };
+  return { token };
 }
 
 /**
@@ -238,6 +271,7 @@ module.exports = {
   requireAdultIn,
   requireManagedChildIn,
   requireMayActFor,
+  optionalForMemberId,
   addManagedChild,
   removeManagedChild,
   releaseManagedChild,

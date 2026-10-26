@@ -137,6 +137,27 @@ await expectOk('a parent refunds it for the child',
 await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(amira)).points)(), 50);
 await expectEq('the parent still has 0', (async () => (await profile('mum')).points)(), 0);
 
+await expectEq('the managed child is not told about their own claim',
+  (async () => (await adb.collection(`users/${amira}/notifications`).where('type', '==', 'rewardClaimed').get()).size)(), 0);
+await expectEq('the rest of the family is told about it',
+  (async () => (await adb.collection('users/teen/notifications').where('type', '==', 'rewardClaimed').get()).size > 0)(), true);
+
+console.log('\n-- forMemberId must be a real id when present --');
+for (const bad of ['', 'a/b', 0, false]) {
+  await expectFail(`claimReward refuses forMemberId ${JSON.stringify(bad)}`, 'invalid-argument',
+    callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: bad }));
+  await expectFail(`settleRedemption refuses forMemberId ${JSON.stringify(bad)}`, 'invalid-argument',
+    callAs('mum', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: true, forMemberId: bad }));
+}
+
+console.log('\n-- managed means child --');
+await adb.doc('users/oddAdult').set({ familyId: 'famA', role: 'parent', points: 50, name: 'Odd', managed: true });
+await expectFail('a parent cannot claim for a managed profile that is not a child', 'not-found',
+  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: 'oddAdult' }));
+await expectFail('a parent cannot make a link code for a managed profile that is not a child', 'not-found',
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: 'oddAdult' }));
+await adb.doc('users/oddAdult').delete();
+
 console.log('\n-- link codes --');
 await expectFail('a child cannot make a link code', 'permission-denied',
   callAs('teen', 'createLinkCode', { familyId: 'famA', childId: amira }));
@@ -154,6 +175,11 @@ await expectFail('the replaced code no longer works', 'not-found',
 await adb.doc(`profileLinks/${code2}`).update({ expiresAt: adminPkg.firestore.Timestamp.fromMillis(Date.now() - 1000) });
 await expectFail('an expired code is refused', 'failed-precondition',
   callSignedOut('redeemLinkCode', { code: code2 }));
+
+await expectFail('an over-long code is refused as not found', 'not-found',
+  callSignedOut('redeemLinkCode', { code: 'A'.repeat(33) }));
+await expectFail('a code too long for a document id is refused as not found', 'not-found',
+  callSignedOut('redeemLinkCode', { code: 'A'.repeat(2000) }));
 
 const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira });
 const spaced = `${live.data.code.slice(0, 4)} ${live.data.code.slice(4, 8)}-${live.data.code.slice(8)}`.toLowerCase();

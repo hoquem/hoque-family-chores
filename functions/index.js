@@ -135,13 +135,15 @@ async function notify(userId, title, message, data, pushTitle, pushBody) {
   }
 }
 
-/// Notify every member of a family except one person.
-async function notifyFamily(familyId, excludeUserId, title, message, data, pushTitle, pushBody) {
+/// Notify every member of a family except the excluded person, or people
+/// (a single id or an array of ids).
+async function notifyFamily(familyId, excludeUserIds, title, message, data, pushTitle, pushBody) {
+  const excluded = new Set([].concat(excludeUserIds));
   const membersSnap = await db.collection('users').where('familyId', '==', familyId).get();
   const promises = [];
   membersSnap.docs.forEach((doc) => {
     const memberId = doc.id;
-    if (memberId === excludeUserId) return;
+    if (excluded.has(memberId)) return;
     promises.push(notify(memberId, title, message, data, pushTitle, pushBody));
   });
   await Promise.all(promises);
@@ -272,7 +274,7 @@ exports.claimReward = onCall(async (request) => {
 
   // On the shared phone a parent claims for a managed child (a child with no
   // phone of their own); the stars and the claim are the child's.
-  const forMemberId = request.data && request.data.forMemberId;
+  const forMemberId = managed.optionalForMemberId(request.data);
   const claimerId = forMemberId || uid;
   const claimerRef = db.doc(`users/${claimerId}`);
   const rewardRef = db.doc(`families/${familyId}/rewards/${rewardId}`);
@@ -319,12 +321,14 @@ exports.claimReward = onCall(async (request) => {
     });
   });
 
-  // Notify family: someone claimed a treat.
+  // Notify family: someone claimed a treat. Neither the caller nor the
+  // claimer (a managed child, when a parent claims for them) is told about
+  // their own claim.
   const claimerSnap = await claimerRef.get();
   const claimerPhoto = claimerSnap.data()?.photoUrl || '';
   await notifyFamily(
     familyId,
-    uid,
+    [uid, claimerId],
     `${claimerName} claimed a treat! 🎁`,
     `${claimerName} wants '${rewardTitle}' (${cost}⭐)`,
     { type: 'rewardClaimed', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionRef.id, imageUrl: claimerPhoto },
@@ -351,7 +355,7 @@ exports.settleRedemption = onCall(async (request) => {
   let rewardTitle;
   let settledStatus;
 
-  const forMemberId = request.data && request.data.forMemberId;
+  const forMemberId = managed.optionalForMemberId(request.data);
   const settlerId = forMemberId || uid;
   const settlerRef = db.doc(`users/${settlerId}`);
 
@@ -359,8 +363,9 @@ exports.settleRedemption = onCall(async (request) => {
     if (forMemberId) await managed.requireMayActFor(tx, db, uid, forMemberId, familyId);
     const snap = await tx.get(redemptionRef);
     if (!snap.exists) throw new HttpsError('not-found', 'Claim not found.');
-    // A refund updates the caller's profile; without this read a caller whose
-    // profile is gone gets an opaque INTERNAL (tx.update NOT_FOUND).
+    // A refund updates the settler's profile (the caller's, or the managed
+    // child's when a parent settles for them); without this read a settler
+    // whose profile is gone gets an opaque INTERNAL (tx.update NOT_FOUND).
     const settlerSnap = await tx.get(settlerRef);
     if (!settlerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
     const r = snap.data();
