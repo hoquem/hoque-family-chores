@@ -10,6 +10,7 @@ import '../../../domain/value_objects/family_id.dart';
 import '../../../domain/value_objects/user_id.dart';
 import '../../../utils/logger.dart';
 import '../../motion/star_award_watcher.dart';
+import 'auth_notifier.dart';
 
 part 'rewards_notifier.g.dart';
 
@@ -62,16 +63,20 @@ Stream<List<Redemption>> outstandingClaims(
 
   Future<void> refund(Redemption claim) async {
     if (!refunding.add(claim.id)) return;
-    // Only ever read for the signed-in user, so the stars come back to this
-    // device's balance; that rise must not be celebrated as stars earned.
-    final watcher = ref.read(starAwardWatcherProvider.notifier)
-      ..expectRefund(claim.cost);
+    // Read for the signed-in user, or for a managed child in the child view
+    // on a parent's phone. Only the signed-in user's own refund raises this
+    // device's balance, so only that one is announced to the star watcher.
+    final signedIn = ref.read(authNotifierProvider).user?.id;
+    final onBehalf = signedIn != null && claim.claimedBy != signedIn;
+    final watcher = ref.read(starAwardWatcherProvider.notifier);
+    if (!onBehalf) watcher.expectRefund(claim.cost);
     final result = await ref.read(settleRedemptionUseCaseProvider)(
       redemption: claim,
       actor: claim.claimedBy,
       happened: false,
+      onBehalf: onBehalf,
     );
-    if (result.isLeft()) watcher.cancelRefund(claim.cost);
+    if (result.isLeft() && !onBehalf) watcher.cancelRefund(claim.cost);
     result.fold(
       // Logged, not swallowed: a failed lazy refund would otherwise vanish
       // with no trace anywhere, and the claim stays outstanding (correctly)

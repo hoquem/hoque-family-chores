@@ -27,7 +27,11 @@ import '../../domain/services/task_actions.dart';
 class TaskDetailsScreen extends ConsumerStatefulWidget {
   final Task task;
 
-  const TaskDetailsScreen({super.key, required this.task});
+  /// The managed child using a parent's phone (child view). Every action on
+  /// this screen is then taken as the child; null means the signed-in user.
+  final User? actingAs;
+
+  const TaskDetailsScreen({super.key, required this.task, this.actingAs});
 
   @override
   ConsumerState<TaskDetailsScreen> createState() => _TaskDetailsScreenState();
@@ -651,7 +655,7 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
-    final currentUser = authState.user;
+    final currentUser = widget.actingAs ?? authState.user;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chore Details'),

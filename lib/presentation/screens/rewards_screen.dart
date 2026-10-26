@@ -23,11 +23,16 @@ import '../widgets/help_button.dart';
 /// Until this existed, points went up forever and bought nothing — a child
 /// earned, levelled up, and the loop dead-ended. Rewards are the exit.
 class RewardsScreen extends ConsumerWidget {
-  const RewardsScreen({super.key});
+  const RewardsScreen({super.key, this.actingAs});
+
+  /// The managed child using a parent's phone (child view): balance, claims
+  /// and settles are theirs, and treats cannot be added or edited. Null means
+  /// the signed-in user, as before.
+  final User? actingAs;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authNotifierProvider).user;
+    final user = actingAs ?? ref.watch(authNotifierProvider).user;
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Treats')),
@@ -43,7 +48,9 @@ class RewardsScreen extends ConsumerWidget {
         title: const Text('Treats'),
         actions: const [HelpButton(content: kRewardsHelp)],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: actingAs != null
+          ? null
+          : FloatingActionButton(
         // MainScreen keeps every tab alive in an IndexedStack, so this FAB and
         // the Tasks tab's exist at the same time. Without distinct tags they
         // collide on Flutter's default hero tag and throw.
@@ -72,7 +79,11 @@ class RewardsScreen extends ConsumerWidget {
             owed.maybeWhen(
               data: (claims) => claims.isEmpty
                   ? const SizedBox.shrink()
-                  : _OwedCard(claims: claims, userId: user.id),
+                  : _OwedCard(
+                      claims: claims,
+                      userId: user.id,
+                      onBehalf: actingAs != null,
+                    ),
               orElse: () => const SizedBox.shrink(),
             ),
             rewards.when(
@@ -99,7 +110,11 @@ class RewardsScreen extends ConsumerWidget {
                   : Column(
                       children: [
                         for (final reward in list)
-                          _RewardTile(reward: reward, balance: user.points.value),
+                          _RewardTile(
+                            reward: reward,
+                            balance: user.points.value,
+                            actingAs: actingAs,
+                          ),
                       ],
                     ),
             ),
@@ -144,10 +159,15 @@ class _BalanceCard extends StatelessWidget {
 /// Outings the family owes this person. The point of putting it here is that
 /// a promise nobody chases is just a lost star.
 class _OwedCard extends ConsumerWidget {
-  const _OwedCard({required this.claims, required this.userId});
+  const _OwedCard({
+    required this.claims,
+    required this.userId,
+    required this.onBehalf,
+  });
 
   final List<Redemption> claims;
   final UserId userId;
+  final bool onBehalf;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -204,14 +224,18 @@ class _OwedCard extends ConsumerWidget {
   ) async {
     // Announced before the call: the refunded balance can stream in before
     // the call returns, and it must not be celebrated as stars earned.
+    // The parent's own balance does not move when a child's refund lands, so
+    // only announce a refund for the signed-in user's own claims.
     final watcher = ref.read(starAwardWatcherProvider.notifier);
-    if (!happened) watcher.expectRefund(claim.cost);
+    final announce = !happened && !onBehalf;
+    if (announce) watcher.expectRefund(claim.cost);
     final result = await ref.read(settleRedemptionUseCaseProvider)(
       redemption: claim,
       actor: userId,
       happened: happened,
+      onBehalf: onBehalf,
     );
-    if (result.isLeft() && !happened) watcher.cancelRefund(claim.cost);
+    if (result.isLeft() && announce) watcher.cancelRefund(claim.cost);
     if (!context.mounted) return;
     result.fold(
       (failure) => ScaffoldMessenger.of(context).showSnackBar(
@@ -245,10 +269,15 @@ class _OwedCard extends ConsumerWidget {
 }
 
 class _RewardTile extends ConsumerStatefulWidget {
-  const _RewardTile({required this.reward, required this.balance});
+  const _RewardTile({
+    required this.reward,
+    required this.balance,
+    this.actingAs,
+  });
 
   final Reward reward;
   final int balance;
+  final User? actingAs;
 
   @override
   ConsumerState<_RewardTile> createState() => _RewardTileState();
@@ -265,7 +294,7 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
     final balance = widget.balance;
     final affordable = balance >= reward.cost.value;
     final short = reward.cost.value - balance;
-    final isParent =
+    final isParent = widget.actingAs == null &&
         ref.watch(authNotifierProvider).user?.role == UserRole.parent;
 
     return Card(
@@ -383,13 +412,16 @@ class _RewardTileState extends ConsumerState<_RewardTile> {
   }
 
   Future<void> _claim(BuildContext context) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = widget.actingAs ?? ref.read(authNotifierProvider).user;
     if (user == null) return;
     final reward = widget.reward;
 
     setState(() => _claiming = true);
     try {
-      final result = await ref.read(claimRewardUseCaseProvider)(reward: reward);
+      final result = await ref.read(claimRewardUseCaseProvider)(
+        reward: reward,
+        forMemberId: widget.actingAs?.id,
+      );
       if (!context.mounted) return;
       result.fold(
         (failure) => ScaffoldMessenger.of(context).showSnackBar(
