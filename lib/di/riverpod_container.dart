@@ -438,3 +438,14 @@ final reviewPromptServiceProvider = Provider<ReviewPromptService>((ref) {
 final managedChildRepositoryProvider = Provider<ManagedChildRepository>((ref) {
   return ManagedChildFunctions();
 });
+
+final addManagedChildUseCaseProvider = Provider<AddManagedChildUseCase>((ref) {
+  return AddManagedChildUseCase(ref.watch(managedChildRepositoryProvider));
+});
+
+final linkChildDeviceUseCaseProvider = Provider<LinkChildDeviceUseCase>((ref) {
+  return LinkChildDeviceUseCase(
+    ref.watch(managedChildRepositoryProvider),
+    ref.watch(authRepositoryProvider),
+  );
+});

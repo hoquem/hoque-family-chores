@@ -122,4 +122,41 @@ void main() {
 
     expect(result.isLeft(), isTrue);
   });
+
+  group('managed children', () {
+    User adult(String id, UserRole role) =>
+        _member(UserId(id)).copyWith(name: id, role: role);
+    User managedKid(String id) =>
+        _member(UserId(id)).copyWith(name: 'Amira', isManaged: true);
+
+    test('the only adult cannot leave while managed children remain', () async {
+      final users = MockUserRepository();
+      final families = MockFamilyRepository();
+      final mum = adult('mum', UserRole.parent);
+      await families.createFamily(_family([mum.id, UserId('kid')]));
+      families.addTestFamilyMembers(FamilyId('fam_1'), [mum, managedKid('kid')]);
+      await users.createUserProfile(mum);
+
+      final result = await LeaveFamilyUseCase(families, users)(userId: mum.id);
+
+      result.fold(
+        (f) => expect(f.message, 'Remove or move Amira first.'),
+        (_) => fail('should refuse'),
+      );
+    });
+
+    test('a second adult in the family lets the first leave', () async {
+      final users = MockUserRepository();
+      final families = MockFamilyRepository();
+      final mum = adult('mum', UserRole.parent);
+      final dad = adult('dad', UserRole.guardian);
+      await families.createFamily(_family([mum.id, dad.id, UserId('kid')]));
+      families.addTestFamilyMembers(FamilyId('fam_1'), [mum, dad, managedKid('kid')]);
+      await users.createUserProfile(mum);
+
+      final result = await LeaveFamilyUseCase(families, users)(userId: mum.id);
+
+      expect(result.isRight(), isTrue);
+    });
+  });
 }
