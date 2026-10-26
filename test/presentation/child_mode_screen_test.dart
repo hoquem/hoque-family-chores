@@ -21,6 +21,7 @@ import 'package:hoque_family_chores/presentation/motion/celebration.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_listener.dart';
 import 'package:hoque_family_chores/presentation/motion/celebration_overlay.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/member_profile_provider.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/rewards_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';

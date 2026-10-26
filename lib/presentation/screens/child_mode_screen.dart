@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/analytics/analytics.dart';
-import '../../di/riverpod_container.dart';
 import '../../domain/entities/task.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/services/task_actions.dart';
@@ -10,18 +9,13 @@ import '../../domain/value_objects/user_id.dart';
 import '../motion/animated_star_count.dart';
 import '../motion/celebration_listener.dart';
 import '../providers/riverpod/auth_notifier.dart';
+import '../providers/riverpod/member_profile_provider.dart';
 import '../providers/riverpod/task_list_notifier.dart';
 import '../theme/app_tokens.dart';
 import '../utils/task_status_label.dart';
 import '../widgets/user_avatar.dart';
 import 'rewards_screen.dart';
 import 'task_details_screen.dart';
-
-/// One member's live profile. Hand-written (build_runner is broken).
-final memberProfileProvider =
-    StreamProvider.autoDispose.family<User?, UserId>((ref, id) {
-  return ref.watch(userRepositoryProvider).streamUserProfile(id);
-});
 
 /// The child view: a managed child (no phone of their own) using a parent's
 /// phone. Firebase stays signed in as the parent; this route passes the
