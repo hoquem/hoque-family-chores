@@ -144,4 +144,40 @@ void main() {
       expect(result.fold((f) => f, (_) => null), isA<ServerFailure>());
     });
   });
+
+  test('settling on behalf of a managed child passes them to the server',
+      () async {
+    registerFallbackValue(UserId('fallback'));
+    final repo = _MockRewardRepository();
+    when(() => repo.settleRedemption(any(), any(),
+        happened: any(named: 'happened'),
+        forMemberId: any(named: 'forMemberId'))).thenAnswer((_) async {});
+
+    final result = await SettleRedemptionUseCase(repo)(
+      redemption: _claim(claimedBy: _sibling),
+      actor: _sibling,
+      happened: false,
+      onBehalf: true,
+    );
+
+    expect(result.isRight(), isTrue);
+    verify(() => repo.settleRedemption(_familyId, 'r1',
+        happened: false, forMemberId: _sibling)).called(1);
+  });
+
+  test('settling your own claim sends no forMemberId', () async {
+    final repo = _MockRewardRepository();
+    when(() => repo.settleRedemption(any(), any(),
+        happened: any(named: 'happened'),
+        forMemberId: any(named: 'forMemberId'))).thenAnswer((_) async {});
+
+    await SettleRedemptionUseCase(repo)(
+      redemption: _claim(claimedBy: _sibling),
+      actor: _sibling,
+      happened: true,
+    );
+
+    verify(() => repo.settleRedemption(_familyId, 'r1',
+        happened: true, forMemberId: null)).called(1);
+  });
 }

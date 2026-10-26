@@ -87,4 +87,21 @@ void main() {
 
     expect(result.fold((f) => f, (_) => null), isA<ServerFailure>());
   });
+
+  test('claiming for a managed child passes them to the server', () async {
+    registerFallbackValue(UserId('fallback'));
+    final repo = _MockRewardRepository();
+    when(() => repo.claimReward(any(), any(),
+            forMemberId: any(named: 'forMemberId')))
+        .thenAnswer((_) async => 'r1');
+
+    final result = await ClaimRewardUseCase(repo)(
+      reward: _reward(),
+      forMemberId: UserId('kid'),
+    );
+
+    expect(result.isRight(), isTrue);
+    verify(() => repo.claimReward(_familyId, 'reward1',
+        forMemberId: UserId('kid'))).called(1);
+  });
 }

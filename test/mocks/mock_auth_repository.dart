@@ -86,6 +86,15 @@ class MockAuthRepository implements AuthRepository {
     return _currentUser;
   }
 
+  /// The token is used as the uid, so a test chooses who a link signs in as.
+  @override
+  Future<dynamic> signInWithCustomToken(String token) async {
+    _currentUser = FakeFirebaseUser(uid: token);
+    providerIds = const [];
+    _authStateController.add(_currentUser);
+    return _currentUser;
+  }
+
   @override
   Future<dynamic> signInWithApple() => _fakeOAuthSignIn('mock_apple_uid');
 

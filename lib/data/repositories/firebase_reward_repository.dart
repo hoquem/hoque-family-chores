@@ -91,20 +91,30 @@ class FirebaseRewardRepository implements RewardRepository {
         ..sort((a, b) => b.claimedAt.compareTo(a.claimedAt)));
 
   @override
-  Future<String> claimReward(FamilyId familyId, String rewardId) =>
+  Future<String> claimReward(
+    FamilyId familyId,
+    String rewardId, {
+    UserId? forMemberId,
+  }) =>
       // Deducting stars and recording the claim happen server-side (Cloud
       // Function), atomically, so a claim can never overspend.
-      _economy.claimReward(familyId, rewardId);
+      _economy.claimReward(familyId, rewardId, forMemberId: forMemberId);
 
   @override
   Future<void> settleRedemption(
     FamilyId familyId,
     String redemptionId, {
     required bool happened,
+    UserId? forMemberId,
   }) =>
       // Status flip and refund happen server-side (Cloud Function) with the
       // same in-transaction status re-read guard, so a claim can't refund twice.
-      _economy.settleRedemption(familyId, redemptionId, happened: happened);
+      _economy.settleRedemption(
+        familyId,
+        redemptionId,
+        happened: happened,
+        forMemberId: forMemberId,
+      );
 
   @override
   Future<List<Redemption>> outstandingFor(

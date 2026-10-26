@@ -22,6 +22,10 @@ abstract class AuthRepository {
   /// Sign in anonymously (child accounts). Returns the raw Firebase user.
   Future<dynamic> signInAnonymously();
 
+  /// Signs in with a server-issued custom token (moving a managed child onto
+  /// their own phone). Returns the Firebase user.
+  Future<dynamic> signInWithCustomToken(String token);
+
   /// Sign in with email and password
   Future<dynamic> signInWithEmailAndPassword(Email email, String password);
 

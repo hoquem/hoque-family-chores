@@ -18,11 +18,13 @@ class SettleRedemptionUseCase {
 
   final RewardRepository _rewards;
 
-  /// [happened] false refunds the stars.
+  /// [happened] false refunds the stars. [onBehalf] is true when a parent
+  /// settles for a managed child on the shared phone; [actor] is then the child.
   Future<Either<Failure, Unit>> call({
     required Redemption redemption,
     required UserId actor,
     required bool happened,
+    bool onBehalf = false,
   }) async {
     try {
       if (redemption.claimedBy != actor) {
@@ -44,6 +46,7 @@ class SettleRedemptionUseCase {
         redemption.familyId,
         redemption.id,
         happened: happened,
+        forMemberId: onBehalf ? actor : null,
       );
 
       return const Right(unit);
