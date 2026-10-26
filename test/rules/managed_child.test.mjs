@@ -95,8 +95,9 @@ await expectFail('an eleventh managed child is refused', 'failed-precondition',
   callAs('mum', 'addManagedChild', { familyId: 'famA', name: 'One too many' }));
 
 console.log('\n-- removeManagedChild --');
-await adb.doc('families/famA/tasks/amiraChore').set({ title: 'tidy', status: 'assigned', assignedToId: amira, points: 5 });
 const zaynId = (await adb.collection('users').where('name', '==', 'Zayn').get()).docs[0].id;
+await adb.doc('families/famA/tasks/zaynChore').set({ title: 'tidy', status: 'assigned', assignedToId: zaynId, points: 5 });
+await adb.doc('profileLinks/ZAYNCODE2345').set({ childId: zaynId, familyId: 'famA' });
 await expectFail('a child cannot remove one', 'permission-denied',
   callAs('teen', 'removeManagedChild', { familyId: 'famA', childId: zaynId }));
 await expectFail('a signed-in member who is not managed cannot be removed this way', 'not-found',
@@ -105,6 +106,11 @@ await expectOk('a parent removes a managed child',
   callAs('mum', 'removeManagedChild', { familyId: 'famA', childId: zaynId }));
 await expectEq('the profile is gone', exists(`users/${zaynId}`), false);
 await expectEq('the child is off the roster', (async () => (await memberIds('famA')).includes(zaynId))(), false);
+await expectEq("the child's chore goes back to available",
+  (async () => (await adb.doc('families/famA/tasks/zaynChore').get()).data().status)(), 'available');
+await expectEq("the child's chore is unassigned",
+  (async () => (await adb.doc('families/famA/tasks/zaynChore').get()).data().assignedToId)(), null);
+await expectEq("the child's link code is deleted", exists('profileLinks/ZAYNCODE2345'), false);
 await expectEq('the teen is untouched', exists('users/teen'), true);
 
 // --- Task 3 and Task 4 sections go here ---
