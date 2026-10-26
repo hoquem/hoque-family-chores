@@ -13,6 +13,7 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/stop_repeating_button.dart';
 
 import '../mocks/mock_auth_repository.dart';
 import '../mocks/mock_family_repository.dart';
@@ -49,7 +50,7 @@ final _task = Task(
 );
 
 /// Pumps the screen with a parent signed in, optionally acting as [_kid].
-Future<void> _pump(WidgetTester tester, {User? actingAs}) async {
+Future<void> _pump(WidgetTester tester, {User? actingAs, Task? task}) async {
   tester.view.physicalSize = const Size(430, 932);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -72,7 +73,7 @@ Future<void> _pump(WidgetTester tester, {User? actingAs}) async {
     container: container,
     child: MaterialApp(
       theme: appLightTheme,
-      home: TaskDetailsScreen(task: _task, actingAs: actingAs),
+      home: TaskDetailsScreen(task: task ?? _task, actingAs: actingAs),
     ),
   ));
   await tester.runAsync(() async {
@@ -95,11 +96,31 @@ void main() {
     expect(find.byType(PopupMenuButton<String>), findsNothing);
   });
 
+  testWidgets(
+      'acting as anyone hides the parent-only admin UI, whatever their role',
+      (tester) async {
+    // Managed means child, but the screen must not lean on the acting
+    // profile's role: the person holding the phone is not the parent.
+    final oddProfile = _kid.copyWith(role: UserRole.parent);
+    await _pump(tester,
+        actingAs: oddProfile, task: _task.copyWith(ruleId: 'rule1'));
+
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    expect(find.byType(StopRepeatingButton), findsNothing);
+  });
+
   testWidgets('without actingAs the parent gets the parent menu, not Done',
       (tester) async {
     await _pump(tester);
 
     expect(find.byType(PopupMenuButton<String>), findsOneWidget);
     expect(find.text("I've done it!"), findsNothing);
+  });
+
+  testWidgets('without actingAs the parent can stop a recurring chore',
+      (tester) async {
+    await _pump(tester, task: _task.copyWith(ruleId: 'rule1'));
+
+    expect(find.byType(StopRepeatingButton), findsOneWidget);
   });
 }

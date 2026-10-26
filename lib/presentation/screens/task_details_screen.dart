@@ -656,11 +656,15 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final currentUser = widget.actingAs ?? authState.user;
+    // Parent-only admin UI (edit/delete menu, tip editing, stop repeating)
+    // belongs to the signed-in adult, never to the child view: whoever holds
+    // the phone there is the child, whatever the acting profile's role says.
+    final adminUser = widget.actingAs == null ? authState.user : null;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chore Details'),
         actions: [
-          if (currentUser?.role == UserRole.parent)
+          if (adminUser?.role == UserRole.parent)
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == 'edit') _handleEditTask();
@@ -744,8 +748,8 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                     const SizedBox(height: 16),
                     ChoreGuideCard(
                       guide: _activeGuide!,
-                      onEditParentTip: (currentUser?.role == UserRole.parent ||
-                              currentUser?.role == UserRole.guardian)
+                      onEditParentTip: (adminUser?.role == UserRole.parent ||
+                              adminUser?.role == UserRole.guardian)
                           ? () => _handleEditHomeTip(_activeGuide!)
                           : null,
                     ),
@@ -771,9 +775,9 @@ class _TaskDetailsScreenState extends ConsumerState<TaskDetailsScreen> {
                   _buildTimelineSection(currentUser: currentUser),
                   const SizedBox(height: 32),
                   _buildActionButtons(currentUser: currentUser),
-                  if (currentUser != null &&
+                  if (adminUser != null &&
                       !_seriesStopped &&
-                      canStopRepeating(currentUser.role, task.ruleId)) ...[
+                      canStopRepeating(adminUser.role, task.ruleId)) ...[
                     const Padding(
                       padding: EdgeInsets.only(top: 12),
                       child: Row(
