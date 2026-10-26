@@ -170,6 +170,7 @@ class FirebaseUserRepository implements UserRepository {
         updatedAt: data['updatedAt'] is Timestamp
             ? (data['updatedAt'] as Timestamp).toDate()
             : DateTime.tryParse(data['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+        isManaged: data['managed'] == true,
       );
     } catch (e) {
       throw ServerException(
