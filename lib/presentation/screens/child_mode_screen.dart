@@ -61,16 +61,21 @@ class _ChildModeScreenState extends ConsumerState<ChildModeScreen> {
     }
   }
 
+  /// Closes this screen's own route, and anything the child opened above it
+  /// (e.g. chore details), so the parent's screen is left on top.
   void _close() {
     if (_closing || !mounted) return;
     _closing = true;
-    Navigator.of(context).pop();
+    final route = ModalRoute.of(context)!;
+    final navigator = Navigator.of(context);
+    navigator.popUntil((r) => r == route);
+    navigator.pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(memberProfileProvider(widget.childId));
-    if (profile.hasError && !profile.hasValue) {
+    if (profile.hasError) {
       return Scaffold(
         body: Center(
           child: Padding(

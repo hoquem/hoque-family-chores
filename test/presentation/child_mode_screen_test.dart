@@ -12,6 +12,7 @@ import 'package:hoque_family_chores/domain/value_objects/points.dart';
 import 'package:hoque_family_chores/domain/value_objects/task_id.dart';
 import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
+import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/sound/sound_player.dart';
 import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
@@ -192,5 +193,34 @@ void main() {
     await tester.tap(find.text('Back to Mum'));
     await tester.pumpAndSettle();
     expect(find.text('open'), findsOneWidget);
+  });
+
+  testWidgets('closing while chore details is open leaves the parent on top', (tester) async {
+    final kid = StreamController<User?>();
+    addTearDown(kid.close);
+    kid.add(_kid());
+    await _pump(tester, kid: kid.stream, tasks: [
+      testTask(id: 'a', title: 'Tidy room', status: TaskStatus.assigned, assignedTo: 'kid'),
+    ]);
+    await tester.tap(find.text('Tidy room'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskDetailsScreen), findsOneWidget);
+
+    kid.add(_kid(managed: false));
+    await tester.pumpAndSettle();
+    expect(find.text('open'), findsOneWidget);
+    expect(find.byType(ChildModeScreen), findsNothing);
+    expect(find.byType(TaskDetailsScreen), findsNothing);
+  });
+
+  testWidgets('a later stream error shows the error state', (tester) async {
+    final kid = StreamController<User?>();
+    addTearDown(kid.close);
+    kid.add(_kid());
+    await _pump(tester, kid: kid.stream, tasks: const []);
+    kid.addError(Exception('lost'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('lost'), findsOneWidget);
+    expect(find.text('Back to Mum'), findsOneWidget);
   });
 }
