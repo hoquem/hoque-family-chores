@@ -109,7 +109,7 @@ presentation files read the signed-in user from `authNotifierProvider`; a
 separate shell leaves all of them untouched.
 
 - Header: the child's avatar, name, star count, and a prominent
-  **"Back to {parent's name}"** button that sets the active member to `null`.
+  **"Back to {parent's name}"** button that pops the route.
 - **My chores** tab: the child's assigned chores with Done (photo-proof chores
   use the phone's camera as they do today), and up-for-grabs chores with Take.
 - **Treats** tab: the family's treats with Claim, and the child's open claims

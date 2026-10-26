@@ -69,13 +69,36 @@ class _ChildModeScreenState extends ConsumerState<ChildModeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(memberProfileProvider(widget.childId), (_, next) {
-      final child = next.valueOrNull;
-      if (next.hasValue && (child == null || !child.isManaged)) _close();
-    });
-
-    final child = ref.watch(memberProfileProvider(widget.childId)).valueOrNull;
-    if (child == null) {
+    final profile = ref.watch(memberProfileProvider(widget.childId));
+    if (profile.hasError && !profile.hasValue) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Could not load the profile: ${profile.error}',
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(
+                  key: const Key('child_mode_back'),
+                  onPressed: _close,
+                  child: Text('Back to ${widget.parentName}'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (!profile.hasValue) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final child = profile.value;
+    if (child == null || !child.isManaged) {
+      // Removed, or moved to their own phone: this view no longer applies.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _close());
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
