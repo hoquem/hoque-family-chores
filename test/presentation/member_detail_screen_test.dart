@@ -12,7 +12,9 @@ import 'package:hoque_family_chores/domain/value_objects/user_id.dart';
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 
+import '../mocks/mock_auth_repository.dart';
 import '../mocks/mock_task_repository.dart';
+import '../mocks/mock_user_repository.dart';
 
 final _familyId = FamilyId('family_1');
 
@@ -73,6 +75,9 @@ Future<ProviderContainer> _pumpScreen(
   final container = ProviderContainer(
     overrides: [
       taskRepositoryProvider.overrideWith((_) => taskRepo),
+      // The screen reads the viewer (managed-child actions); keep it off Firebase.
+      authRepositoryProvider.overrideWith((_) => MockAuthRepository()),
+      userRepositoryProvider.overrideWith((_) => MockUserRepository()),
     ],
   );
   addTearDown(container.dispose);

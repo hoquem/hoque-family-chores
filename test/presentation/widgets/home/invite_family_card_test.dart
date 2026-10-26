@@ -61,6 +61,7 @@ void main() {
             body: InviteFamilyCard(
               inviteCode: 'ABCDEFGHJKMN',
               onDismiss: onDismiss,
+              onAddChild: () {},
             ),
           ),
         ),
@@ -107,6 +108,7 @@ void main() {
             body: InviteFamilyCard(
               inviteCode: 'ABCDEFGHJKMN',
               onDismiss: () {},
+              onAddChild: () {},
             ),
           ),
         ),

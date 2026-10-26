@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/repositories/managed_child_repository.dart';
+import 'package:hoque_family_chores/domain/services/managed_child_policy.dart';
+import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.dart'
+    show formatInviteCode;
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
@@ -86,6 +95,7 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                       weekCount: weekCount,
                       weekStars: weekStars,
                     ),
+                    _ManagedChildActions(member: widget.member),
                     // Segmented control
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -168,7 +178,9 @@ class _HeaderCard extends StatelessWidget {
                             ),
                       ),
                       Text(
-                        member.role.displayName,
+                        member.isManaged
+                            ? '${member.role.displayName} · No phone'
+                            : member.role.displayName,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: context.tokens.inkSoft,
                             ),
@@ -367,5 +379,125 @@ class _TaskTile extends StatelessWidget {
             : null,
       ),
     );
+  }
+}
+
+/// Hand the phone over, move to their own phone, or remove: only for a
+/// parent or guardian looking at a managed child (see canActForMember).
+class _ManagedChildActions extends ConsumerWidget {
+  const _ManagedChildActions({required this.member});
+
+  final User member;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final viewer = ref.watch(authNotifierProvider).user;
+    if (viewer == null || !canActForMember(viewer: viewer, member: member)) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            icon: const Icon(Icons.phone_iphone),
+            label: Text('Hand the phone to ${member.name}'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) =>
+                  ChildModeScreen(childId: member.id, parentName: viewer.name),
+            )),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.qr_code),
+            label: Text('Move ${member.name} to their own phone'),
+            onPressed: () => _showLinkCode(context, ref),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: context.tokens.brick),
+            onPressed: () => _remove(context, ref),
+            child: Text('Remove ${member.name}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLinkCode(BuildContext context, WidgetRef ref) async {
+    final LinkCode link;
+    try {
+      link = await ref
+          .read(managedChildRepositoryProvider)
+          .createLinkCode(member.familyId, member.id);
+    } on DataException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (!context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Move ${member.name} to their own phone'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('On ${member.name}\'s phone: install Chores Star, tap '
+                '"I\'m a kid", then "Use a link code", and enter:'),
+            const SizedBox(height: 16),
+            SelectableText(
+              formatInviteCode(link.code),
+              textAlign: TextAlign.center,
+              style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            const Text('It works once, for 24 hours.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _remove(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Remove ${member.name}?'),
+        content: Text('${member.name}\'s chores go back to the family, and '
+            'their stars are gone for good.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref
+          .read(managedChildRepositoryProvider)
+          .removeManagedChild(member.familyId, member.id);
+    } on DataException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    ref.invalidate(familyMembersNotifierProvider(member.familyId));
+    if (context.mounted) Navigator.of(context).pop();
   }
 }

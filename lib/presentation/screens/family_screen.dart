@@ -10,6 +10,7 @@ import 'package:hoque_family_chores/presentation/screens/family_onboarding_scree
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/add_managed_child_sheet.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/share_invite_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
@@ -144,7 +145,9 @@ class _FamilyDetailsView extends ConsumerWidget {
                         ListTile(
                           leading: UserAvatar(user: members[i]),
                           title: Text(members[i].name),
-                          subtitle: Text(members[i].role.displayName),
+                          subtitle: Text(members[i].isManaged
+                              ? '${members[i].role.displayName} · No phone'
+                              : members[i].role.displayName),
                           trailing: DefaultTextStyle(
                             style: Theme.of(context).textTheme.titleMedium!,
                             child: AnimatedStarCount(members[i].points.toInt()),
@@ -167,6 +170,17 @@ class _FamilyDetailsView extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (currentUser.role.isAdmin)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: const Key('family_add_child_button'),
+                    icon: const Icon(Icons.child_care),
+                    label: const Text('Add a child without a phone'),
+                    onPressed: () => showAddManagedChildSheet(context, ref,
+                        familyId: currentUser.familyId, source: 'family_tab'),
+                  ),
+                ),
             ],
           ),
         ),

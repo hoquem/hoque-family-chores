@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.d
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/just_created_family_notifier.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/add_managed_child_sheet.dart';
 import 'package:hoque_family_chores/presentation/widgets/share_invite_button.dart';
 
 /// Shown once, right after an adult creates a family: the invite code with a
@@ -35,6 +36,7 @@ class InviteYourFamilyScreen extends ConsumerStatefulWidget {
 class _InviteYourFamilyScreenState
     extends ConsumerState<InviteYourFamilyScreen> {
   bool _hasShared = false;
+  bool _addedChild = false;
 
   @override
   void initState() {
@@ -52,7 +54,7 @@ class _InviteYourFamilyScreenState
   void _continue() {
     // A share already answers "did this step do its job?" — only count a
     // skip when nothing was shared.
-    if (!_hasShared) {
+    if (!_hasShared && !_addedChild) {
       final userId = ref.read(authNotifierProvider).user?.id.value;
       if (userId != null) {
         ref.read(analyticsProvider).log(
@@ -120,11 +122,22 @@ class _InviteYourFamilyScreenState
                   );
                 },
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const Key('invite_step_add_child_button'),
+                icon: const Icon(Icons.child_care),
+                label: const Text('Add a child without a phone'),
+                onPressed: () async {
+                  final id = await showAddManagedChildSheet(context, ref,
+                      familyId: widget.family.id, source: 'onboarding');
+                  if (id != null && mounted) setState(() => _addedChild = true);
+                },
+              ),
               const SizedBox(height: 16),
               TextButton(
                 key: const Key('invite_step_continue_button'),
                 onPressed: _continue,
-                child: Text(_hasShared ? 'Done' : 'Maybe later'),
+                child: Text(_hasShared || _addedChild ? 'Done' : 'Maybe later'),
               ),
             ],
           ),
