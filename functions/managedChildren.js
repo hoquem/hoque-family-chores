@@ -129,6 +129,109 @@ async function requireMayActFor(tx, db, uid, memberId, familyId) {
   await requireManagedChildIn(tx, db, memberId, familyId);
 }
 
+const LINK_CODE_TTL_MS = 24 * 60 * 60 * 1000;
+// Same alphabet and length as family invite codes (create_family_usecase.dart):
+// no 0/O, 1/I/L, so a code read aloud survives the trip.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 12;
+
+function newLinkCode() {
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  return code;
+}
+
+// Mirrors normaliseInviteCode in join_family_usecase.dart: spaces, dashes and
+// case are how people write a long code down, not a different code.
+const normaliseCode = (raw) => String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/**
+ * Mint a one-time code that moves a managed child onto their own phone,
+ * replacing any earlier code for that child.
+ *
+ * :returns: ``{ code, expiresAt }`` with ``expiresAt`` in epoch milliseconds.
+ */
+async function createLinkCode(db, uid, { familyId, childId }) {
+  const code = newLinkCode();
+  const expiresAt = Timestamp.fromMillis(Date.now() + LINK_CODE_TTL_MS);
+  await db.runTransaction(async (tx) => {
+    await requireAdultIn(tx, db, uid, familyId);
+    await requireManagedChildIn(tx, db, childId, familyId);
+    const old = await tx.get(db.collection('profileLinks').where('childId', '==', childId));
+    for (const d of old.docs) tx.delete(d.ref);
+    tx.set(db.doc(`profileLinks/${code}`), { childId, familyId, createdBy: uid, expiresAt });
+  });
+  return { code, expiresAt: expiresAt.toMillis() };
+}
+
+/**
+ * Spend a link code and return a custom token for the child's existing uid.
+ *
+ * Does NOT clear ``managed``: the code is used up here, but the phone has not
+ * signed in yet. ``markLinked`` (onAuthUserCreated) clears it once it has, so
+ * a sign-in that fails leaves the child managed and a parent can make a new
+ * code.
+ *
+ * :returns: ``{ token }``.
+ */
+async function redeemLinkCode(db, auth, { code }) {
+  const id = normaliseCode(code);
+  if (!id) throw new HttpsError('invalid-argument', 'Please enter the code.');
+  const ref = db.doc(`profileLinks/${id}`);
+  let childId;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      throw new HttpsError('not-found', "That code didn't work. Check it, or ask a parent for a new one.");
+    }
+    const link = snap.data();
+    const child = await tx.get(db.doc(`users/${link.childId}`));
+    if (link.expiresAt.toMillis() < Date.now()) {
+      throw new HttpsError('failed-precondition', 'This code has expired. Ask a parent for a new one.');
+    }
+    if (!child.exists || child.data().managed !== true) {
+      throw new HttpsError('failed-precondition', 'This code is no longer valid. Ask a parent for a new one.');
+    }
+    tx.delete(ref);
+    childId = link.childId;
+  });
+  return { token: await auth.createCustomToken(childId) };
+}
+
+/**
+ * Clear ``managed`` once a managed child's uid really has signed in.
+ */
+async function markLinked(db, uid) {
+  const ref = db.doc(`users/${uid}`);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists && snap.data().managed === true) {
+      tx.update(ref, { managed: false, updatedAt: Timestamp.now() });
+    }
+  });
+}
+
+/**
+ * Remove the managed children of any family in ``familyIds`` that has no
+ * signed-in parent or guardian left. Nobody would be left who can hand them
+ * the phone, approve their chores, or link them.
+ *
+ * :returns: how many managed children were removed.
+ */
+async function removeOrphanedManagedChildren(db, familyIds) {
+  let removed = 0;
+  for (const familyId of familyIds) {
+    const members = await db.collection('users').where('familyId', '==', familyId).get();
+    const hasAdult = members.docs.some((d) => isAdultRole(d.data().role) && d.data().managed !== true);
+    if (hasAdult) continue;
+    for (const d of members.docs.filter((m) => m.data().managed === true)) {
+      await releaseManagedChild(db, d.id);
+      removed++;
+    }
+  }
+  return removed;
+}
+
 module.exports = {
   MAX_MANAGED_CHILDREN,
   isAdultRole,
@@ -138,4 +241,9 @@ module.exports = {
   addManagedChild,
   removeManagedChild,
   releaseManagedChild,
+  newLinkCode,
+  createLinkCode,
+  redeemLinkCode,
+  markLinked,
+  removeOrphanedManagedChildren,
 };

@@ -17,6 +17,7 @@ const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
+const { getAuth } = require('firebase-admin/auth');
 const { spawnDueOccurrences } = require('./recurringEngine');
 const { releaseDeletedMember } = require('./memberCleanup');
 const { callGeminiForGuide } = require('./choreGuide');
@@ -243,6 +244,24 @@ exports.removeManagedChild = onCall(async (request) => {
   const { familyId, childId } = requireArgs(request.data, ['familyId', 'childId']);
   await managed.removeManagedChild(db, uid, { familyId, childId });
   return { ok: true };
+});
+
+exports.createLinkCode = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId, childId } = requireArgs(request.data, ['familyId', 'childId']);
+  return managed.createLinkCode(db, uid, { familyId, childId });
+});
+
+// No requireAuth: the child's phone is signed out when it redeems. The code
+// itself is the credential (12 characters, 24 hours, single use).
+exports.redeemLinkCode = onCall(async (request) => {
+  return managed.redeemLinkCode(db, getAuth(), { code: request.data && request.data.code });
+});
+
+// The only place `managed` is cleared: once a managed child's uid has really
+// signed in on their own phone (custom-token sign-in creates the auth user).
+exports.onAuthUserCreated = functionsV1.auth.user().onCreate(async (user) => {
+  await managed.markLinked(db, user.uid);
 });
 
 // Spend stars on a reward: deduct the cost and record the redemption in one
@@ -538,6 +557,13 @@ exports.onAuthUserDeleted = functionsV1.auth.user().onDelete(async (user) => {
     `[accountDeleted] ${user.uid}: left [${result.families.join(', ')}], ` +
     `${result.tasksReleased} chores released, ${result.rulesUnassigned} recurring rules unassigned`,
   );
+  // A family left with no adult has nobody to hand the phone to its managed
+  // children, approve their chores, or link them; account deletion cannot be
+  // blocked (App Store rule), so remove them.
+  const orphans = await managed.removeOrphanedManagedChildren(db, result.families);
+  if (orphans > 0) {
+    console.log(`[accountDeleted] ${user.uid}: removed ${orphans} managed children left with no adult`);
+  }
 });
 
 // First scheduled function. Every 15 min at :07/:22/:37/:52 — off the

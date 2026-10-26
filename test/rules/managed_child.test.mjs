@@ -137,7 +137,56 @@ await expectOk('a parent refunds it for the child',
 await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(amira)).points)(), 50);
 await expectEq('the parent still has 0', (async () => (await profile('mum')).points)(), 0);
 
-// --- Task 3 and Task 4 sections go here ---
+console.log('\n-- link codes --');
+await expectFail('a child cannot make a link code', 'permission-denied',
+  callAs('teen', 'createLinkCode', { familyId: 'famA', childId: amira }));
+const first = await expectOk('a parent makes a link code',
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+const second = await expectOk('making another replaces it',
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+const code1 = first?.data?.code;
+const code2 = second?.data?.code;
+await expectEq('the code is 12 characters', code2?.length, 12);
+await expectEq('the code expires in about 24h',
+  Math.round((second?.data?.expiresAt - Date.now()) / 3600000), 24);
+await expectFail('the replaced code no longer works', 'not-found',
+  callSignedOut('redeemLinkCode', { code: code1 }));
+await adb.doc(`profileLinks/${code2}`).update({ expiresAt: adminPkg.firestore.Timestamp.fromMillis(Date.now() - 1000) });
+await expectFail('an expired code is refused', 'failed-precondition',
+  callSignedOut('redeemLinkCode', { code: code2 }));
+
+const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira });
+const spaced = `${live.data.code.slice(0, 4)} ${live.data.code.slice(4, 8)}-${live.data.code.slice(8)}`.toLowerCase();
+const redeemed = await expectOk('the child redeems it signed out, spaced and lower-case',
+  callSignedOut('redeemLinkCode', { code: spaced }));
+await expectEq('the code is used up', exists(`profileLinks/${live.data.code}`), false);
+await expectEq('still managed until the phone actually signs in',
+  (async () => (await profile(amira)).managed)(), true);
+await signInWithCustomToken(auth, redeemed.data.token);
+await expectEq('the phone is signed in as the child', auth.currentUser?.uid, amira);
+await expectEq('onAuthUserCreated clears managed',
+  waitFor(async () => (await profile(amira)).managed === false), true);
+await expectEq('her stars came with her', (async () => (await profile(amira)).points)(), 50);
+await expectFail('a linked child can no longer get a code', 'not-found',
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+
+console.log('\n-- the last adult deletes their account --');
+await aauth.createUser({ uid: 'soloMum' }).catch(() => {});
+await adb.doc('users/soloMum').set({ familyId: 'famC', role: 'parent', points: 0, name: 'Solo' });
+await adb.doc('families/famC').set({ memberIds: ['soloMum'], creatorId: 'soloMum' });
+const soloKid = (await callAs('soloMum', 'addManagedChild', { familyId: 'famC', name: 'Solo kid' })).data.childId;
+// The app deletes the profile first, then the auth user (see onAuthUserDeleted).
+await adb.doc('users/soloMum').delete();
+await aauth.deleteUser('soloMum');
+await expectEq('the orphaned managed child is removed',
+  waitFor(async () => !(await exists(`users/${soloKid}`))), true);
+
+console.log('\n-- a family that still has an adult keeps its managed children --');
+const keepKid = (await callAs('mum', 'addManagedChild', { familyId: 'famA', name: 'Keep' })).data.childId;
+await adb.doc('users/dad').delete();
+await aauth.deleteUser('dad');
+await sleep(4000); // let onAuthUserDeleted run
+await expectEq('mum is still there, so the child stays', exists(`users/${keepKid}`), true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);
