@@ -20,6 +20,7 @@ const { getMessaging } = require('firebase-admin/messaging');
 const { spawnDueOccurrences } = require('./recurringEngine');
 const { releaseDeletedMember } = require('./memberCleanup');
 const { callGeminiForGuide } = require('./choreGuide');
+const managed = require('./managedChildren');
 
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
@@ -226,6 +227,22 @@ exports.approveTask = onCall(async (request) => {
   );
 
   return { ok: true, starsAwarded: true };
+});
+
+// Managed children: a child with no phone, added by a parent. See
+// functions/managedChildren.js and
+// docs/superpowers/specs/2026-10-26-managed-child-profiles-design.md.
+exports.addManagedChild = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId } = requireArgs(request.data, ['familyId']);
+  return managed.addManagedChild(db, uid, { familyId, name: request.data.name });
+});
+
+exports.removeManagedChild = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId, childId } = requireArgs(request.data, ['familyId', 'childId']);
+  await managed.removeManagedChild(db, uid, { familyId, childId });
+  return { ok: true };
 });
 
 // Spend stars on a reward: deduct the cost and record the redemption in one
