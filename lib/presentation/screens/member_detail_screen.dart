@@ -8,6 +8,7 @@ import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.d
     show formatInviteCode;
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/member_profile_provider.dart';
 import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
@@ -35,12 +36,16 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final familyId = widget.member.familyId;
+    // The live profile, so stars and the managed state follow the server; the
+    // member passed in is what shows until the stream's first event.
+    final member = ref.watch(memberProfileProvider(widget.member.id)).value ??
+        widget.member;
+    final familyId = member.familyId;
     final tasksAsync = ref.watch(taskListStreamProvider(familyId));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.member.name),
+        title: Text(member.name),
       ),
       body: tasksAsync.when(
         data: (tasks) {
@@ -48,9 +53,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
             final assignedToId = t.assignedToId;
             final createdById = t.createdById;
             return (assignedToId != null &&
-                    assignedToId.value == widget.member.id.value) ||
+                    assignedToId.value == member.id.value) ||
                 (createdById != null &&
-                    createdById.value == widget.member.id.value);
+                    createdById.value == member.id.value);
           });
 
           final currentTasks = memberTasks
@@ -89,13 +94,13 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                   children: [
                     // Header card
                     _HeaderCard(
-                      member: widget.member,
+                      member: member,
                       totalCompleted: totalCompleted,
                       totalStars: totalStars,
                       weekCount: weekCount,
                       weekStars: weekStars,
                     ),
-                    _ManagedChildActions(member: widget.member),
+                    _ManagedChildActions(member: member),
                     // Segmented control
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -122,9 +127,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 ),
               ),
               if (_selectedSegment == 0)
-                _TaskList(tasks: currentTasks, isCompleted: false, member: widget.member)
+                _TaskList(tasks: currentTasks, isCompleted: false, member: member)
               else
-                _TaskList(tasks: completedTasks, isCompleted: true, member: widget.member),
+                _TaskList(tasks: completedTasks, isCompleted: true, member: member),
             ],
           );
         },
@@ -384,13 +389,25 @@ class _TaskTile extends StatelessWidget {
 
 /// Hand the phone over, move to their own phone, or remove: only for a
 /// parent or guardian looking at a managed child (see canActForMember).
-class _ManagedChildActions extends ConsumerWidget {
+class _ManagedChildActions extends ConsumerStatefulWidget {
   const _ManagedChildActions({required this.member});
 
   final User member;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ManagedChildActions> createState() =>
+      _ManagedChildActionsState();
+}
+
+class _ManagedChildActionsState extends ConsumerState<_ManagedChildActions> {
+  /// True while the link code is being created (a 3-7 s callable): the button
+  /// shows progress and ignores taps so a second request cannot start.
+  bool _creatingLinkCode = false;
+
+  User get member => widget.member;
+
+  @override
+  Widget build(BuildContext context) {
     final viewer = ref.watch(authNotifierProvider).user;
     if (viewer == null || !canActForMember(viewer: viewer, member: member)) {
       return const SizedBox.shrink();
@@ -410,13 +427,20 @@ class _ManagedChildActions extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            icon: const Icon(Icons.qr_code),
+            icon: _creatingLinkCode
+                ? const SizedBox(
+                    key: Key('link_code_progress'),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.qr_code),
             label: Text('Move ${member.name} to their own phone'),
-            onPressed: () => _showLinkCode(context, ref),
+            onPressed: _creatingLinkCode ? null : _showLinkCode,
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: context.tokens.brick),
-            onPressed: () => _remove(context, ref),
+            onPressed: _remove,
             child: Text('Remove ${member.name}'),
           ),
         ],
@@ -424,18 +448,21 @@ class _ManagedChildActions extends ConsumerWidget {
     );
   }
 
-  Future<void> _showLinkCode(BuildContext context, WidgetRef ref) async {
+  Future<void> _showLinkCode() async {
+    setState(() => _creatingLinkCode = true);
     final LinkCode link;
     try {
       link = await ref
           .read(managedChildRepositoryProvider)
           .createLinkCode(member.familyId, member.id);
     } on DataException catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
+      setState(() => _creatingLinkCode = false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
+    setState(() => _creatingLinkCode = false);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -468,7 +495,7 @@ class _ManagedChildActions extends ConsumerWidget {
     );
   }
 
-  Future<void> _remove(BuildContext context, WidgetRef ref) async {
+  Future<void> _remove() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -487,17 +514,17 @@ class _ManagedChildActions extends ConsumerWidget {
         ],
       ),
     );
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true || !mounted) return;
     try {
       await ref
           .read(managedChildRepositoryProvider)
           .removeManagedChild(member.familyId, member.id);
     } on DataException catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     ref.invalidate(familyMembersNotifierProvider(member.familyId));
     Navigator.of(context).pop();
   }
