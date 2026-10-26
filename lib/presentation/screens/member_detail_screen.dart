@@ -497,7 +497,8 @@ class _ManagedChildActions extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       return;
     }
+    if (!context.mounted) return;
     ref.invalidate(familyMembersNotifierProvider(member.familyId));
-    if (context.mounted) Navigator.of(context).pop();
+    Navigator.of(context).pop();
   }
 }

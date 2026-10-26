@@ -57,6 +57,7 @@ class _AddManagedChildSheetState extends ConsumerState<_AddManagedChildSheet> {
   }
 
   Future<void> _add() async {
+    if (_saving) return;
     setState(() {
       _saving = true;
       _error = null;
