@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hoque_family_chores/core/error/exceptions.dart';
+import 'package:hoque_family_chores/di/riverpod_container.dart';
+import 'package:hoque_family_chores/domain/repositories/managed_child_repository.dart';
+import 'package:hoque_family_chores/domain/services/managed_child_policy.dart';
+import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.dart'
+    show formatInviteCode;
+import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/member_profile_provider.dart';
+import 'package:hoque_family_chores/presentation/screens/child_mode_screen.dart';
 import 'package:hoque_family_chores/domain/entities/task.dart';
 import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
@@ -8,6 +18,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/task_list_no
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
 import 'package:hoque_family_chores/presentation/widgets/status_pill.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
+import 'package:hoque_family_chores/utils/logger.dart';
 import '../utils/task_status_label.dart';
 
 /// Detail screen for a family member: shows their task activity, current
@@ -26,12 +37,30 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final familyId = widget.member.familyId;
+    // The live profile, so stars and the managed state follow the server; the
+    // member passed in is what shows until the stream's first event.
+    final profile = ref.watch(memberProfileProvider(widget.member.id));
+    ref.listen(memberProfileProvider(widget.member.id), (_, next) {
+      if (next.hasError) {
+        logger.e('MemberDetailScreen: live profile failed',
+            error: next.error, stackTrace: next.stackTrace);
+      }
+    });
+    if (profile.hasValue && profile.valueOrNull == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(widget.member.name)),
+        body: Center(
+          child: Text('${widget.member.name} is no longer in this family'),
+        ),
+      );
+    }
+    final member = profile.valueOrNull ?? widget.member;
+    final familyId = member.familyId;
     final tasksAsync = ref.watch(taskListStreamProvider(familyId));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.member.name),
+        title: Text(member.name),
       ),
       body: tasksAsync.when(
         data: (tasks) {
@@ -39,9 +68,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
             final assignedToId = t.assignedToId;
             final createdById = t.createdById;
             return (assignedToId != null &&
-                    assignedToId.value == widget.member.id.value) ||
+                    assignedToId.value == member.id.value) ||
                 (createdById != null &&
-                    createdById.value == widget.member.id.value);
+                    createdById.value == member.id.value);
           });
 
           final currentTasks = memberTasks
@@ -78,14 +107,24 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (profile.hasError)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                        child: Text(
+                          "Couldn't update ${member.name}'s details",
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
+                        ),
+                      ),
                     // Header card
                     _HeaderCard(
-                      member: widget.member,
+                      member: member,
                       totalCompleted: totalCompleted,
                       totalStars: totalStars,
                       weekCount: weekCount,
                       weekStars: weekStars,
                     ),
+                    _ManagedChildActions(member: member),
                     // Segmented control
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -112,9 +151,9 @@ class _MemberDetailScreenState extends ConsumerState<MemberDetailScreen> {
                 ),
               ),
               if (_selectedSegment == 0)
-                _TaskList(tasks: currentTasks, isCompleted: false, member: widget.member)
+                _TaskList(tasks: currentTasks, isCompleted: false, member: member)
               else
-                _TaskList(tasks: completedTasks, isCompleted: true, member: widget.member),
+                _TaskList(tasks: completedTasks, isCompleted: true, member: member),
             ],
           );
         },
@@ -168,7 +207,9 @@ class _HeaderCard extends StatelessWidget {
                             ),
                       ),
                       Text(
-                        member.role.displayName,
+                        member.isManaged
+                            ? '${member.role.displayName} · No phone'
+                            : member.role.displayName,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: context.tokens.inkSoft,
                             ),
@@ -367,5 +408,151 @@ class _TaskTile extends StatelessWidget {
             : null,
       ),
     );
+  }
+}
+
+/// Hand the phone over, move to their own phone, or remove: only for a
+/// parent or guardian looking at a managed child (see canActForMember).
+class _ManagedChildActions extends ConsumerStatefulWidget {
+  const _ManagedChildActions({required this.member});
+
+  final User member;
+
+  @override
+  ConsumerState<_ManagedChildActions> createState() =>
+      _ManagedChildActionsState();
+}
+
+class _ManagedChildActionsState extends ConsumerState<_ManagedChildActions> {
+  /// True while the link code is being created (a 3-7 s callable): the button
+  /// shows progress and ignores taps so a second request cannot start.
+  bool _creatingLinkCode = false;
+
+  User get member => widget.member;
+
+  @override
+  Widget build(BuildContext context) {
+    final viewer = ref.watch(authNotifierProvider).user;
+    if (viewer == null || !canActForMember(viewer: viewer, member: member)) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            icon: const Icon(Icons.phone_iphone),
+            label: Text('Hand the phone to ${member.name}'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) =>
+                  ChildModeScreen(childId: member.id, parentName: viewer.name),
+            )),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: _creatingLinkCode
+                ? const SizedBox(
+                    key: Key('link_code_progress'),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.qr_code),
+            label: Text('Move ${member.name} to their own phone'),
+            onPressed: _creatingLinkCode ? null : _showLinkCode,
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: context.tokens.brick),
+            onPressed: _remove,
+            child: Text('Remove ${member.name}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLinkCode() async {
+    setState(() => _creatingLinkCode = true);
+    final LinkCode link;
+    try {
+      link = await ref
+          .read(managedChildRepositoryProvider)
+          .createLinkCode(member.familyId, member.id);
+    } on DataException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    } finally {
+      if (mounted) setState(() => _creatingLinkCode = false);
+    }
+    if (!mounted) return;
+    // The child may have linked a phone while the code was being made.
+    final viewer = ref.read(authNotifierProvider).user;
+    if (viewer == null || !canActForMember(viewer: viewer, member: member)) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Move ${member.name} to their own phone'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('On ${member.name}\'s phone: install Chores Star, tap '
+                '"I\'m a kid", then "Use a link code", and enter:'),
+            const SizedBox(height: 16),
+            SelectableText(
+              formatInviteCode(link.code),
+              textAlign: TextAlign.center,
+              style: Theme.of(dialogContext).textTheme.headlineSmall?.copyWith(
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            const Text('It works once, for 24 hours.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _remove() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Remove ${member.name}?'),
+        content: Text('${member.name}\'s chores go back to the family, and '
+            'their stars are gone for good.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(managedChildRepositoryProvider)
+          .removeManagedChild(member.familyId, member.id);
+    } on DataException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (!mounted) return;
+    ref.invalidate(familyMembersNotifierProvider(member.familyId));
+    Navigator.of(context).pop();
   }
 }

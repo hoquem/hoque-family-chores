@@ -117,7 +117,11 @@ class MockRewardRepository implements RewardRepository {
   }
 
   @override
-  Future<String> claimReward(FamilyId familyId, String rewardId) async {
+  Future<String> claimReward(
+    FamilyId familyId,
+    String rewardId, {
+    UserId? forMemberId,
+  }) async {
     final reward = _rewards.firstWhere(
       (r) => r.id == rewardId && r.familyId == familyId,
       orElse:
@@ -134,7 +138,7 @@ class MockRewardRepository implements RewardRepository {
       rewardId: rewardId,
       rewardTitle: reward.title,
       cost: reward.cost,
-      claimedBy: claimant,
+      claimedBy: forMemberId ?? claimant,
       claimedAt: DateTime.now(),
       status: RedemptionStatus.claimed,
       dueBy: reward.timeframe.dueFrom(DateTime.now()),
@@ -149,6 +153,7 @@ class MockRewardRepository implements RewardRepository {
     FamilyId familyId,
     String redemptionId, {
     required bool happened,
+    UserId? forMemberId,
   }) async {
     final index = _redemptions.indexWhere(
       (r) => r.id == redemptionId && r.familyId == familyId,

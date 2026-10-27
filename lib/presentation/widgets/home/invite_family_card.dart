@@ -11,10 +11,12 @@ class InviteFamilyCard extends StatelessWidget {
     super.key,
     required this.inviteCode,
     required this.onDismiss,
+    required this.onAddChild,
   });
 
   final String inviteCode;
   final VoidCallback onDismiss;
+  final VoidCallback onAddChild;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,11 @@ class InviteFamilyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ShareInviteButton(inviteCode: inviteCode, source: 'home_card'),
+                  TextButton(
+                    key: const Key('invite_family_card_add_child'),
+                    onPressed: onAddChild,
+                    child: const Text('Add a child without a phone'),
+                  ),
                 ],
               ),
             ),

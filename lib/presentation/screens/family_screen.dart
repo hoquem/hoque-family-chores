@@ -6,10 +6,12 @@ import 'package:hoque_family_chores/domain/entities/user.dart';
 import 'package:hoque_family_chores/domain/usecases/family/join_family_usecase.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/auth_notifier.dart';
 import 'package:hoque_family_chores/presentation/providers/riverpod/family_notifier.dart';
+import 'package:hoque_family_chores/presentation/providers/riverpod/member_profile_provider.dart';
 import 'package:hoque_family_chores/presentation/screens/family_onboarding_screen.dart';
 import 'package:hoque_family_chores/presentation/motion/animated_star_count.dart';
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/add_managed_child_sheet.dart';
 import 'package:hoque_family_chores/presentation/widgets/help_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/share_invite_button.dart';
 import 'package:hoque_family_chores/presentation/widgets/user_avatar.dart';
@@ -141,20 +143,7 @@ class _FamilyDetailsView extends ConsumerWidget {
                   child: Column(
                     children: [
                       for (var i = 0; i < members.length; i++) ...[
-                        ListTile(
-                          leading: UserAvatar(user: members[i]),
-                          title: Text(members[i].name),
-                          subtitle: Text(members[i].role.displayName),
-                          trailing: DefaultTextStyle(
-                            style: Theme.of(context).textTheme.titleMedium!,
-                            child: AnimatedStarCount(members[i].points.toInt()),
-                          ),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => MemberDetailScreen(member: members[i]),
-                            ),
-                          ),
-                        ),
+                        _MemberRow(snapshot: members[i]),
                         if (i < members.length - 1)
                           Divider(
                             height: 1,
@@ -167,6 +156,17 @@ class _FamilyDetailsView extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (currentUser.role.isAdmin)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: const Key('family_add_child_button'),
+                    icon: const Icon(Icons.child_care),
+                    label: const Text('Add a child without a phone'),
+                    onPressed: () => showAddManagedChildSheet(context, ref,
+                        familyId: currentUser.familyId, source: 'family_tab'),
+                  ),
+                ),
             ],
           ),
         ),
@@ -258,6 +258,55 @@ class _FamilyDetailsView extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One row of the member list. Shows the member's live profile so stars and
+/// the "No phone" note follow the server; the list's one-shot snapshot is only
+/// what is shown until the stream's first event.
+class _MemberRow extends ConsumerWidget {
+  const _MemberRow({required this.snapshot});
+
+  final User snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(memberProfileProvider(snapshot.id));
+    ref.listen(memberProfileProvider(snapshot.id), (_, next) {
+      if (next.hasError) {
+        logger.e('FamilyScreen: live profile failed',
+            error: next.error, stackTrace: next.stackTrace);
+      }
+    });
+    // The snapshot stands in only while the stream has not produced anything.
+    if (profile.hasValue && profile.valueOrNull == null) {
+      return ListTile(
+        leading: UserAvatar(user: snapshot),
+        title: Text(snapshot.name),
+        subtitle: const Text('No longer in this family'),
+      );
+    }
+    final member = profile.valueOrNull ?? snapshot;
+    final updateFailed = profile.hasError;
+    return ListTile(
+      leading: UserAvatar(user: member),
+      title: Text(member.name),
+      subtitle: updateFailed
+          ? Text("Couldn't update",
+              style: TextStyle(color: Theme.of(context).colorScheme.error))
+          : Text(member.isManaged
+              ? '${member.role.displayName} · No phone'
+              : member.role.displayName),
+      trailing: DefaultTextStyle(
+        style: Theme.of(context).textTheme.titleMedium!,
+        child: AnimatedStarCount(member.points.toInt()),
+      ),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MemberDetailScreen(member: member),
+        ),
       ),
     );
   }

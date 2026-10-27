@@ -67,6 +67,16 @@ class FirebaseAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<dynamic> signInWithCustomToken(String token) async {
+    try {
+      final cred = await _auth.signInWithCustomToken(token);
+      return cred.user!;
+    } on FirebaseAuthException catch (e) {
+      throw mapOAuthError(e);
+    }
+  }
+
+  @override
   Future<dynamic> signInWithGoogle() async {
     try {
       final googleUser = await GoogleSignIn().signIn();

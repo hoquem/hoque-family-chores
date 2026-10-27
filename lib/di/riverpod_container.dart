@@ -11,6 +11,7 @@ import '../domain/repositories/push_notification_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/task_completion_repository.dart';
 import '../domain/repositories/reward_repository.dart';
+import '../domain/repositories/managed_child_repository.dart';
 import '../domain/usecases/reward/claim_reward_usecase.dart';
 import '../domain/usecases/reward/settle_redemption_usecase.dart';
 
@@ -21,6 +22,7 @@ import '../data/services/chore_tips_service.dart';
 import '../data/services/review_prompt_service.dart';
 import '../data/services/review_prompt_state_service.dart';
 import '../data/services/review_requester.dart';
+import '../data/services/managed_child_functions.dart';
 
 // Use cases
 import '../domain/usecases/usecases.dart';
@@ -428,5 +430,22 @@ final reviewPromptServiceProvider = Provider<ReviewPromptService>((ref) {
   return ReviewPromptService(
     stateService: ref.watch(reviewPromptStateServiceProvider),
     reviewRequester: ref.watch(reviewRequesterProvider),
+  );
+});
+
+/// Children with no phone of their own. Hand-written (build_runner is broken
+/// on this toolchain). See ``lib/data/services/managed_child_functions.dart``.
+final managedChildRepositoryProvider = Provider<ManagedChildRepository>((ref) {
+  return ManagedChildFunctions();
+});
+
+final addManagedChildUseCaseProvider = Provider<AddManagedChildUseCase>((ref) {
+  return AddManagedChildUseCase(ref.watch(managedChildRepositoryProvider));
+});
+
+final linkChildDeviceUseCaseProvider = Provider<LinkChildDeviceUseCase>((ref) {
+  return LinkChildDeviceUseCase(
+    ref.watch(managedChildRepositoryProvider),
+    ref.watch(authRepositoryProvider),
   );
 });

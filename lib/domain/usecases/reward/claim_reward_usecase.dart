@@ -4,6 +4,7 @@ import '../../../core/error/exceptions.dart';
 import '../../../core/error/failures.dart';
 import '../../entities/reward.dart';
 import '../../repositories/reward_repository.dart';
+import '../../value_objects/user_id.dart';
 
 /// Spends stars on a reward.
 ///
@@ -19,9 +20,18 @@ class ClaimRewardUseCase {
 
   final RewardRepository _rewards;
 
-  Future<Either<Failure, Unit>> call({required Reward reward}) async {
+  /// :param reward: the treat to claim.
+  /// :param forMemberId: a managed child to claim for on the shared phone.
+  Future<Either<Failure, Unit>> call({
+    required Reward reward,
+    UserId? forMemberId,
+  }) async {
     try {
-      await _rewards.claimReward(reward.familyId, reward.id);
+      await _rewards.claimReward(
+        reward.familyId,
+        reward.id,
+        forMemberId: forMemberId,
+      );
       return const Right(unit);
     } on ValidationException catch (e) {
       // Raised when the balance will not cover it.

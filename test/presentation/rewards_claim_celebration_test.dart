@@ -48,7 +48,10 @@ User _testUser() => User(
 
 class _MockClaimRewardUseCase implements ClaimRewardUseCase {
   @override
-  Future<Either<Failure, Unit>> call({required Reward reward}) async {
+  Future<Either<Failure, Unit>> call({
+    required Reward reward,
+    UserId? forMemberId,
+  }) async {
     return const Right(unit);
   }
 }

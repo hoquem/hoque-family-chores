@@ -50,6 +50,10 @@ class AuthNotifier extends _$AuthNotifier {
   /// refresh).
   UserId? _streamedUserId;
 
+  /// The user [_completeLink] has already been called for this session, so
+  /// repeat profile emissions (stars, renames) do not call it again.
+  UserId? _completeLinkCalledFor;
+
   @override
   AuthState build() {
     _logger.d('AuthNotifier: Building initial state');
@@ -504,6 +508,48 @@ class AuthNotifier extends _$AuthNotifier {
     );
   }
 
+  /// Moves a managed child onto this phone with a parent's link code.
+  ///
+  /// Signs in as the child's existing account, stars and history included.
+  /// On failure the server's message (expired, already used, ...) is shown
+  /// as-is and the state returns to unauthenticated.
+  ///
+  /// :param code: the link code the parent generated for the child.
+  Future<void> linkChildDevice({required String code}) async {
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      status: AuthStatus.authenticating,
+    );
+
+    final result = await ref.read(linkChildDeviceUseCaseProvider)(code: code);
+
+    result.fold(
+      (failure) {
+        _logger.e('AuthNotifier: Link failed: ${failure.message}');
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: failure.message,
+          status: AuthStatus.unauthenticated,
+        );
+      },
+      (userId) {
+        final analytics = ref.read(analyticsProvider);
+        analytics.log(
+          AnalyticsEventName.signedIn,
+          userId: userId.value,
+          params: const {'method': 'link_code'},
+        );
+        analytics.log(AnalyticsEventName.linkCodeRedeemed, userId: userId.value);
+        _startUserProfileStream(userId);
+        state = state.copyWith(
+          isLoading: false,
+          status: AuthStatus.authenticated,
+        );
+      },
+    );
+  }
+
   /// Leaves the family the current user belongs to.
   ///
   /// Returns ``null`` on success, or a human-readable error message on failure
@@ -672,6 +718,9 @@ class AuthNotifier extends _$AuthNotifier {
                 errorMessage: null,
                 status: AuthStatus.authenticated,
               );
+              if (user != null && user.isManaged && user.id == _streamedUserId) {
+                _completeLink(user.id);
+              }
             },
           );
         },
@@ -688,12 +737,37 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
+  /// Clears `managed` on the signed-in user's own profile, once per session.
+  ///
+  /// A signed-in user whose own profile is managed is a child whose phone has
+  /// just been linked (or was linked on an earlier launch whose call failed).
+  /// Nothing server-side clears the flag on sign-in: production fires no auth
+  /// onCreate event for a first custom-token sign-in
+  /// (https://firebase.google.com/docs/functions/auth-events). A failure is
+  /// logged and leaves the child signed in; the next launch tries again.
+  ///
+  /// :param userId: the signed-in user, whose profile is managed.
+  void _completeLink(UserId userId) {
+    if (_completeLinkCalledFor == userId) return;
+    _completeLinkCalledFor = userId;
+    _logger.i('AuthNotifier: Completing link for managed profile $userId');
+    ref.read(managedChildRepositoryProvider).completeLink().then(
+      (_) => _logger.i('AuthNotifier: Link completed for $userId'),
+      onError: (Object error, StackTrace stackTrace) => _logger.e(
+        'AuthNotifier: completeLink failed for $userId',
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  }
+
   /// Stops listening to user profile changes.
   void _stopUserProfileStream() {
     _logger.d('AuthNotifier: Stopping user profile stream');
     _profileSubscription?.cancel();
     _profileSubscription = null;
     _streamedUserId = null;
+    _completeLinkCalledFor = null;
   }
 
   /// Clears any error messages.

@@ -34,6 +34,21 @@ class LeaveFamilyUseCase {
 
       final familyId = user.familyId;
 
+      // Managed children (no phone of their own) need an adult on someone's
+      // phone to hand it to them, approve their chores and link them. The
+      // last parent or guardian must remove or move them first.
+      if (user.role.isAdmin) {
+        final members = await _familyRepository.getFamilyMembers(familyId);
+        final otherAdult = members.any(
+          (m) => m.id != userId && m.role.isAdmin && !m.isManaged,
+        );
+        final managed = members.where((m) => m.isManaged).toList();
+        if (!otherAdult && managed.isNotEmpty) {
+          final names = managed.map((m) => m.name).join(' and ');
+          return Left(BusinessFailure('Remove or move $names first.'));
+        }
+      }
+
       // Withdraw the join request first. It is the proof that bought read
       // access to the family, and because it is written with `set()`, a stale
       // one makes rejoining impossible — the two halves of TASK-499. First,

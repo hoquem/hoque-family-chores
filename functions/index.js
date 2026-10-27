@@ -17,9 +17,11 @@ const { defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
+const { getAuth } = require('firebase-admin/auth');
 const { spawnDueOccurrences } = require('./recurringEngine');
 const { releaseDeletedMember } = require('./memberCleanup');
 const { callGeminiForGuide } = require('./choreGuide');
+const managed = require('./managedChildren');
 
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
@@ -133,13 +135,15 @@ async function notify(userId, title, message, data, pushTitle, pushBody) {
   }
 }
 
-/// Notify every member of a family except one person.
-async function notifyFamily(familyId, excludeUserId, title, message, data, pushTitle, pushBody) {
+/// Notify every member of a family except the excluded person, or people
+/// (a single id or an array of ids).
+async function notifyFamily(familyId, excludeUserIds, title, message, data, pushTitle, pushBody) {
+  const excluded = new Set([].concat(excludeUserIds));
   const membersSnap = await db.collection('users').where('familyId', '==', familyId).get();
   const promises = [];
   membersSnap.docs.forEach((doc) => {
     const memberId = doc.id;
-    if (memberId === excludeUserId) return;
+    if (excluded.has(memberId)) return;
     promises.push(notify(memberId, title, message, data, pushTitle, pushBody));
   });
   await Promise.all(promises);
@@ -228,13 +232,57 @@ exports.approveTask = onCall(async (request) => {
   return { ok: true, starsAwarded: true };
 });
 
+// Managed children: a child with no phone, added by a parent. See
+// functions/managedChildren.js and
+// docs/superpowers/specs/2026-10-26-managed-child-profiles-design.md.
+exports.addManagedChild = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId } = requireArgs(request.data, ['familyId']);
+  return managed.addManagedChild(db, uid, { familyId, name: request.data.name });
+});
+
+exports.removeManagedChild = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId, childId } = requireArgs(request.data, ['familyId', 'childId']);
+  await managed.removeManagedChild(db, uid, { familyId, childId });
+  return { ok: true };
+});
+
+exports.createLinkCode = onCall(async (request) => {
+  const uid = requireAuth(request);
+  const { familyId, childId } = requireArgs(request.data, ['familyId', 'childId']);
+  return managed.createLinkCode(db, uid, { familyId, childId });
+});
+
+// No requireAuth: the child's phone is signed out when it redeems. The code
+// itself is the credential (12 characters, 24 hours, single use).
+exports.redeemLinkCode = onCall(async (request) => {
+  return managed.redeemLinkCode(db, getAuth(), { code: request.data && request.data.code });
+});
+
+// The only place `managed` is cleared: the linked phone, signed in as the
+// child, calls this. Not an auth onCreate trigger: production never fires one
+// for a first custom-token sign-in
+// (https://firebase.google.com/docs/functions/auth-events), so the app calls
+// this whenever its own profile still says managed. It can only clear the
+// caller's own flag.
+exports.completeLink = onCall(async (request) => {
+  const uid = requireAuth(request);
+  await managed.completeLink(db, uid);
+  return { linked: true };
+});
+
 // Spend stars on a reward: deduct the cost and record the redemption in one
 // transaction, refusing to go below zero.
 exports.claimReward = onCall(async (request) => {
   const uid = requireAuth(request);
   const { familyId, rewardId } = requireArgs(request.data, ['familyId', 'rewardId']);
 
-  const claimerRef = db.doc(`users/${uid}`);
+  // On the shared phone a parent claims for a managed child (a child with no
+  // phone of their own); the stars and the claim are the child's.
+  const forMemberId = managed.optionalForMemberId(request.data);
+  const claimerId = forMemberId || uid;
+  const claimerRef = db.doc(`users/${claimerId}`);
   const rewardRef = db.doc(`families/${familyId}/rewards/${rewardId}`);
   const redemptionRef = db.collection(`families/${familyId}/redemptions`).doc();
   const now = new Date();
@@ -244,6 +292,7 @@ exports.claimReward = onCall(async (request) => {
   let cost;
 
   await db.runTransaction(async (tx) => {
+    if (forMemberId) await managed.requireMayActFor(tx, db, uid, forMemberId, familyId);
     const claimerSnap = await tx.get(claimerRef);
     const rewardSnap = await tx.get(rewardRef);
     if (!claimerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
@@ -269,7 +318,8 @@ exports.claimReward = onCall(async (request) => {
       rewardId,
       rewardTitle,
       cost,
-      claimedBy: uid,
+      claimedBy: claimerId,
+      ...(forMemberId ? { claimedVia: uid } : {}),
       claimedAt: Timestamp.fromDate(now),
       status: 'claimed',
       dueBy: due ? Timestamp.fromDate(due) : null,
@@ -277,12 +327,14 @@ exports.claimReward = onCall(async (request) => {
     });
   });
 
-  // Notify family: someone claimed a treat.
+  // Notify family: someone claimed a treat. Neither the caller nor the
+  // claimer (a managed child, when a parent claims for them) is told about
+  // their own claim.
   const claimerSnap = await claimerRef.get();
   const claimerPhoto = claimerSnap.data()?.photoUrl || '';
   await notifyFamily(
     familyId,
-    uid,
+    [uid, claimerId],
     `${claimerName} claimed a treat! 🎁`,
     `${claimerName} wants '${rewardTitle}' (${cost}⭐)`,
     { type: 'rewardClaimed', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionRef.id, imageUrl: claimerPhoto },
@@ -309,17 +361,21 @@ exports.settleRedemption = onCall(async (request) => {
   let rewardTitle;
   let settledStatus;
 
-  const settlerRef = db.doc(`users/${uid}`);
+  const forMemberId = managed.optionalForMemberId(request.data);
+  const settlerId = forMemberId || uid;
+  const settlerRef = db.doc(`users/${settlerId}`);
 
   await db.runTransaction(async (tx) => {
+    if (forMemberId) await managed.requireMayActFor(tx, db, uid, forMemberId, familyId);
     const snap = await tx.get(redemptionRef);
     if (!snap.exists) throw new HttpsError('not-found', 'Claim not found.');
-    // A refund updates the caller's profile; without this read a caller whose
-    // profile is gone gets an opaque INTERNAL (tx.update NOT_FOUND).
+    // A refund updates the settler's profile (the caller's, or the managed
+    // child's when a parent settles for them); without this read a settler
+    // whose profile is gone gets an opaque INTERNAL (tx.update NOT_FOUND).
     const settlerSnap = await tx.get(settlerRef);
     if (!settlerSnap.exists) throw new HttpsError('permission-denied', 'No profile found.');
     const r = snap.data();
-    if (r.claimedBy !== uid) {
+    if (r.claimedBy !== settlerId) {
       throw new HttpsError('permission-denied', 'Only the person who claimed this can settle it.');
     }
     if (r.status !== 'claimed') {
@@ -343,7 +399,7 @@ exports.settleRedemption = onCall(async (request) => {
   const settlerSnap = await settlerRef.get();
   const settlerPhoto = settlerSnap.data()?.photoUrl || '';
   await notify(
-    uid,
+    settlerId,
     `Treat ${settledStatus} ${happened ? '✅' : '💫'}`,
     `'${rewardTitle}' was ${settledStatus}`,
     { type: 'rewardSettled', deepLink: 'choresapp://rewards', actorId: uid, entityId: redemptionId, imageUrl: settlerPhoto },
@@ -512,6 +568,13 @@ exports.onAuthUserDeleted = functionsV1.auth.user().onDelete(async (user) => {
     `[accountDeleted] ${user.uid}: left [${result.families.join(', ')}], ` +
     `${result.tasksReleased} chores released, ${result.rulesUnassigned} recurring rules unassigned`,
   );
+  // A family left with no adult has nobody to hand the phone to its managed
+  // children, approve their chores, or link them; account deletion cannot be
+  // blocked (App Store rule), so remove them.
+  const orphans = await managed.removeOrphanedManagedChildren(db, result.families);
+  if (orphans > 0) {
+    console.log(`[accountDeleted] ${user.uid}: removed ${orphans} managed children left with no adult`);
+  }
 });
 
 // First scheduled function. Every 15 min at :07/:22/:37/:52 — off the

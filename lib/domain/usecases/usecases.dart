@@ -36,6 +36,8 @@ export 'family/update_family_usecase.dart';
 export 'family/delete_family_usecase.dart';
 export 'family/remove_member_usecase.dart';
 export 'family/leave_family_usecase.dart';
+export 'family/add_managed_child_usecase.dart';
+export 'family/link_child_device_usecase.dart';
 export 'family/get_family_members_usecase.dart';
 export 'family/update_family_member_usecase.dart';
 

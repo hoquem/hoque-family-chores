@@ -10,8 +10,14 @@ import 'package:hoque_family_chores/presentation/sound/app_sound.dart';
 import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 
 /// Bridges the celebration queue to the screen: plays the queue's head as an
-/// overlay above [child], advancing when each one finishes. Mounted once,
-/// above the tab stack in MainScreen.
+/// overlay above [child], advancing when each one finishes. Mounted above the
+/// tab stack in MainScreen, and again in ChildModeScreen, a full-screen route
+/// over it.
+///
+/// Only a listener whose route is visible plays: one under an opaque route
+/// (MainScreen under the child view) holds back, so the celebration plays
+/// once, where the person holding the phone can see it, rather than also
+/// sounding offstage and racing to advance the queue.
 ///
 /// Also the idle point for a review-prompt moment that had nowhere safe to
 /// offer its own sheet (an approval — see `review_prompt_positive_moment.dart`):
@@ -20,9 +26,18 @@ import 'package:hoque_family_chores/presentation/sound/sound_service.dart';
 /// rather than the plain `ConsumerWidget` this used to be, so that check can
 /// debounce itself with a private field instead of another provider.
 class CelebrationListener extends ConsumerStatefulWidget {
-  const CelebrationListener({super.key, required this.child});
+  const CelebrationListener({
+    super.key,
+    required this.child,
+    this.offersReviewPrompt = true,
+  });
 
   final Widget child;
+
+  /// Whether this listener feeds and offers the app-review prompt. False in
+  /// the child view: Firebase is signed in as the parent there, but a child
+  /// is holding the phone, and a child's session never asks for a review.
+  final bool offersReviewPrompt;
 
   @override
   ConsumerState<CelebrationListener> createState() =>
@@ -48,7 +63,12 @@ class _CelebrationListenerState extends ConsumerState<CelebrationListener> {
     // this widget rebuilds automatically when a dialog/bottom-sheet/pushed
     // screen on top opens or closes — no polling needed for that part.
     final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
-    if (pending &&
+    // TickerMode is off for a route covered by an opaque one, and (unlike
+    // isCurrent) stays on under a dialog or sheet, which the overlay should
+    // keep playing beneath as before.
+    final isVisible = TickerMode.valuesOf(context).enabled;
+    if (widget.offersReviewPrompt &&
+        pending &&
         queue.isEmpty &&
         isCurrentRoute &&
         !_deferredCheckScheduled) {
@@ -58,7 +78,7 @@ class _CelebrationListenerState extends ConsumerState<CelebrationListener> {
     return Stack(
       children: [
         widget.child,
-        if (queue.isNotEmpty)
+        if (queue.isNotEmpty && isVisible)
           Positioned.fill(
             child: CelebrationOverlayView(
               // Keyed by the enqueue sequence number: a NEW head (even an
@@ -124,6 +144,7 @@ class _CelebrationListenerState extends ConsumerState<CelebrationListener> {
   void _onCelebrationDone(CelebrationKind kind) {
     final notifier = ref.read(celebrationQueueProvider.notifier);
     notifier.advance();
+    if (!widget.offersReviewPrompt) return;
 
     final isRewardMoment = kind is StarsAwarded || kind is TreatRedeemed;
     if (!isRewardMoment) return;

@@ -18,6 +18,7 @@ import 'package:hoque_family_chores/presentation/providers/riverpod/home_widget_
 import 'package:hoque_family_chores/presentation/screens/member_detail_screen.dart';
 import 'package:hoque_family_chores/presentation/screens/task_details_screen.dart';
 import 'package:hoque_family_chores/presentation/theme/app_tokens.dart';
+import 'package:hoque_family_chores/presentation/widgets/add_managed_child_sheet.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/approval_queue_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/celebration_card.dart';
 import 'package:hoque_family_chores/presentation/widgets/home/greeting_header.dart';
@@ -290,6 +291,8 @@ class HomeScreen extends ConsumerWidget {
     return InviteFamilyCard(
       inviteCode: inviteCode,
       onDismiss: () => _dismissInviteCard(ref, currentUser.familyId),
+      onAddChild: () => showAddManagedChildSheet(context, ref,
+          familyId: currentUser.familyId, source: 'home_card'),
     );
   }
 

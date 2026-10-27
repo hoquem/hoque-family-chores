@@ -26,15 +26,22 @@ abstract class RewardRepository {
 
   /// Claims a reward: deducts the stars and records the redemption, server-side
   /// (Cloud Function), so it can never spend stars the claimant doesn't have.
+  /// [forMemberId] claims for a managed child on the shared phone.
   /// Returns the new redemption's id.
-  Future<String> claimReward(FamilyId familyId, String rewardId);
+  Future<String> claimReward(
+    FamilyId familyId,
+    String rewardId, {
+    UserId? forMemberId,
+  });
 
   /// Settles a claim (fulfilled or refunded) server-side. A refund returns the
-  /// stars. Only the claimant may settle their own claim.
+  /// stars. Only the claimant may settle their own claim, or a parent for a
+  /// managed child ([forMemberId]).
   Future<void> settleRedemption(
     FamilyId familyId,
     String redemptionId, {
     required bool happened,
+    UserId? forMemberId,
   });
 
   /// Outstanding claims for one person — what the family still owes them.

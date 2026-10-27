@@ -3,7 +3,8 @@
 
 Prints aggregate counts only (no names or emails): families, members,
 chores created and approved, and "active families" (at least one chore
-approved in the window). Downloads say little about a family app; these
+approved in the window), and children without a phone (managed profiles
+that a parent runs). Downloads say little about a family app; these
 numbers say whether families actually use it.
 
 Auth: reuses the Firebase CLI login (``firebase login``) by exchanging its
@@ -209,6 +210,9 @@ def main() -> None:
         "inviteStepSkipped",
         "inviteShared",
         "memberJoined",
+        "managedChildAdded",
+        "childModeEntered",
+        "linkCodeRedeemed",
     )
     growth_events = [
         e
@@ -229,6 +233,8 @@ def main() -> None:
     print(f"  Families with 2+ members:  {sum(1 for c in members.values() if c >= 2)}")
     print(f"  Users:                     {len(users)}  ({', '.join(f'{k} {v}' for k, v in sorted(roles.items()))})")
     print(f"  Chores ever created:       {len(tasks)}")
+    managed = [u for u in users if field(u, "managed") is True]
+    print(f"  Children without a phone:  {len(managed)}  (in {len({field(u, 'familyId') for u in managed})} families)")
     for label, since in ((f"last {args.days} days", short), ("last 30 days", month)):
         approved = approved_in(since)
         print(f"  -- {label}")
@@ -253,6 +259,9 @@ def main() -> None:
               + (f"  ({', '.join(f'{k} {v}' for k, v in sorted(sources.items()))})"
                  if sources else ""))
         print(f"     Members joined by code: {counts['memberJoined']}")
+        print(f"     Children added (no phone): {counts['managedChildAdded']}")
+        print(f"     Phone handed to a child:   {counts['childModeEntered']}")
+        print(f"     Moved to their own phone:  {counts['linkCodeRedeemed']}")
 
 
 if __name__ == "__main__":

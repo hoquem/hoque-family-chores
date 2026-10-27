@@ -7,8 +7,11 @@ rules_version = '2';
 // AT RUNTIME while the test suite stays green, because the tests mock the
 // upload — see docs/superpowers/specs/2026-07-16-before-after-photos-design.md.
 //
-// Photos are of children, in their homes. Read access is family-only, and only
-// the child a task is assigned to may attach or remove its photos.
+// Photos are of children, in their homes. Read access is family-only. The
+// child a task is assigned to may attach or remove its photos, and so may any
+// parent or guardian of the family (trust-based: a parent helps with any
+// chore's photos, and on the shared phone in the child view Firebase is
+// signed in as the parent while the chore is a managed child's).
 
 service firebase.storage {
   match /b/{bucket}/o {
@@ -43,13 +46,17 @@ service firebase.storage {
              .data.assignedToId == request.auth.uid;
     }
 
-    // A parent or guardian in this family. Mirrors the role check in
-    // firestore.rules (me().role in ['parent','guardian']), reading the same
-    // users/{uid}.role field.
-    function isFamilyParent(familyId) {
-      return isFamilyMember(familyId)
-        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid))
-             .data.role in ['parent', 'guardian'];
+    // A parent or guardian of this family, from ONE read: the caller's own
+    // profile. Its familyId is a sound membership check because firestore.rules
+    // only lets a self-update set `familyId` to a family the caller is actually
+    // in (memberIds), or clear it, and a parent cannot move a member to
+    // another family. Reading the profile instead of families/{familyId} keeps
+    // every allow below within the two-document limit.
+    function isFamilyAdult(familyId) {
+      let me = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+      return isSignedIn()
+        && me.familyId == familyId
+        && me.role in ['parent', 'guardian'];
     }
 
     // JPEG specifically, not image/*. PhotoStorageService compresses every
@@ -61,6 +68,16 @@ service firebase.storage {
         && request.resource.size < maxMb * 1024 * 1024;
     }
 
+    // PRODUCTION LIMIT: "No more than two Firestore documents may be accessed
+    // in a single Rules evaluation"
+    // (https://firebase.google.com/docs/storage/security/rules-conditions).
+    // The emulator does NOT enforce it, so test:storage stays green past it.
+    // Worst-case distinct documents read per allow:
+    //  - read:          1 (families/{familyId})
+    //  - create/update: 2 (the task, then the caller's profile)
+    //  - delete:        2 (the task, then the caller's profile)
+    // Count again before adding any firestore.get/exists here.
+    //
     // families/{familyId}/tasks/{taskId}/{before|after}-{timestamp}.jpg
     // The shape is pinned by PhotoStorageService.pathFor and its test; if the
     // two drift, uploads are denied at runtime and no test notices.
@@ -70,10 +87,13 @@ service firebase.storage {
       // it, and siblings see the task list.
       allow read: if isFamilyMember(familyId);
 
-      // Only the assignee attaches photos, and only to their own task. The 5MB
-      // cap is a backstop — PhotoStorageService already compresses to under
-      // 1MB and refuses rather than upload something bigger.
-      allow create, update: if isAssignee(familyId, taskId) && isAJpegUnder(5);
+      // The assignee attaches photos to their own task; a parent or guardian
+      // to any of the family's chores (including a managed child's, from the
+      // child view on the parent's phone). The 5MB cap is a backstop —
+      // PhotoStorageService already compresses to under 1MB and refuses
+      // rather than upload something bigger.
+      allow create, update: if isAJpegUnder(5)
+        && (isAssignee(familyId, taskId) || isFamilyAdult(familyId));
 
       // Two people delete photos, for two different reasons:
       //
@@ -84,7 +104,7 @@ service firebase.storage {
       //    they have been, they are cost. Retention runs from Start to
       //    Approve — hours, not forever — so steady-state storage is roughly
       //    the tasks currently in flight rather than every chore ever done.
-      allow delete: if isAssignee(familyId, taskId) || isFamilyParent(familyId);
+      allow delete: if isAssignee(familyId, taskId) || isFamilyAdult(familyId);
     }
 
     // Everything else is denied. No implicit buckets, no stray paths.

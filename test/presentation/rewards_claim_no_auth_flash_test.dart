@@ -57,7 +57,10 @@ class _MockClaimRewardUseCase implements ClaimRewardUseCase {
   final MockUserRepository _users;
 
   @override
-  Future<Either<Failure, Unit>> call({required Reward reward}) async {
+  Future<Either<Failure, Unit>> call({
+    required Reward reward,
+    UserId? forMemberId,
+  }) async {
     await _users.subtractPoints(UserId(_uid), reward.cost);
     return const Right(unit);
   }

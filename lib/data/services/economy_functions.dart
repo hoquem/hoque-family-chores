@@ -1,8 +1,9 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
-import '../../core/error/exceptions.dart';
 import '../../domain/value_objects/family_id.dart';
 import '../../domain/value_objects/task_id.dart';
+import '../../domain/value_objects/user_id.dart';
+import 'callable.dart';
 
 /// Calls the star-economy Cloud Functions.
 ///
@@ -20,16 +21,23 @@ class EconomyFunctions {
   // which needs a live Firebase app.
   FirebaseFunctions get _functions => _override ?? FirebaseFunctions.instance;
 
-  Future<void> approveTask(FamilyId familyId, TaskId taskId) => _call(
-        'approveTask',
-        {'familyId': familyId.value, 'taskId': taskId.value},
-      );
+  Future<void> approveTask(FamilyId familyId, TaskId taskId) => callFunction(
+    _functions,
+    'approveTask',
+    {'familyId': familyId.value, 'taskId': taskId.value},
+  );
 
-  /// Returns the new redemption's id.
-  Future<String> claimReward(FamilyId familyId, String rewardId) async {
-    final data = await _call('claimReward', {
+  /// Returns the new redemption's id. [forMemberId] claims for a managed
+  /// child on the shared phone.
+  Future<String> claimReward(
+    FamilyId familyId,
+    String rewardId, {
+    UserId? forMemberId,
+  }) async {
+    final data = await callFunction(_functions, 'claimReward', {
       'familyId': familyId.value,
       'rewardId': rewardId,
+      if (forMemberId != null) 'forMemberId': forMemberId.value,
     });
     return (data?['redemptionId'] as String?) ?? '';
   }
@@ -38,41 +46,11 @@ class EconomyFunctions {
     FamilyId familyId,
     String redemptionId, {
     required bool happened,
-  }) =>
-      _call('settleRedemption', {
-        'familyId': familyId.value,
-        'redemptionId': redemptionId,
-        'happened': happened,
-      });
-
-  Future<Map<String, dynamic>?> _call(
-    String name,
-    Map<String, dynamic> data,
-  ) async {
-    try {
-      final result = await _functions.httpsCallable(name).call(data);
-      return (result.data as Map?)?.cast<String, dynamic>();
-    } on FirebaseFunctionsException catch (e) {
-      throw _map(e);
-    } catch (e) {
-      throw ServerException('$name failed: $e', code: 'FUNCTION_ERROR');
-    }
-  }
-
-  DataException _map(FirebaseFunctionsException e) {
-    final message = e.message ?? 'Something went wrong.';
-    switch (e.code) {
-      case 'permission-denied':
-        return PermissionException(message, code: e.code);
-      case 'not-found':
-        return NotFoundException(message, code: e.code);
-      case 'failed-precondition':
-      case 'invalid-argument':
-        return ValidationException(message, code: e.code);
-      case 'unauthenticated':
-        return AuthException(message, code: e.code);
-      default:
-        return ServerException(message, code: e.code);
-    }
-  }
+    UserId? forMemberId,
+  }) => callFunction(_functions, 'settleRedemption', {
+    'familyId': familyId.value,
+    'redemptionId': redemptionId,
+    'happened': happened,
+    if (forMemberId != null) 'forMemberId': forMemberId.value,
+  });
 }

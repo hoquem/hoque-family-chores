@@ -23,6 +23,11 @@ class User extends Equatable {
   final DateTime joinedAt;
   final DateTime updatedAt;
 
+  /// A child with no sign-in of their own, added by a parent and used on the
+  /// parent's phone. Server-owned: only the Cloud Functions set or clear the
+  /// `managed` field, so no mapper writes it back.
+  final bool isManaged;
+
   const User({
     required this.id,
     required this.name,
@@ -34,6 +39,7 @@ class User extends Equatable {
     required this.points,
     required this.joinedAt,
     required this.updatedAt,
+    this.isManaged = false,
   });
 
   /// Creates a copy of this user with updated fields
@@ -48,6 +54,7 @@ class User extends Equatable {
     Points? points,
     DateTime? joinedAt,
     DateTime? updatedAt,
+    bool? isManaged,
   }) {
     return User(
       id: id ?? this.id,
@@ -60,6 +67,7 @@ class User extends Equatable {
       points: points ?? this.points,
       joinedAt: joinedAt ?? this.joinedAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isManaged: isManaged ?? this.isManaged,
     );
   }
 
@@ -90,6 +98,7 @@ class User extends Equatable {
         points,
         joinedAt,
         updatedAt,
+        isManaged,
       ];
 }
 
