@@ -3,7 +3,7 @@ import 'package:hoque_family_chores/data/repositories/firebase_user_repository.d
 
 void main() {
   final base = {
-    'name': 'Amira',
+    'name': 'Anna',
     'familyId': 'fam_1',
     'role': 'child',
     'points': 0,

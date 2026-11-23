@@ -209,7 +209,7 @@ discarded data, or review fails on "can't sign in."
 
 ## 8. Migration — Clean Break
 
-Existing accounts and family data are **discarded**. Live testers (Mahmud, Alima)
+Existing accounts and family data are **discarded**. Live testers (Mahmud, Alex)
 recreate their family via OAuth and re-add children; existing points/history are
 wiped. Destructive and irreversible, accepted given the small family beta. No
 migration code. The App Review demo account is recreated afterward (§7).

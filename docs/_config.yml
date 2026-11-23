@@ -29,6 +29,7 @@ exclude:
   - KNOWN_LIMITATIONS.md
   - REFACTORING_CHECKLIST.md
   - review-home-screen-widget-2026-08-07.md
+  - STORE_MARKETING.md
   - SERVICE_MIGRATION_PROGRESS.md
   - STORE_LAUNCH_CHECKLIST.md
   - superpowers

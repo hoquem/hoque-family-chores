@@ -311,15 +311,15 @@ async function expectEq(name, actual, expected) {
 
 console.log('\n-- addManagedChild --');
 const added = await expectOk('a parent adds a child without a phone',
-  callAs('mum', 'addManagedChild', { familyId: 'famA', name: '  Amira  ' }));
-const amira = added?.data?.childId;
-await expectEq('the child profile is managed', (async () => (await profile(amira)).managed)(), true);
-await expectEq('the child profile is a child', (async () => (await profile(amira)).role)(), 'child');
-await expectEq('the name is trimmed', (async () => (await profile(amira)).name)(), 'Amira');
-await expectEq('the child starts with 0 stars', (async () => (await profile(amira)).points)(), 0);
-await expectEq('the child is on the roster', (async () => (await memberIds('famA')).includes(amira))(), true);
+  callAs('mum', 'addManagedChild', { familyId: 'famA', name: '  Anna  ' }));
+const anna = added?.data?.childId;
+await expectEq('the child profile is managed', (async () => (await profile(anna)).managed)(), true);
+await expectEq('the child profile is a child', (async () => (await profile(anna)).role)(), 'child');
+await expectEq('the name is trimmed', (async () => (await profile(anna)).name)(), 'Anna');
+await expectEq('the child starts with 0 stars', (async () => (await profile(anna)).points)(), 0);
+await expectEq('the child is on the roster', (async () => (await memberIds('famA')).includes(anna))(), true);
 await expectEq('no auth user exists for the child',
-  aauth.getUser(amira).then(() => true, () => false), false);
+  aauth.getUser(anna).then(() => true, () => false), false);
 await expectOk('a guardian can add one too',
   callAs('dad', 'addManagedChild', { familyId: 'famA', name: 'Zayn' }));
 await expectFail('a child cannot add one', 'permission-denied',
@@ -337,7 +337,7 @@ await expectFail('an eleventh managed child is refused', 'failed-precondition',
   callAs('mum', 'addManagedChild', { familyId: 'famA', name: 'One too many' }));
 
 console.log('\n-- removeManagedChild --');
-await adb.doc('families/famA/tasks/amiraChore').set({ title: 'tidy', status: 'assigned', assignedToId: amira, points: 5 });
+await adb.doc('families/famA/tasks/annaChore').set({ title: 'tidy', status: 'assigned', assignedToId: anna, points: 5 });
 const zaynId = (await adb.collection('users').where('name', '==', 'Zayn').get()).docs[0].id;
 await expectFail('a child cannot remove one', 'permission-denied',
   callAs('teen', 'removeManagedChild', { familyId: 'famA', childId: zaynId }));
@@ -570,27 +570,27 @@ Insert before the `// --- Task 3 and Task 4 sections go here ---` marker:
 
 ```js
 console.log('\n-- forMemberId: claim and settle for a managed child --');
-await adb.doc(`users/${amira}`).update({ points: 50 });
+await adb.doc(`users/${anna}`).update({ points: 50 });
 await adb.doc('families/famA/rewards/park').set({ title: 'park', cost: 20, timeframe: 'openEnded', createdBy: 'mum' });
 await expectFail('a child cannot claim for a managed child', 'permission-denied',
-  callAs('teen', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('teen', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 await expectFail("another family's parent cannot claim for her", 'permission-denied',
-  callAs('otherMum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('otherMum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 await expectFail('a parent cannot claim for a signed-in child', 'not-found',
   callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: 'teen' }));
 const claim = await expectOk('a parent claims for the managed child',
-  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 const claimId = claim?.data?.redemptionId;
-await expectEq('the child paid 20 (50 -> 30)', (async () => (await profile(amira)).points)(), 30);
+await expectEq('the child paid 20 (50 -> 30)', (async () => (await profile(anna)).points)(), 30);
 await expectEq("the parent's stars are untouched", (async () => (await profile('mum')).points)(), 0);
 const redPath = `families/famA/redemptions/${claimId}`;
-await expectEq('claimedBy is the child', (async () => (await adb.doc(redPath).get()).data().claimedBy)(), amira);
+await expectEq('claimedBy is the child', (async () => (await adb.doc(redPath).get()).data().claimedBy)(), anna);
 await expectEq('claimedVia is the parent', (async () => (await adb.doc(redPath).get()).data().claimedVia)(), 'mum');
 await expectFail('settling without forMemberId is refused (the parent did not claim it)', 'permission-denied',
   callAs('mum', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false }));
 await expectOk('a parent refunds it for the child',
-  callAs('dad', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false, forMemberId: amira }));
-await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(amira)).points)(), 50);
+  callAs('dad', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false, forMemberId: anna }));
+await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(anna)).points)(), 50);
 await expectEq('the parent still has 0', (async () => (await profile('mum')).points)(), 0);
 ```
 
@@ -712,11 +712,11 @@ Insert before the `// --- Task 3 and Task 4 sections go here ---` marker:
 ```js
 console.log('\n-- link codes --');
 await expectFail('a child cannot make a link code', 'permission-denied',
-  callAs('teen', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('teen', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const first = await expectOk('a parent makes a link code',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const second = await expectOk('making another replaces it',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const code1 = first?.data?.code;
 const code2 = second?.data?.code;
 await expectEq('the code is 12 characters', code2?.length, 12);
@@ -728,24 +728,24 @@ await adb.doc(`profileLinks/${code2}`).update({ expiresAt: adminPkg.firestore.Ti
 await expectFail('an expired code is refused', 'failed-precondition',
   callSignedOut('redeemLinkCode', { code: code2 }));
 
-const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira });
+const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna });
 const spaced = `${live.data.code.slice(0, 4)} ${live.data.code.slice(4, 8)}-${live.data.code.slice(8)}`.toLowerCase();
 const redeemed = await expectOk('the child redeems it signed out, spaced and lower-case',
   callSignedOut('redeemLinkCode', { code: spaced }));
 await expectEq('the code is used up', exists(`profileLinks/${live.data.code}`), false);
 await expectEq('still managed until the phone actually signs in',
-  (async () => (await profile(amira)).managed)(), true);
+  (async () => (await profile(anna)).managed)(), true);
 await signInWithCustomToken(auth, redeemed.data.token);
-await expectEq('the phone is signed in as the child', auth.currentUser?.uid, amira);
+await expectEq('the phone is signed in as the child', auth.currentUser?.uid, anna);
 // No auth trigger fires for a first custom-token sign-in in production
 // (https://firebase.google.com/docs/functions/auth-events).
 await sleep(4000);
 await expectEq('signing in alone does not clear managed',
-  (async () => (await profile(amira)).managed)(), true);
+  (async () => (await profile(anna)).managed)(), true);
 const completed = await expectOk('the child completes the link from their own phone',
   httpsCallable(functions, 'completeLink')());
 await expectEq('completeLink reports linked', completed?.data?.linked, true);
-await expectEq('completeLink clears managed', (async () => (await profile(amira)).managed)(), false);
+await expectEq('completeLink clears managed', (async () => (await profile(anna)).managed)(), false);
 await expectOk('completing again is a no-op success',
   httpsCallable(functions, 'completeLink')());
 await expectFail('completeLink needs a signed-in caller', 'unauthenticated',
@@ -753,9 +753,9 @@ await expectFail('completeLink needs a signed-in caller', 'unauthenticated',
 await aauth.createUser({ uid: 'noProfile' }).catch(() => {});
 await expectFail('completeLink needs the caller to have a profile', 'not-found',
   callAs('noProfile', 'completeLink'));
-await expectEq('her stars came with her', (async () => (await profile(amira)).points)(), 50);
+await expectEq('her stars came with her', (async () => (await profile(anna)).points)(), 50);
 await expectFail('a linked child can no longer get a code', 'not-found',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 
 console.log('\n-- the last adult deletes their account --');
 await aauth.createUser({ uid: 'soloMum' }).catch(() => {});
@@ -968,7 +968,7 @@ import 'package:hoque_family_chores/data/repositories/firebase_user_repository.d
 
 void main() {
   final base = {
-    'name': 'Amira',
+    'name': 'Anna',
     'familyId': 'fam_1',
     'role': 'child',
     'points': 0,
@@ -1577,7 +1577,7 @@ git commit -m "Add client calls for managed children and on-behalf treats" -m "C
   - `AddManagedChildUseCase(ManagedChildRepository).call({required FamilyId familyId, required String name}) -> Future<Either<Failure, UserId>>`
   - `LinkChildDeviceUseCase(ManagedChildRepository, AuthRepository).call({required String code}) -> Future<Either<Failure, UserId>>`
   - Providers `addManagedChildUseCaseProvider`, `linkChildDeviceUseCaseProvider`.
-  - `LeaveFamilyUseCase` returns `BusinessFailure('Remove or move Amira first.')` (names joined with " and ") when the leaver is the only parent/guardian and managed children remain.
+  - `LeaveFamilyUseCase` returns `BusinessFailure('Remove or move Anna first.')` (names joined with " and ") when the leaver is the only parent/guardian and managed children remain.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1595,10 +1595,10 @@ void main() {
     final repo = MockManagedChildRepository();
     final result = await AddManagedChildUseCase(repo)(
       familyId: FamilyId('fam_1'),
-      name: '  Amira ',
+      name: '  Anna ',
     );
     expect(result.isRight(), isTrue);
-    expect(repo.added, ['Amira']);
+    expect(repo.added, ['Anna']);
   });
 
   test('a blank name is refused before calling the server', () async {
@@ -1682,7 +1682,7 @@ Append to `test/domain/usecases/family/leave_family_usecase_test.dart` inside `m
     User adult(String id, UserRole role) =>
         _member(UserId(id)).copyWith(name: id, role: role);
     User managedKid(String id) =>
-        _member(UserId(id)).copyWith(name: 'Amira', isManaged: true);
+        _member(UserId(id)).copyWith(name: 'Anna', isManaged: true);
 
     test('the only adult cannot leave while managed children remain', () async {
       final users = MockUserRepository();
@@ -1695,7 +1695,7 @@ Append to `test/domain/usecases/family/leave_family_usecase_test.dart` inside `m
       final result = await LeaveFamilyUseCase(families, users)(userId: mum.id);
 
       result.fold(
-        (f) => expect(f.message, 'Remove or move Amira first.'),
+        (f) => expect(f.message, 'Remove or move Anna first.'),
         (_) => fail('should refuse'),
       );
     });
@@ -1912,7 +1912,7 @@ final _familyId = FamilyId('family_1');
 
 final _kid = User(
   id: UserId('kid'),
-  name: 'Amira',
+  name: 'Anna',
   familyId: _familyId,
   role: UserRole.child,
   points: Points(30),
@@ -2125,7 +2125,7 @@ final _familyId = FamilyId('family_1');
 
 User _kid({bool managed = true}) => User(
       id: UserId('kid'),
-      name: 'Amira',
+      name: 'Anna',
       familyId: _familyId,
       role: UserRole.child,
       points: Points(12),
@@ -2174,7 +2174,7 @@ void main() {
       testTask(id: 'c', title: 'Feed cat', status: TaskStatus.available),
     ]);
 
-    expect(find.text('Amira'), findsOneWidget);
+    expect(find.text('Anna'), findsOneWidget);
     expect(find.text('Tidy room'), findsOneWidget);
     expect(find.text('Feed cat'), findsOneWidget);
     expect(find.text('Mum chore'), findsNothing);
@@ -2563,11 +2563,11 @@ void main() {
 
     await tester.tap(find.text('add'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('managed_child_name_field')), 'Amira');
+    await tester.enterText(find.byKey(const Key('managed_child_name_field')), 'Anna');
     await tester.tap(find.byKey(const Key('managed_child_add_button')));
     await tester.pumpAndSettle();
 
-    expect(repo.added, ['Amira']);
+    expect(repo.added, ['Anna']);
     expect(find.byKey(const Key('managed_child_name_field')), findsNothing);
   });
 
@@ -2628,7 +2628,7 @@ final _familyId = FamilyId('family_1');
 
 User _child({required bool managed}) => User(
       id: UserId('kid'),
-      name: 'Amira',
+      name: 'Anna',
       familyId: _familyId,
       role: UserRole.child,
       points: Points(5),
@@ -2675,11 +2675,11 @@ void main() {
     final repo = MockManagedChildRepository();
     await _pump(tester, _child(managed: true), repo);
 
-    expect(find.text('Hand the phone to Amira'), findsOneWidget);
-    expect(find.text('Move Amira to their own phone'), findsOneWidget);
-    expect(find.text('Remove Amira'), findsOneWidget);
+    expect(find.text('Hand the phone to Anna'), findsOneWidget);
+    expect(find.text('Move Anna to their own phone'), findsOneWidget);
+    expect(find.text('Remove Anna'), findsOneWidget);
 
-    await tester.tap(find.text('Move Amira to their own phone'));
+    await tester.tap(find.text('Move Anna to their own phone'));
     await tester.pumpAndSettle();
 
     expect(find.text('ABCD EFGH JKMN'), findsOneWidget);
@@ -2690,9 +2690,9 @@ void main() {
       (tester) async {
     await _pump(tester, _child(managed: false), MockManagedChildRepository());
 
-    expect(find.text('Hand the phone to Amira'), findsNothing);
-    expect(find.text('Move Amira to their own phone'), findsNothing);
-    expect(find.text('Remove Amira'), findsNothing);
+    expect(find.text('Hand the phone to Anna'), findsNothing);
+    expect(find.text('Move Anna to their own phone'), findsNothing);
+    expect(find.text('Remove Anna'), findsNothing);
   });
 }
 ```
@@ -3099,7 +3099,7 @@ Future<void> _openLinkScreen(
   final users = MockUserRepository();
   await users.createUserProfile(User(
     id: UserId('kid_uid'),
-    name: 'Amira',
+    name: 'Anna',
     familyId: FamilyId('family_1'),
     role: UserRole.child,
     points: Points(5),

@@ -19,7 +19,7 @@ const _uid = 'kid_uid';
 
 User _profile({required bool managed, int points = 5}) => User(
       id: UserId(_uid),
-      name: 'Amira',
+      name: 'Anna',
       familyId: FamilyId('family_1'),
       role: UserRole.child,
       points: Points(points),
@@ -89,6 +89,6 @@ void main() {
     expect(managed.completeLinkCalls, 1);
     final state = container.read(authNotifierProvider);
     expect(state.status, AuthStatus.authenticated);
-    expect(state.user?.name, 'Amira');
+    expect(state.user?.name, 'Anna');
   });
 }

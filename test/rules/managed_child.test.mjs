@@ -69,15 +69,15 @@ async function expectEq(name, actual, expected) {
 
 console.log('\n-- addManagedChild --');
 const added = await expectOk('a parent adds a child without a phone',
-  callAs('mum', 'addManagedChild', { familyId: 'famA', name: '  Amira  ' }));
-const amira = added?.data?.childId;
-await expectEq('the child profile is managed', (async () => (await profile(amira)).managed)(), true);
-await expectEq('the child profile is a child', (async () => (await profile(amira)).role)(), 'child');
-await expectEq('the name is trimmed', (async () => (await profile(amira)).name)(), 'Amira');
-await expectEq('the child starts with 0 stars', (async () => (await profile(amira)).points)(), 0);
-await expectEq('the child is on the roster', (async () => (await memberIds('famA')).includes(amira))(), true);
+  callAs('mum', 'addManagedChild', { familyId: 'famA', name: '  Anna  ' }));
+const anna = added?.data?.childId;
+await expectEq('the child profile is managed', (async () => (await profile(anna)).managed)(), true);
+await expectEq('the child profile is a child', (async () => (await profile(anna)).role)(), 'child');
+await expectEq('the name is trimmed', (async () => (await profile(anna)).name)(), 'Anna');
+await expectEq('the child starts with 0 stars', (async () => (await profile(anna)).points)(), 0);
+await expectEq('the child is on the roster', (async () => (await memberIds('famA')).includes(anna))(), true);
 await expectEq('no auth user exists for the child',
-  aauth.getUser(amira).then(() => true, () => false), false);
+  aauth.getUser(anna).then(() => true, () => false), false);
 await expectOk('a guardian can add one too',
   callAs('dad', 'addManagedChild', { familyId: 'famA', name: 'Zayn' }));
 await expectFail('a child cannot add one', 'permission-denied',
@@ -114,31 +114,31 @@ await expectEq("the child's link code is deleted", exists('profileLinks/ZAYNCODE
 await expectEq('the teen is untouched', exists('users/teen'), true);
 
 console.log('\n-- forMemberId: claim and settle for a managed child --');
-await adb.doc(`users/${amira}`).update({ points: 50 });
+await adb.doc(`users/${anna}`).update({ points: 50 });
 await adb.doc('families/famA/rewards/park').set({ title: 'park', cost: 20, timeframe: 'openEnded', createdBy: 'mum' });
 await expectFail('a child cannot claim for a managed child', 'permission-denied',
-  callAs('teen', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('teen', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 await expectFail("another family's parent cannot claim for her", 'permission-denied',
-  callAs('otherMum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('otherMum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 await expectFail('a parent cannot claim for a signed-in child', 'not-found',
   callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: 'teen' }));
 const claim = await expectOk('a parent claims for the managed child',
-  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: amira }));
+  callAs('mum', 'claimReward', { familyId: 'famA', rewardId: 'park', forMemberId: anna }));
 const claimId = claim?.data?.redemptionId;
-await expectEq('the child paid 20 (50 -> 30)', (async () => (await profile(amira)).points)(), 30);
+await expectEq('the child paid 20 (50 -> 30)', (async () => (await profile(anna)).points)(), 30);
 await expectEq("the parent's stars are untouched", (async () => (await profile('mum')).points)(), 0);
 const redPath = `families/famA/redemptions/${claimId}`;
-await expectEq('claimedBy is the child', (async () => (await adb.doc(redPath).get()).data().claimedBy)(), amira);
+await expectEq('claimedBy is the child', (async () => (await adb.doc(redPath).get()).data().claimedBy)(), anna);
 await expectEq('claimedVia is the parent', (async () => (await adb.doc(redPath).get()).data().claimedVia)(), 'mum');
 await expectFail('settling without forMemberId is refused (the parent did not claim it)', 'permission-denied',
   callAs('mum', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false }));
 await expectOk('a parent refunds it for the child',
-  callAs('dad', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false, forMemberId: amira }));
-await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(amira)).points)(), 50);
+  callAs('dad', 'settleRedemption', { familyId: 'famA', redemptionId: claimId, happened: false, forMemberId: anna }));
+await expectEq('the child got 20 back (30 -> 50)', (async () => (await profile(anna)).points)(), 50);
 await expectEq('the parent still has 0', (async () => (await profile('mum')).points)(), 0);
 
 await expectEq('the managed child is not told about their own claim',
-  (async () => (await adb.collection(`users/${amira}/notifications`).where('type', '==', 'rewardClaimed').get()).size)(), 0);
+  (async () => (await adb.collection(`users/${anna}/notifications`).where('type', '==', 'rewardClaimed').get()).size)(), 0);
 await expectEq('the rest of the family is told about it',
   (async () => (await adb.collection('users/teen/notifications').where('type', '==', 'rewardClaimed').get()).size > 0)(), true);
 
@@ -160,11 +160,11 @@ await adb.doc('users/oddAdult').delete();
 
 console.log('\n-- link codes --');
 await expectFail('a child cannot make a link code', 'permission-denied',
-  callAs('teen', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('teen', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const first = await expectOk('a parent makes a link code',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const second = await expectOk('making another replaces it',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 const code1 = first?.data?.code;
 const code2 = second?.data?.code;
 await expectEq('the code is 12 characters', code2?.length, 12);
@@ -181,37 +181,37 @@ await expectFail('an over-long code is refused as not found', 'not-found',
 await expectFail('a code too long for a document id is refused as not found', 'not-found',
   callSignedOut('redeemLinkCode', { code: 'A'.repeat(2000) }));
 
-const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira });
+const live = await callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna });
 const spaced = `${live.data.code.slice(0, 4)} ${live.data.code.slice(4, 8)}-${live.data.code.slice(8)}`.toLowerCase();
 const redeemed = await expectOk('the child redeems it signed out, spaced and lower-case',
   callSignedOut('redeemLinkCode', { code: spaced }));
 await expectEq('the code is used up', exists(`profileLinks/${live.data.code}`), false);
 await expectEq('still managed until the phone actually signs in',
-  (async () => (await profile(amira)).managed)(), true);
+  (async () => (await profile(anna)).managed)(), true);
 await signInWithCustomToken(auth, redeemed.data.token);
-await expectEq('the phone is signed in as the child', auth.currentUser?.uid, amira);
+await expectEq('the phone is signed in as the child', auth.currentUser?.uid, anna);
 // Production never fires an auth onCreate trigger for a first custom-token
 // sign-in (https://firebase.google.com/docs/functions/auth-events), so nothing
 // server-side may clear `managed` on sign-in. Give any such trigger time to
 // run, then check the flag is untouched: the phone must call completeLink.
 await sleep(4000);
 await expectEq('signing in alone does not clear managed',
-  (async () => (await profile(amira)).managed)(), true);
+  (async () => (await profile(anna)).managed)(), true);
 const completed = await expectOk('the child completes the link from their own phone',
   httpsCallable(functions, 'completeLink')());
 await expectEq('completeLink reports linked', completed?.data?.linked, true);
-await expectEq('completeLink clears managed', (async () => (await profile(amira)).managed)(), false);
+await expectEq('completeLink clears managed', (async () => (await profile(anna)).managed)(), false);
 await expectOk('completing again is a no-op success',
   httpsCallable(functions, 'completeLink')());
-await expectEq('still not managed', (async () => (await profile(amira)).managed)(), false);
+await expectEq('still not managed', (async () => (await profile(anna)).managed)(), false);
 await expectFail('completeLink needs a signed-in caller', 'unauthenticated',
   callSignedOut('completeLink'));
 await aauth.createUser({ uid: 'noProfile' }).catch(() => {});
 await expectFail('completeLink needs the caller to have a profile', 'not-found',
   callAs('noProfile', 'completeLink'));
-await expectEq('her stars came with her', (async () => (await profile(amira)).points)(), 50);
+await expectEq('her stars came with her', (async () => (await profile(anna)).points)(), 50);
 await expectFail('a linked child can no longer get a code', 'not-found',
-  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: amira }));
+  callAs('mum', 'createLinkCode', { familyId: 'famA', childId: anna }));
 
 console.log('\n-- the last adult deletes their account --');
 await aauth.createUser({ uid: 'soloMum' }).catch(() => {});

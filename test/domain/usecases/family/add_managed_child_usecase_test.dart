@@ -9,10 +9,10 @@ void main() {
     final repo = MockManagedChildRepository();
     final result = await AddManagedChildUseCase(repo)(
       familyId: FamilyId('fam_1'),
-      name: '  Amira ',
+      name: '  Anna ',
     );
     expect(result.isRight(), isTrue);
-    expect(repo.added, ['Amira']);
+    expect(repo.added, ['Anna']);
   });
 
   test('a blank name is refused before calling the server', () async {

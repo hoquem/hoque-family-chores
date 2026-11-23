@@ -23,7 +23,7 @@
 - Machine signing state EMPTY: 0 codesigning identities, no provisioning profiles, no Xcode Apple ID session, no fastlane
 - Unsigned release build verified: flutter build ios --release --no-codesign → exit 0
 - User decisions: auth via App Store Connect API key (Admin); ASC app record NOT yet created
-- Key created (55A763B9XW); agreement 403 blocker → user accepted; key verified
+- Key created (<key id, see ~/.appstoreconnect/asc.env>); agreement 403 blocker → user accepted; key verified
 - Discovered app record ALREADY existed ("Our Family Chores" 6746752194) + prior builds 3–9 + internal group "Family" with 2 testers
 - Upload of +8 was a duplicate build number (silently dropped) → bumped to +10, added ITSAppUsesNonExemptEncryption=false, rebuilt
 - Build 1.0.0+10: archive/export/upload ✓, processed VALID, compliance set, IN_BETA_TESTING via auto-distributing Family group
@@ -95,5 +95,5 @@ Deliberately NOT done yet: `Runner.entitlements` + `CODE_SIGN_ENTITLEMENTS` in p
 - Build 23 archive entitlement verified present (applesignin=Default). Firebase apple.com provider enabled (appleSignInConfig empty = fine for native flow).
 - Root-cause candidates from Apple dev forums (thread 122458): corrupt App ID capability config (confirmed fix: toggle capability off/on), Apple-side issues with new App IDs. Ours was API-created — prime suspect.
 - FIX APPLIED: deleted + re-created APPLE_ID_AUTH capability on NNL85B834X via ASC API (same settings: APPLE_ID_AUTH_APP_CONSENT/PRIMARY_APP_CONSENT). Server-side check, so no rebuild should be needed. AWAITING device retest; if still failing → Apple support ticket (server-side issue with new App IDs).
-- Family test plan written: docs/FAMILY_TEST_PLAN.md (8 phases, roster: Mahmud/Alima parents, Tazim/Ehsaan/Yamin/Amira kids) + shared artifact.
+- Family test plan written: docs/FAMILY_TEST_PLAN.md (8 phases, roster: Mahmud/Alex parents, Tom/Ellis/Yuri/Anna kids) + shared artifact.
 - ASC API helper generalized: scratchpad asc.sh (GET/POST/DELETE with ES256 JWT, same key as deploy script).

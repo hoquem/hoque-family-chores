@@ -56,7 +56,7 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 - [x] Version bumped to 1.0.0+8 (was already done in working tree)
 - [x] Unsigned release build compiles (2026-07-08, exit 0)
 - [ ] Signing state: EMPTY on this machine (0 certs, 0 profiles, no Xcode account) — user chose App Store Connect API key route (Admin role)
-- [x] API key: ~/.appstoreconnect/private_keys/AuthKey_55A763B9XW.p8, Key ID 55A763B9XW, Issuer 2e924c90-75cb-4ef0-a036-574926a7b628
+- [x] API key: ~/.appstoreconnect/private_keys/AuthKey_<key id>.p8, Key ID <key id, see ~/.appstoreconnect/asc.env>
 - [x] Agreement blocker (FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED) — user accepted, key verified working
 - [x] App record ALREADY EXISTS: "Our Family Chores", Apple ID 6746752194, bundle com.hoque.hoqueFamilyChores, v1.0 PREPARE_FOR_SUBMISSION (created 2025-06-03)
 - [x] Archive with cloud signing ✓ (ARCHIVE SUCCEEDED; cert/profile auto-created)
@@ -66,7 +66,7 @@ Ship the MVP of hoque_family_chores (family household chores app) to the Apple A
 - [x] Rebuild+re-export+re-upload as build 10 ✓ (Delivery 8d764aef)
 - [x] Build 10 processed: VALID; compliance set usesNonExemptEncryption=false via API
 - [x] Family group has hasAccessToAllBuilds=true (auto-distribution) → internalBuildState IN_BETA_TESTING
-- [x] Testers already present: m.hoque@gmail.com + alima_begum@icloud.com (both previously INSTALLED)
+- [x] Testers already present: m.hoque@gmail.com + [second parent tester] (both previously INSTALLED)
 - DONE 2026-07-09: build 1.0.0+10 live on TestFlight for Family group
 
 ### Phase 8: Auth redesign (Apple/Google parents + accountless kids) — status: plans written, in review

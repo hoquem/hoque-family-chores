@@ -47,18 +47,18 @@ void main() {
     await tester.tap(find.text('add'));
     await tester.pumpAndSettle();
     await tester.enterText(
-        find.byKey(const Key('managed_child_name_field')), 'Amira');
+        find.byKey(const Key('managed_child_name_field')), 'Anna');
     // Call onSubmitted directly: the first Done unfocuses the field, so a
     // second simulated keyboard action would never reach it.
     final submit = tester.widget<TextField>(find.byType(TextField)).onSubmitted!;
-    submit('Amira');
+    submit('Anna');
     await tester.pump();
-    submit('Amira');
+    submit('Anna');
     await tester.pump();
     repo.gate.complete();
     await tester.pumpAndSettle();
 
-    expect(repo.added, ['Amira']);
+    expect(repo.added, ['Anna']);
   });
 
   testWidgets('adding a name calls the server and closes the sheet', (tester) async {
@@ -84,11 +84,11 @@ void main() {
 
     await tester.tap(find.text('add'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('managed_child_name_field')), 'Amira');
+    await tester.enterText(find.byKey(const Key('managed_child_name_field')), 'Anna');
     await tester.tap(find.byKey(const Key('managed_child_add_button')));
     await tester.pumpAndSettle();
 
-    expect(repo.added, ['Amira']);
+    expect(repo.added, ['Anna']);
     expect(find.byKey(const Key('managed_child_name_field')), findsNothing);
   });
 

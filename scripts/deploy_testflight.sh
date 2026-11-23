@@ -14,8 +14,12 @@
 #
 set -euo pipefail
 
-KEY_ID="55A763B9XW"
-ISSUER_ID="2e924c90-75cb-4ef0-a036-574926a7b628"
+# Key and issuer IDs live outside the repo, in ~/.appstoreconnect/asc.env
+# (ASC_KEY_ID=..., ASC_ISSUER_ID=...), or in the environment.
+ASC_ENV="$HOME/.appstoreconnect/asc.env"
+if [[ -f "$ASC_ENV" ]]; then set -a; source "$ASC_ENV"; set +a; fi
+KEY_ID="${ASC_KEY_ID:?set ASC_KEY_ID (see ~/.appstoreconnect/asc.env)}"
+ISSUER_ID="${ASC_ISSUER_ID:?set ASC_ISSUER_ID (see ~/.appstoreconnect/asc.env)}"
 KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8"
 ASC_APP_ID="6746752194"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

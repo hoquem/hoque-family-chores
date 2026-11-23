@@ -18,8 +18,8 @@ const _uid = 'restored_uid';
 
 User _profile() => User(
       id: UserId(_uid),
-      name: 'Amira',
-      email: Email('amira@example.com'),
+      name: 'Anna',
+      email: Email('anna@example.com'),
       familyId: FamilyId('fam_restore'),
       role: UserRole.child,
       points: Points(20),
@@ -62,7 +62,7 @@ void main() {
     await _settle();
 
     final state = container.read(authNotifierProvider);
-    expect(state.user?.name, 'Amira');
+    expect(state.user?.name, 'Anna');
     expect(state.status, AuthStatus.authenticated);
   });
 
@@ -73,7 +73,7 @@ void main() {
     final sub = container.listen(authNotifierProvider, (_, __) {});
     addTearDown(sub.close);
     await _settle();
-    expect(container.read(authNotifierProvider).user?.name, 'Amira');
+    expect(container.read(authNotifierProvider).user?.name, 'Anna');
 
     // Firebase drops the session without the notifier's signOut() being called
     // — a revoked token, or a sign-out from another surface.
@@ -100,7 +100,7 @@ void main() {
     await _settle();
 
     final state = container.read(authNotifierProvider);
-    expect(state.user?.name, 'Amira');
+    expect(state.user?.name, 'Anna');
     expect(state.status, AuthStatus.authenticated);
   });
 
