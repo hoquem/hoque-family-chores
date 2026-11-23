@@ -240,7 +240,8 @@ Keep notifiers thin; business logic belongs in use cases.
 
 When changing `firestore.rules`, ship the client build at the same time.
 Deploying rules ahead of the build breaks new family joins for users on an
-old client. See [`docs/DEPLOYMENT_CHECKLIST.md`](docs/DEPLOYMENT_CHECKLIST.md).
+old client. See the deployment checklist (kept outside the repo, in
+`~/Documents/chores-star-private/`).
 
 ---
 

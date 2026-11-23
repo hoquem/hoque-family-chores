@@ -151,7 +151,7 @@ push and was redundant with `deploy_testflight.sh`. It was deleted via the ASC
 API; the app has zero CI workflows there. GitHub Actions still runs analyze +
 tests on every PR.
 
-Full launch steps: [`docs/DEPLOYMENT_CHECKLIST.md`](docs/DEPLOYMENT_CHECKLIST.md)
+Full launch steps: the deployment checklist (kept outside the repo, in `~/Documents/chores-star-private/`)
 and [`docs/STORE_LAUNCH_CHECKLIST.md`](docs/STORE_LAUNCH_CHECKLIST.md).
 
 **Verify UI changes on the iOS 18.5 simulator, not TestFlight** — TestFlight is a
