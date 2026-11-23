@@ -313,13 +313,13 @@ spec's earlier `claimed`/`approved`/`rejected`.
 
 ## Task 18: Clean-break switchover + recreate demo account
 
-**Note:** this requires the Phase 2 app already installed on the testers' devices — do a local/ad-hoc or internal-TestFlight build (Task 19) reachable by you and Alima **before** wiping, and ensure the demo data exists **before** any App Store Connect submission.
+**Note:** this requires the Phase 2 app already installed on the testers' devices — do a local/ad-hoc or internal-TestFlight build (Task 19) reachable by you and Alex **before** wiping, and ensure the demo data exists **before** any App Store Connect submission.
 
 - [ ] **Step 1:** Deploy functions: `firebase deploy --only functions`.
 - [ ] **Step 2:** Deploy the locked rules: `firebase deploy --only firestore:rules` (functions first, so no window where rules deny an operation that has no function yet).
 - [ ] **Step 3 (USER, destructive):** Wipe existing Firestore + Auth users/families data (clean break, spec §8). Confirm intent — this deletes the live family irreversibly.
 - [ ] **Step 4:** Recreate the **App Review demo** parent account (email/password) with a pre-populated family + sample children/chores; update App Store Connect "App Review Information" with credentials + the hidden-gesture instructions (spec §7).
-- [ ] **Step 5:** Mahmud + Alima recreate their family via OAuth; add the kids via Manage Children.
+- [ ] **Step 5:** Mahmud + Alex recreate their family via OAuth; add the kids via Manage Children.
 
 ---
 

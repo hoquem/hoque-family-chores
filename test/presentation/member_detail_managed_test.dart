@@ -48,7 +48,7 @@ final _familyId = FamilyId('family_1');
 
 User _child({required bool managed}) => User(
       id: UserId('kid'),
-      name: 'Amira',
+      name: 'Anna',
       familyId: _familyId,
       role: UserRole.child,
       points: Points(5),
@@ -103,11 +103,11 @@ void main() {
     final repo = MockManagedChildRepository();
     await _pump(tester, _child(managed: true), repo);
 
-    expect(find.text('Hand the phone to Amira'), findsOneWidget);
-    expect(find.text('Move Amira to their own phone'), findsOneWidget);
-    expect(find.text('Remove Amira'), findsOneWidget);
+    expect(find.text('Hand the phone to Anna'), findsOneWidget);
+    expect(find.text('Move Anna to their own phone'), findsOneWidget);
+    expect(find.text('Remove Anna'), findsOneWidget);
 
-    await tester.tap(find.text('Move Amira to their own phone'));
+    await tester.tap(find.text('Move Anna to their own phone'));
     await tester.pumpAndSettle();
 
     expect(find.text('ABCD EFGH JKMN'), findsOneWidget);
@@ -118,9 +118,9 @@ void main() {
       (tester) async {
     await _pump(tester, _child(managed: false), MockManagedChildRepository());
 
-    expect(find.text('Hand the phone to Amira'), findsNothing);
-    expect(find.text('Move Amira to their own phone'), findsNothing);
-    expect(find.text('Remove Amira'), findsNothing);
+    expect(find.text('Hand the phone to Anna'), findsNothing);
+    expect(find.text('Move Anna to their own phone'), findsNothing);
+    expect(find.text('Remove Anna'), findsNothing);
   });
 
   testWidgets('the page follows the live profile: stars update, actions go once linked',
@@ -132,7 +132,7 @@ void main() {
 
     expect(find.text('5 ⭐'), findsOneWidget);
     expect(find.text('Child · No phone'), findsOneWidget);
-    expect(find.text('Remove Amira'), findsOneWidget);
+    expect(find.text('Remove Anna'), findsOneWidget);
 
     live.add(_child(managed: true).copyWith(points: Points(9)));
     await tester.pumpAndSettle();
@@ -141,9 +141,9 @@ void main() {
     live.add(_child(managed: false).copyWith(points: Points(9)));
     await tester.pumpAndSettle();
     expect(find.text('Child'), findsOneWidget);
-    expect(find.text('Hand the phone to Amira'), findsNothing);
-    expect(find.text('Move Amira to their own phone'), findsNothing);
-    expect(find.text('Remove Amira'), findsNothing);
+    expect(find.text('Hand the phone to Anna'), findsNothing);
+    expect(find.text('Move Anna to their own phone'), findsNothing);
+    expect(find.text('Remove Anna'), findsNothing);
   });
 
   testWidgets('shows progress while the link code is created and ignores a second tap',
@@ -151,14 +151,14 @@ void main() {
     final repo = _SlowLinkRepository();
     await _pump(tester, _child(managed: true), repo);
 
-    await tester.tap(find.text('Move Amira to their own phone'));
+    await tester.tap(find.text('Move Anna to their own phone'));
     await tester.pump();
 
     expect(find.byKey(const Key('link_code_progress')), findsOneWidget);
     expect(repo.createCalls, 1);
 
     // The button is disabled: tapping it again must not start a second request.
-    await tester.tap(find.text('Move Amira to their own phone'), warnIfMissed: false);
+    await tester.tap(find.text('Move Anna to their own phone'), warnIfMissed: false);
     await tester.pump();
     expect(repo.createCalls, 1);
 
@@ -180,7 +180,7 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text("Couldn't update Amira's details"), findsOneWidget);
+    expect(find.text("Couldn't update Anna's details"), findsOneWidget);
   });
 
   testWidgets('a deleted profile shows that the member is gone', (tester) async {
@@ -192,8 +192,8 @@ void main() {
     live.add(null);
     await tester.pumpAndSettle();
 
-    expect(find.text('Amira is no longer in this family'), findsOneWidget);
-    expect(find.text('Remove Amira'), findsNothing);
+    expect(find.text('Anna is no longer in this family'), findsOneWidget);
+    expect(find.text('Remove Anna'), findsNothing);
   });
 
   testWidgets('no dialog if the child linked while the code was being created',
@@ -203,7 +203,7 @@ void main() {
     final repo = _SlowLinkRepository();
     await _pump(tester, _child(managed: true), repo, live: live.stream);
 
-    await tester.tap(find.text('Move Amira to their own phone'));
+    await tester.tap(find.text('Move Anna to their own phone'));
     await tester.pump();
     live.add(_child(managed: false));
     await tester.pump();

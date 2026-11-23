@@ -56,7 +56,7 @@ Future<void> _openLinkScreen(
   // The mock's simulated network delay never fires under fake async.
   await tester.runAsync(() => users.createUserProfile(User(
     id: UserId('kid_uid'),
-    name: 'Amira',
+    name: 'Anna',
     familyId: FamilyId('family_1'),
     role: UserRole.child,
     points: Points(5),

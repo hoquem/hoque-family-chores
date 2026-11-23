@@ -28,7 +28,7 @@ final _familyId = FamilyId('family_1');
 
 final _kid = User(
   id: UserId('kid'),
-  name: 'Amira',
+  name: 'Anna',
   familyId: _familyId,
   role: UserRole.child,
   points: Points(30),

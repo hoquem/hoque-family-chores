@@ -143,7 +143,7 @@ Both stores deploy headlessly with one command each. Run them **sequentially**
 
 | Target | Command | Notes |
 | --- | --- | --- |
-| iOS / TestFlight | `scripts/deploy_testflight.sh` | App Store Connect API key `55A763B9XW`. **Always** let it query the highest existing build number — a duplicate uploads "successfully" then gets silently dropped. |
+| iOS / TestFlight | `scripts/deploy_testflight.sh` | App Store Connect API key (IDs in `~/.appstoreconnect/asc.env`). **Always** let it query the highest existing build number — a duplicate uploads "successfully" then gets silently dropped. |
 | Android / Play | `scripts/deploy_playstore.sh` | Uploads the AAB to the internal track; needs the service-account JSON at `~/.playstore/service-account.json`. |
 
 **Xcode Cloud is retired** (Jul 2026) — the workflow was red-building on every

@@ -23,7 +23,7 @@ Future<FirebaseFamilyRepository> _seed(FakeFirebaseFirestore db) async {
   });
   // …and a child who joined with no email at all (the field is simply absent).
   await db.collection('users').doc('kid1').set({
-    'name': 'Yamin',
+    'name': 'Yuri',
     'familyId': _familyId.value,
     'role': 'child',
     'points': 40,
@@ -38,7 +38,7 @@ void main() {
     final members = await repo.getFamilyMembers(_familyId);
 
     expect(members.length, 2, reason: 'both members come back');
-    final kid = members.firstWhere((m) => m.name == 'Yamin');
+    final kid = members.firstWhere((m) => m.name == 'Yuri');
     final mum = members.firstWhere((m) => m.name == 'Mum');
     expect(kid.email, isNull, reason: 'a child legitimately has no email');
     expect(mum.email?.value, 'mum@example.com');

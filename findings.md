@@ -56,7 +56,7 @@
 - Prior TestFlight builds on train 1.0.0: 3, 4 (Jun 2025), 7, 8, 9 (Feb 2026) — all VALID. Build numbers must keep ascending: next free was 10.
 - Internal beta group "Family" exists: bc5e4dd9-a432-499e-b346-72707a1f24d1
 - ASC API helper: scratchpad/asc.py (venv asc-venv; commands: builds, groups, set-compliance, raw)
-- API key: 55A763B9XW / issuer 2e924c90-75cb-4ef0-a036-574926a7b628, Admin role, at ~/.appstoreconnect/private_keys/
+- API key: <key id, see ~/.appstoreconnect/asc.env>, Admin role, at ~/.appstoreconnect/private_keys/
 
 ## Firebase config diff (uncommitted)
 - firebase.json adds dataconnect emulator config + dataconnect source dir (experiment; harmless for iOS app, app does not use Data Connect)

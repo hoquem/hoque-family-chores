@@ -127,7 +127,7 @@ void main() {
     User adult(String id, UserRole role) =>
         _member(UserId(id)).copyWith(name: id, role: role);
     User managedKid(String id) =>
-        _member(UserId(id)).copyWith(name: 'Amira', isManaged: true);
+        _member(UserId(id)).copyWith(name: 'Anna', isManaged: true);
 
     test('the only adult cannot leave while managed children remain', () async {
       final users = MockUserRepository();
@@ -140,7 +140,7 @@ void main() {
       final result = await LeaveFamilyUseCase(families, users)(userId: mum.id);
 
       result.fold(
-        (f) => expect(f.message, 'Remove or move Amira first.'),
+        (f) => expect(f.message, 'Remove or move Anna first.'),
         (_) => fail('should refuse'),
       );
     });

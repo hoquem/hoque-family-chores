@@ -21,8 +21,8 @@
 #     → link/create a Google Cloud project → create a service account
 #     → grant it app access with "Release to testing tracks, and manage
 #       testing track testers" → download its JSON key.
-#   Add Yamin: Play Console → Testing → Internal testing → Testers →
-#     create/select an email list containing Yamin's Google account → save,
+#   Add the family Android tester: Play Console → Testing → Internal testing → Testers →
+#     create/select an email list containing their Google account → save,
 #     then share the opt-in link with them.
 set -euo pipefail
 

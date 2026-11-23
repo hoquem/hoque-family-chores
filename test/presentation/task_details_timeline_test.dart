@@ -25,7 +25,7 @@ import '../mocks/mock_user_repository.dart';
 const _uid = 'mock_google_uid';
 final _me = UserId(_uid);
 final _mum = UserId('mum');
-final _amira = UserId('amira');
+final _anna = UserId('anna');
 final _dad = UserId('dad');
 final _familyId = FamilyId('family_1');
 
@@ -88,9 +88,9 @@ Future<void> _pump(WidgetTester tester, Task task) async {
   final users = MockUserRepository();
   final families = MockFamilyRepository()
     ..addTestFamilyMembers(_familyId, [
-      _member(_me, 'Yamin', UserRole.child),
+      _member(_me, 'Yuri', UserRole.child),
       _member(_mum, 'Mum', UserRole.parent),
-      _member(_amira, 'Amira', UserRole.child),
+      _member(_anna, 'Anna', UserRole.child),
       _member(_dad, 'Dad', UserRole.parent),
     ]);
 
@@ -135,9 +135,9 @@ void main() {
     testWidgets('says who did it and who checked it', (tester) async {
       await _pump(
         tester,
-        _task(createdById: _mum, submittedBy: _amira, approvedBy: _dad),
+        _task(createdById: _mum, submittedBy: _anna, approvedBy: _dad),
       );
-      expect(find.text('Done by Amira'), findsOneWidget);
+      expect(find.text('Done by Anna'), findsOneWidget);
       expect(find.text('Checked by Dad'), findsOneWidget);
     });
 
@@ -152,7 +152,7 @@ void main() {
         _task(
           status: TaskStatus.needsRevision,
           createdById: _mum,
-          submittedBy: _amira,
+          submittedBy: _anna,
           rejectedBy: _dad,
           rejectionReason: 'Under the sofa please',
         ),
@@ -179,7 +179,7 @@ void main() {
         (tester) async {
       await _pump(
         tester,
-        _task(createdById: _mum, submittedBy: _amira, approvedBy: _dad),
+        _task(createdById: _mum, submittedBy: _anna, approvedBy: _dad),
       );
       expect(find.text('their own chore'), findsNothing);
     });

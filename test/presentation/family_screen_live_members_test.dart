@@ -23,7 +23,7 @@ final _familyId = FamilyId('fam_1');
 
 User _kid({required int points, required bool managed}) => User(
       id: UserId('kid'),
-      name: 'Amira',
+      name: 'Anna',
       familyId: _familyId,
       role: UserRole.child,
       points: Points(points),

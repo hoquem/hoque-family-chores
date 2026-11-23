@@ -12,8 +12,28 @@ import sys
 import urllib.request
 import urllib.error
 
-KEY_ID = os.environ.get("ASC_KEY_ID", "55A763B9XW")
-ISSUER_ID = os.environ.get("ASC_ISSUER_ID", "2e924c90-75cb-4ef0-a036-574926a7b628")
+def _load_asc_env(path=os.path.expanduser("~/.appstoreconnect/asc.env")):
+    """Load ``KEY=value`` lines from the private ASC env file, if present.
+
+    The key and issuer IDs are kept out of the repo. Values already in the
+    environment win.
+
+    :param path: The env file to read.
+    """
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        for line in fh:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_asc_env()
+# Fail loudly if missing: KeyError names the variable.
+KEY_ID = os.environ["ASC_KEY_ID"]
+ISSUER_ID = os.environ["ASC_ISSUER_ID"]
 KEY_PATH = os.environ.get(
     "ASC_KEY_PATH",
     os.path.expanduser(f"~/.appstoreconnect/private_keys/AuthKey_{KEY_ID}.p8")

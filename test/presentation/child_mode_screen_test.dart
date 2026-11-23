@@ -39,7 +39,7 @@ final _familyId = FamilyId('family_1');
 
 User _kid({bool managed = true}) => User(
       id: UserId('kid'),
-      name: 'Amira',
+      name: 'Anna',
       familyId: _familyId,
       role: UserRole.child,
       points: Points(12),
@@ -208,7 +208,7 @@ void main() {
       testTask(id: 'c', title: 'Feed cat', status: TaskStatus.available),
     ]);
 
-    expect(find.text('Amira'), findsOneWidget);
+    expect(find.text('Anna'), findsOneWidget);
     expect(find.text('Tidy room'), findsOneWidget);
     expect(find.text('Feed cat'), findsOneWidget);
     expect(find.text('Mum chore'), findsNothing);
@@ -248,7 +248,7 @@ void main() {
     addTearDown(kid.close);
     kid.add(_kid());
     await _pump(tester, kid: kid.stream, tasks: const []);
-    expect(find.text('Amira'), findsOneWidget);
+    expect(find.text('Anna'), findsOneWidget);
 
     kid.add(_kid(managed: false));
     await tester.pumpAndSettle();
